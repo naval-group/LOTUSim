@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+<xacro:macro  name="wamv_gazebo_thruster_plugin" params="name">
+    <!-- Thruster plugin macro 
+   
+    ign topic -t /model/tethys/joint/vertical_fins_joint/0/cmd_pos
+    -m ignition.msgs.Double -p 'data: -0.17'
+   
+   ign topic -t /model/tethys/joint/propeller_joint/cmd_pos
+    -m ignition.msgs.Double -p 'data: -31'
+   -->
+
+  <!-- Prop -->
+  <plugin
+    filename="gz-sim-thruster-system"
+    name="gz::sim::systems::Thruster">
+    <namespace>wamv</namespace>
+    <joint_name>${namespace}/${name}_engine_propeller_joint</joint_name>
+    <thrust_coefficient>0.004422</thrust_coefficient>
+    <fluid_density>1000</fluid_density>
+    <propeller_diameter>0.48</propeller_diameter>
+    <max_thrust_cmd>250.0</max_thrust_cmd>
+    <min_thrust_cmd>-100</min_thrust_cmd>
+    <p_gain>0.1</p_gain>
+    <i_gain>0</i_gain>
+    <d_gain>0</d_gain>
+  </plugin>
+  <!-- Joint -->
+  <!-- <plugin
+    filename="gz-sim-joint-position-controller-system"
+    name="gz::sim::systems::Thruster">
+    <joint_name>${namespace}/${name}_chasis_engine_joint</joint_name>
+    <p_gain>0.1</p_gain>
+  </plugin> -->
+</xacro:macro>
+</robot>

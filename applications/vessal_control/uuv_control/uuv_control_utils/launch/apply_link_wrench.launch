@@ -1,0 +1,34 @@
+<launch>
+  <!-- This launch file allows the user to launch wrench
+       disturbances to a vehicle
+  -->
+  <arg name="uuv_name"/>
+  <arg name="force_x" default="0"/>
+  <arg name="force_y" default="0"/>
+  <arg name="force_z" default="0"/>
+
+  <arg name="torque_x" default="0"/>
+  <arg name="torque_y" default="0"/>
+  <arg name="torque_z" default="0"/>
+
+  <arg name="starting_time" default="0"/>
+
+  <arg name="duration" default="1"/>
+
+  <arg name="gazebo_ns" default="gazebo"/>
+
+  <group>
+    <push-ros-namespace namespace="$(var uuv_name)"/>
+    <node pkg="uuv_control_utils"
+      exec="apply_link_wrench.py"
+      name="apply_link_wrench_$(var starting_time)_$(var force_x)_$(var force_y)_$(var force_z)_$(var torque_x)_$(var torque_y)_$(var torque_z)"
+      output="screen">
+
+      <param name="starting_time" value="$(var starting_time)"/>
+      <param name="force" value="$(var force_x), $(var force_y), $(var force_z)" value-sep=", "/>
+      <param name="torque" value="$(var torque_x), $(var torque_y), $(var torque_z)" value-sep=", "/>
+      <param name="duration" value="$(var duration)"/>
+      <param name="gazebo_ns" value="$(var gazebo_ns)"/>
+    </node>
+  </group>
+</launch>

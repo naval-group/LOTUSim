@@ -1,0 +1,8 @@
+<launch>
+    <include file="$(find-pkg-share wamv_description)/launch/ros_bridge.launch.py"/>
+    <include file="$(find-pkg-share wamv_description)/launch/robot_description.launch.py"/>
+    <include file="$(find-pkg-share gps_to_odom)/launch/gps_to_odom.launch.py"/> 
+    <include file="$(find-pkg-share wamv_description)/launch/vel_control.launch.py">
+        <arg name="reset_tam" value="false" />
+    </include>
+</launch>

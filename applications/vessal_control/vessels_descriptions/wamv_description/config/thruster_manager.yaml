@@ -1,0 +1,16 @@
+/thruster_allocator:
+  ros__parameters:
+    thruster_manager:
+      model_name: wamv
+      tf_prefix: wamv
+      base_link: wave_world/wamv/base_link
+      thruster_topic_prefix: thrusters/
+      thruster_topic_suffix: /input
+      thruster_frame_base: wave_world/wamv/thruster_
+      max_thrust: 2000
+      timeout: -1
+      update_rate: 50
+      conversion_fcn: proportional
+      conversion_fcn_params:
+        gain: 0.001
+        # gain: 0.004422

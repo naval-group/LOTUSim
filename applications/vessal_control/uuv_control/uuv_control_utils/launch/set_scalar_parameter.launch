@@ -1,0 +1,21 @@
+<launch>
+  <arg name="uuv_name" />
+  <!-- Possible services: set_fluid_density, set_added_mass_scaling,
+       set_damping_scaling, set_volume_scaling, set_volume_offset,
+       set_added_mass_offset, set_linear_damping_offset,
+       set_nonlinear_damping_offset, set_linear_forward_speed_damping_offset
+  -->
+  <arg name="service_name" />
+  <arg name="data" />
+
+  <group>
+    <push-ros-namespace namespace="$(var uuv_name)"/>
+    <node name="set_scalar_parameter_$(var service_name)"
+      pkg="uuv_control_utils"
+      exec="set_scalar_parameter.py"
+      output="screen">
+      <param name="service_name" value="$(var service_name)"/>
+      <param name="data" value="$(var data)"/>
+    </node>
+  </group>
+</launch>

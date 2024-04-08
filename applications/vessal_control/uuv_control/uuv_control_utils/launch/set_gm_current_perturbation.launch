@@ -1,0 +1,21 @@
+<launch>
+  <arg name="component" />
+  <arg name="mean" default="0.0"/>
+  <arg name="min" default="0.0"/>
+  <arg name="max" default="0.0"/>
+  <arg name="noise" default="0.0"/>
+  <arg name="mu" default="0.0"/>
+
+  <node pkg="uuv_control_utils"
+    exec="set_gm_current_perturbation.py"
+    name="set_gm_current_perturbation"
+    output="screen">
+    <param name="component" value="$(var component)"/>
+    <param name="mean" value="$(var mean)"/>
+    <param name="min" value="$(var min)"/>
+    <param name="max" value="$(var max)"/>
+    <param name="noise" value="$(var noise)"/>
+    <param name="mu" value="$(var mu)"/> 
+  </node>
+
+</launch>

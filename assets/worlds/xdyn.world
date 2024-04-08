@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<!-- World to test model -->
+<sdf version="1.6"
+    xmlns:xacro="http://ros.org/wiki/xacro">
+    <world name="xdyn_world">
+
+        <scene>
+            <ambient>1.0 1.0 1.0</ambient>
+            <background>0.8 0.8 0.8</background>
+            <grid>1</grid>
+        </scene>
+
+        <physics type="ode">
+            <!-- This is 100fps  -->
+            <max_step_size>0.01</max_step_size>
+            <real_time_factor>1</real_time_factor>
+            <real_time_update_rate>1000</real_time_update_rate>
+        </physics>
+
+        <spherical_coordinates>
+            <surface_model>EARTH_WGS84</surface_model>
+            <world_frame_orientation>ENU</world_frame_orientation>
+            <latitude_deg>-22.9</latitude_deg>
+            <longitude_deg>-43.2</longitude_deg>
+            <elevation>0</elevation>
+            <heading_deg>0</heading_deg>
+        </spherical_coordinates>
+
+        <gravity>0 0 0</gravity>
+
+        <!-- World plugins -->
+        <!-- <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin> -->
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+        </plugin>
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+        <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat">
+        </plugin>
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu">
+        </plugin>
+        <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
+        </plugin>
+
+        <!-- Models -->
+        <include>
+            <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
+                <period> 1 </period>
+            </plugin>
+            <uri>model://roc_warship</uri>
+            <name>roc_warship_vessel</name>
+            <pose>0 0 0 0 0 0</pose>
+            <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
+                <uri>ws://127.0.0.1:12345</uri>
+                <connection_type>XDynWebSocket</connection_type>
+            </plugin>
+            <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
+                <publish_link_pose>false</publish_link_pose>
+                <use_pose_vector_msg>true</use_pose_vector_msg>
+                <publish_sensor_pose>false</publish_sensor_pose>
+                <publish_collision_pose>false</publish_collision_pose>
+                <publish_visual_pose>false</publish_visual_pose>
+                <publish_nested_model_pose>true</publish_nested_model_pose>
+                <static_publisher>false</static_publisher>
+                <publish_model_pose>true</publish_model_pose>
+            </plugin>
+        </include>
+    </world>
+</sdf>

@@ -1,0 +1,19 @@
+<launch>
+  <!-- This launch file allows changing the velocity and side slip angle of the current -->
+  <arg name="starting_time" default="0.0"/>
+  <arg name="end_time" default="-1"/>
+  <arg name="current_vel" default="1"/>
+  <arg name="horizontal_angle" default="0.0"/>
+  <arg name="vertical_angle" default="0.0"/>
+
+  <node pkg="uuv_control_utils"
+    exec="set_timed_current_perturbation.py"
+    name="set_timed_current_perturbation"
+    output="screen">
+    <param name="starting_time" value="$(var starting_time)"/>
+    <param name="end_time" value="$(var end_time)"/>
+    <param name="current_velocity" value="$(var current_vel)"/>
+    <param name="horizontal_angle" value="$(var horizontal_angle)"/>
+    <param name="vertical_angle" value="$(var vertical_angle)"/>
+  </node>
+</launch>

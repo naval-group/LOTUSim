@@ -1,0 +1,34 @@
+---
+# We'll use defaults from the LLVM style, but with 4 columns indentation.
+BasedOnStyle: LLVM
+IndentWidth: 4
+---
+Language: Cpp
+Standard: c++14
+# Force pointers to the type for C++.
+AlignAfterOpenBracket: AlwaysBreak
+AllowShortBlocksOnASingleLine: Empty
+BreakInheritanceList: AfterColon
+BreakConstructorInitializers: BeforeComma
+BinPackArguments: false
+BinPackParameters: false
+AlignEscapedNewlines: DontAlign
+IndentAccessModifiers: false
+AccessModifierOffset: -4
+AllowAllArgumentsOnNextLine: true
+EmptyLineBeforeAccessModifier: Always
+BreakBeforeBraces: Stroustrup
+AlwaysBreakTemplateDeclarations: Yes
+
+---
+Language: JavaScript
+# Use 100 columns for JS.
+ColumnLimit: 100
+---
+Language: Proto
+# Don't format .proto files.
+DisableFormat: true
+---
+Language: CSharp
+# Use 100 columns for C#.
+ColumnLimit: 100

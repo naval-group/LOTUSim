@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<!-- World to test model -->
+<sdf version="1.6"
+    xmlns:xacro="http://ros.org/wiki/xacro">
+    <world name="test">
+        <scene>
+            <ambient>1.0 1.0 1.0</ambient>
+            <background>0.8 0.8 0.8</background>
+            <grid>1</grid>
+        </scene>
+
+        <gravity>0 0 0</gravity>
+
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+
+        <include>
+            <uri>model://5415_hull</uri>
+            <name>hull</name>
+            <pose>0 0 0 0 0 0</pose>
+            <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
+                <uri>ws://127.0.0.1:12345</uri>
+                <connection_type>XDynWebSocket</connection_type>
+            </plugin>
+        </include>
+    </world>
+</sdf>

@@ -1,0 +1,4 @@
+[submodule "asv_wave_sim"]
+	path = asv_wave_sim
+	url = https://github.com/srmainwaring/asv_wave_sim.git
+	branch = 962b33a32d90aaea392623d004df38364cc958e8

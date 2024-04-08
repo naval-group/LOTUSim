@@ -1,0 +1,6 @@
+<launch>
+    <include file="$(find-pkg-share roc_warship_description)/launch/ros_bridge.launch.py"/>
+
+    <arg name="world_frame" default="xdyn_world"/>
+    <Node  pkg="tf2_ros" exec="static_transform_publisher" args="--x 0 --y 0 --z 0 --yaw 1.57079 --pitch 0 --roll 3.14159 --frame-id ${arg world_frame} --child-frame-id ${arg world_frame}_ned"/>
+</launch>

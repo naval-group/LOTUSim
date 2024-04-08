@@ -1,0 +1,14 @@
+{
+   {
+       amplitude: 13.0,
+       direction: {10.0,2.0},
+       period: 4.0,
+       time: 0
+   },
+   {
+       amplitude: 13.0,
+       direction: {10.0,2.0},
+       period: 4.0,
+       time: 1.5
+   }
+}
