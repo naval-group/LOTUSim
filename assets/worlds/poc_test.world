@@ -91,6 +91,7 @@
             </include>
             <include>
                 <uri>model://lotusim-models/sea_background</uri>
+                <pose>0 0 -66 0 0 0</pose>
             </include>
             <include>
                 <uri>model://lotusim-models/boat</uri>
