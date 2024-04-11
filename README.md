@@ -1,4 +1,4 @@
-# LiquidAi
+# LOTUSim
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn) and [asv_wave_sim](https://github.com/srmainwaring/asv_wave_sim).
 
@@ -20,21 +20,19 @@ sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev
 
 3. Creating workspace
 ```
-cd; mkdir -p liquidai_ws/src; cd liquidai_ws/src; 
-
-<clone repo>
+cd; mkdir -p LOTUSim_ws/src; cd LOTUSim_ws/src; 
+git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotusim.git
 ```
 
 4. Building
 ```
-cd liquidai
+cd lotusim/
+git checkout --track origin/underwater-env
 git submodule init
-git submodule update
+git submodule update --recursive
 
 # Building
-cd ~/liqduiai_ws
-source /opt/ros/humble/setup.bash
-colcon build --merge-install 
+source config-lotus.sh
 ```
 
 ## Launching the simulation
