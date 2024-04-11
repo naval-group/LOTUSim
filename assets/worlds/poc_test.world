@@ -3,10 +3,23 @@
 <sdf version="1.6"
     xmlns:xacro="http://ros.org/wiki/xacro">
     <world name="vessel_wave">
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
         <scene>
             <ambient>1.0 1.0 1.0</ambient>
             <background>0.8 0.8 0.8</background>
-            <grid>1</grid>
+            <grid>0</grid>
         </scene>
 
         <spherical_coordinates>
@@ -78,6 +91,29 @@
             </include>
             <include>
                 <uri>model://lotusim-models/sea_background</uri>
+            </include>
+            <include>
+                <uri>model://lotusim-models/boat</uri>
+                <pose>25 100 0 0 0 0</pose>
+            </include>
+            <include>
+                <uri>model://lotusim-models/boat_small</uri>
+                <pose>100 100 0 0 0 0</pose>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>10 10 -5 0 0 0</pose>
+                <name>Mine 1</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>0 150 -20 0 0 0</pose>
+                <name>Mine 2</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>100 0 -30 0 0 0</pose>
+                <name>Mine 3</name>
             </include>
             <include>
                 <uri>model://wamv</uri>

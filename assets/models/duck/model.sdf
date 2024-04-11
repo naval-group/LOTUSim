@@ -14,13 +14,6 @@
           </mesh>
         </geometry>
       </visual>
-           <collision name="main_body_buoyancy">
-        <geometry>
-          <box>
-            <size>2 0.3 0.2464451666666667</size>
-          </box>
-        </geometry>
-      </collision>
       <collision name="collision">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
