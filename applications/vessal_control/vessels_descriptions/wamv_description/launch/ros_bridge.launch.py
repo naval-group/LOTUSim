@@ -25,6 +25,7 @@ def generate_launch_description():
             'lidar@sensor_msgs/msg/LaserScan@ignition.msgs.LaserScan',
             '/model/wamv/joint/right_engine_propeller_joint/cmd_thrust@liquidai_msgs/msg/FloatStamped@ignition.msgs.Double',
             '/model/wamv/joint/left_engine_propeller_joint/cmd_thrust@liquidai_msgs/msg/FloatStamped@ignition.msgs.Double',
+            '/model/lrauv/joint/propeller_joint/cmd_thrust@liquidai_msgs/msg/FloatStamped@ignition.msgs.Double',
             '/front_camera@sensor_msgs/msg/Image@ignition.msgs.Image',
             '/front_left_camera@sensor_msgs/msg/Image@ignition.msgs.Image',
             '/front_right_camera@sensor_msgs/msg/Image@ignition.msgs.Image',
@@ -35,9 +36,11 @@ def generate_launch_description():
         ],
         remappings=[
             ('/model/wamv/joint/left_engine_propeller_joint/cmd_thrust',
-             "/thrusters/id_0/input"),
+             "/wamv/thrusters/id_0/input"),
             ('/model/wamv/joint/right_engine_propeller_joint/cmd_thrust',
-             "/thrusters/id_1/input"),
+             "/wamv/thrusters/id_1/input"),
+             ( '/model/lrauv/joint/propeller_joint/cmd_thrust',
+             "/lrauv/propeller/input"),
             ('/model/wave_world/pose', '/tf'),
             ('/world/vessel_test/model/wamv/joint_state', '/joint_state')
         ],
