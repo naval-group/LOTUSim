@@ -27,7 +27,6 @@ git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-paci
 4. Building
 ```
 cd lotusim/
-git checkout --track origin/underwater-env
 git submodule init
 git submodule update --recursive
 
