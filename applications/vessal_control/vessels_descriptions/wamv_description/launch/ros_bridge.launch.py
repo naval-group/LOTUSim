@@ -32,12 +32,15 @@ def generate_launch_description():
             '/world/vessel_test/model/wamv/joint_state@sensor_msgs/msg/JointState@ignition.msgs.Model',
             '/model/wave_world/pose@tf2_msgs/msg/TFMessage@ignition.msgs.Pose_V',
             '/clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock',
+            '/model/lrauv/joint/propeller_joint/cmd_thrust@liquidai_msgs/msg/FloatStamped@ignition.msgs.Double',
         ],
         remappings=[
-            ('/model/wamv/joint/left_engine_propeller_joint/cmd_thrust',
-             "/thrusters/id_0/input"),
+             ('/model/wamv/joint/left_engine_propeller_joint/cmd_thrust',
+             "/wamv/thrusters/id_0/input"),
             ('/model/wamv/joint/right_engine_propeller_joint/cmd_thrust',
-             "/thrusters/id_1/input"),
+             "/wamv/thrusters/id_1/input"),
+             ( '/model/lrauv/joint/propeller_joint/cmd_thrust',
+             "/lrauv/propeller/input"),
             ('/model/wave_world/pose', '/tf'),
             ('/world/vessel_test/model/wamv/joint_state', '/joint_state')
         ],
