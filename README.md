@@ -42,7 +42,14 @@ This is an example launch for a test vehicle, wam-v.
 
 ### Running the simulation
 
+
+```
+
 gz sim 'assets/worlds/poc_test.world' --gui-config='gui/design.config' 
+
+
+```
+
 
 ### Publishing thruster commands
 
@@ -69,10 +76,12 @@ clear;ros2 launch wamv_description vessel_launch.xml
 
 # Open another terminal
 rviz2
----
 
 ```
-#ROS
+# ROS
+
+
+``` 
 ros2 topic pub /thrusters/id_0/input liquidai_msgs/msg/FloatStamped "{data: 250}"
 ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0}, angular: {z: 1.0}}"
 ```
