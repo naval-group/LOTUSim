@@ -2,7 +2,7 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
-
+ 
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
@@ -29,7 +29,6 @@
         <geometry>
           <mesh>
             <uri>meshes/tethys.dae</uri>
-                        <scale>3 3 3</scale>
             <submesh>
               <name>Body</name>
               <center>false</center>
@@ -337,39 +336,12 @@
       <joint_name>propeller_joint</joint_name>
       <thrust_coefficient>0.004422</thrust_coefficient>
       <fluid_density>1000</fluid_density>
-        <velocity_control>true</velocity_control>
+       <velocity_control>true</velocity_control>
       <propeller_diameter>0.2</propeller_diameter>
     </plugin>
 
     <!-- The Lift acting on the controlled surfaces -->
-    <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
-      <air_density>1000</air_density>
-      <cla>4.13</cla>
-      <cla_stall>-1.1</cla_stall>
-      <cda>0.2</cda>
-      <cda_stall>0.03</cda_stall>
-      <alpha_stall>0.17</alpha_stall>
-      <a0>0</a0>
-      <area>0.0244</area>
-      <upward>0 1 0</upward>
-      <forward>1 0 0</forward>
-      <link_name>vertical_fins</link_name>
-      <cp>0 0 0</cp>
-    </plugin>
-    <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
-      <air_density>1000</air_density>
-      <cla>4.13</cla>
-      <cla_stall>-1.1</cla_stall>
-      <cda>0.2</cda>
-      <cda_stall>0.03</cda_stall>
-      <alpha_stall>0.17</alpha_stall>
-      <a0>0</a0>
-      <area>0.0244</area>
-      <upward>0 0 1</upward>
-      <forward>1 0 0</forward>
-      <link_name>horizontal_fins</link_name>
-      <cp>0 0 0</cp>
-    </plugin>
+    
 
     <!-- The movement of the controlled surfaces -->
     <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">

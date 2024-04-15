@@ -1,0 +1,453 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="rexrov2">
+    <publish_render>true</publish_render>
+
+    <!-- Base Link -->
+    <link name="base_link">
+      <visual name="base_link_visual">
+        <pose>0 0 0 0 0 0 </pose>
+        <geometry>
+          <mesh>
+            <uri> model://rexrov2/meshes/RexROV2_no_props.dae </uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <collision name="base_link_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size> 2.2 1.4 1.8</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass>5544</mass>
+        <pose>0 0 0 0 0 0</pose>
+        <inertia>
+          <ixx>525.39</ixx>
+          <ixy>1.44</ixy>
+          <ixz>33.41</ixz>
+          <iyy>794.20</iyy>
+          <iyz>2.6</iyz>
+          <izz>691.23</izz>
+        </inertia>
+      </inertial>
+
+
+      <sensor name="imu_wamv_link" type="imu">
+        <always_on>1</always_on>
+        <update_rate>60</update_rate>
+        <visualize>true</visualize>
+        <topic>lrauv/imu</topic>
+        <gz_frame_id>lrauv/base_link</gz_frame_id>
+        <enable_metrics>true</enable_metrics>
+        <imu>
+          <linear_acceleration>
+            <x>
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0</stddev>
+                <dynamic_bias_stddev>0.2</dynamic_bias_stddev>
+                <dynamic_bias_correlation_time>1</dynamic_bias_correlation_time>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>1</mean>
+                <stddev>0</stddev>
+                <dynamic_bias_stddev>0.2</dynamic_bias_stddev>
+                <dynamic_bias_correlation_time>1</dynamic_bias_correlation_time>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0</stddev>
+                <dynamic_bias_stddev>0.2</dynamic_bias_stddev>
+                <dynamic_bias_correlation_time>1</dynamic_bias_correlation_time>
+              </noise>
+            </z>
+          </linear_acceleration>
+          <angular_velocity>
+            <x>
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0</stddev>
+                <dynamic_bias_stddev>0.2</dynamic_bias_stddev>
+                <dynamic_bias_correlation_time>1</dynamic_bias_correlation_time>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0</stddev>
+                <dynamic_bias_stddev>0.2</dynamic_bias_stddev>
+                <dynamic_bias_correlation_time>1</dynamic_bias_correlation_time>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0</stddev>
+                <dynamic_bias_stddev>0.2</dynamic_bias_stddev>
+                <dynamic_bias_correlation_time>1</dynamic_bias_correlation_time>
+              </noise>
+            </z>
+          </angular_velocity>
+          <orientation_reference_frame>
+            <localization>ENU</localization>
+            <custom_rpy parent_frame="linka">0 1 0</custom_rpy>
+            <grav_dir_x parent_frame="linkb">0 0 1</grav_dir_x>
+          </orientation_reference_frame>
+          <enable_orientation>true</enable_orientation>
+        </imu>
+      </sensor>
+      <sensor name="magnetometer" type="magnetometer">
+        <always_on>1</always_on>
+        <update_rate>100</update_rate>
+        <visualize>true</visualize>
+        <topic>lrauv/magnetometer</topic>
+        <gz_frame_id>lrauv/base_link</gz_frame_id>
+        <enable_metrics>true</enable_metrics>
+        <magnetometer>
+          <x>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.1</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.1</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.1</stddev>
+            </noise>
+          </z>
+        </magnetometer>
+      </sensor>
+
+      <!-- Hydro model need to refine -->
+      <neutrally_buoyant>0</neutrally_buoyant>
+      <volume>${volume}</volume>
+      <box>
+        <width>1.5</width>
+        <length>2.6</length>
+        <height>1.6</height>
+      </box>
+      <center_of_buoyancy>${cob}</center_of_buoyancy>
+      <hydrodynamic_model>
+        <type>fossen</type>
+        <!-- Added mass: see p.28 in Berg2012 -->
+        <added_mass>
+          779.79 -6.8773 -103.32 8.5426 -165.54 -7.8033
+          -6.8773 1222 51.29 409.44 -5.8488 62.726
+          -103.32 51.29 3659.9 6.1112 -386.42 10.774
+          8.5426 409.44 6.1112 534.9 -10.027 21.019
+          -165.54 -5.8488 -386.42 -10.027 842.69 -1.1162
+          -7.8033 62.726 10.775 21.019 -1.1162 224.32
+        </added_mass>
+        <!-- Linear damping: see p.31 in Berg2012 -->
+        <linear_damping>
+          -74.82 -69.48 -728.4 -268.8 -309.77 -105
+        </linear_damping>
+        <!-- Non-linear damping: see p.30 in Berg2012 -->
+        <quadratic_damping>
+          -748.22 -992.53 -1821.01 -672 -774.44 -523.27
+        </quadratic_damping>
+      </hydrodynamic_model>
+    </link>
+
+
+    <!-- Propeller0 -->
+    <link name="propeller0">
+      <pose>0.4878 0 0.2373 0 0 1.57</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="collision_propeller0">
+        <geometry>
+          <cylinder>
+            <length>0.000001</length>
+            <radius>0.000001</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_propeller0">
+        <pose>-1.43162 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="propeller0_joint" type="revolute">
+      <pose>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>propeller0</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1e+12</lower>
+          <upper>1e+12</upper>
+          <effort>-1</effort>
+          <velocity>-1</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+      <use_angvel_cmd>0</use_angvel_cmd>
+      <joint_name>propeller0_joint</joint_name>
+      <thrust_coefficient>0.004422</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.2</propeller_diameter>
+    </plugin>
+
+    <!-- Propeller1 -->
+    <link name="propeller1">
+      <pose>-0.8217 0 0.589 0 -1.309 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="collision_propeller1">
+        <geometry>
+          <cylinder>
+            <length>0.000001</length>
+            <radius>0.000001</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_propeller1">
+        <pose>-1.43162 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="propeller1_joint" type="revolute">
+      <pose>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>propeller1</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1e+12</lower>
+          <upper>1e+12</upper>
+          <effort>-1</effort>
+          <velocity>-1</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+      <use_angvel_cmd>0</use_angvel_cmd>
+      <joint_name>propeller1_joint</joint_name>
+      <thrust_coefficient>0.004422</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.2</propeller_diameter>
+    </plugin>
+
+    <!-- Propeller2 -->
+    <link name="propeller2">
+      <pose>0.8654 -0.5322 0.5332 0 -1.13446 1.57</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="collision_propeller2">
+        <geometry>
+          <cylinder>
+            <length>0.000001</length>
+            <radius>0.000001</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_propeller2">
+        <pose>-1.43162 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="propeller2_joint" type="revolute">
+      <pose>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>propeller2</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1e+12</lower>
+          <upper>1e+12</upper>
+          <effort>-1</effort>
+          <velocity>-1</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+      <use_angvel_cmd>0</use_angvel_cmd>
+      <joint_name>propeller2_joint</joint_name>
+      <thrust_coefficient>0.004422</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.2</propeller_diameter>
+    </plugin>
+
+    <!-- Propeller3 -->
+    <link name="propeller3">
+      <pose>0.8654 0.5322 0.5332 0 1.178097 1.57</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="collision_propeller3">
+        <geometry>
+          <cylinder>
+            <length>0.000001</length>
+            <radius>0.000001</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_propeller3">
+        <pose>-1.43162 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="propeller3_joint" type="revolute">
+      <pose>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>propeller3</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1e+12</lower>
+          <upper>1e+12</upper>
+          <effort>-1</effort>
+          <velocity>-1</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+      <use_angvel_cmd>0</use_angvel_cmd>
+      <joint_name>propeller3_joint</joint_name>
+      <thrust_coefficient>0.004422</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.2</propeller_diameter>
+    </plugin>
+
+    <!-- Propeller4 -->
+    <link name="propeller4">
+      <pose>-0.7076 0.5129 0.2404 0 0 0.436332</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="collision_propeller4">
+        <geometry>
+          <cylinder>
+            <length>0.000001</length>
+            <radius>0.000001</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_propeller4">
+        <pose>-1.43162 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="propeller4_joint" type="revolute">
+      <pose>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>propeller4</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1e+12</lower>
+          <upper>1e+12</upper>
+          <effort>-1</effort>
+          <velocity>-1</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+      <use_angvel_cmd>0</use_angvel_cmd>
+      <joint_name>propeller4_joint</joint_name>
+      <thrust_coefficient>0.004422</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.2</propeller_diameter>
+    </plugin>
+
+    <!-- Propeller5 -->
+    <link name="propeller5">
+      <pose>-0.7076 -0.5129 0.2404 0 0 -0.436332</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="collision_propeller5">
+        <geometry>
+          <cylinder>
+            <length>0.000001</length>
+            <radius>0.000001</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_propeller5">
+        <pose>-1.43162 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="propeller5_joint" type="revolute">
+      <pose>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>propeller5</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1e+12</lower>
+          <upper>1e+12</upper>
+          <effort>-1</effort>
+          <velocity>-1</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+      <use_angvel_cmd>0</use_angvel_cmd>
+      <joint_name>propeller5_joint</joint_name>
+      <thrust_coefficient>0.004422</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.2</propeller_diameter>
+    </plugin>
+
+  </model>
+</sdf>
