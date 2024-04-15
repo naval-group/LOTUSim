@@ -23,6 +23,7 @@
         <geometry>
           <mesh>
             <uri>model://sand_heightmap/meshes/heightmap.dae</uri>
+            <scale>2 2 2</scale>
           </mesh>
         </geometry>
       </collision>
@@ -33,6 +34,7 @@
         <geometry>
           <mesh>
             <uri>model://sand_heightmap/meshes/heightmap.dae</uri>
+            <scale>2 2 2</scale>
           </mesh>
         </geometry>
       </visual>

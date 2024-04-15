@@ -1,14 +1,26 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- World to test model interaction with wave -->
 <sdf version="1.6"
     xmlns:xacro="http://ros.org/wiki/xacro">
     <world name="vessel_wave">
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
         <scene>
             <ambient>1.0 1.0 1.0</ambient>
             <background>0.8 0.8 0.8</background>
             <grid>0</grid>
         </scene>
-
         <spherical_coordinates>
             <surface_model>EARTH_WGS84</surface_model>
             <world_frame_orientation>ENU</world_frame_orientation>
@@ -34,24 +46,17 @@
         </plugin>
         <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
         </plugin>
-        
-               
-	    <plugin filename="gz-sim-buoyancy-system" name="gz::sim::systems::Buoyancy">
-	    <graded_buoyancy>
-	     <default_density>1000</default_density>
-	  <density_change>
-	    <above_depth>0</above_depth>
-	    <density>1</density>
-	  </density_change>
-	   </graded_buoyancy>
-	</plugin> 
 
-          
-      
-          
-          
-          
-          
+
+        <plugin filename="gz-sim-buoyancy-system" name="gz::sim::systems::Buoyancy">
+            <graded_buoyancy>
+                <default_density>1000</default_density>
+                <density_change>
+                    <above_depth>0</above_depth>
+                    <density>1</density>
+                </density_change>
+            </graded_buoyancy>
+        </plugin>
         <!-- Models -->
         <model name="wave_world">
             <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
@@ -64,35 +69,78 @@
                 <pose>0 0 0 0 0 0</pose>
                 <uri>model://regular_waves</uri>
             </include>
-
             <include>
-                <uri>model://duck</uri>
-                <name>ducky</name>
-                <pose>10 0 0 0 0 0</pose>
-            </include>
-            
-              <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv</name>
                 <pose>-5 0 -5 0 0 1.5711865989140406</pose>
         
             </include>
-         
-            
-            
-         
+
             <include>
-            <uri>model://sand_heightmap</uri>
-            <!-- The name affect the cmd namespace -->
-            <name>sand</name>
-            <pose>0 0 -50 0 0 0</pose>
-           </include>
-           
+                <uri>model://sand_heightmap</uri>
+                <!-- The name affect the cmd namespace -->
+                <name>sand</name>
+                <pose>0 0 -125 0 0 0</pose>
+            </include>
+            <include>
+                <uri>model://lotusim-models/sea_background</uri>
+                <pose>0 0 -66 0 0 0</pose>
+            </include>
+            <include>
+                <uri>model://lotusim-models/boat</uri>
+                <pose>25 100 0 0 0 0</pose>
+            </include>
+            <include>
+                <uri>model://lotusim-models/boat_small</uri>
+                <pose>100 100 0 0 0 0</pose>
+                <name>Smallboat 1</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/boat_small</uri>
+                <pose>-100 100 0 0 0 0</pose>
+                <name>Smallboat 2</name>
+
+            </include>
+            <include>
+                <uri>model://lotusim-models/boat_small</uri>
+                <pose>100 -100 0 0 0 0</pose>
+                <name>Smallboat 3</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>100 50 -15 0 0 0</pose>
+                <name>Mine 1</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>0 150 -20 0 0 0</pose>
+                <name>Mine 2</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>100 0 -30 0 0 0</pose>
+                <name>Mine 3</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>150 20 -40 0 0 0</pose>
+                <name>Mine 4</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/mine</uri>
+                <pose>-100 -100 -50 0 0 0</pose>
+                <name>Mine 5</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/landscape</uri>
+                <pose>0 0 -2 0 0 0</pose>
+            </include>
             <include>
                 <uri>model://wamv</uri>
                 <name>wamv_vessel</name>
                 <pose>0 0 0 0 0 0</pose>
-                <plugin filename="gz-waves1-hydrodynamics-system" name="gz::sim::systems::Hydrodynamics">
+                <plugin filename="gz-waves1-hydrodynamics-system"
+                    name="gz::sim::systems::Hydrodynamics">
                     <enable>wave_world::wamv_vessel::base_link</enable>
 
                     <hydrodynamics>

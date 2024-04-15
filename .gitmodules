@@ -2,3 +2,6 @@
 	path = asv_wave_sim
 	url = https://github.com/srmainwaring/asv_wave_sim.git
 	branch = 962b33a32d90aaea392623d004df38364cc958e8
+[submodule "assets/models/lotusim-models"]
+	path = assets/models/lotusim-models
+	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotusim-models.git
