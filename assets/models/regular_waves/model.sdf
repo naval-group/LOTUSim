@@ -21,7 +21,7 @@
 
     <link name="base_link">
       <visual name="visual">
-        <transparency>0.1</transparency>
+        <transparency>1</transparency>
         <geometry>
           <mesh>
             <uri>models://waves/materials/mesh_L256m_N256.dae</uri>
