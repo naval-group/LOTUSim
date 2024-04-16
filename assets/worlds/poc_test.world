@@ -103,7 +103,7 @@
             </include>
             <include>
                 <uri>model://lotusim-models/boat_small</uri>
-                <pose>100 -100 0 0 0 0</pose>
+                <pose>20 0 0 0 0 1</pose>
                 <name>Smallboat 3</name>
             </include>
             <include>
