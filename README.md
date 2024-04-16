@@ -27,7 +27,6 @@ git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-paci
 4. Building
 ```
 cd lotusim/
-git checkout --track origin/underwater-env
 git submodule init
 git submodule update --recursive
 
@@ -72,18 +71,32 @@ gz topic -t /model/lrauv/joint/propeller_joint/cmd_thrust -m gz.msgs.Double -p '
 
 ```
 # Open another terminal
-clear;ros2 launch wamv_description vessel_launch.xml
+
+source /opt/ros/humble/setup.bash
+source <workshop_dir>/install/setup.bash
+ros2 launch wamv_description vessel_launch.xml
 
 # Open another terminal
 rviz2
 
-```
-# ROS
+
+# Open another terminal
+
+source /opt/ros/humble/setup.bash
+
+source <workshop_dir>/install/setup.bash
 
 
-``` 
-ros2 topic pub /thrusters/id_0/input liquidai_msgs/msg/FloatStamped "{data: 250}"
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0}, angular: {z: 1.0}}"
+# Pour le drone de surface 
+
+ros2 topic pub /wamv/thrusters/id_0/input liquidai_msgs/msg/FloatStamped "{data: 250}"
+
+# Pour le drone sous-marin
+
+ros2 topic pub /lrauv/propeller/input liquidai_msgs/msg/FloatStamped "{data: 250}"
+
+
+
 ```
 
 

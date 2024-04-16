@@ -35,12 +35,10 @@ if [ ! -d "${ASV_WAVE_SIM_PATH}" ]; then
 fi
 
 # Vérification de l'installation de colcon-clean
-if ! command -v colcon clean &> /dev/null; then
+if ! command -v colcon clean &>/dev/null; then
     echo -e "${RED}Erreur:${NC} Le package colcon-clean n'est pas installé."
     exit 1
 fi
-
-
 
 # Se déplacer vers le répertoire racine
 cd ../..
@@ -55,10 +53,14 @@ if [ -d "build" ] || [ -d "install" ] || [ -d "log" ]; then
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
         colcon clean workspace
     fi
+    read -rp "Voulez-vous reconstruire ces dossiers ? (y/n) " response
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        colcon build --merge-install
+    fi
+else
+    # Construction de l'environnement
+    colcon build --merge-install
 fi
-
-# Construction de l'environnement
-colcon build --merge-install
 
 # Source de l'environnement installé
 # shellcheck source=/dev/null
@@ -77,16 +79,11 @@ GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"
 export GZ_SIM_RESOURCE_PATH
 echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
 
-
 # Remplacement de certaines librairies de GZ GUI
-# La modification de ces libraires permet d'afficher le logo NG + corporate sensitivity 
-sudo mv "$NEW_GZ_GUI_LIB_PATH"/* "$OLD_GZ_GUI_LIB_PATH"
+# La modification de ces libraires permet d'afficher le logo NG + corporate sensitivity
+sudo cp "$NEW_GZ_GUI_LIB_PATH"/* "$OLD_GZ_GUI_LIB_PATH"
 
-# Variable d'environnement des autres lib de GZ GUI (plugins) 
+# Variable d'environnement des autres lib de GZ GUI (plugins)
 GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-7/plugins"
 export GZ_GUI_PLUGIN_PATH
 echo -e "GZ_GUI_PLUGIN_PATH : ${GREEN}$GZ_GUI_PLUGIN_PATH${NC}"
-
-
-
-
