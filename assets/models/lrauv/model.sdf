@@ -2,16 +2,21 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
- 
+    
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
+         <pose>0 0 0 0 0 0</pose>
+        <!-- 146.5671 subtracted by battery mass -->
         <mass>147.8671</mass>
+        <!--<mass>146.5671</mass>-->
+        <!-- TODO: Get inertial matrix of base link WITHOUT battery -->
         <inertia>
           <ixx>3.000000</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
+         
           <iyy>41.980233</iyy>
           <iyz>0</iyz>
           <izz>41.980233</izz>

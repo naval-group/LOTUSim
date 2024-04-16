@@ -73,8 +73,54 @@
                 <uri>model://lrauv</uri>
                 <name>lrauv</name>
                 <pose>-5 0 -5 0 0 1.5711865989140406</pose>
+</include>
+
+            <include>
+                <uri>model://lrauv</uri>
+                <name>lrauv2</name>
+                <pose>5 -5 -10 0 0 -1.5711865989140406</pose>
+        
         
             </include>
+            
+               <include>
+                <uri>model://lrauv_float</uri>
+                <name>lrauv_float</name>
+                <pose>-8 5 0.5 0 0 0</pose>
+                </include>
+
+                <include>
+                <uri>model://lrauv_float</uri>
+                <name>lrauv_float2</name>
+                <pose>-10 -8 0.5 0 0 0</pose>
+        
+            </include>
+
+             <include>
+                <uri>model://lrauv_float</uri>
+                <name>lrauv_float3</name>
+                <pose>-3 12 0.5 0 0 0</pose>
+        
+            </include>
+
+
+
+
+              <include>
+                <uri>model://rexrov2</uri>
+                <name>rexrov</name>
+                <pose>-10 8 -12 0 0 0</pose>
+        
+            </include>
+
+
+             <include>
+                <uri>model://rexrov2</uri>
+                <name>rexrov2</name>
+                <pose>-6 -8 -7 0 0 0</pose>
+        
+            </include>
+
 
             <include>
                 <uri>model://sand_heightmap</uri>

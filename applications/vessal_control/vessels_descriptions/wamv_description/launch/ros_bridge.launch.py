@@ -36,11 +36,7 @@ def generate_launch_description():
             '/model/lrauv/joint/propeller_joint/cmd_thrust@liquidai_msgs/msg/FloatStamped@ignition.msgs.Double',
         ],
         remappings=[
-<<<<<<< HEAD
             ('/model/wamv/joint/left_engine_propeller_joint/cmd_thrust',
-=======
-             ('/model/wamv/joint/left_engine_propeller_joint/cmd_thrust',
->>>>>>> ad5ab70094e4c30671af4769c96906252e7532f7
              "/wamv/thrusters/id_0/input"),
             ('/model/wamv/joint/right_engine_propeller_joint/cmd_thrust',
              "/wamv/thrusters/id_1/input"),
