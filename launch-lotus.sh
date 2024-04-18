@@ -1,8 +1,28 @@
 #!/bin/bash
-
 # Définition des couleurs
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
+
+# Vérification de la présence de l'argument
+if [ $# -eq 0 ]; then
+    echo -e "${RED}Error: You must provide the path to the world file.${NC}"
+    # Affichage des fichiers .world disponibles
+    echo -e "${GREEN}Available world files:${NC}"
+    for file in assets/worlds/*.world; do
+        echo -e "${GREEN}${file}${NC}"
+    done
+    return 1
+fi
+
+# Stockage du premier argument dans une variable
+WORLD_FILE="$1"
+
+# Vérification si le fichier existe
+if [ ! -f "$WORLD_FILE" ]; then
+    echo -e "${RED}Error: File '$WORLD_FILE' not found.${NC}"
+    return 1
+fi
 
 # Définition des chemins
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
@@ -39,4 +59,4 @@ GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-7/plugins"
 export GZ_GUI_PLUGIN_PATH
 echo -e "GZ_GUI_PLUGIN_PATH : ${GREEN}$GZ_GUI_PLUGIN_PATH${NC}"
 echo -e "${GREEN}Launching LOTUSim...${NC}"
-gz sim 'assets/worlds/poc_test.world' --gui-config='gui/design.config'
+gz sim "$WORLD_FILE" --gui-config='gui/design.config'
