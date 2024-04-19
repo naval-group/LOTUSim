@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Définition des couleurs
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -16,28 +15,28 @@ OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
 # Vérification de l'existence des répertoires
 if [ ! -f "$ROS_SETUP_PATH" ]; then
     echo -e "${RED}Erreur:${NC} Le fichier ROS setup n'existe pas à $ROS_SETUP_PATH."
-    exit 1
+    return 1
 fi
 
 if [ ! -d "../../${LOTUSIM_PATH}" ]; then
     echo -e "${RED}Erreur:${NC} Le répertoire lotusim n'existe pas à $LOTUSIM_PATH."
-    exit 1
+    return 1
 fi
 
 if [ ! -d "${ASSETS_MODELS_PATH}" ]; then
     echo -e "${RED}Erreur:${NC} Le répertoire des modèles assets n'existe pas à $ASSETS_MODELS_PATH."
-    exit 1
+    return 1
 fi
 
 if [ ! -d "${ASV_WAVE_SIM_PATH}" ]; then
     echo -e "${RED}Erreur:${NC} Le répertoire des modèles de simulation ASV n'existe pas à $ASV_WAVE_SIM_PATH."
-    exit 1
+    return 1
 fi
 
 # Vérification de l'installation de colcon-clean
 if ! command -v colcon clean &>/dev/null; then
     echo -e "${RED}Erreur:${NC} Le package colcon-clean n'est pas installé."
-    exit 1
+    return 1
 fi
 
 # Se déplacer vers le répertoire racine
@@ -72,7 +71,7 @@ export GZ_SIM_SYSTEM_PLUGIN_PATH
 echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH : ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
 
 # Se déplacer vers le répertoire lotusim
-cd "$LOTUSIM_PATH" || exit
+cd "$LOTUSIM_PATH" || return 1
 
 # Définition de la variable d'environnement GZ_SIM_RESOURCE_PATH
 GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"

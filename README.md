@@ -43,9 +43,7 @@ This is an example launch for a test vehicle, wam-v.
 
 
 ```
-
-gz sim 'assets/worlds/poc_test.world' --gui-config='gui/design.config' 
-
+source launch-lotus.sh <world e.g. assets/worlds/poc_test.world>
 
 ```
 
