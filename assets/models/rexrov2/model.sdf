@@ -182,7 +182,15 @@
           </cylinder>
         </geometry>
       </collision>
-    
+      <visual name="visual_propeller0">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
     </link>
     <joint name="propeller0_joint" type="revolute">
       <pose>0 0 0 0 0 0</pose>
@@ -221,7 +229,15 @@
           </cylinder>
         </geometry>
       </collision>
-   
+      <visual name="visual_propeller1">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
     </link>
     <joint name="propeller1_joint" type="revolute">
       <pose>0 0 0 0 0 0</pose>
@@ -260,7 +276,15 @@
           </cylinder>
         </geometry>
       </collision>
-    
+      <visual name="visual_propeller2">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
     </link>
     <joint name="propeller2_joint" type="revolute">
       <pose>0 0 0 0 0 0</pose>
@@ -299,7 +323,15 @@
           </cylinder>
         </geometry>
       </collision>
-     
+      <visual name="visual_propeller3">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
     </link>
     <joint name="propeller3_joint" type="revolute">
       <pose>0 0 0 0 0 0</pose>
@@ -338,7 +370,15 @@
           </cylinder>
         </geometry>
       </collision>
-    
+      <visual name="visual_propeller4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
     </link>
     <joint name="propeller4_joint" type="revolute">
       <pose>0 0 0 0 0 0</pose>
@@ -377,7 +417,15 @@
           </cylinder>
         </geometry>
       </collision>
-   
+      <visual name="visual_propeller5">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/Propeller.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
     </link>
     <joint name="propeller5_joint" type="revolute">
       <pose>0 0 0 0 0 0</pose>
