@@ -106,7 +106,7 @@ We use the Gitflow collaborating workflow. You can find the explanation of this 
 
 ### Issues
 
-When you open an issue, you need to put the correct label corresponding to the category of the issue e.g. ~bug or ~suggestion. Ir need to be written in english.
+When you open an issue, you need to put the correct label corresponding to the category of the issue e.g. ~bug or ~suggestion. It needs to be written in english.
 
 **IMPORTANT** You have to put ~"project::development" or ~"project::management" label on each issue as they are used for filtering in the different issue boards
 
