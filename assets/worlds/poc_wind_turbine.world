@@ -133,8 +133,19 @@
                 <pose>0 0 -66 0 0 0</pose>
             </include>
             <include>
-                <uri>model://lotusim-models/wind_turbine</uri>
-                <pose>25 100 0 0 0 0</pose>
+                <uri>model://lotusim-models/offshore_wind_turbine</uri>
+                <pose>-350 -150 0 0 0 15</pose>
+                <name>OffShore1</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/offshore_wind_turbine</uri>
+                <pose>-250 -250 0 0 0 15</pose>
+                <name>OffShore2</name>
+            </include>
+            <include>
+                <uri>model://lotusim-models/offshore_wind_turbine</uri>
+                <pose>-150 -350 0 0 0 15</pose>
+                <name>OffShore3</name>
             </include>
             <include>
                 <uri>model://lotusim-models/boat_small</uri>
