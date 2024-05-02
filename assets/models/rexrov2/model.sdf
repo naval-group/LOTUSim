@@ -38,6 +38,9 @@
       </inertial>
 
 
+
+
+
       <sensor name="imu_wamv_link" type="imu">
         <always_on>1</always_on>
         <update_rate>60</update_rate>
@@ -165,6 +168,38 @@
         </quadratic_damping>
       </hydrodynamic_model>
     </link>
+
+      <link name='front_camera'>
+      <pose>1 0 1 0 0 0</pose>
+       <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+      </inertial>
+      <sensor name="front_camera" type="camera">
+        <camera>  
+          <horizontal_fov>1.047</horizontal_fov>
+          <image>
+            <width>320</width>
+            <height>240</height>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <visualize>true</visualize>
+      </sensor>
+    </link>
+    <joint name='front_camera_base_joint' type='fixed'>
+      <pose relative_to='base_link'>0 0 0 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>front_camera</child>
+
+    </joint>
+    
+    
 
 
     <!-- Propeller0 -->

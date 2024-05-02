@@ -24,6 +24,10 @@ if [ ! -f "$WORLD_FILE" ]; then
     return 1
 fi
 
+
+# Default config file 
+CONFIG_FILE="${2:-"gui/design.config"}"
+
 # Définition des chemins
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
 LOTUSIM_PATH="src/lotusim"
@@ -59,4 +63,5 @@ GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-7/plugins"
 export GZ_GUI_PLUGIN_PATH
 echo -e "GZ_GUI_PLUGIN_PATH : ${GREEN}$GZ_GUI_PLUGIN_PATH${NC}"
 echo -e "${GREEN}Launching LOTUSim...${NC}"
-gz sim "$WORLD_FILE" --gui-config='gui/design.config'
+echo -e "$CONFIG_FILE"
+gz sim "$WORLD_FILE" --gui-config="$CONFIG_FILE"

@@ -72,13 +72,13 @@
             <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv</name>
-                <pose>-5 0 -5 0 0 1.5711865989140406</pose>
+                <pose>-300 -270 -5 0 0 1.5711865989140406</pose>
 </include>
 
             <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv2</name>
-                <pose>5 -5 -10 0 0 -1.5711865989140406</pose>
+                <pose>-300 -270 -10 0 0 -1.5711865989140406</pose>
         
         
             </include>
@@ -86,30 +86,34 @@
                <include>
                 <uri>model://lrauv_float</uri>
                 <name>lrauv_float</name>
-                <pose>-8 5 0.5 0 0 0</pose>
+                <pose>-310 -290 0.5 0 0 0</pose>
+                </include>
+
+               <include>
+                <uri>model://lrauv_float</uri>
+                <name>lrauv_float2</name>
+                <pose>-306 -294 0.5 0 0 0</pose>
                 </include>
 
                 <include>
                 <uri>model://lrauv_float</uri>
-                <name>lrauv_float2</name>
-                <pose>-10 -8 0.5 0 0 0</pose>
-        
-            </include>
-
-             <include>
-                <uri>model://lrauv_float</uri>
                 <name>lrauv_float3</name>
-                <pose>-3 12 0.5 0 0 0</pose>
+                <pose>-309 -286 0.5 0 0 0</pose>
+                </include>
+
+
+                <include>
+                <uri>model://lrauv_float</uri>
+                <name>lrauv_float4</name>
+                <pose>-340 -277 0.5 0 0 0</pose>
         
             </include>
-
-
 
 
               <include>
                 <uri>model://rexrov2</uri>
                 <name>rexrov</name>
-                <pose>-10 8 -12 0 0 0</pose>
+                <pose>-200 -315 -12 0 0 0</pose>
         
             </include>
 
@@ -117,7 +121,7 @@
              <include>
                 <uri>model://rexrov2</uri>
                 <name>rexrov2</name>
-                <pose>-6 -8 -7 0 0 0</pose>
+                <pose>-360 -280 -7 0 0 0</pose>
         
             </include>
 
@@ -149,45 +153,21 @@
             </include>
             <include>
                 <uri>model://lotusim-models/boat_small</uri>
-                <pose>100 100 0 0 0 0</pose>
+                <pose>-305 -310 0 0 0 0</pose>
                 <name>Smallboat 1</name>
             </include>
             <include>
                 <uri>model://lotusim-models/boat_small</uri>
-                <pose>-100 100 0 0 0 0</pose>
+                <pose>-315 -276 0 0 0 0</pose>
                 <name>Smallboat 2</name>
 
             </include>
             <include>
                 <uri>model://lotusim-models/boat_small</uri>
-                <pose>20 0 0 0 0 1</pose>
+                <pose>-303 -289 0 0 0 1</pose>
                 <name>Smallboat 3</name>
             </include>
-            <include>
-                <uri>model://lotusim-models/mine</uri>
-                <pose>100 50 -15 0 0 0</pose>
-                <name>Mine 1</name>
-            </include>
-            <include>
-                <uri>model://lotusim-models/mine</uri>
-                <pose>0 150 -20 0 0 0</pose>
-                <name>Mine 2</name>
-            </include>
-            <include>
-                <uri>model://lotusim-models/mine</uri>
-                <pose>100 0 -30 0 0 0</pose>
-                <name>Mine 3</name>
-            </include>
-            <include>
-                <uri>model://lotusim-models/mine</uri>
-                <pose>150 20 -40 0 0 0</pose>
-                <name>Mine 4</name>
-            </include>
-            <include>
-                <uri>model://lotusim-models/mine</uri>
-                <pose>-100 -100 -50 0 0 0</pose>
-                <name>Mine 5</name>
-            </include>
+
             <include>
                 <uri>model://lotusim-models/landscape</uri>
                 <pose>0 0 -2 0 0 0</pose>
@@ -195,7 +175,7 @@
             <include>
                 <uri>model://wamv</uri>
                 <name>wamv_vessel</name>
-                <pose>0 0 0 0 0 0</pose>
+                <pose>-350 -200 0 0 0 0</pose>
                 <plugin filename="gz-waves1-hydrodynamics-system"
                     name="gz::sim::systems::Hydrodynamics">
                     <enable>wave_world::wamv_vessel::base_link</enable>
