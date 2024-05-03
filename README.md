@@ -76,7 +76,7 @@ gz topic -t /model/lrauv/joint/propeller_joint/cmd_thrust -m gz.msgs.Double -p '
 # Open another terminal
 
 source /opt/ros/humble/setup.bash
-source <workshop_dir>/install/setup.bash
+source <workspace_dir>/install/setup.bash
 ros2 launch wamv_description vessel_launch.xml
 
 # Open another terminal
