@@ -80,7 +80,10 @@ echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
 
 # Remplacement de certaines librairies de GZ GUI
 # La modification de ces libraires permet d'afficher le logo NG + corporate sensitivity
-sudo cp "$NEW_GZ_GUI_LIB_PATH"/* "$OLD_GZ_GUI_LIB_PATH"
+read -rp "Voulez-vous modifier les binaires de gazebo (interface) ? (y/n) " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    sudo cp "$NEW_GZ_GUI_LIB_PATH"/* "$OLD_GZ_GUI_LIB_PATH"
+fi
 
 # Variable d'environnement des autres lib de GZ GUI (plugins)
 GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-7/plugins"
