@@ -154,7 +154,7 @@
             </include>
             <include>
                 <uri>model://lotusim-models/mine</uri>
-                <pose>100 50 -15 0 0 0</pose>
+                <pose>-5 15 -6 0 0 0</pose>
                 <name>Mine 1</name>
             </include>
             <include>
