@@ -43,12 +43,6 @@ def generate_launch_description():
     with open(CONFIG_FILE_PATH, "r") as file:
         json_data = json.load(file)  # Load JSON data from the file into a variable
 
-
-    # Load the SDF file from "description" package
-    sdf_file  =  os.path.join(pkg_project_description, 'models', 'auv', 'model.sdf')
-    with open(sdf_file, 'r') as infp:
-        robot_desc = infp.read()
-
     # Setup to launch the simulator and Gazebo world
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
