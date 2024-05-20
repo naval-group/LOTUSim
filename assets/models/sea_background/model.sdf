@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+    <model name="Sea Background">
+        <pose>0 0 -64 0 0 0</pose>
+        <static>true</static>
+        <link name="link">
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>./meshes/sea_background.dae</uri>
+                        <scale>2 2 1</scale>
+                    </mesh>
+                </geometry>
+                <material>
+                    <ambient>0.0 0.05 0.8 0.92</ambient>
+                    <diffuse>0.0 0.1 0.7 0.92</diffuse>
+                    <specular>0.7 0.7 0.7 0.92</specular>
+                </material>
+            </visual>
+        </link>
+    </model>
+</sdf>
