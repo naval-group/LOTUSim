@@ -21,17 +21,17 @@ gz_configure_project(VERSION_SUFFIX)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(protobuf_MODULE_COMPATIBLE TRUE)
 
-gz_find_package(sdformat13 REQUIRED VERSION)
-set(SDF_VER ${sdformat13_VERSION_MAJOR})
+gz_find_package(sdformat14 REQUIRED VERSION)
+set(SDF_VER ${sdformat14_VERSION_MAJOR})
 
-find_package(gz-sim7 REQUIRED)
-set(GZ_SIM_VER ${gz-sim7_VERSION_MAJOR})
+find_package(gz-sim8 REQUIRED)
+set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
 
-gz_find_package(gz-msgs9 REQUIRED)
-set(GZ_MSGS_VER ${gz-msgs9_VERSION_MAJOR})
+gz_find_package(gz-msgs10 REQUIRED)
+set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
 
-gz_find_package(gz-transport12 REQUIRED COMPONENTS log)
-set(GZ_TRANSPORT_VER ${gz-transport12_VERSION_MAJOR})
+gz_find_package(gz-transport13 REQUIRED COMPONENTS log)
+set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
 
 gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
 set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
@@ -50,7 +50,7 @@ gz_find_package(GzProtobuf
                  REQUIRED
                  COMPONENTS all
                  PRETTY Protobuf)
-set(Protobuf_IMPORT_DIRS ${gz-msgs9_INCLUDE_DIRS} )
+set(Protobuf_IMPORT_DIRS ${gz-msgs10_INCLUDE_DIRS} )
 
 add_subdirectory(msg)
 
