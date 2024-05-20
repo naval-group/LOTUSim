@@ -30,8 +30,6 @@ import json
 
 
 def generate_launch_description():
-    # Configure ROS nodes for launch
-
     # Setup project paths
     pkg_project_bringup = get_package_share_directory('bringup')
     pkg_project_description = get_package_share_directory('assets')
