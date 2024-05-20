@@ -29,7 +29,4 @@ target_link_libraries(LoggingSystem
   PRIVATE gz-sim8::gz-sim8
 )
 
-install(
-  TARGETS LoggingSystem
-  DESTINATION $ENV{HOME}/.gz/sim/plugins
-)
+install(TARGETS LoggingSystem DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
