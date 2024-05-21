@@ -67,6 +67,8 @@ namespace entity_management_service {
             auto message = std_msgs::msg::Int32();
             message.data = 0;
             ros_entity_events_publisher_->publish(message);
+
+            // TODO: Implement the service call through ros_gz_bridge once it is implemented
             
             // Construct the remove command
             std::ostringstream command_stream;
