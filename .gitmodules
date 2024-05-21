@@ -1,6 +1,15 @@
+[submodule "asv_wave_sim"]
+	path = gazebo/asv_wave_sim
+	url = https://github.com/srmainwaring/asv_wave_sim.git
+	branch = master
 [submodule "assets/models/lotusim-models"]
 	path = assets/models/lotusim-models
 	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim-models.git
 [submodule "explosivemine"]
+	path = gazebo/explosivemine
+	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/explosivemine.git
+	branch = harmonic
+[submodule "explosivemine"]
 	path = explosivemine
 	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/explosivemine.git
+	branch = harmonic
