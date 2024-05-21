@@ -97,7 +97,7 @@ MAPPINGS = {
     'liquidai_msgs': [
         Mapping('FloatStamped', 'Double'),
         Mapping('GPS', 'NavSat'),
-        Mapping('AISArray', 'gz_liquidai_plugins_msgs::msgs::AISArray'),
+        Mapping('AISArray', 'gz_liquidai_msgs::msg::AISArray'),
     ],
 }
 

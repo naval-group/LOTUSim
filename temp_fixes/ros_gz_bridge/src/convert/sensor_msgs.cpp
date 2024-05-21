@@ -17,12 +17,18 @@
 #include "convert/utils.hpp"
 #include "ros_gz_bridge/convert/sensor_msgs.hpp"
 
+#include "gz/msgs/config.hh"
+
+#if GZ_MSGS_MAJOR_VERSION >= 10
+#define GZ_MSGS_IMU_HAS_COVARIANCE
+#endif
+
 namespace ros_gz_bridge {
 
 template <>
 void convert_ros_to_gz(
     const sensor_msgs::msg::FluidPressure &ros_msg,
-    ignition::msgs::FluidPressure &gz_msg)
+    gz::msgs::FluidPressure &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     gz_msg.set_pressure(ros_msg.fluid_pressure);
@@ -31,7 +37,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::FluidPressure &gz_msg,
+    const gz::msgs::FluidPressure &gz_msg,
     sensor_msgs::msg::FluidPressure &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
@@ -41,7 +47,7 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const sensor_msgs::msg::Image &ros_msg, ignition::msgs::Image &gz_msg)
+    const sensor_msgs::msg::Image &ros_msg, gz::msgs::Image &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
 
@@ -52,58 +58,53 @@ void convert_ros_to_gz(
     unsigned int octets_per_channel;
 
     if (ros_msg.encoding == "mono8") {
-        gz_msg.set_pixel_format_type(ignition::msgs::PixelFormatType::L_INT8);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::L_INT8);
         num_channels = 1;
         octets_per_channel = 1u;
     }
     else if (ros_msg.encoding == "mono16") {
-        gz_msg.set_pixel_format_type(ignition::msgs::PixelFormatType::L_INT16);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::L_INT16);
         num_channels = 1;
         octets_per_channel = 2u;
     }
     else if (ros_msg.encoding == "rgb8") {
-        gz_msg.set_pixel_format_type(ignition::msgs::PixelFormatType::RGB_INT8);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::RGB_INT8);
         num_channels = 3;
         octets_per_channel = 1u;
     }
     else if (ros_msg.encoding == "rgba8") {
-        gz_msg.set_pixel_format_type(
-            ignition::msgs::PixelFormatType::RGBA_INT8);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::RGBA_INT8);
         num_channels = 4;
         octets_per_channel = 1u;
     }
     else if (ros_msg.encoding == "bgra8") {
-        gz_msg.set_pixel_format_type(
-            ignition::msgs::PixelFormatType::BGRA_INT8);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::BGRA_INT8);
         num_channels = 4;
         octets_per_channel = 1u;
     }
     else if (ros_msg.encoding == "rgb16") {
-        gz_msg.set_pixel_format_type(
-            ignition::msgs::PixelFormatType::RGB_INT16);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::RGB_INT16);
         num_channels = 3;
         octets_per_channel = 2u;
     }
     else if (ros_msg.encoding == "bgr8") {
-        gz_msg.set_pixel_format_type(ignition::msgs::PixelFormatType::BGR_INT8);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::BGR_INT8);
         num_channels = 3;
         octets_per_channel = 1u;
     }
     else if (ros_msg.encoding == "bgr16") {
-        gz_msg.set_pixel_format_type(
-            ignition::msgs::PixelFormatType::BGR_INT16);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::BGR_INT16);
         num_channels = 3;
         octets_per_channel = 2u;
     }
     else if (ros_msg.encoding == "32FC1") {
-        gz_msg.set_pixel_format_type(
-            ignition::msgs::PixelFormatType::R_FLOAT32);
+        gz_msg.set_pixel_format_type(gz::msgs::PixelFormatType::R_FLOAT32);
         num_channels = 1;
         octets_per_channel = 4u;
     }
     else {
         gz_msg.set_pixel_format_type(
-            ignition::msgs::PixelFormatType::UNKNOWN_PIXEL_FORMAT);
+            gz::msgs::PixelFormatType::UNKNOWN_PIXEL_FORMAT);
         std::cerr << "Unsupported pixel format [" << ros_msg.encoding << "]"
                   << std::endl;
         return;
@@ -116,7 +117,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::Image &gz_msg, sensor_msgs::msg::Image &ros_msg)
+    const gz::msgs::Image &gz_msg, sensor_msgs::msg::Image &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
 
@@ -126,63 +127,54 @@ void convert_gz_to_ros(
     unsigned int num_channels;
     unsigned int octets_per_channel;
 
-    if (gz_msg.pixel_format_type() == ignition::msgs::PixelFormatType::L_INT8) {
+    if (gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::L_INT8) {
         ros_msg.encoding = "mono8";
         num_channels = 1;
         octets_per_channel = 1u;
     }
-    else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::L_INT16) {
+    else if (gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::L_INT16) {
         ros_msg.encoding = "mono16";
         num_channels = 1;
         octets_per_channel = 2u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::RGB_INT8) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::RGB_INT8) {
         ros_msg.encoding = "rgb8";
         num_channels = 3;
         octets_per_channel = 1u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::RGBA_INT8) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::RGBA_INT8) {
         ros_msg.encoding = "rgba8";
         num_channels = 4;
         octets_per_channel = 1u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::BGRA_INT8) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::BGRA_INT8) {
         ros_msg.encoding = "bgra8";
         num_channels = 4;
         octets_per_channel = 1u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::RGB_INT16) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::RGB_INT16) {
         ros_msg.encoding = "rgb16";
         num_channels = 3;
         octets_per_channel = 2u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::BGR_INT8) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::BGR_INT8) {
         ros_msg.encoding = "bgr8";
         num_channels = 3;
         octets_per_channel = 1u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::BGR_INT16) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::BGR_INT16) {
         ros_msg.encoding = "bgr16";
         num_channels = 3;
         octets_per_channel = 2u;
     }
     else if (
-        gz_msg.pixel_format_type() ==
-        ignition::msgs::PixelFormatType::R_FLOAT32) {
+        gz_msg.pixel_format_type() == gz::msgs::PixelFormatType::R_FLOAT32) {
         ros_msg.encoding = "32FC1";
         num_channels = 1;
         octets_per_channel = 4u;
@@ -206,8 +198,7 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const sensor_msgs::msg::CameraInfo &ros_msg,
-    ignition::msgs::CameraInfo &gz_msg)
+    const sensor_msgs::msg::CameraInfo &ros_msg, gz::msgs::CameraInfo &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
 
@@ -216,16 +207,14 @@ void convert_ros_to_gz(
 
     auto distortion = gz_msg.mutable_distortion();
     if (ros_msg.distortion_model == "plumb_bob") {
-        distortion->set_model(
-            ignition::msgs::CameraInfo::Distortion::PLUMB_BOB);
+        distortion->set_model(gz::msgs::CameraInfo::Distortion::PLUMB_BOB);
     }
     else if (ros_msg.distortion_model == "rational_polynomial") {
         distortion->set_model(
-            ignition::msgs::CameraInfo::Distortion::RATIONAL_POLYNOMIAL);
+            gz::msgs::CameraInfo::Distortion::RATIONAL_POLYNOMIAL);
     }
     else if (ros_msg.distortion_model == "equidistant") {
-        distortion->set_model(
-            ignition::msgs::CameraInfo::Distortion::EQUIDISTANT);
+        distortion->set_model(gz::msgs::CameraInfo::Distortion::EQUIDISTANT);
     }
     else {
         std::cerr << "Unsupported distortion model ["
@@ -253,8 +242,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::CameraInfo &gz_msg,
-    sensor_msgs::msg::CameraInfo &ros_msg)
+    const gz::msgs::CameraInfo &gz_msg, sensor_msgs::msg::CameraInfo &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
 
@@ -263,18 +251,17 @@ void convert_gz_to_ros(
 
     if (gz_msg.has_distortion()) {
         const auto &distortion = gz_msg.distortion();
-        if (distortion.model() ==
-            ignition::msgs::CameraInfo::Distortion::PLUMB_BOB) {
+        if (distortion.model() == gz::msgs::CameraInfo::Distortion::PLUMB_BOB) {
             ros_msg.distortion_model = "plumb_bob";
         }
         else if (
             distortion.model() ==
-            ignition::msgs::CameraInfo::Distortion::RATIONAL_POLYNOMIAL) {
+            gz::msgs::CameraInfo::Distortion::RATIONAL_POLYNOMIAL) {
             ros_msg.distortion_model = "rational_polynomial";
         }
         else if (
             distortion.model() ==
-            ignition::msgs::CameraInfo::Distortion::EQUIDISTANT) {
+            gz::msgs::CameraInfo::Distortion::EQUIDISTANT) {
             ros_msg.distortion_model = "equidistant";
         }
         else {
@@ -311,7 +298,7 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const sensor_msgs::msg::Imu &ros_msg, ignition::msgs::IMU &gz_msg)
+    const sensor_msgs::msg::Imu &ros_msg, gz::msgs::IMU &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
 
@@ -323,11 +310,23 @@ void convert_ros_to_gz(
         ros_msg.angular_velocity, (*gz_msg.mutable_angular_velocity()));
     convert_ros_to_gz(
         ros_msg.linear_acceleration, (*gz_msg.mutable_linear_acceleration()));
+
+#ifdef GZ_MSGS_IMU_HAS_COVARIANCE
+    for (const auto &elem : ros_msg.linear_acceleration_covariance) {
+        gz_msg.mutable_linear_acceleration_covariance()->add_data(elem);
+    }
+    for (const auto &elem : ros_msg.orientation_covariance) {
+        gz_msg.mutable_orientation_covariance()->add_data(elem);
+    }
+    for (const auto &elem : ros_msg.angular_velocity_covariance) {
+        gz_msg.mutable_angular_velocity_covariance()->add_data(elem);
+    }
+#endif
 }
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::IMU &gz_msg, sensor_msgs::msg::Imu &ros_msg)
+    const gz::msgs::IMU &gz_msg, sensor_msgs::msg::Imu &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     convert_gz_to_ros(gz_msg.orientation(), ros_msg.orientation);
@@ -335,12 +334,34 @@ void convert_gz_to_ros(
     convert_gz_to_ros(
         gz_msg.linear_acceleration(), ros_msg.linear_acceleration);
 
-    // Covariances not supported in gz::msgs::IMU
+#ifdef GZ_MSGS_IMU_HAS_COVARIANCE
+    int data_size = gz_msg.linear_acceleration_covariance().data_size();
+    if (data_size == 9) {
+        for (int i = 0; i < data_size; ++i) {
+            auto data = gz_msg.linear_acceleration_covariance().data()[i];
+            ros_msg.linear_acceleration_covariance[i] = data;
+        }
+    }
+    data_size = gz_msg.angular_velocity_covariance().data_size();
+    if (data_size == 9) {
+        for (int i = 0; i < data_size; ++i) {
+            auto data = gz_msg.angular_velocity_covariance().data()[i];
+            ros_msg.angular_velocity_covariance[i] = data;
+        }
+    }
+    data_size = gz_msg.orientation_covariance().data_size();
+    if (data_size == 9) {
+        for (int i = 0; i < data_size; ++i) {
+            auto data = gz_msg.orientation_covariance().data()[i];
+            ros_msg.orientation_covariance[i] = data;
+        }
+    }
+#endif
 }
 
 template <>
 void convert_ros_to_gz(
-    const sensor_msgs::msg::JointState &ros_msg, ignition::msgs::Model &gz_msg)
+    const sensor_msgs::msg::JointState &ros_msg, gz::msgs::Model &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
 
@@ -355,7 +376,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::Model &gz_msg, sensor_msgs::msg::JointState &ros_msg)
+    const gz::msgs::Model &gz_msg, sensor_msgs::msg::JointState &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
 
@@ -369,8 +390,37 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const sensor_msgs::msg::LaserScan &ros_msg,
-    ignition::msgs::LaserScan &gz_msg)
+    const sensor_msgs::msg::Joy &ros_msg, gz::msgs::Joy &gz_msg)
+{
+    convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
+
+    for (auto i = 0u; i < ros_msg.axes.size(); ++i) {
+        gz_msg.add_axes(ros_msg.axes[i]);
+    }
+
+    for (auto i = 0u; i < ros_msg.buttons.size(); ++i) {
+        gz_msg.add_buttons(ros_msg.buttons[i]);
+    }
+}
+
+template <>
+void convert_gz_to_ros(
+    const gz::msgs::Joy &gz_msg, sensor_msgs::msg::Joy &ros_msg)
+{
+    convert_gz_to_ros(gz_msg.header(), ros_msg.header);
+
+    for (auto i = 0; i < gz_msg.axes_size(); ++i) {
+        ros_msg.axes.push_back(gz_msg.axes(i));
+    }
+
+    for (auto i = 0; i < gz_msg.buttons_size(); ++i) {
+        ros_msg.buttons.push_back(gz_msg.buttons(i));
+    }
+}
+
+template <>
+void convert_ros_to_gz(
+    const sensor_msgs::msg::LaserScan &ros_msg, gz::msgs::LaserScan &gz_msg)
 {
     const unsigned int num_readings =
         (ros_msg.angle_max - ros_msg.angle_min) / ros_msg.angle_increment;
@@ -398,8 +448,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::LaserScan &gz_msg,
-    sensor_msgs::msg::LaserScan &ros_msg)
+    const gz::msgs::LaserScan &gz_msg, sensor_msgs::msg::LaserScan &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     ros_msg.header.frame_id = frame_id_gz_to_ros(gz_msg.frame());
@@ -439,7 +488,7 @@ void convert_gz_to_ros(
 template <>
 void convert_ros_to_gz(
     const sensor_msgs::msg::MagneticField &ros_msg,
-    ignition::msgs::Magnetometer &gz_msg)
+    gz::msgs::Magnetometer &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     convert_ros_to_gz(ros_msg.magnetic_field, (*gz_msg.mutable_field_tesla()));
@@ -447,7 +496,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::Magnetometer &gz_msg,
+    const gz::msgs::Magnetometer &gz_msg,
     sensor_msgs::msg::MagneticField &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
@@ -458,7 +507,7 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const sensor_msgs::msg::NavSatFix &ros_msg, ignition::msgs::NavSat &gz_msg)
+    const sensor_msgs::msg::NavSatFix &ros_msg, gz::msgs::NavSat &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     gz_msg.set_latitude_deg(ros_msg.latitude);
@@ -474,7 +523,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::NavSat &gz_msg, sensor_msgs::msg::NavSatFix &ros_msg)
+    const gz::msgs::NavSat &gz_msg, sensor_msgs::msg::NavSatFix &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     ros_msg.header.frame_id = frame_id_gz_to_ros(gz_msg.frame_id());
@@ -482,7 +531,7 @@ void convert_gz_to_ros(
     ros_msg.longitude = gz_msg.longitude_deg();
     ros_msg.altitude = gz_msg.altitude();
 
-    // position_covariance is not supported in Ignition::Msgs::NavSat.
+    // position_covariance is not supported in gz::msgs::NavSat.
     ros_msg.position_covariance_type =
         sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
     ros_msg.status.status = sensor_msgs::msg::NavSatStatus::STATUS_FIX;
@@ -491,7 +540,7 @@ void convert_gz_to_ros(
 template <>
 void convert_ros_to_gz(
     const sensor_msgs::msg::PointCloud2 &ros_msg,
-    ignition::msgs::PointCloudPacked &gz_msg)
+    gz::msgs::PointCloudPacked &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
 
@@ -508,35 +557,35 @@ void convert_ros_to_gz(
         ros_msg.data.size());
 
     for (const auto &field : ros_msg.fields) {
-        ignition::msgs::PointCloudPacked::Field *pf = gz_msg.add_field();
+        gz::msgs::PointCloudPacked::Field *pf = gz_msg.add_field();
         pf->set_name(field.name);
         pf->set_count(field.count);
         pf->set_offset(field.offset);
         switch (field.datatype) {
         default:
         case sensor_msgs::msg::PointField::INT8:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::INT8);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::INT8);
             break;
         case sensor_msgs::msg::PointField::UINT8:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::UINT8);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::UINT8);
             break;
         case sensor_msgs::msg::PointField::INT16:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::INT16);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::INT16);
             break;
         case sensor_msgs::msg::PointField::UINT16:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::UINT16);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::UINT16);
             break;
         case sensor_msgs::msg::PointField::INT32:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::INT32);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::INT32);
             break;
         case sensor_msgs::msg::PointField::UINT32:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::UINT32);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::UINT32);
             break;
         case sensor_msgs::msg::PointField::FLOAT32:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::FLOAT32);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::FLOAT32);
             break;
         case sensor_msgs::msg::PointField::FLOAT64:
-            pf->set_datatype(ignition::msgs::PointCloudPacked::Field::FLOAT64);
+            pf->set_datatype(gz::msgs::PointCloudPacked::Field::FLOAT64);
             break;
         }
     }
@@ -544,7 +593,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::PointCloudPacked &gz_msg,
+    const gz::msgs::PointCloudPacked &gz_msg,
     sensor_msgs::msg::PointCloud2 &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
@@ -565,28 +614,28 @@ void convert_gz_to_ros(
         pf.offset = gz_msg.field(i).offset();
         switch (gz_msg.field(i).datatype()) {
         default:
-        case ignition::msgs::PointCloudPacked::Field::INT8:
+        case gz::msgs::PointCloudPacked::Field::INT8:
             pf.datatype = sensor_msgs::msg::PointField::INT8;
             break;
-        case ignition::msgs::PointCloudPacked::Field::UINT8:
+        case gz::msgs::PointCloudPacked::Field::UINT8:
             pf.datatype = sensor_msgs::msg::PointField::UINT8;
             break;
-        case ignition::msgs::PointCloudPacked::Field::INT16:
+        case gz::msgs::PointCloudPacked::Field::INT16:
             pf.datatype = sensor_msgs::msg::PointField::INT16;
             break;
-        case ignition::msgs::PointCloudPacked::Field::UINT16:
+        case gz::msgs::PointCloudPacked::Field::UINT16:
             pf.datatype = sensor_msgs::msg::PointField::UINT16;
             break;
-        case ignition::msgs::PointCloudPacked::Field::INT32:
+        case gz::msgs::PointCloudPacked::Field::INT32:
             pf.datatype = sensor_msgs::msg::PointField::INT32;
             break;
-        case ignition::msgs::PointCloudPacked::Field::UINT32:
+        case gz::msgs::PointCloudPacked::Field::UINT32:
             pf.datatype = sensor_msgs::msg::PointField::UINT32;
             break;
-        case ignition::msgs::PointCloudPacked::Field::FLOAT32:
+        case gz::msgs::PointCloudPacked::Field::FLOAT32:
             pf.datatype = sensor_msgs::msg::PointField::FLOAT32;
             break;
-        case ignition::msgs::PointCloudPacked::Field::FLOAT64:
+        case gz::msgs::PointCloudPacked::Field::FLOAT64:
             pf.datatype = sensor_msgs::msg::PointField::FLOAT64;
             break;
         }
@@ -597,7 +646,7 @@ void convert_gz_to_ros(
 template <>
 void convert_ros_to_gz(
     const sensor_msgs::msg::BatteryState &ros_msg,
-    ignition::msgs::BatteryState &gz_msg)
+    gz::msgs::BatteryState &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
 
@@ -609,21 +658,19 @@ void convert_ros_to_gz(
 
     switch (ros_msg.power_supply_status) {
     case sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_UNKNOWN:
-        gz_msg.set_power_supply_status(ignition::msgs::BatteryState::UNKNOWN);
+        gz_msg.set_power_supply_status(gz::msgs::BatteryState::UNKNOWN);
         break;
     case sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_CHARGING:
-        gz_msg.set_power_supply_status(ignition::msgs::BatteryState::CHARGING);
+        gz_msg.set_power_supply_status(gz::msgs::BatteryState::CHARGING);
         break;
     case sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_DISCHARGING:
-        gz_msg.set_power_supply_status(
-            ignition::msgs::BatteryState::DISCHARGING);
+        gz_msg.set_power_supply_status(gz::msgs::BatteryState::DISCHARGING);
         break;
     case sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_NOT_CHARGING:
-        gz_msg.set_power_supply_status(
-            ignition::msgs::BatteryState::NOT_CHARGING);
+        gz_msg.set_power_supply_status(gz::msgs::BatteryState::NOT_CHARGING);
         break;
     case sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_FULL:
-        gz_msg.set_power_supply_status(ignition::msgs::BatteryState::FULL);
+        gz_msg.set_power_supply_status(gz::msgs::BatteryState::FULL);
         break;
     default:
         std::cerr << "Unsupported power supply status ["
@@ -633,7 +680,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::BatteryState &gz_msg,
+    const gz::msgs::BatteryState &gz_msg,
     sensor_msgs::msg::BatteryState &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
@@ -645,30 +692,25 @@ void convert_gz_to_ros(
     ros_msg.design_capacity = std::numeric_limits<double>::quiet_NaN();
     ros_msg.percentage = gz_msg.percentage();
 
-    if (gz_msg.power_supply_status() == ignition::msgs::BatteryState::UNKNOWN) {
+    if (gz_msg.power_supply_status() == gz::msgs::BatteryState::UNKNOWN) {
         ros_msg.power_supply_status =
             sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_UNKNOWN;
     }
-    else if (
-        gz_msg.power_supply_status() ==
-        ignition::msgs::BatteryState::CHARGING) {
+    else if (gz_msg.power_supply_status() == gz::msgs::BatteryState::CHARGING) {
         ros_msg.power_supply_status =
             sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_CHARGING;
     }
     else if (
-        gz_msg.power_supply_status() ==
-        ignition::msgs::BatteryState::DISCHARGING) {
+        gz_msg.power_supply_status() == gz::msgs::BatteryState::DISCHARGING) {
         ros_msg.power_supply_status =
             sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_DISCHARGING;
     }
     else if (
-        gz_msg.power_supply_status() ==
-        ignition::msgs::BatteryState::NOT_CHARGING) {
+        gz_msg.power_supply_status() == gz::msgs::BatteryState::NOT_CHARGING) {
         ros_msg.power_supply_status =
             sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_NOT_CHARGING;
     }
-    else if (
-        gz_msg.power_supply_status() == ignition::msgs::BatteryState::FULL) {
+    else if (gz_msg.power_supply_status() == gz::msgs::BatteryState::FULL) {
         ros_msg.power_supply_status =
             sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_FULL;
     }

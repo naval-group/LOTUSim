@@ -17,21 +17,26 @@
 #include "convert/utils.hpp"
 #include "ros_gz_bridge/convert/rosgraph_msgs.hpp"
 
-namespace ros_gz_bridge {
-
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Clock &gz_msg, rosgraph_msgs::msg::Clock &ros_msg)
+namespace ros_gz_bridge
 {
-    ros_msg.clock = rclcpp::Time(gz_msg.sim().sec(), gz_msg.sim().nsec());
+
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Clock & gz_msg,
+  rosgraph_msgs::msg::Clock & ros_msg)
+{
+  ros_msg.clock = rclcpp::Time(gz_msg.sim().sec(), gz_msg.sim().nsec());
 }
 
-template <>
-void convert_ros_to_gz(
-    const rosgraph_msgs::msg::Clock &ros_msg, ignition::msgs::Clock &gz_msg)
+template<>
+void
+convert_ros_to_gz(
+  const rosgraph_msgs::msg::Clock & ros_msg,
+  gz::msgs::Clock & gz_msg)
 {
-    gz_msg.mutable_sim()->set_sec(ros_msg.clock.sec);
-    gz_msg.mutable_sim()->set_nsec(ros_msg.clock.nanosec);
+  gz_msg.mutable_sim()->set_sec(ros_msg.clock.sec);
+  gz_msg.mutable_sim()->set_nsec(ros_msg.clock.nanosec);
 }
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge

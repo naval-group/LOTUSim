@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <ignition/msgs/boolean.pb.h>
-#include <ignition/msgs/world_control.pb.h>
+#include <gz/msgs/boolean.pb.h>
+#include <gz/msgs/world_control.pb.h>
 
 #include <atomic>
 #include <chrono>
@@ -41,8 +41,7 @@ void signal_handler(int _signal)
 }
 
 //////////////////////////////////////////////////
-bool control_world(
-    const ignition::msgs::WorldControl &, ignition::msgs::Boolean &_res)
+bool control_world(const gz::msgs::WorldControl &, gz::msgs::Boolean &_res)
 {
     _res.set_data(true);
     return true;

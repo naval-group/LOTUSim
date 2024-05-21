@@ -4,8 +4,8 @@
 
 // Gazebo Msgs
 #include "gz_liquidai_msgs/msg/aismsg.pb.h"
-#include <ignition/msgs/double.pb.h>
-#include <ignition/msgs/navsat.pb.h>
+#include <gz/msgs/double.pb.h>
+#include <gz/msgs/navsat.pb.h>
 
 // ROS 2 messages
 #include <liquidai_msgs/msg/ais.hpp>
@@ -19,31 +19,29 @@ namespace ros_gz_bridge {
 // nav_msgs
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::GPS &ros_msg, ignition::msgs::NavSat &gz_msg);
+    const liquidai_msgs::msg::GPS &ros_msg, gz::msgs::NavSat &gz_msg);
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::NavSat &gz_msg, liquidai_msgs::msg::GPS &ros_msg);
+    const gz::msgs::NavSat &gz_msg, liquidai_msgs::msg::GPS &ros_msg);
 
 template <>
 void convert_ros_to_gz(
     const liquidai_msgs::msg::AISArray &ros_msg,
-    gz_liquidai_plugins_msgs::msgs::AISArray &gz_msg);
+    gz_liquidai_msgs::msg::AISArray &gz_msg);
 
 template <>
 void convert_gz_to_ros(
-    const gz_liquidai_plugins_msgs::msgs::AISArray &gz_msg,
+    const gz_liquidai_msgs::msg::AISArray &gz_msg,
     liquidai_msgs::msg::AISArray &ros_msg);
 
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::FloatStamped &ros_msg,
-    ignition::msgs::Double &gz_msg);
+    const liquidai_msgs::msg::FloatStamped &ros_msg, gz::msgs::Double &gz_msg);
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::Double &gz_msg,
-    liquidai_msgs::msg::FloatStamped &ros_msg);
+    const gz::msgs::Double &gz_msg, liquidai_msgs::msg::FloatStamped &ros_msg);
 
 } // namespace ros_gz_bridge
 

@@ -17,51 +17,53 @@
 
 #include <memory>
 
-#include <ignition/transport/Node.hh>
+#include <gz/transport/Node.hh>
 #include <rclcpp/subscription_base.hpp>
 
 #include "bridge_handle.hpp"
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
 /// \brief Create a Gazebo to ROS Bridge
 ///
 /// Bridge is from Gazebo Subscription (input) to ROS Publisher (output)
-class BridgeHandleGzToRos : public BridgeHandle {
+class BridgeHandleGzToRos : public BridgeHandle
+{
 public:
-    /// \brief Constructor
-    using BridgeHandle::BridgeHandle;
+  /// \brief Constructor
+  using BridgeHandle::BridgeHandle;
 
-    /// \brief Destructor
-    ~BridgeHandleGzToRos() override;
-
-protected:
-    /// \brief Documentation inherited
-    size_t NumSubscriptions() const override;
-
-    /// \brief Documentation inherited
-    bool HasPublisher() const override;
-
-    /// \brief Documentation inherited
-    void StartPublisher() override;
-
-    /// \brief Documentation inherited
-    bool HasSubscriber() const override;
-
-    /// \brief Documentation inherited
-    void StartSubscriber() override;
-
-    /// \brief Documentation inherited
-    void StopSubscriber() override;
+  /// \brief Destructor
+  ~BridgeHandleGzToRos() override;
 
 protected:
-    /// \brief Gazebo subscriber, populated when subscriber active
-    std::shared_ptr<ignition::transport::Node> gz_subscriber_ = {nullptr};
+  /// \brief Documentation inherited
+  size_t NumSubscriptions() const override;
 
-    /// \brief ROS publisher, populated when publisher active
-    rclcpp::PublisherBase::SharedPtr ros_publisher_ = {nullptr};
+  /// \brief Documentation inherited
+  bool HasPublisher() const override;
+
+  /// \brief Documentation inherited
+  void StartPublisher() override;
+
+  /// \brief Documentation inherited
+  bool HasSubscriber() const override;
+
+  /// \brief Documentation inherited
+  void StartSubscriber() override;
+
+  /// \brief Documentation inherited
+  void StopSubscriber() override;
+
+protected:
+  /// \brief Gazebo subscriber, populated when subscriber active
+  std::shared_ptr<gz::transport::Node> gz_subscriber_ = {nullptr};
+
+  /// \brief ROS publisher, populated when publisher active
+  rclcpp::PublisherBase::SharedPtr ros_publisher_ = {nullptr};
 };
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // BRIDGE_HANDLE_GZ_TO_ROS_HPP_
+#endif  // BRIDGE_HANDLE_GZ_TO_ROS_HPP_

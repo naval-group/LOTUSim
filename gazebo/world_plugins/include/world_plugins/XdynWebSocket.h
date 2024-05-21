@@ -2,12 +2,12 @@
 #define __XDYN_WEBSOCKET_HH__
 
 #include "gz_liquidai_msgs/msg/xdyncmdmsg.pb.h"
+
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
-#include <gz/transport/Node.hh>
 
-// #include "world_plugins/WaveRaoInterface.h"
+#include "world_plugins/WaveRaoInterface.h"
 #include <websocketpp/client.hpp>
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/common/thread.hpp>
@@ -21,53 +21,119 @@ using hdl = websocketpp::connection_hdl;
 using Client = websocketpp::client<websocketpp::config::asio_client>;
 using json = nlohmann::json;
 
-enum class ConnectionType { XDynWebSocket, XDynGRPC, Manual };
-
-class XdynWebsocket {
+/**
+ * @brief A Singleton class to connect to xdyn through websocket. A singleton
+ * class to reuse the client class
+ *
+ * On sending req to xdyn and receiving msg, there is a frame conversion
+ * Xdyn having a ned convention and right-hand axis convention
+ *
+ */
+class XdynWebsocket : public WaveRaoInterface {
 public:
-    XdynWebsocket();
-    ~XdynWebsocket();
     void operator=(const XdynWebsocket &) = delete;
     XdynWebsocket(XdynWebsocket &other) = delete;
-    // static std::shared_ptr<WaveRaoInterface> getInstance();
-    static std::shared_ptr<XdynWebsocket> getInstance();
-    bool createConnection(const std::string &name, const std::string &uri);
-    std::optional<json>
-    getNewState(const std::string &name, json previous_state, float time_dif);
+
+    static std::shared_ptr<XdynWebsocket>
+    getInstance(const gz::sim::Entity &_entity, const std::string &_name);
+
+    /**
+     * @brief Get the New State object using given vessel state
+     *
+     * @param _entity
+     * @param previous_state
+     * @param time_dif
+     * @return std::optional<json>
+     */
+    std::optional<std::tuple<json, DomainType>> getNewState(
+        const gz::sim::Entity &_entity,
+        const json &previous_state,
+        float time_diff);
+
+    /**
+     * @brief Create a Connection object
+     *
+     * @param _entity
+     * @param uri
+     * @param thrusters_name
+     * @return true
+     * @return false
+     */
+    bool createConnection(
+        const gz::sim::Entity &_entity,
+        const std::string &_name,
+        const sdf::ElementPtr _sdf);
+
+    bool activateConnection(const gz::sim::Entity &_entity);
+
+    bool deactivateConnection(const gz::sim::Entity &_entity);
+
+    std::string getURI(const gz::sim::Entity &_entity);
+
+    ~XdynWebsocket();
+
+    XdynWebsocket();
+
+protected:
+    static std::shared_ptr<XdynWebsocket> m_instance;
+    static std::mutex m_mutex;
 
 private:
-    bool send(const std::string &name, std::string message);
+    bool send(const gz::sim::Entity &_entity, std::string message);
     void onMessage(
         websocketpp::connection_hdl hdl,
         websocketpp::config::asio_client::message_type::ptr msg);
-    void onOpen(std::string name, websocketpp::connection_hdl hdl);
-    void onFail(std::string name, websocketpp::connection_hdl hdl);
-    void thrustCmd(const gz_liquidai_plugins_msgs::msgs::XdynCmd &_msg);
+    void
+    onOpen(const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl);
+    void
+    onFail(const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl);
+    void thrustCmd(const gz_liquidai_msgs::msg::XdynCmd &_msg);
 
 private:
-    std::string m_vessel_name;
+    // Websocket stuff
     Client m_client;
     Weblib::shared_ptr<Weblib::thread> m_thread;
 
-    // Vessle name is to websocket connection
-    std::unordered_map<std::string, websocketpp::connection_hdl>
+    /**
+     * @brief Mapping for entity and naming
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, std::string> m_name_mapping;
+    static std::unordered_map<std::string, gz::sim::Entity> m_entity_mapping;
+
+    /**
+     * @brief URI mapping
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, std::string> m_uri;
+
+    /**
+     * @brief Connection mapping
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, Client::connection_ptr>
         m_connection_mapping;
-    std::mutex m_msg_mutex;
-    std::condition_variable m_msg_cv;
-    json m_resp_msg;
-    std::unordered_map<std::string, std::string> m_status;
-    // static std::weak_ptr<WaveRaoInterface> m_instance;
+    static std::unordered_map<Client::connection_ptr, gz::sim::Entity>
+        m_connection_entity_mapping;
 
-    static std::weak_ptr<XdynWebsocket> m_instance;
+    /**
+     * @brief Connection status mapping
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, std::string> m_status;
 
-    std::unordered_map<std::string, gz_liquidai_plugins_msgs::msgs::XdynCmd>
+    /**
+     * @brief Msg saving
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, std::mutex> m_msg_mutex;
+    static std::unordered_map<gz::sim::Entity, std::condition_variable>
+        m_msg_cv;
+    static std::unordered_map<gz::sim::Entity, json> m_saved_state;
+
+    std::unordered_map<gz::sim::Entity, gz_liquidai_msgs::msg::XdynCmd>
         m_xdyn_cmd;
-
-    //temp fix
-    gz::transport::Node m_node;
-
 };
-
 } // namespace gazebo
 } // namespace liquidai
 #endif

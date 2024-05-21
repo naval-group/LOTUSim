@@ -10,7 +10,7 @@
 namespace ros_gz_bridge {
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::GPS &ros_msg, ignition::msgs::NavSat &gz_msg)
+    const liquidai_msgs::msg::GPS &ros_msg, gz::msgs::NavSat &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     gz_msg.set_latitude_deg(ros_msg.latitude);
@@ -26,7 +26,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::NavSat &gz_msg, liquidai_msgs::msg::GPS &ros_msg)
+    const gz::msgs::NavSat &gz_msg, liquidai_msgs::msg::GPS &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     ros_msg.header.frame_id = frame_id_gz_to_ros(gz_msg.frame_id());
@@ -40,7 +40,7 @@ void convert_gz_to_ros(
     vel.z = gz_msg.velocity_up();
     ros_msg.linear_velocity = vel;
 
-    // position_covariance is not supported in Ignition::Msgs::NavSat.
+    // position_covariance is not supported in gz::msgs::NavSat.
     ros_msg.position_covariance_type =
         sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
     ros_msg.status.status = sensor_msgs::msg::NavSatStatus::STATUS_FIX;
@@ -49,10 +49,10 @@ void convert_gz_to_ros(
 template <>
 void convert_ros_to_gz(
     const liquidai_msgs::msg::AISArray &ros_msg,
-    gz_liquidai_plugins_msgs::msgs::AISArray &gz_msg)
+    gz_liquidai_msgs::msg::AISArray &gz_msg)
 {
     for (auto &r_msg : ros_msg.data) {
-        gz_liquidai_plugins_msgs::msgs::AISArray_AIS *g_msg = gz_msg.add_data();
+        gz_liquidai_msgs::msg::AISArray_AIS *g_msg = gz_msg.add_data();
         g_msg->set_user_id(r_msg.user_id);
         g_msg->set_longitude(r_msg.longitude);
         g_msg->set_latitude(r_msg.latitude);
@@ -72,7 +72,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const gz_liquidai_plugins_msgs::msgs::AISArray &gz_msg,
+    const gz_liquidai_msgs::msg::AISArray &gz_msg,
     liquidai_msgs::msg::AISArray &ros_msg)
 {
     for (auto &&g_msg : gz_msg.data()) {
@@ -93,8 +93,7 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::FloatStamped &ros_msg,
-    ignition::msgs::Double &gz_msg)
+    const liquidai_msgs::msg::FloatStamped &ros_msg, gz::msgs::Double &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     gz_msg.set_data(ros_msg.data);
@@ -102,8 +101,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const ignition::msgs::Double &gz_msg,
-    liquidai_msgs::msg::FloatStamped &ros_msg)
+    const gz::msgs::Double &gz_msg, liquidai_msgs::msg::FloatStamped &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     ros_msg.data = gz_msg.data();

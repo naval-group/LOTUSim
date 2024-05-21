@@ -98,7 +98,7 @@ Changelog for package ros_gz_bridge
 * Edifice support (`#140 <https://github.com/gazebosim/ros_gz/issues/140>`_)
 * Add JointTrajectory message conversion (`#121 <https://github.com/gazebosim/ros_gz/issues/121>`_)
   Conversion between
-  - ignition::msgs::JointTrajectory
+  - gz::msgs::JointTrajectory
   - trajectory_msgs::msg::JointTrajectory
 * Add TFMessage / Pose_V and Float64 / Double conversions (`#117 <https://github.com/gazebosim/ros_gz/issues/117>`_)
   Addresses issue `#116 <https://github.com/gazebosim/ros_gz/issues/116>`_
@@ -209,8 +209,8 @@ Changelog for package ros_gz_bridge
 0.3.0 (2019-06-28)
 ------------------
 * 0.2.0
-* Conversion between nav_msgs/Odometry and ignition::msgs::Odometry (`#22 <https://github.com/osrf/ros1_ign_bridge/issues/22>`_)
-  * Conversion between nav_msgs/Odometry and ignition::msgs::Odometry.
+* Conversion between nav_msgs/Odometry and gz::msgs::Odometry (`#22 <https://github.com/osrf/ros1_ign_bridge/issues/22>`_)
+  * Conversion between nav_msgs/Odometry and gz::msgs::Odometry.
   * Update documentation.
   * More time to run tests
   * Cleaning test_utils.
