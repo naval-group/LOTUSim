@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package gz_liquidai_msgs.msg;
+
+/// \brief Wave param msg
+message XdynCmd
+{
+   message ThrusterCmd
+   {
+      string name = 1; // Thruster name
+      double rpm = 2;
+      double pd = 3;
+      double beta = 4;
+   }
+
+   string name = 1; // Vessel name
+   repeated ThrusterCmd cmd = 2;
+}

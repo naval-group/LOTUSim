@@ -57,7 +57,7 @@ public:
 private:
     void logError(std::string err_statement) override;
 
-    bool getParamCB(gz_liquidai_plugins_msgs::msgs::WaveParam &msg);
+    bool getParamCB(gz_liquidai_msgs::msg::WaveParam &msg);
 
     void setParamMsg(const WaveParameters &msg);
 
@@ -75,7 +75,7 @@ private:
      * @brief Gazebo wave param msg
      *
      */
-    gz_liquidai_plugins_msgs::msgs::WaveParam m_param_msg;
+    gz_liquidai_msgs::msg::WaveParam m_param_msg;
     std::shared_ptr<gz::transport::Node> m_gz_node;
     gz::transport::Node::Publisher m_param_pub;
 

@@ -62,8 +62,8 @@
             <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
                 <period> 1 </period>
             </plugin>
-            <plugin filename="wave_param_plugin" name="liquidai::gazebo::WaveParamPlugin">
-            </plugin>
+            <!-- <plugin filename="wave_param_plugin" name="liquidai::gazebo::WaveParamPlugin">
+            </plugin> -->
 
             <include>
                 <pose>0 0 0 0 0 0</pose>

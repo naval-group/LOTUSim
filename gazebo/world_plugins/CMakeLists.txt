@@ -22,17 +22,17 @@ gz_configure_project(VERSION_SUFFIX)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(protobuf_MODULE_COMPATIBLE TRUE)
 
-gz_find_package(sdformat13 REQUIRED VERSION)
-set(SDF_VER ${sdformat13_VERSION_MAJOR})
+gz_find_package(sdformat14 REQUIRED VERSION)
+set(SDF_VER ${sdformat14_VERSION_MAJOR})
 
-find_package(gz-sim7 REQUIRED)
-set(GZ_SIM_VER ${gz-sim7_VERSION_MAJOR})
+find_package(gz-sim8 REQUIRED)
+set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
 
-gz_find_package(gz-msgs9 REQUIRED)
-set(GZ_MSGS_VER ${gz-msgs9_VERSION_MAJOR})
+gz_find_package(gz-msgs10 REQUIRED)
+set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
 
-gz_find_package(gz-transport12 REQUIRED COMPONENTS log)
-set(GZ_TRANSPORT_VER ${gz-transport12_VERSION_MAJOR})
+gz_find_package(gz-transport13 REQUIRED COMPONENTS log)
+set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
 
 gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
 set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
@@ -54,9 +54,16 @@ find_package(Boost REQUIRED system)
 find_package(websocketpp REQUIRED)
 find_package(gz_liquidai_msgs REQUIRED)
 
-message("gz liquidai msg  " ${gz_liquidai_msgs_INCLUDE_DIRS})
+message("gz liquidai msg  " ${CMAKE_INSTALL_FULL_LIBDIR})
 
-include_directories(include)
+include_directories(
+  include
+  # ahoy Desperate measures for gz_liquidai_msgs linker
+  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
+  )
+link_directories(
+${CMAKE_INSTALL_FULL_LIBDIR}
+)
 
 # Wave param ROS plugin
 add_library(wave_param_plugin 
@@ -66,10 +73,10 @@ add_library(wave_param_plugin
 target_include_directories(wave_param_plugin
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  ${gz_liquidai_msgs_INCLUDE_DIRS}
+  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
 )
 target_link_libraries(wave_param_plugin
-  gz-sim7::gz-sim7
+  gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
 )
 ament_target_dependencies(wave_param_plugin 
@@ -77,7 +84,7 @@ ament_target_dependencies(wave_param_plugin
   geometry_msgs
   liquidai_msgs
   rclcpp
-  )
+)
 
 install(
   TARGETS wave_param_plugin
@@ -94,15 +101,14 @@ add_library(ais_plugin
 )
 target_include_directories(ais_plugin
   PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
   $<INSTALL_INTERFACE:include>
-  ${gz_liquidai_msgs_INCLUDE_DIRS}
 )
 target_link_libraries(ais_plugin
   ${Boost_SYSTEM_LIBRARY}
-  gz-sim7::gz-sim7
+  gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  gz_liquidai_msgs
+  gz_liquidai_msgs-msg
 )
 install(
   TARGETS ais_plugin
@@ -115,22 +121,22 @@ install(
 # Wave RAO plugin
 add_library(wave_rao_plugin 
   SHARED
-  src/WaveRAOPlugin.cpp
+  src/WaveRaoInterface.cpp
   src/XdynWebSocket.cpp
+  src/WaveRAOPlugin.cpp
   # src/XdynGrpc.cpp
   # src/ManualRAO.cpp
 )
 target_include_directories(wave_rao_plugin PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-  ${gz_liquidai_msgs_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
+  $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(wave_rao_plugin
   ${Boost_SYSTEM_LIBRARY}
-  gz-sim7::gz-sim7
+  gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
   websocketpp::websocketpp
-  gz_liquidai_msgs
+  gz_liquidai_msgs-msg
 )
 ament_target_dependencies(wave_rao_plugin 
   ament_cmake
@@ -138,8 +144,12 @@ ament_target_dependencies(wave_rao_plugin
   liquidai_msgs
   rclcpp
 )
-
-
+ament_target_dependencies(wave_rao_plugin 
+  ament_cmake
+  geometry_msgs
+  liquidai_msgs
+  rclcpp
+)
 install(
   TARGETS wave_rao_plugin
   EXPORT  export_wave_rao_plugin
@@ -147,6 +157,54 @@ install(
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+# Render plugin
+add_library(render_plugin 
+  SHARED   
+  src/RenderPlugin.cpp
+)
+target_include_directories(render_plugin
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(render_plugin
+  ${Boost_SYSTEM_LIBRARY}
+  gz-sim8::gz-sim8
+  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+  gz_liquidai_msgs-msg
+)
+install(
+  TARGETS render_plugin
+  EXPORT  export_render_plugin
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+# Waypoint plugin
+add_library(waypoint_plugin 
+  SHARED   
+  src/WaypointFollowerPlugin.cpp
+)
+target_include_directories(waypoint_plugin
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(waypoint_plugin
+  ${Boost_SYSTEM_LIBRARY}
+  gz-sim8::gz-sim8
+  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+)
+install(
+  TARGETS waypoint_plugin
+  EXPORT  export_waypoint_plugin
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 
 install(
   DIRECTORY include/
@@ -162,6 +220,8 @@ ament_export_targets(
   export_wave_param_plugin
   export_ais_plugin
   export_wave_rao_plugin
+  export_render_plugin
+  export_waypoint_plugin
 )
 
 ament_export_dependencies(
@@ -169,14 +229,14 @@ ament_export_dependencies(
   liquidai_msgs
   rclcpp
   ament_cmake
-  gz_liquidai_msgs
 )
 ament_export_include_directories(include)
 ament_export_libraries(
-  uuv_underwater_current_ros_plugin
-  uuv_sc_ros_interface_plugin
+  wave_param_plugin
   ais_plugin
   wave_rao_plugin
+  render_plugin
+  waypoint_plugin
 )
 
 ament_package()
