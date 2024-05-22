@@ -2,24 +2,29 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
-    
+
+    <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
+    </plugin>
+
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
          <pose>0 0 0 0 0 0</pose>
         <!-- 146.5671 subtracted by battery mass -->
-        <mass>147.8671</mass>
+        <mass>165</mass>
         <!--<mass>146.5671</mass>-->
         <!-- TODO: Get inertial matrix of base link WITHOUT battery -->
         <inertia>
-          <ixx>3.000000</ixx>
+          <ixx>2.000000</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
          
-          <iyy>41.980233</iyy>
+          <iyy>30.0</iyy>
           <iyz>0</iyz>
-          <izz>41.980233</izz>
+          <izz>30.0</izz>
         </inertia>
       </inertial>
       <collision name="main_body_buoyancy">
@@ -346,28 +351,7 @@
     </plugin>
 
     <!-- The Lift acting on the controlled surfaces -->
-          <plugin filename="gz-sim-linearbatteryplugin-system"
-        name="gz::sim::systems::LinearBatteryPlugin">
-        <battery_name>linear_battery</battery_name>
-        <voltage>14.4</voltage>
-        <open_circuit_voltage_constant_coef>14.4</open_circuit_voltage_constant_coef>
-        <open_circuit_voltage_linear_coef>-2.0</open_circuit_voltage_linear_coef>
-        <fix_issue_225>true</fix_issue_225>
-        <!-- Initial charge in Ah -->
-        <initial_charge>400</initial_charge>
-        <capacity>400</capacity>
-        <!-- 190mOhm / 62 -->
-        <resistance>0.003064</resistance>
-        <!-- Power consumption in Watts: 14.4V * 2 A -->
-        <power_load>144</power_load>
-        <!-- Recharging the battery -->
-        <!-- Avg discharge current = (max + min) / 2 -->
-        <!--  = (15 + 4) / 2 = 9.5 A -->
-        <!-- Charging time: 400 Ah/( 9.5 A ) = 42.1 h -->
-        <enable_recharge>true</enable_recharge>
-        <recharge_by_topic>true</recharge_by_topic>
-        <charging_time>42.1</charging_time>
-      </plugin>
+    
 
     <!-- The movement of the controlled surfaces -->
     <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">

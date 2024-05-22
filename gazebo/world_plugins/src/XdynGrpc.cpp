@@ -11,7 +11,10 @@ std::optional<json> XdynGrpc::getNewState(
 {
     return std::nullopt;
 }
-bool XdynGrpc::createConnection(const std::string &name, const std::string &uri)
+bool XdynGrpc::createConnection(
+    const std::string &name,
+    const std::vector<std::string> &thrusters_name,
+    const std::string &uri)
 {
     return true;
 }

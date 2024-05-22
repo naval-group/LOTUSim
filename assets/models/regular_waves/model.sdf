@@ -18,6 +18,10 @@
         <direction>1 0</direction>
       </wave>
     </plugin>
+    <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
+    </plugin>
 
     <link name="base_link">
       <visual name="visual">

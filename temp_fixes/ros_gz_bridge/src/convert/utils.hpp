@@ -17,16 +17,17 @@
 
 #include <string>
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
 // This can be used to replace `::` with `/` to make frame_id compatible with TF
 std::string replace_delimiter(
-    const std::string &input,
-    const std::string &old_delim,
-    const std::string new_delim);
+  const std::string & input,
+  const std::string & old_delim,
+  const std::string new_delim);
 
-std::string frame_id_gz_to_ros(const std::string &frame_id);
+std::string frame_id_gz_to_ros(const std::string & frame_id);
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // CONVERT__UTILS_HPP_
+#endif  // CONVERT__UTILS_HPP_

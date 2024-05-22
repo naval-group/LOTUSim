@@ -21,31 +21,28 @@
 using RosGzBridge = ros_gz_bridge::RosGzBridge;
 
 //////////////////////////////////////////////////
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
-    // ROS node
-    rclcpp::init(argc, argv);
-    auto bridge_node = std::make_shared<RosGzBridge>(rclcpp::NodeOptions());
+  // ROS node
+  rclcpp::init(argc, argv);
+  auto bridge_node = std::make_shared<RosGzBridge>(rclcpp::NodeOptions());
 
-    // Set lazy subscriber on a global basis
-    bool lazy_subscription = false;
-    bridge_node->declare_parameter<bool>("lazy", false);
-    bridge_node->get_parameter("lazy", lazy_subscription);
+  // Set lazy subscriber on a global basis
+  bool lazy_subscription = false;
+  bridge_node->declare_parameter<bool>("lazy", false);
+  bridge_node->get_parameter("lazy", lazy_subscription);
 
-    // bridge one example topic
-    ros_gz_bridge::BridgeConfig config;
-    config.ros_topic_name = "chatter";
-    config.gz_topic_name = "chatter";
-    config.ros_type_name = "std_msgs/msg/String";
-    config.gz_type_name = "ignition.msgs.StringMsg";
-    config.is_lazy = lazy_subscription;
+  // bridge one example topic
+  ros_gz_bridge::BridgeConfig config;
+  config.ros_topic_name = "chatter";
+  config.gz_topic_name = "chatter";
+  config.ros_type_name = "std_msgs/msg/String";
+  config.gz_type_name = "ignition.msgs.StringMsg";
+  config.is_lazy = lazy_subscription;
 
-    bridge_node->add_bridge(config);
+  bridge_node->add_bridge(config);
 
-    rclcpp::spin(bridge_node);
+  rclcpp::spin(bridge_node);
 
-    // Wait for gz node shutdown
-    ignition::transport::waitForShutdown();
-
-    return 0;
+  return 0;
 }

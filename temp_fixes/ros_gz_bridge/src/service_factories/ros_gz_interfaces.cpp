@@ -12,67 +12,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <ignition/msgs/boolean.pb.h>
-#include <ignition/msgs/world_control.pb.h>
+#include <gz/msgs/boolean.pb.h>
+#include <gz/msgs/world_control.pb.h>
 
 #include <memory>
 #include <string>
 
-#include "ros_gz_bridge/convert/ros_gz_interfaces.hpp"
-#include "ros_gz_interfaces/srv/control_world.hpp"
 #include "service_factories/ros_gz_interfaces.hpp"
+#include "ros_gz_interfaces/srv/control_world.hpp"
+#include "ros_gz_bridge/convert/ros_gz_interfaces.hpp"
 
 #include "service_factory.hpp"
 
-namespace ros_gz_bridge {
-
-std::shared_ptr<ServiceFactoryInterface> get_service_factory__ros_gz_interfaces(
-    const std::string &ros_type_name,
-    const std::string &gz_req_type_name,
-    const std::string &gz_rep_type_name)
+namespace ros_gz_bridge
 {
-    if (ros_type_name == "ros_gz_interfaces/srv/ControlWorld" &&
-        (gz_req_type_name.empty() ||
-         gz_req_type_name == "ignition.msgs.WorldControl") &&
-        (gz_rep_type_name.empty() ||
-         gz_rep_type_name == "ignition.msgs.Boolean")) {
-        return std::make_shared<ServiceFactory<
-            ros_gz_interfaces::srv::ControlWorld,
-            ignition::msgs::WorldControl,
-            ignition::msgs::Boolean>>(
-            ros_type_name,
-            "ignition.msgs.WorldControl",
-            "ignition.msgs.Boolean");
-    }
 
-    return nullptr;
+std::shared_ptr<ServiceFactoryInterface>
+get_service_factory__ros_gz_interfaces(
+  const std::string & ros_type_name,
+  const std::string & gz_req_type_name,
+  const std::string & gz_rep_type_name)
+{
+  if (
+    ros_type_name == "ros_gz_interfaces/srv/ControlWorld" &&
+    (gz_req_type_name.empty() || gz_req_type_name == "ignition.msgs.WorldControl") &&
+    (gz_rep_type_name.empty() || gz_rep_type_name == "ignition.msgs.Boolean"))
+  {
+    return std::make_shared<
+      ServiceFactory<
+        ros_gz_interfaces::srv::ControlWorld,
+        gz::msgs::WorldControl,
+        gz::msgs::Boolean>
+    >(ros_type_name, "ignition.msgs.WorldControl", "ignition.msgs.Boolean");
+  }
+
+  return nullptr;
 }
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::srv::ControlWorld::Request &ros_req,
-    ignition::msgs::WorldControl &gz_req)
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::srv::ControlWorld::Request & ros_req,
+  gz::msgs::WorldControl & gz_req)
 {
-    convert_ros_to_gz(ros_req.world_control, gz_req);
+  convert_ros_to_gz(ros_req.world_control, gz_req);
 }
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Boolean &gz_rep,
-    ros_gz_interfaces::srv::ControlWorld::Response &ros_res)
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Boolean & gz_rep,
+  ros_gz_interfaces::srv::ControlWorld::Response & ros_res)
 {
-    ros_res.success = gz_rep.data();
+  ros_res.success = gz_rep.data();
 }
 
-template <>
-bool send_response_on_error(
-    ros_gz_interfaces::srv::ControlWorld::Response &ros_res)
+template<>
+bool
+send_response_on_error(ros_gz_interfaces::srv::ControlWorld::Response & ros_res)
 {
-    // TODO(now): Is it worth it to have a different field to encode Gazebo
-    // request errors?
-    //  Currently we're reusing the success field, which seems fine for this
-    //  case.
-    ros_res.success = false;
-    return true;
+  // TODO(now): Is it worth it to have a different field to encode Gazebo request errors?
+  //  Currently we're reusing the success field, which seems fine for this case.
+  ros_res.success = false;
+  return true;
 }
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge

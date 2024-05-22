@@ -15,51 +15,53 @@
 #ifndef BRIDGE_HANDLE_ROS_TO_GZ_HPP_
 #define BRIDGE_HANDLE_ROS_TO_GZ_HPP_
 
-#include <ignition/transport/Node.hh>
+#include <gz/transport/Node.hh>
 #include <rclcpp/subscription_base.hpp>
 
 #include "bridge_handle.hpp"
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
 /// \brief Create a bridge ROS to GZ Bridge
 ///
 /// Bridge is from ROS Subscription (input) to GZ Publisher (output)
-class BridgeHandleRosToGz : public BridgeHandle {
+class BridgeHandleRosToGz : public BridgeHandle
+{
 public:
-    /// \brief Constructor
-    using BridgeHandle::BridgeHandle;
+  /// \brief Constructor
+  using BridgeHandle::BridgeHandle;
 
-    /// \brief Destructor
-    ~BridgeHandleRosToGz() override;
-
-protected:
-    /// \brief Documentation inherited
-    size_t NumSubscriptions() const override;
-
-    /// \brief Documentation inherited
-    bool HasPublisher() const override;
-
-    /// \brief Documentation inherited
-    void StartPublisher() override;
-
-    /// \brief Documentation inherited
-    bool HasSubscriber() const override;
-
-    /// \brief Documentation inherited
-    void StartSubscriber() override;
-
-    /// \brief Documentation inherited
-    void StopSubscriber() override;
+  /// \brief Destructor
+  ~BridgeHandleRosToGz() override;
 
 protected:
-    /// \brief ROS subscriber, populated when subscription active
-    rclcpp::SubscriptionBase::SharedPtr ros_subscriber_ = {nullptr};
+  /// \brief Documentation inherited
+  size_t NumSubscriptions() const override;
 
-    /// \brief Gazebo publisher, populated when publisher active
-    ignition::transport::Node::Publisher gz_publisher_;
+  /// \brief Documentation inherited
+  bool HasPublisher() const override;
+
+  /// \brief Documentation inherited
+  void StartPublisher() override;
+
+  /// \brief Documentation inherited
+  bool HasSubscriber() const override;
+
+  /// \brief Documentation inherited
+  void StartSubscriber() override;
+
+  /// \brief Documentation inherited
+  void StopSubscriber() override;
+
+protected:
+  /// \brief ROS subscriber, populated when subscription active
+  rclcpp::SubscriptionBase::SharedPtr ros_subscriber_ = {nullptr};
+
+  /// \brief Gazebo publisher, populated when publisher active
+  gz::transport::Node::Publisher gz_publisher_;
 };
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // BRIDGE_HANDLE_ROS_TO_GZ_HPP_
+#endif  // BRIDGE_HANDLE_ROS_TO_GZ_HPP_

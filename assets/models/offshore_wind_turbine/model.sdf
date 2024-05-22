@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+    <model name="OffShore Wind Turbine">
+        <pose>0 0 0 0 0 0</pose>
+        <static>true</static>
+        <link name="link">
+            <collision name="collision">
+                <geometry>
+                    <mesh>
+                        <uri>./meshes/offshore_wind_turbine.stl</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>./meshes/offshore_wind_turbine.dae</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+    </model>
+</sdf>

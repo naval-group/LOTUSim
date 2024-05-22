@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -21,20 +22,20 @@
 static std::shared_ptr<rclcpp::Node> kTestNode;
 
 /////////////////////////////////////////////////
-rclcpp::Node *ros_subscriber::TestNode()
+rclcpp::Node * ros_subscriber::TestNode()
 {
-    if (kTestNode == nullptr) {
-        kTestNode = rclcpp::Node::make_shared("ros_subscriber");
-    }
-    return kTestNode.get();
+  if (kTestNode == nullptr) {
+    kTestNode = rclcpp::Node::make_shared("ros_subscriber");
+  }
+  return kTestNode.get();
 }
 
 /////////////////////////////////////////////////
-int main(int argc, char **argv)
+int main(int argc, char ** argv)
 {
-    ::testing::InitGoogleTest(&argc, argv);
-    rclcpp::init(argc, argv);
-    auto ret = RUN_ALL_TESTS();
-    kTestNode.reset();
-    return ret;
+  ::testing::InitGoogleTest(&argc, argv);
+  rclcpp::init(argc, argv);
+  auto ret = RUN_ALL_TESTS();
+  kTestNode.reset();
+  return ret;
 }

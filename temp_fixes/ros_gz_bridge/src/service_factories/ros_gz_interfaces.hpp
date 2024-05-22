@@ -20,13 +20,15 @@
 
 #include "service_factory_interface.hpp"
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
-std::shared_ptr<ServiceFactoryInterface> get_service_factory__ros_gz_interfaces(
-    const std::string &ros_type_name,
-    const std::string &gz_req_type_name,
-    const std::string &gz_rep_type_name);
+std::shared_ptr<ServiceFactoryInterface>
+get_service_factory__ros_gz_interfaces(
+  const std::string & ros_type_name,
+  const std::string & gz_req_type_name,
+  const std::string & gz_rep_type_name);
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // SERVICE_FACTORIES__ROS_GZ_INTERFACES_HPP_
+#endif  // SERVICE_FACTORIES__ROS_GZ_INTERFACES_HPP_

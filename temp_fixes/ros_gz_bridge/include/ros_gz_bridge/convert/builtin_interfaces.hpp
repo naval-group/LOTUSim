@@ -15,22 +15,27 @@
 #ifndef ROS_GZ_BRIDGE__CONVERT__BUILTIN_INTERFACES_HPP_
 #define ROS_GZ_BRIDGE__CONVERT__BUILTIN_INTERFACES_HPP_
 
-#include <ignition/msgs/time.pb.h>
+#include <gz/msgs/time.pb.h>
 
 #include <builtin_interfaces/msg/time.hpp>
 
 #include "ros_gz_bridge/convert_decl.hpp"
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
-template <>
-void convert_ros_to_gz(
-    const builtin_interfaces::msg::Time &ros_msg, ignition::msgs::Time &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const builtin_interfaces::msg::Time & ros_msg,
+  gz::msgs::Time & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Time &gz_msg, builtin_interfaces::msg::Time &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Time & gz_msg,
+  builtin_interfaces::msg::Time & ros_msg);
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // ROS_GZ_BRIDGE__CONVERT__BUILTIN_INTERFACES_HPP_
+#endif  // ROS_GZ_BRIDGE__CONVERT__BUILTIN_INTERFACES_HPP_

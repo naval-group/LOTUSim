@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="rexrov2">
+      <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
+    </plugin>
     <publish_render>true</publish_render>
 
     <!-- Base Link -->

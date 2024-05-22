@@ -13,8 +13,7 @@ bool TransformCartesianToSpherical(
 {
     try {
         auto scComp =
-            _ecm.Component<gz::sim::v7::components::SphericalCoordinates>(
-                _entity);
+            _ecm.Component<gz::sim::components::SphericalCoordinates>(_entity);
         sc_output = scComp->Data().PositionTransform(
             cart_input,
             gz::math::SphericalCoordinates::LOCAL2,
@@ -34,8 +33,7 @@ bool TransformSphericalToCartesian(
 {
     try {
         auto scComp =
-            _ecm.Component<gz::sim::v7::components::SphericalCoordinates>(
-                _entity);
+            _ecm.Component<gz::sim::components::SphericalCoordinates>(_entity);
         cart_output = scComp->Data().PositionTransform(
             sc_input,
             gz::math::SphericalCoordinates::SPHERICAL,

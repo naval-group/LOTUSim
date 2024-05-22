@@ -25,9 +25,8 @@ void WaveParamPlugin::Configure(
     std::string wave_param_topic_name = "wave_param";
     if (sdf->HasElement("topic"))
         wave_param_topic_name = sdf->Get<std::string>("topic");
-    m_param_pub =
-        m_gz_node->Advertise<gz_liquidai_plugins_msgs::msgs::WaveParam>(
-            wave_param_topic_name);
+    m_param_pub = m_gz_node->Advertise<gz_liquidai_msgs::msg::WaveParam>(
+        wave_param_topic_name);
     m_gz_node->Advertise(
         "get_" + wave_param_topic_name, &WaveParamPlugin::getParamCB, this);
 
@@ -134,7 +133,7 @@ void WaveParamPlugin::logError(std::string err_statement)
     gzerr << err_statement << std::endl;
 }
 
-bool WaveParamPlugin::getParamCB(gz_liquidai_plugins_msgs::msgs::WaveParam &msg)
+bool WaveParamPlugin::getParamCB(gz_liquidai_msgs::msg::WaveParam &msg)
 {
     msg = m_param_msg;
 }

@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import os
 
-from ros_gz_bridge.mappings import MAPPINGS, MAPPINGS_8_4_0
+from ros_gz_bridge.mappings import MAPPINGS, MAPPINGS_10_1_0, MAPPINGS_8_4_0
 
 from rosidl_cmake import expand_template
 
@@ -36,19 +36,21 @@ class MessageMapping:
         # Return ROS2 type of a message (eg std_msgs::msg::Bool)
         return f'{self.ros2_package_name}::msg::{self.ros2_message_name}'
 
+    def ign_string(self):
+        # Return GZ string version of a message (eg ignition.msgs.Bool)
+        return f'ignition.msgs.{self.gz_message_name}'
+
+    def ign_type(self):
+        # Return GZ type of a message (eg gz::msgs::Bool)
+        return f'gz::msgs::{self.gz_message_name}'
+
     def gz_string(self):
         # Return GZ string version of a message (eg ignition.msgs.Bool)
-        if ":" in self.gz_message_name:
-            return f'{self.gz_message_name.replace("::", ".")}'
-        else:
-            return f'ignition.msgs.{self.gz_message_name}'
+        return f'gz.msgs.{self.gz_message_name}'
 
     def gz_type(self):
-        # Return GZ type of a message (eg ignition::msgs::Bool)
-        if ":" in self.gz_message_name:
-            return f'{self.gz_message_name}'
-        else:
-            return f'ignition::msgs::{self.gz_message_name}'
+        # Return GZ type of a message (eg gz::msgs::Bool)
+        return f'gz::msgs::{self.gz_message_name}'
 
     def unique(self):
         return f'{self.gz_message_name.lower()}_{self.ros2_message_name.lower()}'
@@ -73,6 +75,14 @@ def mappings(gz_msgs_ver):
                     ros2_message_name=mapping.ros_type,
                     gz_message_name=mapping.gz_type
                 ))
+    if gz_msgs_ver >= (10, 1, 0):
+        for (ros2_package_name, mappings) in MAPPINGS_10_1_0.items():
+            for mapping in sorted(mappings):
+                data.append(MessageMapping(
+                    ros2_package_name=ros2_package_name,
+                    ros2_message_name=mapping.ros_type,
+                    gz_message_name=mapping.gz_type
+                ))
     return sorted(data, key=lambda mm: mm.ros2_string())
 
 
@@ -87,7 +97,7 @@ def generate_cpp(output_path, template_dir, gz_msgs_ver):
     expand_template(template_file, data_for_template, output_file)
 
     unique_package_names = {
-        mapping.ros2_package_name for mapping in data['mappings']}
+            mapping.ros2_package_name for mapping in data['mappings']}
     data['ros2_package_names'] = list(unique_package_names)
 
     template_file = os.path.join(template_dir, 'get_factory.cpp.em')
@@ -96,11 +106,11 @@ def generate_cpp(output_path, template_dir, gz_msgs_ver):
 
     for ros2_package_name in unique_package_names:
         data_pkg = {
-            'ros2_package_name': ros2_package_name,
-            'mappings': [
-                m for m in data['mappings']
-                if m.ros2_package_name == ros2_package_name
-            ]
+                'ros2_package_name': ros2_package_name,
+                'mappings': [
+                    m for m in data['mappings']
+                    if m.ros2_package_name == ros2_package_name
+                ]
         }
         template_file = os.path.join(template_dir, 'pkg_factories.hpp.em')
         output_file = os.path.join(
@@ -134,14 +144,14 @@ def generate_test_cpp(output_path, template_dir, gz_msgs_ver):
     expand_template(template_file, data_for_template, output_file)
 
     unique_package_names = {
-        mapping.ros2_package_name for mapping in data['mappings']}
+            mapping.ros2_package_name for mapping in data['mappings']}
     for ros2_package_name in unique_package_names:
         data_pkg = {
-            'ros2_package_name': ros2_package_name,
-            'mappings': [
-                m for m in data['mappings']
-                if m.ros2_package_name == ros2_package_name
-            ]
+                'ros2_package_name': ros2_package_name,
+                'mappings': [
+                    m for m in data['mappings']
+                    if m.ros2_package_name == ros2_package_name
+                ]
         }
 
         template_file = os.path.join(template_dir, 'ros_pkg_subscriber.cpp.em')
