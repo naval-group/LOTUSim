@@ -18,7 +18,7 @@ This simulation is built on Gazebo Garden, a non LTS version, as this is started
 
 ```bash
 # ROS libraries
-sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gz ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
+sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzgarden ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
 
 # Other libraries
 sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev
@@ -103,6 +103,8 @@ ros2 topic pub /lrauv/propeller/input liquidai_msgs/msg/FloatStamped "{data: 250
 
 ### Workflow
 We use the Gitflow collaborating workflow. You can find the explanation of this workflow [here](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+
+We are using the default Gitflow branch naming like (here)[https://www.gitkraken.com/blog/gitflow].
 
 ### Issues
 
