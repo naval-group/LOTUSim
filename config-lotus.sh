@@ -11,7 +11,7 @@ ASSETS_MODELS_PATH="assets/models"
 ASV_WAVE_SIM_PATH="gazebo/asv_wave_sim/gz-waves-models/world_models"
 NEW_GZ_GUI_LIB_PATH="gui/lib"
 OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
-GAZEBO_VERSION="harmonic"
+GZ_VERSION="harmonic"
 
 # Vérification de l'existence des répertoires
 if [ ! -f "$ROS_SETUP_PATH" ]; then
@@ -48,7 +48,7 @@ cd ../..
 source "$ROS_SETUP_PATH"
 
 # Définition de la variable d'environnement GAZEBO_VERSION
-export GAZEBO_VERSION
+export GZ_VERSION
 
 # Vérification de la présence des dossiers build, install et log
 if [ -d "build" ] || [ -d "install" ] || [ -d "log" ]; then
