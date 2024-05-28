@@ -14,17 +14,17 @@
       <inertial>
          <pose>0 0 0 0 0 0</pose>
         <!-- 146.5671 subtracted by battery mass -->
-        <mass>165</mass>
+        <mass>147.8671</mass>
         <!--<mass>146.5671</mass>-->
         <!-- TODO: Get inertial matrix of base link WITHOUT battery -->
         <inertia>
-          <ixx>2.000000</ixx>
+          <ixx>3.000000</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
          
-          <iyy>30.0</iyy>
+          <iyy>41.980233</iyy>
           <iyz>0</iyz>
-          <izz>30.0</izz>
+          <izz>41.980233</izz>
         </inertia>
       </inertial>
       <collision name="main_body_buoyancy">
