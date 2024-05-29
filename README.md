@@ -27,16 +27,11 @@ sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev
 3. Creating workspace
 ```bash
 cd; mkdir -p LOTUSim_ws/src; cd LOTUSim_ws/src; 
-git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git
+git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git --recurse-submodules
 ```
 
 4. Building
 ```bash
-cd lotusim/
-git submodule init
-git submodule update --recursive
-
-# Building
 source config-lotus.sh
 ```
 
