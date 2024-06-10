@@ -14,6 +14,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ThrusterConversionFcn.msg"
   "msg/FloatStamped.msg"
   "msg/WaveParam.msg"
+  "msg/Xdyncmd.msg"
+  "msg/XdynThrustercmd.msg"
   "srv/SetCurrentModel.srv"
   "srv/GetCurrentModel.srv" 
   "srv/SetCurrentVelocity.srv"
