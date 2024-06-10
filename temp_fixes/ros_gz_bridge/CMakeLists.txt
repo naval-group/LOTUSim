@@ -76,7 +76,9 @@ include_directories(
   # Ahoy Desperate measures for gz_liquidai_msgs linker
   ${CMAKE_INSTALL_FULL_INCLUDEDIR}
 )
-
+link_directories(
+${CMAKE_INSTALL_FULL_LIBDIR}
+)
 
 set(GZ_MSGS_VERSION_MAJOR ${${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}_VERSION_MAJOR})
 set(GZ_MSGS_VERSION_MINOR ${${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}_VERSION_MINOR})
@@ -165,7 +167,7 @@ ${CMAKE_INSTALL_FULL_LIBDIR})
 target_link_libraries(${bridge_lib}
   ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
   ${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER}::core
-  gz_liquidai_msgs-msg
+  gz_liquidai_msgs-msgs 
 )
 
 ament_target_dependencies(${bridge_lib}

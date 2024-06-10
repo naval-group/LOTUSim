@@ -1,7 +1,7 @@
 #ifndef __AIS_PLUGIN_HH__
 #define __AIS_PLUGIN_HH__
 
-#include "gz_liquidai_msgs/msg/aismsg.pb.h"
+#include "gz_liquidai_msgs/msgs/aismsg.pb.h"
 #include "world_plugins/CoordinateSystemUtil.h"
 
 #include "gz/sim/Util.hh"

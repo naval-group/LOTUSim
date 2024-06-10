@@ -49,10 +49,10 @@ void convert_gz_to_ros(
 template <>
 void convert_ros_to_gz(
     const liquidai_msgs::msg::AISArray &ros_msg,
-    gz_liquidai_msgs::msg::AISArray &gz_msg)
+    gz_liquidai_msgs::msgs::AISArray &gz_msg)
 {
     for (auto &r_msg : ros_msg.data) {
-        gz_liquidai_msgs::msg::AISArray_AIS *g_msg = gz_msg.add_data();
+        gz_liquidai_msgs::msgs::AISArray_AIS *g_msg = gz_msg.add_data();
         g_msg->set_user_id(r_msg.user_id);
         g_msg->set_longitude(r_msg.longitude);
         g_msg->set_latitude(r_msg.latitude);
@@ -72,7 +72,7 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const gz_liquidai_msgs::msg::AISArray &gz_msg,
+    const gz_liquidai_msgs::msgs::AISArray &gz_msg,
     liquidai_msgs::msg::AISArray &ros_msg)
 {
     for (auto &&g_msg : gz_msg.data()) {
@@ -107,4 +107,34 @@ void convert_gz_to_ros(
     ros_msg.data = gz_msg.data();
 }
 
+template <>
+void convert_ros_to_gz(
+    const liquidai_msgs::msg::Xdyncmd &ros_msg,
+    gz_liquidai_msgs::msgs::XdynCmd &gz_msg)
+{
+    gz_msg.set_name(ros_msg.vessel_name);
+    for (auto &r_msg : ros_msg.cmd) {
+        gz_liquidai_msgs::msgs::XdynCmd_ThrusterCmd *g_msg = gz_msg.add_cmd();
+        g_msg->set_name(r_msg.name);
+        g_msg->set_rpm(r_msg.rpm);
+        g_msg->set_pd(r_msg.pd);
+        g_msg->set_beta(r_msg.beta);
+    }
+}
+
+template <>
+void convert_gz_to_ros(
+    const gz_liquidai_msgs::msgs::XdynCmd &gz_msg,
+    liquidai_msgs::msg::Xdyncmd &ros_msg)
+{
+    ros_msg.vessel_name = gz_msg.name();
+    for (auto &&g_msg : gz_msg.cmd()) {
+        liquidai_msgs::msg::XdynThrustercmd r_msg;
+        r_msg.name = g_msg.name();
+        r_msg.rpm = g_msg.rpm();
+        r_msg.pd = g_msg.pd();
+        r_msg.beta = g_msg.beta();
+        ros_msg.cmd.push_back(r_msg);
+    }
+}
 } // namespace ros_gz_bridge

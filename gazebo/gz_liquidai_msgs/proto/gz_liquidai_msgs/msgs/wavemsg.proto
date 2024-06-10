@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package gz_liquidai_msgs.msg;
+package gz_liquidai_msgs.msgs;
 import "gz/msgs/vector2d.proto";
 
 /// \brief Wave param msg

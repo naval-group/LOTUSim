@@ -83,6 +83,7 @@ class WaveRaoPlugin :
 
 public:
     WaveRaoPlugin();
+    ~WaveRaoPlugin();
 
     void Configure(
         const gz::sim::Entity &_entity,

@@ -7,6 +7,7 @@ WaveRaoPlugin::WaveRaoPlugin()
     : m_debug(false)
 {
 }
+WaveRaoPlugin::~WaveRaoPlugin() {}
 
 void WaveRaoPlugin::Configure(
     const gz::sim::Entity &_entity,
@@ -229,7 +230,7 @@ void WaveRaoPlugin::Update(
     for (auto &&vessel : m_vessels_name_map) {
         if (m_current_vessel_interface.find(vessel.first) ==
             m_current_vessel_interface.end()) {
-            gzwarn << vessel.second
+            gzwarn << "WaveRaoPlugin::Update " << vessel.second
                    << " update failed. Unable for find "
                       "interface\n";
         }
@@ -237,13 +238,16 @@ void WaveRaoPlugin::Update(
         time_now = std::chrono::system_clock::now();
         gz::math::Pose3d pose =
             _ecm.Component<gz::sim::components::Pose>(vessel.first)->Data();
+
         gz::sim::Link _link(m_vessels_base_link_map[vessel.second]);
         auto lin_vel = _link.WorldLinearVelocity(_ecm).value();
         auto ang_vel = _link.WorldAngularVelocity(_ecm).value();
         json vessel_info = {
             {"t",
-             std::chrono::duration_cast<std::chrono::seconds>(_info.simTime)
-                 .count()},
+             std::chrono::duration_cast<std::chrono::milliseconds>(
+                 _info.simTime)
+                     .count() /
+                 1000.0},
             {"x", pose.X()},
             {"y", pose.Y()},
             {"z", pose.Z()},
@@ -262,21 +266,6 @@ void WaveRaoPlugin::Update(
             m_current_vessel_interface[vessel.first]->getNewState(
                 vessel.first, vessel_info, target_time);
 
-        // gzdbg << vessel.second << " update time:: target: " << target_time
-        //       << " result: "
-        //       << std::chrono::duration_cast<std::chrono::milliseconds>(
-        //              std::chrono::system_clock::now() - time_now)
-        //              .count()
-        //       << std::endl;
-
-        gzmsg << std::chrono::duration_cast<std::chrono::seconds>(_info.simTime)
-                     .count()
-              << " "
-              << std::chrono::duration_cast<std::chrono::seconds>(
-                     _info.realTime)
-                     .count()
-              << std::endl;
-
         if (update_opt) {
             if (!vesselTransition(
                     vessel.first, std::get<1>(update_opt.value()))) {
@@ -293,23 +282,31 @@ void WaveRaoPlugin::Update(
                 update["qi"].back(),
                 update["qj"].back(),
                 update["qk"].back());
+
             auto lin_vel = gz::math::Vector3d{
                 update["u"].back(), update["v"].back(), update["w"].back()};
+
             auto ang_vel = gz::math::Vector3d{
                 update["p"].back(), update["q"].back(), update["r"].back()};
 
             bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel.first, pose);
+            if (!res)
+                gzwarn << "WaveRaoPlugin::Update " << vessel.second
+                       << " Change Position failed." << std::endl;
             res =
                 _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
                     m_vessels_base_link_map[vessel.second], lin_vel);
-            res =
-                _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-                    m_vessels_base_link_map[vessel.second], ang_vel);
-
+            if (!res)
+                gzwarn << "WaveRaoPlugin::Update " << vessel.second
+                       << " Change linear velocity failed." << std::endl;
+            const auto angularVel =
+                _ecm.Component<gz::sim::components::WorldAngularVelocity>(
+                    m_vessels_base_link_map[vessel.second]);
+            *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
             if (!res) {
-                gzwarn << vessel.second << " Change position failed."
-                       << std::endl;
+                gzwarn << "WaveRaoPlugin::Update " << vessel.second
+                       << " Change position failed." << std::endl;
             }
         }
         else {

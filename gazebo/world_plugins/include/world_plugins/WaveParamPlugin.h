@@ -2,7 +2,7 @@
 #define __WAVE_PARAM_NODE_H__
 
 #include "gz/sim/Util.hh"
-#include "gz_liquidai_msgs/msg/wavemsg.pb.h"
+#include "gz_liquidai_msgs/msgs/wavemsg.pb.h"
 #include "world_params/ParamNode.h"
 
 #include <liquidai_msgs/msg/wave_param.hpp>
@@ -57,7 +57,7 @@ public:
 private:
     void logError(std::string err_statement) override;
 
-    bool getParamCB(gz_liquidai_msgs::msg::WaveParam &msg);
+    bool getParamCB(gz_liquidai_msgs::msgs::WaveParam &msg);
 
     void setParamMsg(const WaveParameters &msg);
 
@@ -75,7 +75,7 @@ private:
      * @brief Gazebo wave param msg
      *
      */
-    gz_liquidai_msgs::msg::WaveParam m_param_msg;
+    gz_liquidai_msgs::msgs::WaveParam m_param_msg;
     std::shared_ptr<gz::transport::Node> m_gz_node;
     gz::transport::Node::Publisher m_param_pub;
 
