@@ -5,12 +5,12 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Définition des chemins
-ROS_SETUP_PATH="/opt/ros/jazzy/setup.bash"
+ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
 LOTUSIM_PATH="src/lotusim"
 ASSETS_MODELS_PATH="assets/models"
 ASV_WAVE_SIM_PATH="gazebo/asv_wave_sim/gz-waves-models/world_models"
 
-export ROS_DISTRO=jazzy
+export ROS_DISTRO=humble
 export GZ_VERSION=harmonic
 
 # Vérification de l'existence des répertoires
