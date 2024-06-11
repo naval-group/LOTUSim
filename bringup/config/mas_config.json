@@ -1,0 +1,10 @@
+{
+    "params": {
+        "world_name": "poc_test_mas.world",
+        "verbose": 4
+    },
+    "plugins": [],
+    "agent_configs": [
+        "agent_config1.json"
+    ]
+  }
