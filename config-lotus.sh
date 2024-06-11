@@ -5,12 +5,13 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Définition des chemins
-ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
+ROS_SETUP_PATH="/opt/ros/jazzy/setup.bash"
 LOTUSIM_PATH="src/lotusim"
 ASSETS_MODELS_PATH="assets/models"
-ASV_WAVE_SIM_PATH="asv_wave_sim/gz-waves-models/world_models"
-NEW_GZ_GUI_LIB_PATH="gui/lib"
-OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
+ASV_WAVE_SIM_PATH="gazebo/asv_wave_sim/gz-waves-models/world_models"
+
+export ROS_DISTRO=jazzy
+export GZ_VERSION=harmonic
 
 # Vérification de l'existence des répertoires
 if [ ! -f "$ROS_SETUP_PATH" ]; then
@@ -77,15 +78,3 @@ cd "$LOTUSIM_PATH" || return 1
 GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"
 export GZ_SIM_RESOURCE_PATH
 echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
-
-# Remplacement de certaines librairies de GZ GUI
-# La modification de ces libraires permet d'afficher le logo NG + corporate sensitivity
-read -rp "Voulez-vous modifier les binaires de gazebo (interface) ? (y/n) " response
-if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    sudo cp "$NEW_GZ_GUI_LIB_PATH"/* "$OLD_GZ_GUI_LIB_PATH"
-fi
-
-# Variable d'environnement des autres lib de GZ GUI (plugins)
-GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-7/plugins"
-export GZ_GUI_PLUGIN_PATH
-echo -e "GZ_GUI_PLUGIN_PATH : ${GREEN}$GZ_GUI_PLUGIN_PATH${NC}"
