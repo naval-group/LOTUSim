@@ -7,7 +7,7 @@
     Plugin to provide gazebo step control via service
   </description>
 
-  <maintainer email="kerian.fiter@gmail.com">Kerian Fiter</maintainer>
+  <maintainer email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</maintainer>
 
   <license>Apache-2.0</license>
 
