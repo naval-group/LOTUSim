@@ -37,10 +37,10 @@ list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
 add_library(gazebo_step_control SHARED src/gazebo_step_control.cpp) #SampleSystem2.cc)
 set_property(TARGET gazebo_step_control PROPERTY CXX_STANDARD 17)
 target_link_libraries(gazebo_step_control
-  gz-common::gz-common
-  gz-plugin::gz-plugin
-  gz-sim::gz-sim
-  gz-msgs::gz-msgs
+  gz-common5::gz-common5
+  gz-plugin2::gz-plugin2
+  gz-sim8::gz-sim8
+  gz-msgs10::gz-msgs10
 )
 
 ament_target_dependencies(gazebo_step_control rclcpp std_srvs std_msgs gazebo_step_control_interface)
