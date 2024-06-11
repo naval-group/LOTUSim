@@ -16,6 +16,7 @@ sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-rob
 
 # Other libraries
 sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev
+sudo apt-get install libxlsxwriter-dev
 ```
 
 3. Creating workspace
