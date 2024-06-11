@@ -4,10 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "~/LOTUSim_ws/install/custom_gz_interfaces/**",
+                "~/LOTUSim_ws/install/**",
                 "/usr/include/gz/**",
                 "/opt/ros/humble/**",
-                "~/LOTUSim_ws/install/custom_gz_interfaces/include/custom_gz_interfaces",
                 "/opt/ros/humble/include/geometry_msgs"
             ],
             "defines": [],
