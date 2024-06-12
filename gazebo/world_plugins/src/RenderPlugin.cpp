@@ -25,7 +25,7 @@ void RenderPlugin::Configure(
     }
 
     m_render_interface = CreateRenderInterface(connection_protocol);
-    m_render_interface->ConfigureInterface(_sdf);
+    m_render_interface->ConfigureInterface(_sdf, m_gz_node);
 }
 
 void RenderPlugin::PreUpdate(
@@ -71,7 +71,6 @@ void RenderPlugin::PostUpdate(
     }
     m_render_interface->SendPosition(_info.simTime, vessel_pose);
 }
-
 } // namespace gazebo
 } // namespace liquidai
 

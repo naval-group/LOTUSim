@@ -267,11 +267,11 @@ void WaveRaoPlugin::Update(
                 vessel.first, vessel_info, target_time);
 
         if (update_opt) {
-            if (!vesselTransition(
-                    vessel.first, std::get<1>(update_opt.value()))) {
-                gzerr << "WaveRaoPlugin::Update vessel " << vessel.second
-                      << "transition failed" << std::endl;
-            }
+            // if (!vesselTransition(
+            //         vessel.first, std::get<1>(update_opt.value()))) {
+            //     gzerr << "WaveRaoPlugin::Update vessel " << vessel.second
+            //           << "transition failed" << std::endl;
+            // }
 
             json update = std::move(std::get<0>(update_opt.value()));
             pose = gz::math::Pose3<double>(

@@ -199,20 +199,25 @@ ros2 run map_interface map_interface  --ros-args ip_address:=<ip_address> ais_to
 Using xdyn-for-cs websocket
 
 ```
-# Terminal 1
+# Terminal 1 launching surface xdyn
 export LD_LIBRARY_PATH=/home/malcom/garden_ws/src/liquidai/physics/xdynSurface/filter06
 cd src/liquidai/physics/xdynSurface
 clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -p 12345 -d --dt 0.2
 
-# Terminal 2
-export GZ_SIM_RESOURCE_PATH=$(pwd)/assets/models:$(pwd)/asv_wave_sim/gz-waves-models/world_models
-export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/malcom/garden_ws/install/lib
-clear; gz sim -v4 -s -r assets/worlds/xdyn_test.world
+# Terminal 2 launching underwater xdyn
+export LD_LIBRARY_PATH=/home/malcom/release_ws/src/lotusim/physics/xdynUnderwater
+cd src/lotusim/physics/xdynUnderwater/
+clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 3
-ros2 launch dtmb_description ros_bridge.launch.py
+export GZ_SIM_RESOURCE_PATH=$(pwd)/assets/models:$(pwd)/asv_wave_sim/gz-waves-models/world_models
+export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/malcom/release_ws/install/lib
+clear; gz sim -v4 -s -r assets/worlds/xdyn_underwater.world
 
 # Terminal 4
+ros2 launch dtmb_description ros_bridge.launch.py
+
+# Terminal 5
 ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=test_ship_vessel
 ```
 

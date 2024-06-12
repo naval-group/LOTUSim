@@ -104,7 +104,8 @@ bool XdynWebsocket::createConnection(
             gz_liquidai_msgs::msgs::XdynCmd_ThrusterCmd *thruster_cmd =
                 xdyn_cmd.add_cmd();
             thruster_cmd->set_name(sdfPtr_thruster->Get<std::string>());
-            thruster_cmd->set_rpm(0.01);
+            // thruster_cmd->set_rpm(0.01);
+            thruster_cmd->set_rpm(30);
             thruster_cmd->set_pd(0.79);
             thruster_cmd->set_beta(0.0);
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
