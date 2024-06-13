@@ -19,6 +19,10 @@ public:
     virtual bool SendPosition(
         const std::chrono::steady_clock::duration &runTime,
         const std::vector<std::pair<std::string, gz::math::Pose3d>> &poses) = 0;
+    
+    virtual bool SendCreateMessage(std::string name, std::string type) = 0;
+
+    virtual bool SendDestroyMessage(std::string name) = 0;
 };
 
 } // namespace gazebo

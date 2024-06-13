@@ -1,10 +1,16 @@
 {
     "params": {
+<<<<<<< Updated upstream
         "world_name": "poc_test_mas.world",
         "verbose": 4
+=======
+        "world_name": "xdyn_test.world",
+        "verbose": 4,
+        "gui-config": "gui/design.config"
+>>>>>>> Stashed changes
     },
     "plugins": [],
     "agent_configs": [
-        "agent_config1.json"
+        "agent_config_xdyn.json"
     ]
   }

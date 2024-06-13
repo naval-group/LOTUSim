@@ -31,7 +31,7 @@ XdynWebsocket::XdynWebsocket()
     m_thread.reset(new websocketpp::lib::thread(&Client::run, &m_client));
 
     workbook = workbook_new(
-        "/home/malcom/garden_ws/src/liquidai/physics/xdynSurface/gz.xlsx");
+        "/home/buche/LOTUSim_ws/src/lotusim/physics/xdynSurface/gz.xlsx");
     worksheet = workbook_add_worksheet(workbook, NULL);
     lxw_format *format = workbook_add_format(workbook);
     format_set_num_format(format, "$#,##0.00");

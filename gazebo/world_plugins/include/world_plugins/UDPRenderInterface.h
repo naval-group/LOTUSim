@@ -120,7 +120,7 @@ public:
 
         auto sent = m_socket_ptr->send_to(
             boost::asio::buffer(msgs), m_endpoint, 0, err);
-        std::cout << msgs << std::endl;
+        // std::cout << msgs << std::endl;
 
         m_io_context.run_one();
         return true;
