@@ -13,7 +13,7 @@
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
-#include <xlsxwriter.h>
+// #include <xlsxwriter.h>
 
 namespace liquidai {
 namespace gazebo {
