@@ -6,6 +6,7 @@ namespace gazebo {
 WaveRaoPlugin::WaveRaoPlugin()
     : m_debug(false)
 {
+    m_gz_node = std::make_shared<gz::transport::Node>();
 }
 WaveRaoPlugin::~WaveRaoPlugin() {}
 
@@ -15,10 +16,12 @@ void WaveRaoPlugin::Configure(
     gz::sim::EntityComponentManager &_ecm,
     gz::sim::EventManager &_eventMgr)
 {
+    m_entity = _entity;
     gzdbg << "WaveRaoPlugin initiated" << std::endl;
     auto sdfPtr = const_cast<sdf::Element *>(_sdf.get());
     if (sdfPtr->HasElement("debug")) {
         m_debug = sdfPtr->Get<bool>("debug");
+        m_log_pub = m_gz_node->Advertise<gz::msgs::Int32>("/gz_sched");
     }
 }
 
@@ -45,7 +48,9 @@ void WaveRaoPlugin::PreUpdate(
 
             if (sdfptr->HasElement("physics_server_interface")) {
                 gzdbg << sdfptr->ToString("") << std::endl;
-                // Get Base Link
+                m_vessels_entities.push_back(_entity);
+                // Get Base Link. Currently a fix as only base_link can get
+                // model speed
                 m_vessels_model_map[vessel_name] = _entity;
                 m_vessels_name_map[_entity] = vessel_name;
 
@@ -224,22 +229,39 @@ void WaveRaoPlugin::Update(
         return;
     }
 
+    if (m_debug) {
+        gz::msgs::Int32 msg;
+        msg.set_data(m_entity);
+        m_log_pub.Publish(msg);
+    }
+
     float target_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt).count();
 
-    for (auto &&vessel : m_vessels_name_map) {
-        if (m_current_vessel_interface.find(vessel.first) ==
+    // TODO: hardcoded for now. To change to a variable in sdf
+    shuffleOrder(m_vessels_entities, RandomisedType::RANDOM);
+
+    for (auto &&vessel_entity : m_vessels_entities) {
+        std::string vessel_name = m_vessels_name_map[vessel_entity];
+        if (m_current_vessel_interface.find(vessel_entity) ==
             m_current_vessel_interface.end()) {
-            gzwarn << "WaveRaoPlugin::Update " << vessel.second
+            gzwarn << "WaveRaoPlugin::Update " << vessel_name
                    << " update failed. Unable for find "
                       "interface\n";
         }
+
+        if (m_debug) {
+            gz::msgs::Int32 msg;
+            msg.set_data(vessel_entity);
+            m_log_pub.Publish(msg);
+        }
+
         std::chrono::_V2::system_clock::time_point time_now;
         time_now = std::chrono::system_clock::now();
         gz::math::Pose3d pose =
-            _ecm.Component<gz::sim::components::Pose>(vessel.first)->Data();
+            _ecm.Component<gz::sim::components::Pose>(vessel_entity)->Data();
 
-        gz::sim::Link _link(m_vessels_base_link_map[vessel.second]);
+        gz::sim::Link _link(m_vessels_base_link_map[vessel_name]);
         auto lin_vel = _link.WorldLinearVelocity(_ecm).value();
         auto ang_vel = _link.WorldAngularVelocity(_ecm).value();
         json vessel_info = {
@@ -263,13 +285,13 @@ void WaveRaoPlugin::Update(
             {"qk", pose.Rot().Z()}};
 
         std::optional<std::tuple<nlohmann::json, DomainType>> update_opt =
-            m_current_vessel_interface[vessel.first]->getNewState(
-                vessel.first, vessel_info, target_time);
+            m_current_vessel_interface[vessel_entity]->getNewState(
+                vessel_entity, vessel_info, target_time);
 
         if (update_opt) {
             // if (!vesselTransition(
-            //         vessel.first, std::get<1>(update_opt.value()))) {
-            //     gzerr << "WaveRaoPlugin::Update vessel " << vessel.second
+            //         vessel_entity, std::get<1>(update_opt.value()))) {
+            //     gzerr << "WaveRaoPlugin::Update vessel " << vessel_name
             //           << "transition failed" << std::endl;
             // }
 
@@ -290,27 +312,27 @@ void WaveRaoPlugin::Update(
                 update["p"].back(), update["q"].back(), update["r"].back()};
 
             bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
-                vessel.first, pose);
+                vessel_entity, pose);
             if (!res)
-                gzwarn << "WaveRaoPlugin::Update " << vessel.second
+                gzwarn << "WaveRaoPlugin::Update " << vessel_name
                        << " Change Position failed." << std::endl;
             res =
                 _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-                    m_vessels_base_link_map[vessel.second], lin_vel);
+                    m_vessels_base_link_map[vessel_name], lin_vel);
             if (!res)
-                gzwarn << "WaveRaoPlugin::Update " << vessel.second
+                gzwarn << "WaveRaoPlugin::Update " << vessel_name
                        << " Change linear velocity failed." << std::endl;
             const auto angularVel =
                 _ecm.Component<gz::sim::components::WorldAngularVelocity>(
-                    m_vessels_base_link_map[vessel.second]);
+                    m_vessels_base_link_map[vessel_name]);
             *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
             if (!res) {
-                gzwarn << "WaveRaoPlugin::Update " << vessel.second
+                gzwarn << "WaveRaoPlugin::Update " << vessel_name
                        << " Change position failed." << std::endl;
             }
         }
         else {
-            gzwarn << vessel.first << " update failed." << std::endl;
+            gzwarn << vessel_entity << " update failed." << std::endl;
         }
     }
 }

@@ -18,6 +18,7 @@
 
 // #include "world_plugins/ManualRAO.h"
 // #include "world_plugins/XdynGrpc.h"
+#include "world_plugins/Common.h"
 #include "world_plugins/WaveRaoInterface.h"
 #include "world_plugins/XdynWebSocket.h"
 
@@ -132,6 +133,30 @@ private:
      *
      */
     bool m_debug;
+
+    /**
+     * @brief Stores the WaveRAOPlugin entity
+     *
+     */
+    gz::sim::Entity m_entity;
+
+    /**
+     * @brief GZ Node
+     *
+     */
+    std::shared_ptr<gz::transport::Node> m_gz_node;
+
+    /**
+     * @brief Logging system publisher
+     *
+     */
+    gz::transport::Node::Publisher m_log_pub;
+
+    /**
+     * @brief List of the vessel entities
+     *
+     */
+    std::vector<gz::sim::Entity> m_vessels_entities;
 
     /**
      * @brief Mapping for vessel name to base_link entity
