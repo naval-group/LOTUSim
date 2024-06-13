@@ -25,32 +25,24 @@
         </plugin>
         <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
             <connection_protocol>udp</connection_protocol>
-            <ip>127.0.0.1</ip>
+            <ip>192.168.50.178</ip>
             <port>23456</port>
         </plugin>
-        <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
+        <!-- <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
+        </plugin> -->
+
+        <plugin filename="gazebo_step_control" name="step_control::GazeboStepControl">
+            <enable_control>false</enable_control>
         </plugin>
 
+        <plugin filename="gz_entity_management" name="entity_management::EntityManagement">
+        </plugin>
 
-        <include>
-            <uri>model://duck</uri>
-            <name>duck1</name>
-            <pose>300 300 0 0 0 0</pose>
-            <publish_ais>false</publish_ais>
-        </include>
-
-        <include>
-            <uri>model://duck</uri>
-            <name>duck2</name>
-            <pose>0 0 0 0 0 0</pose>
-            <publish_ais>false</publish_ais>
-        </include>
-
-        <include>
+        <!-- <include>
             <uri>model://test_ship</uri>
             <name>test_ship_vessel</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
-        </include>
+        </include> -->
     </world>
 </sdf>

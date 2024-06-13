@@ -35,7 +35,7 @@ environment models:
 # Fixed frame: NED
 bodies: # All bodies have NED as parent frame
   - name: dtmb
-    mesh: /home/malcom/garden_ws/src/liquidai/assets/models/dtmb_hull/dtmb.stl
+    mesh: /home/buche/LOTUSim_ws/src/lotusim/assets/models/dtmb_hull/dtmb.stl
 
     position of body frame relative to mesh:
       frame: mesh

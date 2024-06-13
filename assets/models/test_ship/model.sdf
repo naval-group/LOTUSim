@@ -2,6 +2,7 @@
 <sdf version="1.7">
     <model name='test_ship'>
         <publish_render>true</publish_render>
+        <unity_type_name>test_ship</unity_type_name>
 
         <link name="base_link">
             <pose>-9.355 0 -3.21 3.1419 0 0</pose>

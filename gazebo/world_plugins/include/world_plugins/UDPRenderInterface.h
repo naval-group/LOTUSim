@@ -120,7 +120,7 @@ public:
 
         auto sent = m_socket_ptr->send_to(
             boost::asio::buffer(msgs), m_endpoint, 0, err);
-        std::cout << msgs << std::endl;
+        // std::cout << msgs << std::endl;
 
         m_io_context.run_one();
         return true;
@@ -137,6 +137,37 @@ public:
                       << std::endl;
         }
     }
+
+        bool SendCreateMessage(std::string name, std::string type)
+    {
+        boost::system::error_code err;
+        std::string msg = "{";
+        msg += "\"name\": \"" + name + "\", ";
+        msg += "\"type\": \"" + type + "\"";
+        msg += "}";
+
+        auto sent =
+            m_socket_ptr->send_to(boost::asio::buffer(msg), m_endpoint, 0, err);
+        std::cout << msg << std::endl;
+
+        m_io_context.run_one();
+        return true;
+    }
+
+    bool SendDestroyMessage(std::string name) {
+                boost::system::error_code err;
+        std::string msg = "{";
+        msg += "\"name\": \"" + name + "\"";
+        msg += "}";
+
+        auto sent =
+            m_socket_ptr->send_to(boost::asio::buffer(msg), m_endpoint, 0, err);
+        // std::cout << msgs << std::endl;
+
+        m_io_context.run_one();
+        return true;
+    }
+
 
 private:
     boost::asio::io_context m_io_context;
