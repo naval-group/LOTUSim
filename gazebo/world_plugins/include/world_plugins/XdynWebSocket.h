@@ -13,7 +13,7 @@
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
-#include <xlsxwriter.h>
+// #include <xlsxwriter.h>
 
 namespace liquidai {
 namespace gazebo {
@@ -136,9 +136,9 @@ private:
     std::unordered_map<gz::sim::Entity, gz_liquidai_msgs::msgs::XdynCmd>
         m_xdyn_cmd;
 
-    int row = 1;
-    lxw_workbook *workbook;
-    lxw_worksheet *worksheet;
+    // int row = 1;
+    // lxw_workbook *workbook;
+    // lxw_worksheet *worksheet;
 };
 } // namespace gazebo
 } // namespace liquidai

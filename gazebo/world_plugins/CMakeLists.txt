@@ -55,7 +55,7 @@ find_package(websocketpp REQUIRED)
 find_package(gz_liquidai_msgs REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(Xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
+# pkg_check_modules(Xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
 
 message("gz liquidai msg  " ${CMAKE_INSTALL_FULL_LIBDIR})
 
@@ -140,7 +140,7 @@ target_link_libraries(wave_rao_plugin
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
   websocketpp::websocketpp
   gz_liquidai_msgs-msgs
-  PkgConfig::Xlsxwriter
+  # PkgConfig::Xlsxwriter
 )
 ament_target_dependencies(wave_rao_plugin 
   ament_cmake

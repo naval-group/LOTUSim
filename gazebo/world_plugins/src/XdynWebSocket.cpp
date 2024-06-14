@@ -30,27 +30,27 @@ XdynWebsocket::XdynWebsocket()
     // bottleneck
     m_thread.reset(new websocketpp::lib::thread(&Client::run, &m_client));
 
-    workbook = workbook_new(
-        "/home/buche/LOTUSim_ws/src/lotusim/physics/xdynSurface/gz.xlsx");
-    worksheet = workbook_add_worksheet(workbook, NULL);
-    lxw_format *format = workbook_add_format(workbook);
-    format_set_num_format(format, "$#,##0.00");
-    {
-        worksheet_write_string(worksheet, 0, 0, "t", NULL);
-        worksheet_write_string(worksheet, 0, 1, "X", NULL);
-        worksheet_write_string(worksheet, 0, 2, "Y", NULL);
-        worksheet_write_string(worksheet, 0, 3, "Z", NULL);
-        worksheet_write_string(worksheet, 0, 4, "U", NULL);
-        worksheet_write_string(worksheet, 0, 5, "v", NULL);
-        worksheet_write_string(worksheet, 0, 6, "w", NULL);
-        worksheet_write_string(worksheet, 0, 7, "qi", NULL);
-        worksheet_write_string(worksheet, 0, 8, "qj", NULL);
-        worksheet_write_string(worksheet, 0, 9, "qk", NULL);
-        worksheet_write_string(worksheet, 0, 10, "qr", NULL);
-        worksheet_write_string(worksheet, 0, 11, "p", NULL);
-        worksheet_write_string(worksheet, 0, 12, "q", NULL);
-        worksheet_write_string(worksheet, 0, 13, "r", NULL);
-    }
+    // workbook = workbook_new(
+    //     "/home/malcom/garden_ws/src/liquidai/physics/xdynSurface/gz.xlsx");
+    // worksheet = workbook_add_worksheet(workbook, NULL);
+    // lxw_format *format = workbook_add_format(workbook);
+    // format_set_num_format(format, "$#,##0.00");
+    // {
+    //     worksheet_write_string(worksheet, 0, 0, "t", NULL);
+    //     worksheet_write_string(worksheet, 0, 1, "X", NULL);
+    //     worksheet_write_string(worksheet, 0, 2, "Y", NULL);
+    //     worksheet_write_string(worksheet, 0, 3, "Z", NULL);
+    //     worksheet_write_string(worksheet, 0, 4, "U", NULL);
+    //     worksheet_write_string(worksheet, 0, 5, "v", NULL);
+    //     worksheet_write_string(worksheet, 0, 6, "w", NULL);
+    //     worksheet_write_string(worksheet, 0, 7, "qi", NULL);
+    //     worksheet_write_string(worksheet, 0, 8, "qj", NULL);
+    //     worksheet_write_string(worksheet, 0, 9, "qk", NULL);
+    //     worksheet_write_string(worksheet, 0, 10, "qr", NULL);
+    //     worksheet_write_string(worksheet, 0, 11, "p", NULL);
+    //     worksheet_write_string(worksheet, 0, 12, "q", NULL);
+    //     worksheet_write_string(worksheet, 0, 13, "r", NULL);
+    // }
 }
 
 XdynWebsocket::~XdynWebsocket()
@@ -64,7 +64,7 @@ XdynWebsocket::~XdynWebsocket()
     m_client.stop();
     m_thread->join();
 
-    workbook_close(workbook);
+    // workbook_close(workbook);
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::getInstance(
@@ -285,41 +285,54 @@ std::optional<std::tuple<json, DomainType>> XdynWebsocket::getNewState(
     data["states"].back()["r"] =
         data["states"].back()["r"].get<double>() * -1.0;
 
-    {
-        worksheet_write_number(
-            worksheet, row, 0, data["states"].back()["t"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 1, data["states"].back()["x"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 2, data["states"].back()["y"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 3, data["states"].back()["z"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 4, data["states"].back()["u"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 5, data["states"].back()["v"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 6, data["states"].back()["w"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 7, data["states"].back()["qi"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 8, data["states"].back()["qj"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 9, data["states"].back()["qk"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet,
-            row,
-            10,
-            data["states"].back()["qr"].get<double>(),
-            NULL);
-        worksheet_write_number(
-            worksheet, row, 11, data["states"].back()["p"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 12, data["states"].back()["q"].get<double>(), NULL);
-        worksheet_write_number(
-            worksheet, row, 13, data["states"].back()["r"].get<double>(), NULL);
-        row += 1;
-    }
+    // {
+    //     worksheet_write_number(
+    //         worksheet, row, 0, data["states"].back()["t"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 1, data["states"].back()["x"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 2, data["states"].back()["y"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 3, data["states"].back()["z"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 4, data["states"].back()["u"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 5, data["states"].back()["v"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 6, data["states"].back()["w"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 7, data["states"].back()["qi"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 8, data["states"].back()["qj"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 9, data["states"].back()["qk"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet,
+    //         row,
+    //         10,
+    //         data["states"].back()["qr"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 11, data["states"].back()["p"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 12, data["states"].back()["q"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 13, data["states"].back()["r"].get<double>(),
+    //         NULL);
+    //     row += 1;
+    // }
 
     auto cmd = json::object();
     for (auto &&cmd_msg : m_xdyn_cmd[_entity].cmd()) {
