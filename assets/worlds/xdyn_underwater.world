@@ -26,7 +26,7 @@
         </plugin>
         <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
             <connection_protocol>udp</connection_protocol>
-            <ip>127.0.0.1</ip>
+            <ip>192.168.50.220</ip>
             <port>23456</port>
         </plugin>
         <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
@@ -46,12 +46,12 @@
             <publish_ais>false</publish_ais>
         </include> -->
 
-        <!-- <include>
+        <include>
             <uri>model://test_ship</uri>
-            <name>test_ship_vessel</name>
+            <name>frigate</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
-        </include> -->
+        </include>
 
         <include>
             <uri>model://lrauv_xdyn</uri>

@@ -64,7 +64,7 @@ XdynWebsocket::~XdynWebsocket()
     m_client.stop();
     m_thread->join();
 
-    workbook_close(workbook);
+    // workbook_close(workbook);
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::getInstance(

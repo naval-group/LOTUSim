@@ -136,9 +136,9 @@ private:
     std::unordered_map<gz::sim::Entity, gz_liquidai_msgs::msgs::XdynCmd>
         m_xdyn_cmd;
 
-    int row = 1;
-    lxw_workbook *workbook;
-    lxw_worksheet *worksheet;
+    // int row = 1;
+    // lxw_workbook *workbook;
+    // lxw_worksheet *worksheet;
 };
 } // namespace gazebo
 } // namespace liquidai

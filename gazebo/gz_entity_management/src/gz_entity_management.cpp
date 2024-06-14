@@ -80,13 +80,14 @@ void EntityManagement::Configure(
 void EntityManagement::PreUpdate(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
-    rclcpp::spin_some(ros_node_);
-    rclcpp::spin_some(step_control_client_node_);
+
 }
 
 void EntityManagement::Update(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
+    rclcpp::spin_some(ros_node_);
+    rclcpp::spin_some(step_control_client_node_);
 }
 
 void EntityManagement::PostUpdate(
@@ -139,11 +140,13 @@ void EntityManagement::OnAddEntity(
     location->set_z(request->location.z);
     pose->set_allocated_position(location);
 
+    gz::math::Quaterniond rotation(
+        request->rotation.x, request->rotation.y, request->rotation.z);
     auto orientation = new gz::msgs::Quaternion();
-    orientation->set_x(request->rotation.x);
-    orientation->set_y(request->rotation.y);
-    orientation->set_z(request->rotation.z);
-    pose->set_allocated_orientation(orientation);
+    orientation->set_x(rotation.X());
+    orientation->set_y(rotation.Y());
+    orientation->set_z(rotation.Z());
+    orientation->set_w(rotation.W());
 
     req.set_allocated_pose(pose);
 
