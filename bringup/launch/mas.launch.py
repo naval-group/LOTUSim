@@ -49,7 +49,7 @@ def generate_launch_description():
             pkg_project_description,
             'worlds',
             json_data['params']['world_name']
-        )}.items(),
+        ) + " --gui-config={}".format(json_data['params']['gui-config'])}.items(),
     )
 
     entity_management = Node(

@@ -142,6 +142,7 @@ public:
     {
         boost::system::error_code err;
         std::string msg = "{";
+        msg += "\"cmd\": \"create\", ";
         msg += "\"name\": \"" + name + "\", ";
         msg += "\"type\": \"" + type + "\"";
         msg += "}";
@@ -157,12 +158,13 @@ public:
     bool SendDestroyMessage(std::string name) {
                 boost::system::error_code err;
         std::string msg = "{";
+        msg += "\"cmd\": \"destroy\", ";
         msg += "\"name\": \"" + name + "\"";
         msg += "}";
 
         auto sent =
             m_socket_ptr->send_to(boost::asio::buffer(msg), m_endpoint, 0, err);
-        // std::cout << msgs << std::endl;
+        std::cout << msg << std::endl;
 
         m_io_context.run_one();
         return true;
