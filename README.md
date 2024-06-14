@@ -20,13 +20,15 @@ sudo apt-get install libxlsxwriter-dev
 ```
 
 3. Creating workspace
+
 ```
-cd; mkdir -p liquidai_ws/src; cd liquidai_ws/src; 
+cd; mkdir -p liquidai_ws/src; cd liquidai_ws/src;
 
 <clone repo>
 ```
 
 4. Building
+
 ```
 cd liquidai
 git submodule init
@@ -35,7 +37,7 @@ git submodule update
 # Building
 cd ~/liqduiai_ws
 source /opt/ros/humble/setup.bash
-colcon build --merge-install 
+colcon build --merge-install
 ```
 
 ## Tutorial
@@ -63,7 +65,7 @@ The bridge between gazebo and Unity is currently a websocket in AIS plugin. It w
 
 During startup, the IP address of the Unity computer has to be defined as shown below and has to match the definition in Unity
 
-``` 
+```
 <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
     <period> 1 </period>
     <ip_address>127.0.0.1</ip_address>
@@ -77,10 +79,6 @@ The surface wave is defined in `assets/models/regular_waves/model.sdf`. Do chang
 <amplitude>0.0</amplitude>
 <period>6.0</period>
 ```
-
-
-
-
 
 ### Running the simulation
 
@@ -113,12 +111,9 @@ clear;gz sim -v4 -r assets/worlds/vessel_wave.world
 
 </details>
 
-
-
 ### Publishing gz msg
 
-Publishing command in gazebo 
-
+Publishing command in gazebo
 
 ```
 # Gazebo
@@ -129,8 +124,8 @@ gz topic -t <topic_name> -m <msgTpye e.g gz.msgs.Double> -p 'data: 1000'
 
 The following is a common launch to get the
 
-1. msg bridge between gazebo and ROS 
-2. wam-v transform frames 
+1. msg bridge between gazebo and ROS
+2. wam-v transform frames
 3. transform GPS to odom frame for navigation stack
 4. P controller for velocity to rpm of thruster
 
@@ -143,7 +138,7 @@ rviz2
 ---w
 # Or for debugging
 ros2 launch wamv_description ros_bridge.launch.py
-ros2 launch wamv_description robot_description.launch.py 
+ros2 launch wamv_description robot_description.launch.py
 ros2 launch gps_to_odom gps_to_odom.launch.py
 ros2 launch wamv_description vel_control.launch.py reset_tam:=false
 ```
@@ -160,8 +155,6 @@ rviz2 -d <liquidai_dir>/rviz_config.rviz# GUI used to give waypoint
 ros2 topic pub -1 /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: utm}, pose: {position: {x: 2.716, y: -4.0763}, orientation: {x: 0.0, y: 0.0, z: -0.301924, w: 0.95333}}}"
 ```
 
-
-
 For debugging, you can publish motor command in ROS for individual motor command
 
 ```
@@ -169,8 +162,6 @@ For debugging, you can publish motor command in ROS for individual motor command
 ros2 topic pub /thrusters/id_0/input liquidai_msgs/msg/FloatStamped "{data: 250}"
 ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0}, angular: {z: 1.0}}"
 ```
-
-
 
 ## Saving sensor data to file
 
@@ -180,7 +171,7 @@ ros2 bag record /front_camera /clock /tf /tf_static /cmd_accel /cmd_force /cmd_v
 
 # Navigation system
 
-A basic land vehicle stack is used to 
+A basic land vehicle stack is used to
 
 ```
 ros2 launch wamv_description nav2.launch.py
@@ -189,10 +180,8 @@ ros2 launch wamv_description nav2.launch.py
 # Map server interface
 
 ```
-ros2 run map_interface map_interface  --ros-args ip_address:=<ip_address> ais_topic_name:=<topic_name> 
+ros2 run map_interface map_interface  --ros-args ip_address:=<ip_address> ais_topic_name:=<topic_name>
 ```
-
-
 
 ## Xdyn integration
 
@@ -200,24 +189,23 @@ Using xdyn-for-cs websocket
 
 ```
 # Terminal 1 launching surface xdyn
-export LD_LIBRARY_PATH=/home/malcom/garden_ws/src/liquidai/physics/xdynSurface/filter06
+export LD_LIBRARY_PATH=/home/malcom/release_ws/src/lotusim/physics/xdynSurface/
 cd src/liquidai/physics/xdynSurface
-clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -p 12345 -d --dt 0.2
+clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 2 launching underwater xdyn
 export LD_LIBRARY_PATH=/home/malcom/release_ws/src/lotusim/physics/xdynUnderwater
 cd src/lotusim/physics/xdynUnderwater/
 clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
-# Terminal 3
+# Terminal 3 Launch gz sim
 export GZ_SIM_RESOURCE_PATH=$(pwd)/assets/models:$(pwd)/asv_wave_sim/gz-waves-models/world_models
 export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/malcom/release_ws/install/lib
 clear; gz sim -v4 -s -r assets/worlds/xdyn_underwater.world
 
-# Terminal 4
+# Terminal 4 bridge ROS2 and gz stuff
 ros2 launch dtmb_description ros_bridge.launch.py
 
-# Terminal 5
+# Terminal 5 keyboard control
 ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=test_ship_vessel
 ```
-
