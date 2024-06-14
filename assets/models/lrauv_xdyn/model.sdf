@@ -51,7 +51,7 @@
     <physics_server_interface>
       <underwater>
         <ConnectionType>XDynWebSocket</ConnectionType>
-        <uri>ws://127.0.0.1:12345</uri>
+        <uri>ws://192.168.50.173:12345</uri>
         <thrusters>
           <thursters1>propeller</thursters1>
         </thrusters>
