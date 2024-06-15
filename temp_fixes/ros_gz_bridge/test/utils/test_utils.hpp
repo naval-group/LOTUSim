@@ -21,10 +21,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-namespace ros_gz_bridge
-{
-namespace testing
-{
+namespace ros_gz_bridge {
+namespace testing {
 
 /// \brief Wait until a boolean variable is set to true for a given number
 /// of times.
@@ -35,17 +33,17 @@ namespace testing
 /// E.g.:
 ///   using namespace std::chrono_literals;
 ///   waitUntilBoolVar(myVar, 1ms, 10);
-template<class Rep, class Period>
+template <class Rep, class Period>
 void waitUntilBoolVar(
-  bool & _boolVar,
-  const std::chrono::duration<Rep, Period> & _sleepEach,
-  const int _retries)
+    bool &_boolVar,
+    const std::chrono::duration<Rep, Period> &_sleepEach,
+    const int _retries)
 {
-  int i = 0;
-  while (!_boolVar && i < _retries) {
-    ++i;
-    std::this_thread::sleep_for(_sleepEach);
-  }
+    int i = 0;
+    while (!_boolVar && i < _retries) {
+        ++i;
+        std::this_thread::sleep_for(_sleepEach);
+    }
 }
 
 /// \brief Wait until a boolean variable is set to true for a given number
@@ -57,21 +55,21 @@ void waitUntilBoolVar(
 /// E.g.:
 ///   using namespace std::chrono_literals;
 ///   waitUntilBoolVar(myVar, 1ms, 10);
-template<class Rep, class Period>
+template <class Rep, class Period>
 void waitUntilBoolVarAndSpin(
-  rclcpp::Node * node,
-  bool & _boolVar,
-  const std::chrono::duration<Rep, Period> & _sleepEach,
-  const int _retries)
+    rclcpp::Node *node,
+    bool &_boolVar,
+    const std::chrono::duration<Rep, Period> &_sleepEach,
+    const int _retries)
 {
-  int i = 0;
-  while (!_boolVar && i < _retries && rclcpp::ok()) {
-    ++i;
-    std::this_thread::sleep_for(_sleepEach);
-    rclcpp::spin_some(node->get_node_base_interface());
-  }
+    int i = 0;
+    while (!_boolVar && i < _retries && rclcpp::ok()) {
+        ++i;
+        std::this_thread::sleep_for(_sleepEach);
+        rclcpp::spin_some(node->get_node_base_interface());
+    }
 }
 
-}  // namespace testing
-}  // namespace ros_gz_bridge
-#endif  // UTILS__TEST_UTILS_HPP_
+} // namespace testing
+} // namespace ros_gz_bridge
+#endif // UTILS__TEST_UTILS_HPP_

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "ros_gz_bridge/bridge_config.hpp"
+
 #include <gz/msgs/config.hh>
 #include <gz/transport/Node.hh>
 #include <rclcpp/node.hpp>
@@ -34,13 +35,6 @@
 #if (GZ_MSGS_MAJOR_VERSION > 8) || \
     ((GZ_MSGS_MAJOR_VERSION == 8) && (GZ_MSGS_MINOR_VERSION >= 4))
 #define HAVE_DATAFRAME true
-#endif
-
-// MaterialColor is available from versions 10.1.0 (Harmonic) forward
-// This can be removed when the minimum supported version passes 10.1.0
-#if (GZ_MSGS_MAJOR_VERSION > 10) || \
-    ((GZ_MSGS_MAJOR_VERSION == 10) && (GZ_MSGS_MINOR_VERSION >= 1))
-#define HAVE_MATERIALCOLOR true
 #endif
 
 namespace ros_gz_bridge {

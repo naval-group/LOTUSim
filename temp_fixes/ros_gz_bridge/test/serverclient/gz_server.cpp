@@ -21,10 +21,10 @@
 #include <iostream>
 #include <thread>
 
-#include <gz/transport.hh>
+#include <ignition/transport.hh>
 
-#include "utils/test_utils.hpp"
 #include "utils/gz_test_msg.hpp"
+#include "utils/test_utils.hpp"
 
 /// \brief Flag used to break the waiting loop and terminate the program.
 static std::atomic_flag g_terminateSrv(false);
@@ -35,39 +35,37 @@ static std::atomic_flag g_terminateSrv(false);
 /// and exit the program smoothly.
 void signal_handler(int _signal)
 {
-  if (_signal == SIGINT || _signal == SIGTERM) {
-    g_terminateSrv.clear();
-  }
+    if (_signal == SIGINT || _signal == SIGTERM) {
+        g_terminateSrv.clear();
+    }
 }
 
 //////////////////////////////////////////////////
 bool control_world(const gz::msgs::WorldControl &, gz::msgs::Boolean &_res)
 {
-  _res.set_data(true);
-  return true;
+    _res.set_data(true);
+    return true;
 }
 
 //////////////////////////////////////////////////
-int main(int /*argc*/, char **/*argv*/)
+int main(int /*argc*/, char ** /*argv*/)
 {
-  g_terminateSrv.test_and_set();
-  // Install a signal handler for SIGINT and SIGTERM.
-  std::signal(SIGINT, signal_handler);
-  std::signal(SIGTERM, signal_handler);
+    g_terminateSrv.test_and_set();
+    // Install a signal handler for SIGINT and SIGTERM.
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
 
-  // Create a transport node and advertise a topic.
-  gz::transport::Node node;
+    // Create a transport node and advertise a topic.
+    ignition::transport::Node node;
 
-  // gz::msgs::WorldControl.
-  node.Advertise(
-    "/gz_ros/test/serviceclient/world_control",
-    &control_world);
+    // gz::msgs::WorldControl.
+    node.Advertise("/gz_ros/test/serviceclient/world_control", &control_world);
 
-  // Requests are handled in another thread.
-  // Wait until a signal is sent.
-  while (g_terminateSrv.test_and_set()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
+    // Requests are handled in another thread.
+    // Wait until a signal is sent.
+    while (g_terminateSrv.test_and_set()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
-  return 0;
+    return 0;
 }

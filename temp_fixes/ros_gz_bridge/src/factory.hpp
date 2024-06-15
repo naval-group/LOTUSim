@@ -27,43 +27,38 @@
 
 #include "factory_interface.hpp"
 
-namespace ros_gz_bridge
-{
+namespace ros_gz_bridge {
 
-template<typename ROS_T, typename GZ_T>
-class Factory : public FactoryInterface
-{
+template <typename ROS_T, typename GZ_T>
+class Factory : public FactoryInterface {
 public:
-  Factory(
-    const std::string & ros_type_name, const std::string & gz_type_name)
-  : ros_type_name_(ros_type_name),
-    gz_type_name_(gz_type_name)
-  {}
+    Factory(const std::string &ros_type_name, const std::string &gz_type_name)
+        : ros_type_name_(ros_type_name)
+        , gz_type_name_(gz_type_name)
+    {
+    }
 
-  virtual ~Factory() {}
+    virtual ~Factory() {}
 
-  rclcpp::PublisherBase::SharedPtr
-  create_ros_publisher(
-    rclcpp::Node::SharedPtr ros_node,
-    const std::string & topic_name,
-    size_t queue_size)
-  {
-    // Allow QoS overriding
-    auto options = rclcpp::PublisherOptions();
-    options.qos_overriding_options = rclcpp::QosOverridingOptions {
-      {
-        rclcpp::QosPolicyKind::Depth,
-        rclcpp::QosPolicyKind::Durability,
-        rclcpp::QosPolicyKind::History,
-        rclcpp::QosPolicyKind::Reliability
-      },
-    };
+    rclcpp::PublisherBase::SharedPtr create_ros_publisher(
+        rclcpp::Node::SharedPtr ros_node,
+        const std::string &topic_name,
+        size_t queue_size)
+    {
+        // Allow QoS overriding
+        auto options = rclcpp::PublisherOptions();
+        options.qos_overriding_options = rclcpp::QosOverridingOptions{
+            {rclcpp::QosPolicyKind::Depth,
+             rclcpp::QosPolicyKind::Durability,
+             rclcpp::QosPolicyKind::History,
+             rclcpp::QosPolicyKind::Reliability},
+        };
 
-    std::shared_ptr<rclcpp::Publisher<ROS_T>> publisher =
-      ros_node->create_publisher<ROS_T>(
-      topic_name, rclcpp::QoS(rclcpp::KeepLast(queue_size)), options);
-    return publisher;
-  }
+        std::shared_ptr<rclcpp::Publisher<ROS_T>> publisher =
+            ros_node->create_publisher<ROS_T>(
+                topic_name, rclcpp::QoS(rclcpp::KeepLast(queue_size)), options);
+        return publisher;
+    }
 
     gz::transport::Node::Publisher create_gz_publisher(
         std::shared_ptr<gz::transport::Node> gz_node,
@@ -88,10 +83,18 @@ public:
             ros_node);
         auto options = rclcpp::SubscriptionOptions();
         // Ignore messages that are published from this bridge.
-        if (!_info.IntraProcess()) {
-          this->gz_callback(_msg, ros_pub);
-        }
-      };
+        options.ignore_local_publications = true;
+        // Allow QoS overriding
+        options.qos_overriding_options =
+            rclcpp::QosOverridingOptions::with_default_policies();
+        std::shared_ptr<rclcpp::Subscription<ROS_T>> subscription =
+            ros_node->create_subscription<ROS_T>(
+                topic_name,
+                rclcpp::QoS(rclcpp::KeepLast(queue_size)),
+                fn,
+                options);
+        return subscription;
+    }
 
     void create_gz_subscriber(
         std::shared_ptr<gz::transport::Node> node,
@@ -131,38 +134,28 @@ protected:
             gz_type_name.c_str());
     }
 
-  static
-  void gz_callback(
-    const GZ_T & gz_msg,
-    rclcpp::PublisherBase::SharedPtr ros_pub)
-  {
-    ROS_T ros_msg;
-    convert_gz_to_ros(gz_msg, ros_msg);
-    std::shared_ptr<rclcpp::Publisher<ROS_T>> pub =
-      std::dynamic_pointer_cast<rclcpp::Publisher<ROS_T>>(ros_pub);
-    if (pub != nullptr) {
-      pub->publish(ros_msg);
+    static void
+    gz_callback(const GZ_T &gz_msg, rclcpp::PublisherBase::SharedPtr ros_pub)
+    {
+        ROS_T ros_msg;
+        convert_gz_to_ros(gz_msg, ros_msg);
+        std::shared_ptr<rclcpp::Publisher<ROS_T>> pub =
+            std::dynamic_pointer_cast<rclcpp::Publisher<ROS_T>>(ros_pub);
+        if (pub != nullptr) {
+            pub->publish(ros_msg);
+        }
     }
-  }
 
 public:
-  // since convert functions call each other for sub messages they must be
-  // public defined outside of the class
-  static
-  void
-  convert_ros_to_gz(
-    const ROS_T & ros_msg,
-    GZ_T & gz_msg);
-  static
-  void
-  convert_gz_to_ros(
-    const GZ_T & gz_msg,
-    ROS_T & ros_msg);
+    // since convert functions call each other for sub messages they must be
+    // public defined outside of the class
+    static void convert_ros_to_gz(const ROS_T &ros_msg, GZ_T &gz_msg);
+    static void convert_gz_to_ros(const GZ_T &gz_msg, ROS_T &ros_msg);
 
-  std::string ros_type_name_;
-  std::string gz_type_name_;
+    std::string ros_type_name_;
+    std::string gz_type_name_;
 };
 
-}  // namespace ros_gz_bridge
+} // namespace ros_gz_bridge
 
-#endif  // FACTORY_HPP_
+#endif // FACTORY_HPP_

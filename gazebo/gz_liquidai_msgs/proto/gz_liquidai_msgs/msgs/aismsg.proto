@@ -1,10 +1,5 @@
 syntax = "proto3";
-
-<<<<<<<< HEAD:gazebo/gz_liquidai_msgs/proto/gz_liquidai_msgs/msg/aismsg.proto
-package gz_liquidai_msgs.msg;
-========
 package gz_liquidai_msgs.msgs;
->>>>>>>> underwater_merged:gazebo/gz_liquidai_msgs/proto/gz_liquidai_msgs/msgs/aismsg.proto
 
 message AISArray
 {

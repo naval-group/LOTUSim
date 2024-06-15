@@ -1,69 +1,71 @@
 # Bridge communication between ROS and Gazebo
 
+**This is a temporary bridge between uuv plugin msg and gazebo. To be removed.**
+
 This package provides a network bridge which enables the exchange of messages
 between ROS and Gazebo Transport.
 
 The following message types can be bridged for topics:
 
-| ROS type                              |           Gazebo type            |
-| ------------------------------------- | :------------------------------: |
-| builtin_interfaces/msg/Time           |          gz::msgs::Time          |
-| std_msgs/msg/Bool                     |        gz::msgs::Boolean         |
-| std_msgs/msg/ColorRGBA                |         gz::msgs::Color          |
-| std_msgs/msg/Empty                    |         gz::msgs::Empty          |
-| std_msgs/msg/Float32                  |         gz::msgs::Float          |
-| std_msgs/msg/Float64                  |         gz::msgs::Double         |
-| std_msgs/msg/Header                   |         gz::msgs::Header         |
-| std_msgs/msg/Int32                    |         gz::msgs::Int32          |
-| std_msgs/msg/UInt32                   |         gz::msgs::UInt32         |
-| std_msgs/msg/String                   |       gz::msgs::StringMsg        |
-| geometry_msgs/msg/Wrench              |         gz::msgs::Wrench         |
-| geometry_msgs/msg/Quaternion          |       gz::msgs::Quaternion       |
-| geometry_msgs/msg/Vector3             |        gz::msgs::Vector3d        |
-| geometry_msgs/msg/Point               |        gz::msgs::Vector3d        |
-| geometry_msgs/msg/Pose                |          gz::msgs::Pose          |
-| geometry_msgs/msg/PoseArray           |         gz::msgs::Pose_V         |
-| geometry_msgs/msg/PoseWithCovariance  |   gz::msgs::PoseWithCovariance   |
-| geometry_msgs/msg/PoseStamped         |          gz::msgs::Pose          |
-| geometry_msgs/msg/Transform           |          gz::msgs::Pose          |
-| geometry_msgs/msg/TransformStamped    |          gz::msgs::Pose          |
-| geometry_msgs/msg/Twist               |         gz::msgs::Twist          |
-| geometry_msgs/msg/TwistWithCovariance |  gz::msgs::TwistWithCovariance   |
-| nav_msgs/msg/Odometry                 |        gz::msgs::Odometry        |
-| nav_msgs/msg/Odometry                 | gz::msgs::OdometryWithCovariance |
-| rcl_interfaces/msg/ParameterValue     |          gz::msgs::Any           |
-| ros_gz_interfaces/msg/Contact         |        gz::msgs::Contact         |
-| ros_gz_interfaces/msg/Contacts        |        gz::msgs::Contacts        |
-| ros_gz_interfaces/msg/Dataframe       |       gz::msgs::Dataframe        |
-| ros_gz_interfaces/msg/Entity          |         gz::msgs::Entity         |
-| ros_gz_interfaces/msg/Float32Array    |        gz::msgs::Float_V         |
-| ros_gz_interfaces/msg/GuiCamera       |       gz::msgs::GUICamera        |
-| ros_gz_interfaces/msg/JointWrench     |      gz::msgs::JointWrench       |
-| ros_gz_interfaces/msg/Light           |         gz::msgs::Light          |
-| ros_gz_interfaces/msg/StringVec       |      gz::msgs::StringMsg_V       |
-| ros_gz_interfaces/msg/TrackVisual     |      gz::msgs::TrackVisual       |
-| ros_gz_interfaces/msg/VideoRecord     |      gz::msgs::VideoRecord       |
-| ros_gz_interfaces/msg/WorldControl    |      gz::msgs::WorldControl      |
-| rosgraph_msgs/msg/Clock               |         gz::msgs::Clock          |
-| sensor_msgs/msg/BatteryState          |      gz::msgs::BatteryState      |
-| sensor_msgs/msg/CameraInfo            |       gz::msgs::CameraInfo       |
-| sensor_msgs/msg/FluidPressure         |     gz::msgs::FluidPressure      |
-| sensor_msgs/msg/Imu                   |          gz::msgs::IMU           |
-| sensor_msgs/msg/Image                 |         gz::msgs::Image          |
-| sensor_msgs/msg/JointState            |         gz::msgs::Model          |
-| sensor_msgs/msg/LaserScan             |       gz::msgs::LaserScan        |
-| sensor_msgs/msg/MagneticField         |      gz::msgs::Magnetometer      |
-| sensor_msgs/msg/NavSatFixed           |         gz::msgs::NavSat         |
-| sensor_msgs/msg/PointCloud2           |    gz::msgs::PointCloudPacked    |
-| tf2_msgs/msg/TFMessage                |         gz::msgs::Pose_V         |
-| trajectory_msgs/msg/JointTrajectory   |    gz::msgs::JointTrajectory     |
-| liquidai_msgs/msg/FloatStamped        |         gz::msgs::Double         |
+| ROS type                             | Gazebo type                            |
+|--------------------------------------|:--------------------------------------:|
+| builtin_interfaces/msg/Time          | gz::msgs::Time                   |
+| std_msgs/msg/Bool                    | gz::msgs::Boolean                |
+| std_msgs/msg/ColorRGBA               | gz::msgs::Color                  |
+| std_msgs/msg/Empty                   | gz::msgs::Empty                  |
+| std_msgs/msg/Float32                 | gz::msgs::Float                  |
+| std_msgs/msg/Float64                 | gz::msgs::Double                 |
+| std_msgs/msg/Header                  | gz::msgs::Header                 |
+| std_msgs/msg/Int32                   | gz::msgs::Int32                  |
+| std_msgs/msg/UInt32                  | gz::msgs::UInt32                 |
+| std_msgs/msg/String                  | gz::msgs::StringMsg              |
+| geometry_msgs/msg/Wrench             | gz::msgs::Wrench                 |
+| geometry_msgs/msg/Quaternion         | gz::msgs::Quaternion             |
+| geometry_msgs/msg/Vector3            | gz::msgs::Vector3d               |
+| geometry_msgs/msg/Point              | gz::msgs::Vector3d               |
+| geometry_msgs/msg/Pose               | gz::msgs::Pose                   |
+| geometry_msgs/msg/PoseArray          | gz::msgs::Pose_V                 |
+| geometry_msgs/msg/PoseWithCovariance | gz::msgs::PoseWithCovariance     |
+| geometry_msgs/msg/PoseStamped        | gz::msgs::Pose                   |
+| geometry_msgs/msg/Transform          | gz::msgs::Pose                   |
+| geometry_msgs/msg/TransformStamped   | gz::msgs::Pose                   |
+| geometry_msgs/msg/Twist              | gz::msgs::Twist                  |
+| geometry_msgs/msg/TwistWithCovariance| gz::msgs::TwistWithCovariance    |
+| nav_msgs/msg/Odometry                | gz::msgs::Odometry               |
+| nav_msgs/msg/Odometry                | gz::msgs::OdometryWithCovariance |
+| rcl_interfaces/msg/ParameterValue    | gz::msgs::Any                  |
+| ros_gz_interfaces/msg/Contact        | gz::msgs::Contact                |
+| ros_gz_interfaces/msg/Contacts       | gz::msgs::Contacts               |
+| ros_gz_interfaces/msg/Dataframe     | gz::msgs::Dataframe            |
+| ros_gz_interfaces/msg/Entity         | gz::msgs::Entity                 |
+| ros_gz_interfaces/msg/Float32Array   | gz::msgs::Float_V                |
+| ros_gz_interfaces/msg/GuiCamera      | gz::msgs::GUICamera              |
+| ros_gz_interfaces/msg/JointWrench    | gz::msgs::JointWrench            |
+| ros_gz_interfaces/msg/Light          | gz::msgs::Light                  |
+| ros_gz_interfaces/msg/StringVec      | gz::msgs::StringMsg_V            |
+| ros_gz_interfaces/msg/TrackVisual    | gz::msgs::TrackVisual            |
+| ros_gz_interfaces/msg/VideoRecord   | gz::msgs::VideoRecord            |
+| ros_gz_interfaces/msg/WorldControl  | gz::msgs::WorldControl           |
+| rosgraph_msgs/msg/Clock              | gz::msgs::Clock                  |
+| sensor_msgs/msg/BatteryState         | gz::msgs::BatteryState           |
+| sensor_msgs/msg/CameraInfo           | gz::msgs::CameraInfo             |
+| sensor_msgs/msg/FluidPressure        | gz::msgs::FluidPressure          |
+| sensor_msgs/msg/Imu                  | gz::msgs::IMU                    |
+| sensor_msgs/msg/Image                | gz::msgs::Image                  |
+| sensor_msgs/msg/JointState           | gz::msgs::Model                  |
+| sensor_msgs/msg/LaserScan            | gz::msgs::LaserScan              |
+| sensor_msgs/msg/MagneticField        | gz::msgs::Magnetometer           |
+| sensor_msgs/msg/NavSatFixed          | gz::msgs::NavSat               |
+| sensor_msgs/msg/PointCloud2          | gz::msgs::PointCloudPacked       |
+| tf2_msgs/msg/TFMessage               | gz::msgs::Pose_V                 |
+| trajectory_msgs/msg/JointTrajectory  | gz::msgs::JointTrajectory        |
+| liquidai_msgs/msg/FloatStamped  | gz::msgs::Double        |
 
 And the following for services:
 
-| ROS type                           |       Gazebo request       | Gazebo response       |
-| ---------------------------------- | :------------------------: | --------------------- |
-| ros_gz_interfaces/srv/ControlWorld | ignition.msgs.WorldControl | ignition.msgs.Boolean |
+| ROS type                             | Gazebo request             | Gazebo response       |
+|--------------------------------------|:--------------------------:| --------------------- |
+| ros_gz_interfaces/srv/ControlWorld  | ignition.msgs.WorldControl | ignition.msgs.Boolean |
 
 Run `ros2 run ros_gz_bridge parameter_bridge -h` for instructions.
 
@@ -81,7 +83,7 @@ Now we start the ROS listener.
 
 ```
 # Shell B:
-. /opt/ros/humble/setup.bash
+. /opt/ros/galactic/setup.bash
 ros2 topic echo /chatter
 ```
 
@@ -113,7 +115,7 @@ Now we start the ROS talker.
 
 ```
 # Shell C:
-. /opt/ros/humble/setup.bash
+. /opt/ros/galactic/setup.bash
 ros2 topic pub /chatter std_msgs/msg/String "data: 'Hi'" --once
 ```
 
@@ -151,7 +153,7 @@ Now we start the ROS GUI:
 
 ```
 # Shell C:
-. /opt/ros/humble/setup.bash
+. /opt/ros/galactic/setup.bash
 ros2 run rqt_image_view rqt_image_view /rgbd_camera/image
 ```
 
@@ -230,7 +232,7 @@ An example configuration for 5 bridges is below, showing the various ways that a
 bridge may be specified:
 
 ```yaml
-# Set just topic name, applies to both
+ # Set just topic name, applies to both
 - topic_name: "chatter"
   ros_type_name: "std_msgs/msg/String"
   gz_type_name: "ignition.msgs.StringMsg"
@@ -256,58 +258,22 @@ bridge may be specified:
   gz_topic_name: "ign_chatter"
   ros_type_name: "std_msgs/msg/String"
   gz_type_name: "ignition.msgs.StringMsg"
-  subscriber_queue: 5 # Default 10
-  publisher_queue: 6 # Default 10
-  lazy: true # Default "false"
-  direction:
-    BIDIRECTIONAL # Default "BIDIRECTIONAL" - Bridge both directions
-    # "GZ_TO_ROS" - Bridge Ignition topic to ROS
-    # "ROS_TO_GZ" - Bridge ROS topic to Ignition
+  subscriber_queue: 5       # Default 10
+  publisher_queue: 6        # Default 10
+  lazy: true                # Default "false"
+  direction: BIDIRECTIONAL  # Default "BIDIRECTIONAL" - Bridge both directions
+                            # "GZ_TO_ROS" - Bridge Ignition topic to ROS
+                            # "ROS_TO_GZ" - Bridge ROS topic to Ignition
 ```
 
 To run the bridge node with the above configuration:
-
 ```bash
 ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=$WORKSPACE/ros_gz/ros_gz_bridge/test/config/full.yaml
 ```
-
-## Example 6: Using ROS namespace with the Bridge
-
-When spawning multiple robots inside the same ROS environment, it is convenient to use namespaces to avoid overlapping topic names.
-There are three main types of namespaces: relative, global (`/`) and private (`~/`). For more information, refer to ROS documentation.
-Namespaces are applied to Gazebo topic both when specified as `topic_name` as well as `gz_topic_name`.
-
-By default, the Bridge will not apply ROS namespace on the Gazebo topics. To enable this feature, use parameter `expand_gz_topic_names`.
-Let's test our topic with namespace:
-
-```bash
-# Shell A:
-. ~/bridge_ws/install/setup.bash
-ros2 run ros_gz_bridge parameter_bridge chatter@std_msgs/msg/String@ignition.msgs.StringMsg \
-  --ros-args -p expand_gz_topic_names:=true -r __ns:=/demo
-```
-
-Now we start the Gazebo Transport listener.
-
-```bash
-# Shell B:
-ign topic -e -t /demo/chatter
-```
-
-Now we start the ROS talker.
-
-```bash
-# Shell C:
-. /opt/ros/humble/setup.bash
-ros2 topic pub /demo/chatter std_msgs/msg/String "data: 'Hi from inside of a namespace'" --once
-```
-
-By changing `chatter` to `/chatter` or `~/chatter` you can obtain different results.
 
 ## API
 
 ROS 2 Parameters:
 
-- `subscription_heartbeat` - Period at which the node checks for new subscribers for lazy bridges.
-- `config_file` - YAML file to be loaded as the bridge configuration
-- `expand_gz_topic_names` - Enable or disable ROS namespace applied on GZ topics.
+ * `subscription_heartbeat` - Period at which the node checks for new subscribers for lazy bridges.
+ * `config_file` - YAML file to be loaded as the bridge configuration

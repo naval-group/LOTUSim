@@ -14,8 +14,8 @@
 
 // This file is generated from test/resource/gz_publisher.cpp.em
 
-#include <gz/msgs.hh>
-#include <gz/transport.hh>
+#include <ignition/msgs.hh>
+#include <ignition/transport.hh>
 
 #include <atomic>
 #include <chrono>
@@ -50,13 +50,13 @@ int main(int /*argc*/, char **/*argv*/)
   std::signal(SIGTERM, signal_handler);
 
   // Create a transport node and advertise a topic.
-  gz::transport::Node node;
+  ignition::transport::Node node;
 
 @[for m in mappings]@
   // @(m.gz_string()).
   auto @(m.unique())_pub =
-    node.Advertise<@(m.ign_type())>("@(m.unique())");
-  @(m.ign_type()) @(m.unique())_msg;
+    node.Advertise<@(m.gz_type())>("@(m.unique())");
+  @(m.gz_type()) @(m.unique())_msg;
   ros_gz_bridge::testing::createTestMsg(@(m.unique())_msg);
 
 @[end for]@

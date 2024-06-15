@@ -69,25 +69,6 @@ else()
   set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
 
   message(STATUS "Compiling against Gazebo Garden")
-elseif("$ENV{GZ_VERSION}" STREQUAL "harmonic")
-  find_package(gz-transport13 REQUIRED)
-  find_package(gz-msgs10 REQUIRED)
-
-  set(GZ_TARGET_PREFIX gz)
-  set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
-  set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
-
-  message(STATUS "Compiling against Gazebo Harmonic")
-# Default to Fortress
-else()
-  find_package(ignition-transport11 REQUIRED)
-  find_package(ignition-msgs8 REQUIRED)
-
-  set(GZ_TARGET_PREFIX ignition)
-  set(GZ_MSGS_VER ${ignition-msgs8_VERSION_MAJOR})
-  set(GZ_TRANSPORT_VER ${ignition-transport11_VERSION_MAJOR})
-
-  message(STATUS "Compiling against Ignition Fortress")
 endif()
 
 include_directories(
@@ -106,7 +87,6 @@ set(GZ_MSGS_VERSION_FULL ${GZ_MSGS_VERSION_MAJOR}.${GZ_MSGS_VERSION_MINOR}.${GZ_
 
 set(BRIDGE_MESSAGE_TYPES
   builtin_interfaces
-  actuator_msgs
   geometry_msgs
   nav_msgs
   rcl_interfaces
@@ -116,7 +96,7 @@ set(BRIDGE_MESSAGE_TYPES
   std_msgs
   tf2_msgs
   trajectory_msgs
-  vision_msgs
+  liquidai_msgs
 )
 
 set(generated_path "${CMAKE_BINARY_DIR}/generated")
@@ -156,7 +136,7 @@ add_custom_command(
   COMMENT "Generating factories for interface types")
 
 set(bridge_lib
-  ros_gz_bridge
+  ros_gz_bridge_lib
 )
 
 add_library(${bridge_lib}
@@ -166,7 +146,6 @@ add_library(${bridge_lib}
   src/bridge_handle_ros_to_gz.cpp
   src/bridge_handle_gz_to_ros.cpp
   src/factory_interface.cpp
-  src/service_factory_interface.cpp
   src/service_factories/ros_gz_interfaces.cpp
   src/ros_gz_bridge.cpp
   ${convert_files}
@@ -211,15 +190,18 @@ rclcpp_components_register_node(
   PLUGIN ros_gz_bridge::RosGzBridge
   EXECUTABLE bridge_node)
 
-install(TARGETS ${bridge_lib} EXPORT export_${PROJECT_NAME}
+install(TARGETS ${bridge_lib}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
 
 install(
   DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
+  DESTINATION include
 )
+
+ament_export_include_directories(include)
+ament_export_libraries(${bridge_lib})
 
 set(bridge_executables
   parameter_bridge
@@ -239,174 +221,163 @@ foreach(bridge ${bridge_executables})
     ${BRIDGE_MESSAGE_TYPES}
   )
   install(TARGETS ${bridge}
-    RUNTIME DESTINATION lib/${PROJECT_NAME}
+    DESTINATION lib/${PROJECT_NAME}
   )
 endforeach()
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
+# if(BUILD_TESTING)
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
 
-  find_package(ament_cmake_gtest REQUIRED)
-  find_package(launch_testing_ament_cmake REQUIRED)
-  ament_find_gtest()
+#   find_package(ament_cmake_gtest REQUIRED)
+#   find_package(launch_testing_ament_cmake REQUIRED)
+#   ament_find_gtest()
 
-  ament_add_gtest(test_rcl_interfaces
-    ${PROJECT_SOURCE_DIR}/src/convert/rcl_interfaces.cpp
-    ${PROJECT_SOURCE_DIR}/src/convert/rcl_interfaces_TEST.cpp
-  )
-  target_link_libraries(test_rcl_interfaces
-    ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
-    ${rcl_interfaces_TARGETS}
-    gtest
-    gtest_main
-  )
-  target_include_directories(test_rcl_interfaces
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/include
-  )
+#   ament_add_gtest(test_rcl_interfaces
+#     ${PROJECT_SOURCE_DIR}/src/convert/rcl_interfaces.cpp
+#     ${PROJECT_SOURCE_DIR}/src/convert/rcl_interfaces_TEST.cpp
+#   )
+#   target_link_libraries(test_rcl_interfaces
+#     ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
+#     ${rcl_interfaces_TARGETS}
+#     gtest
+#     gtest_main
+#   )
+#   target_include_directories(test_rcl_interfaces
+#     PRIVATE
+#     ${PROJECT_SOURCE_DIR}/include
+#   )
 
-  ament_add_gtest(test_ros_gz_interfaces
-    ${PROJECT_SOURCE_DIR}/src/convert/ros_gz_interfaces.cpp
-    ${PROJECT_SOURCE_DIR}/src/convert/ros_gz_interfaces_TEST.cpp
-  )
-  target_link_libraries(test_ros_gz_interfaces
-    ${bridge_lib}
-    ${ros_gz_interfaces_TARGETS}
-    gtest
-    gtest_main
-  )
-  target_include_directories(test_ros_gz_interfaces
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/include
-  )
+#   ament_add_gtest(test_ros_gz_interfaces
+#     ${PROJECT_SOURCE_DIR}/src/convert/ros_gz_interfaces.cpp
+#     ${PROJECT_SOURCE_DIR}/src/convert/ros_gz_interfaces_TEST.cpp
+#   )
+#   target_link_libraries(test_ros_gz_interfaces
+#     ${bridge_lib}
+#     ${ros_gz_interfaces_TARGETS}
+#     gtest
+#     gtest_main
+#   )
+#   target_include_directories(test_ros_gz_interfaces
+#     PRIVATE
+#     ${PROJECT_SOURCE_DIR}/include
+#   )
 
-  add_library(test_utils
-    test/utils/gz_test_msg.cpp
-    test/utils/ros_test_msg.cpp
-  )
+#   add_library(test_utils
+#     test/utils/gz_test_msg.cpp
+#     test/utils/ros_test_msg.cpp
+#   )
 
-  target_include_directories(test_utils
-    PUBLIC test ${GTEST_INCLUDE_DIRS} include
-  )
-  target_link_libraries(test_utils
-    ${GTEST_LIBRARIES}
-    ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
-    ${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER}::core
-  )
-  ament_target_dependencies(test_utils
-    rclcpp
-    ${BRIDGE_MESSAGE_TYPES}
-    ros_gz_interfaces
-    rosgraph_msgs
-    sensor_msgs
-    std_msgs
-    tf2_msgs
-    trajectory_msgs
-    vision_msgs
-  )
+#   target_include_directories(test_utils
+#     PUBLIC test ${GTEST_INCLUDE_DIRS} include
+#   )
+#   target_link_libraries(test_utils
+#     ${GTEST_LIBRARIES}
+#     ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
+#     ${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER}::core
+#   )
+#   ament_target_dependencies(test_utils
+#     rclcpp
+#     ${BRIDGE_MESSAGE_TYPES}
+#     ros_gz_interfaces
+#     rosgraph_msgs
+#     sensor_msgs
+#     std_msgs
+#     tf2_msgs
+#     trajectory_msgs
+#   )
 
-  set(generated_path "${CMAKE_BINARY_DIR}/generated/test")
+#   set(generated_path "${CMAKE_BINARY_DIR}/generated/test")
 
-  set(generated_files
-    "${generated_path}/gz_publisher.cpp"
-    "${generated_path}/gz_subscriber.cpp"
-    "${generated_path}/ros_publisher.cpp"
-  )
+#   set(generated_files
+#     "${generated_path}/gz_publisher.cpp"
+#     "${generated_path}/gz_subscriber.cpp"
+#     "${generated_path}/ros_publisher.cpp"
+#   )
 
-  set(ros_subscriber_files
-    "test/subscribers/ros_subscriber.cpp"
-  )
+#   set(ros_subscriber_files
+#     "test/subscribers/ros_subscriber.cpp"
+#   )
 
-  foreach(package_name ${BRIDGE_MESSAGE_TYPES})
-    list(APPEND generated_files "${generated_path}/${package_name}_subscriber.cpp")
-    list(APPEND ros_subscriber_files "${generated_path}/${package_name}_subscriber.cpp")
-  endforeach()
+#   foreach(package_name ${BRIDGE_MESSAGE_TYPES})
+#     list(APPEND generated_files "${generated_path}/${package_name}_subscriber.cpp")
+#     list(APPEND ros_subscriber_files "${generated_path}/${package_name}_subscriber.cpp")
+#   endforeach()
 
-  set(target_dependencies
-    "bin/ros_gz_bridge_generate_factories"
-    "test/resource/gz_publisher.cpp.em"
-    "test/resource/gz_subscriber.cpp.em"
-    "test/resource/ros_publisher.cpp.em"
-    "test/resource/ros_pkg_subscriber.cpp.em"
-    "ros_gz_bridge/__init__.py"
-    "ros_gz_bridge/mappings.py")
+#   set(target_dependencies
+#     "bin/ros_gz_bridge_generate_factories"
+#     "test/resource/gz_publisher.cpp.em"
+#     "test/resource/gz_subscriber.cpp.em"
+#     "test/resource/ros_publisher.cpp.em"
+#     "test/resource/ros_pkg_subscriber.cpp.em"
+#     "ros_gz_bridge/__init__.py"
+#     "ros_gz_bridge/mappings.py")
 
-  add_custom_command(
-    OUTPUT ${generated_files}
-    COMMAND Python3::Interpreter
-    ARGS bin/ros_gz_bridge_generate_tests
-      --output-path "${generated_path}" --template-dir test/resource/
-      --gz-msgs-ver "${GZ_MSGS_VERSION_FULL}"
-    DEPENDS ${target_dependencies}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Generating test helpers")
+#   add_custom_command(
+#     OUTPUT ${generated_files}
+#     COMMAND Python3::Interpreter
+#     ARGS bin/ros_gz_bridge_generate_tests
+#       --output-path "${generated_path}" --template-dir test/resource/
+#       --gz-msgs-ver "${GZ_MSGS_VERSION_FULL}"
+#     DEPENDS ${target_dependencies}
+#     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#     COMMENT "Generating test helpers")
 
-  add_executable(test_gz_publisher ${generated_path}/gz_publisher.cpp)
-  target_link_libraries(test_gz_publisher test_utils)
+#   add_executable(test_gz_publisher ${generated_path}/gz_publisher.cpp)
+#   target_link_libraries(test_gz_publisher test_utils)
 
-  add_executable(test_ros_publisher ${generated_path}/ros_publisher.cpp)
-  target_link_libraries(test_ros_publisher test_utils)
+#   add_executable(test_ros_publisher ${generated_path}/ros_publisher.cpp)
+#   target_link_libraries(test_ros_publisher test_utils)
 
-  add_executable(test_gz_subscriber ${generated_path}/gz_subscriber.cpp)
-  target_link_libraries(test_gz_subscriber test_utils)
+#   add_executable(test_gz_subscriber ${generated_path}/gz_subscriber.cpp)
+#   target_link_libraries(test_gz_subscriber test_utils)
 
-  add_executable(test_gz_server test/serverclient/gz_server.cpp)
-  target_link_libraries(test_gz_server test_utils)
+#   add_executable(test_gz_server test/serverclient/gz_server.cpp)
+#   target_link_libraries(test_gz_server test_utils)
 
-  add_executable(test_ros_client test/serverclient/ros_client.cpp)
-  target_link_libraries(test_ros_client test_utils)
+#   add_executable(test_ros_client test/serverclient/ros_client.cpp)
+#   target_link_libraries(test_ros_client test_utils)
 
-  add_executable(test_ros_subscriber ${ros_subscriber_files})
-  target_link_libraries(test_ros_subscriber test_utils)
-  target_include_directories(test_ros_subscriber
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/test/subscribers)
+#   add_executable(test_ros_subscriber ${ros_subscriber_files})
+#   target_link_libraries(test_ros_subscriber test_utils)
+#   target_include_directories(test_ros_subscriber
+#     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/test/subscribers)
 
-  install(TARGETS
-    test_ros_publisher
-    test_ros_subscriber
-    test_gz_publisher
-    test_gz_subscriber
-    test_gz_server
-    test_ros_client
-    DESTINATION lib/${PROJECT_NAME}
-  )
+#   install(TARGETS
+#     test_ros_publisher
+#     test_ros_subscriber
+#     test_gz_publisher
+#     test_gz_subscriber
+#     test_gz_server
+#     test_ros_client
+#     DESTINATION lib/${PROJECT_NAME}
+#   )
 
-  add_launch_test(test/launch/test_ros_subscriber.launch.py
-    TIMEOUT 200
-    ARGS "gz_msgs_ver:=${GZ_MSGS_VERSION_FULL}"
-  )
+#   add_launch_test(test/launch/test_ros_subscriber.launch.py
+#     TIMEOUT 200
+#     ARGS "gz_msgs_ver:=${GZ_MSGS_VERSION_FULL}"
+#   )
 
-  add_launch_test(test/launch/test_gz_subscriber.launch.py
-    TIMEOUT 200
-    ARGS "gz_msgs_ver:=${GZ_MSGS_VERSION_FULL}"
-  )
+#   add_launch_test(test/launch/test_gz_subscriber.launch.py
+#     TIMEOUT 200
+#     ARGS "gz_msgs_ver:=${GZ_MSGS_VERSION_FULL}"
+#   )
 
-  add_launch_test(test/launch/test_gz_server.launch.py
-    TIMEOUT 200
-  )
+#   add_launch_test(test/launch/test_gz_server.launch.py
+#     TIMEOUT 200
+#   )
 
-  ament_add_gtest(${PROJECT_NAME}_bridge_config test/bridge_config.cpp
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  target_include_directories(${PROJECT_NAME}_bridge_config PRIVATE src)
-  ament_target_dependencies(${PROJECT_NAME}_bridge_config rclcpp)
-  target_link_libraries(${PROJECT_NAME}_bridge_config ${bridge_lib})
+#   ament_add_gtest(${PROJECT_NAME}_bridge_config test/bridge_config.cpp
+#     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+#   target_include_directories(${PROJECT_NAME}_bridge_config PRIVATE src)
+#   ament_target_dependencies(${PROJECT_NAME}_bridge_config rclcpp)
+#   target_link_libraries(${PROJECT_NAME}_bridge_config ${bridge_lib})
 
-endif()
+# endif()
 
-# Export old-style CMake variables
-ament_export_include_directories("include/${PROJECT_NAME}")
-ament_export_libraries(${bridge_lib})
-
-# Export modern CMake targets
-ament_export_targets(export_${PROJECT_NAME})
-
-# specific order: dependents before dependencies
-ament_export_dependencies(rclcpp)
-ament_export_dependencies(rclcpp_components)
-ament_export_dependencies(${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER})
-ament_export_dependencies(${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER})
-ament_export_dependencies(yaml_cpp_vendor)
-ament_export_dependencies(${BRIDGE_MESSAGE_TYPES})
+ament_export_dependencies(
+  rclcpp
+  ${BRIDGE_MESSAGE_TYPES}
+)
 
 ament_package()

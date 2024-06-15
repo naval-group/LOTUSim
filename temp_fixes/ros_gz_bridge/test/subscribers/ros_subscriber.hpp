@@ -18,52 +18,48 @@
 #include <memory>
 #include <string>
 
-#include <rclcpp/rclcpp.hpp>
-#include "utils/test_utils.hpp"
 #include "utils/ros_test_msg.hpp"
+#include "utils/test_utils.hpp"
+#include <rclcpp/rclcpp.hpp>
 
-namespace ros_subscriber
-{
+namespace ros_subscriber {
 /////////////////////////////////////////////////
 /// \brief Retrieve a common node used for testing
-rclcpp::Node * TestNode();
+rclcpp::Node *TestNode();
 
 /////////////////////////////////////////////////
 /// \brief A class for testing ROS topic subscription.
-template<typename ROS_T>
-class MyTestClass
-{
+template <typename ROS_T>
+class MyTestClass {
 public:
-  /// \brief Class constructor.
-  explicit MyTestClass(const std::string & _topic)
-  {
-    using std::placeholders::_1;
-    this->sub = TestNode()->create_subscription<ROS_T>(
-      _topic, 1,
-      std::bind(&MyTestClass::Cb, this, _1));
-  }
+    /// \brief Class constructor.
+    explicit MyTestClass(const std::string &_topic)
+    {
+        using std::placeholders::_1;
+        this->sub = TestNode()->create_subscription<ROS_T>(
+            _topic, 1, std::bind(&MyTestClass::Cb, this, _1));
+    }
 
-  /// \brief Member function called each time a topic update is received.
+    /// \brief Member function called each time a topic update is received.
 
 public:
-  void Cb(const ROS_T & _msg)
-  {
-    ros_gz_bridge::testing::compareTestMsg(std::make_shared<ROS_T>(_msg));
-    this->callbackExecuted = true;
-  }
+    void Cb(const ROS_T &_msg)
+    {
+        ros_gz_bridge::testing::compareTestMsg(std::make_shared<ROS_T>(_msg));
+        this->callbackExecuted = true;
+    }
 
-  /// \brief Member variables that flag when the actions are executed.
+    /// \brief Member variables that flag when the actions are executed.
 
 public:
-  bool callbackExecuted = false;
+    bool callbackExecuted = false;
 
-/// \brief ROS subscriber;
+    /// \brief ROS subscriber;
 
 private:
-  typename rclcpp::Subscription<ROS_T>::SharedPtr sub;
+    typename rclcpp::Subscription<ROS_T>::SharedPtr sub;
 };
 
+} // namespace ros_subscriber
 
-}  // namespace ros_subscriber
-
-#endif  // SUBSCRIBERS__ROS_SUBSCRIBER_HPP_
+#endif // SUBSCRIBERS__ROS_SUBSCRIBER_HPP_

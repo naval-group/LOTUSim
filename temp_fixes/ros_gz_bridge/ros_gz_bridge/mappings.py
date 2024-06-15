@@ -27,9 +27,6 @@ MAPPINGS = {
     'builtin_interfaces': [
         Mapping('Time', 'Time'),
     ],
-    'actuator_msgs': [
-        Mapping('Actuators', 'Actuators'),
-    ],
     'geometry_msgs': [
         Mapping('Point', 'Vector3d'),
         Mapping('Pose', 'Pose'),
@@ -40,11 +37,8 @@ MAPPINGS = {
         Mapping('Transform', 'Pose'),
         Mapping('TransformStamped', 'Pose'),
         Mapping('Twist', 'Twist'),
-        Mapping('TwistStamped', 'Twist'),
         Mapping('TwistWithCovariance', 'TwistWithCovariance'),
-        Mapping('TwistWithCovarianceStamped', 'TwistWithCovariance'),
         Mapping('Wrench', 'Wrench'),
-        Mapping('WrenchStamped', 'Wrench'),
         Mapping('Vector3', 'Vector3d'),
     ],
     'nav_msgs': [
@@ -55,7 +49,6 @@ MAPPINGS = {
         Mapping('ParameterValue', 'Any'),
     ],
     'ros_gz_interfaces': [
-        Mapping('Altimeter', 'Altimeter'),
         Mapping('Contact', 'Contact'),
         Mapping('Contacts', 'Contacts'),
         Mapping('Entity', 'Entity'),
@@ -65,7 +58,6 @@ MAPPINGS = {
         Mapping('Light', 'Light'),
         Mapping('ParamVec', 'Param'),
         Mapping('ParamVec', 'Param_V'),
-        Mapping('SensorNoise', 'SensorNoise'),
         Mapping('StringVec', 'StringMsg_V'),
         Mapping('TrackVisual', 'TrackVisual'),
         Mapping('VideoRecord', 'VideoRecord'),
@@ -80,7 +72,6 @@ MAPPINGS = {
         Mapping('Image', 'Image'),
         Mapping('Imu', 'IMU'),
         Mapping('JointState', 'Model'),
-        Mapping('Joy', 'Joy'),
         Mapping('LaserScan', 'LaserScan'),
         Mapping('MagneticField', 'Magnetometer'),
         Mapping('NavSatFix', 'NavSat'),
@@ -103,12 +94,6 @@ MAPPINGS = {
     'trajectory_msgs': [
         Mapping('JointTrajectory', 'JointTrajectory'),
     ],
-    'vision_msgs': [
-        Mapping('Detection2DArray', 'AnnotatedAxisAligned2DBox_V'),
-        Mapping('Detection2D', 'AnnotatedAxisAligned2DBox'),
-        Mapping('Detection3DArray', 'AnnotatedOriented3DBox_V'),
-        Mapping('Detection3D', 'AnnotatedOriented3DBox'),
-    ],
     'liquidai_msgs': [
         Mapping('FloatStamped', 'Double'),
         Mapping('GPS', 'NavSat'),
@@ -120,11 +105,5 @@ MAPPINGS = {
 MAPPINGS_8_4_0 = {
     'ros_gz_interfaces': [
         Mapping('Dataframe', 'Dataframe'),
-    ],
-}
-
-MAPPINGS_10_1_0 = {
-    'ros_gz_interfaces': [
-        Mapping('MaterialColor', 'MaterialColor'),
     ],
 }

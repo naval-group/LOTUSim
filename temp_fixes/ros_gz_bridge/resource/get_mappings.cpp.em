@@ -32,7 +32,7 @@ get_gz_to_ros_mapping(const std::string & gz_type_name, std::string & ros_type_n
 @[end if]@
 
 @[for m in mappings]@
-  if (gz_type_name == "@(m.gz_string())" || gz_type_name == "@(m.ign_string())")
+  if (gz_type_name == "@(m.gz_string())")
   {
     ros_type_name = "@(m.ros2_string())";
     return true;
@@ -68,11 +68,7 @@ get_all_message_mappings_ros_to_gz()
 @[for m in mappings]@
     {
       "@(m.ros2_string())",  // ROS 2
-      "@(m.gz_string())", // Gazebo
-    },
-    {
-      "@(m.ros2_string())",  // ROS 2
-      "@(m.ign_string())", // Gazebo
+      "@(m.gz_string())", // Gazebo 
     },
 @[end for]@
   };
