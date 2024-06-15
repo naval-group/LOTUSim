@@ -24,6 +24,7 @@
 
 namespace ros_gz_bridge
 {
+    gz_node_ = std::make_shared<gz::transport::Node>();
 
 RosGzBridge::RosGzBridge(const rclcpp::NodeOptions & options)
 : rclcpp::Node("ros_gz_bridge", options)
@@ -100,19 +101,56 @@ void RosGzBridge::add_bridge(const BridgeConfig & config)
       handles_.back()->Start();
     }
 
-    if (ros_to_gz) {
-      RCLCPP_INFO(
-        this->get_logger(),
-        "Creating ROS->GZ Bridge: [%s (%s) -> %s (%s)] (Lazy %d)",
-        config.ros_topic_name.c_str(), config.ros_type_name.c_str(),
-        config.gz_topic_name.c_str(), config.gz_type_name.c_str(),
-        config.is_lazy);
-      handles_.push_back(
-        std::make_unique<ros_gz_bridge::BridgeHandleRosToGz>(
-          shared_from_this(), gz_node_,
-          config));
+    if (config.direction == BridgeDirection::ROS_TO_GZ) {
+        ros_to_gz = true;
+    }
 
-      handles_.back()->Start();
+    if (config.direction == BridgeDirection::BIDIRECTIONAL) {
+        ros_to_gz = true;
+        gz_to_ros = true;
+    }
+
+    try {
+        if (gz_to_ros) {
+            RCLCPP_INFO(
+                this->get_logger(),
+                "Creating GZ->ROS Bridge: [%s (%s) -> %s (%s)] (Lazy %d)",
+                config.gz_topic_name.c_str(),
+                config.gz_type_name.c_str(),
+                config.ros_topic_name.c_str(),
+                config.ros_type_name.c_str(),
+                config.is_lazy);
+            handles_.push_back(
+                std::make_unique<ros_gz_bridge::BridgeHandleGzToRos>(
+                    shared_from_this(), gz_node_, config));
+            handles_.back()->Start();
+        }
+
+        if (ros_to_gz) {
+            RCLCPP_INFO(
+                this->get_logger(),
+                "Creating ROS->GZ Bridge: [%s (%s) -> %s (%s)] (Lazy %d)",
+                config.ros_topic_name.c_str(),
+                config.ros_type_name.c_str(),
+                config.gz_topic_name.c_str(),
+                config.gz_type_name.c_str(),
+                config.is_lazy);
+            handles_.push_back(
+                std::make_unique<ros_gz_bridge::BridgeHandleRosToGz>(
+                    shared_from_this(), gz_node_, config));
+
+            handles_.back()->Start();
+        }
+    }
+    catch (std::runtime_error &_e) {
+        RCLCPP_WARN(
+            this->get_logger(),
+            "Failed to create a bridge for topic [%s] with ROS2 type [%s] "
+            "to topic [%s] with Gazebo Transport type [%s]",
+            config.ros_topic_name.c_str(),
+            config.ros_type_name.c_str(),
+            config.gz_topic_name.c_str(),
+            config.gz_type_name.c_str());
     }
   } catch (std::runtime_error & _e) {
     RCLCPP_WARN(

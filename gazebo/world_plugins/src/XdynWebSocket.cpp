@@ -29,6 +29,28 @@ XdynWebsocket::XdynWebsocket()
     // know how this thread is running. To determine whether this is a
     // bottleneck
     m_thread.reset(new websocketpp::lib::thread(&Client::run, &m_client));
+
+    // workbook = workbook_new(
+    //     "/home/malcom/garden_ws/src/liquidai/physics/xdynSurface/gz.xlsx");
+    // worksheet = workbook_add_worksheet(workbook, NULL);
+    // lxw_format *format = workbook_add_format(workbook);
+    // format_set_num_format(format, "$#,##0.00");
+    // {
+    //     worksheet_write_string(worksheet, 0, 0, "t", NULL);
+    //     worksheet_write_string(worksheet, 0, 1, "X", NULL);
+    //     worksheet_write_string(worksheet, 0, 2, "Y", NULL);
+    //     worksheet_write_string(worksheet, 0, 3, "Z", NULL);
+    //     worksheet_write_string(worksheet, 0, 4, "U", NULL);
+    //     worksheet_write_string(worksheet, 0, 5, "v", NULL);
+    //     worksheet_write_string(worksheet, 0, 6, "w", NULL);
+    //     worksheet_write_string(worksheet, 0, 7, "qi", NULL);
+    //     worksheet_write_string(worksheet, 0, 8, "qj", NULL);
+    //     worksheet_write_string(worksheet, 0, 9, "qk", NULL);
+    //     worksheet_write_string(worksheet, 0, 10, "qr", NULL);
+    //     worksheet_write_string(worksheet, 0, 11, "p", NULL);
+    //     worksheet_write_string(worksheet, 0, 12, "q", NULL);
+    //     worksheet_write_string(worksheet, 0, 13, "r", NULL);
+    // }
 }
 
 XdynWebsocket::~XdynWebsocket()
@@ -41,6 +63,8 @@ XdynWebsocket::~XdynWebsocket()
     }
     m_client.stop();
     m_thread->join();
+
+    // workbook_close(workbook);
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::getInstance(
@@ -73,16 +97,17 @@ bool XdynWebsocket::createConnection(
     m_uri[_entity] = uri;
 
     if (_sdf->HasElement("thrusters")) {
-        gz_liquidai_msgs::msg::XdynCmd xdyn_cmd;
+        gz_liquidai_msgs::msgs::XdynCmd xdyn_cmd;
         xdyn_cmd.set_name(_name);
         auto sdfPtr_thruster = _sdf->GetElement("thrusters")->GetFirstElement();
         do {
-            gz_liquidai_msgs::msg::XdynCmd_ThrusterCmd *thruster_cmd =
+            gz_liquidai_msgs::msgs::XdynCmd_ThrusterCmd *thruster_cmd =
                 xdyn_cmd.add_cmd();
             thruster_cmd->set_name(sdfPtr_thruster->Get<std::string>());
-            thruster_cmd->set_rpm(0.01);
+            // thruster_cmd->set_rpm(0.01);
+            thruster_cmd->set_rpm(30);
             thruster_cmd->set_pd(0.79);
-            thruster_cmd->set_beta(0);
+            thruster_cmd->set_beta(0.0);
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
         } while (sdfPtr_thruster != sdf::ElementPtr(nullptr));
         m_xdyn_cmd[_entity] = std::move(xdyn_cmd);
@@ -178,23 +203,39 @@ void XdynWebsocket::onMessage(
     std::unique_lock<std::mutex> lock(m_msg_mutex[entity]);
     json reply = json::parse(msg->get_payload());
 
-    // take note of frame transformation
-    json state = {
-        {"t", reply["t"].back()},
-        {"x", reply["x"].back()},
-        {"y", -1 * reply["y"].back().get<double>()},
-        {"z", -1 * reply["z"].back().get<double>()},
-        {"u", reply["u"].back()},
-        {"v", -1 * reply["v"].back().get<double>()},
-        {"w", -1 * reply["w"].back().get<double>()},
-        {"p", reply["p"].back()},
-        {"q", -1 * reply["q"].back().get<double>()},
-        {"r", -1 * reply["r"].back().get<double>()},
-        {"qr", reply["qr"].back()},
-        {"qi", reply["qi"].back()},
-        {"qj", reply["qj"].back()},
-        {"qk", reply["qk"].back()}};
+    // Transform orientation from NED to GZ frame
+    auto ned_quad = gz::math::Quaterniond(
+        reply["qr"].back().get<double>(),
+        reply["qi"].back().get<double>(),
+        reply["qk"].back().get<double>(),
+        reply["qj"].back().get<double>());
 
+    gz::math::Quaterniond gz_quad =
+        gz::math::Quaterniond(0, 1, 0, 0).Inverse() * ned_quad;
+
+    // Transform lin vel from body frame back to NED frame
+    auto body_lin_vel = gz::math::Vector3d{
+        reply["u"].back().get<double>(),
+        reply["v"].back().get<double>(),
+        reply["w"].back().get<double>()};
+    auto ned_lin_vel = ned_quad.RotateVectorReverse(body_lin_vel);
+
+    // Transform displacement and angular speed to GZ frame
+    json state = {
+        {"t", reply["t"].back().get<double>()},
+        {"x", reply["x"].back().get<double>()},
+        {"y", -1.0 * reply["y"].back().get<double>()},
+        {"z", -1.0 * reply["z"].back().get<double>()},
+        {"u", ned_lin_vel.X()},
+        {"v", -1.0 * ned_lin_vel.Y()},
+        {"w", -1.0 * ned_lin_vel.Z()},
+        {"p", reply["p"].back().get<double>()},
+        {"q", -1.0 * reply["q"].back().get<double>()},
+        {"r", -1.0 * reply["r"].back().get<double>()},
+        {"qi", gz_quad.X()},
+        {"qk", gz_quad.Y()},
+        {"qj", gz_quad.Z()},
+        {"qr", gz_quad.W()}};
     m_saved_state[entity] = std::move(state);
     m_msg_cv[entity].notify_one();
 }
@@ -203,17 +244,95 @@ std::optional<std::tuple<json, DomainType>> XdynWebsocket::getNewState(
     const gz::sim::Entity &_entity, const json &previous_state, float time_diff)
 {
     json data = json::object();
-    data["Dt"] = time_diff / 1000;
+    data["Dt"] = time_diff / 1000.0;
     data["states"] = json::array();
     data["states"].push_back(previous_state);
 
     // frame convention transformation
-    data["states"].back()["y"] = data["states"].back()["y"].get<double>() * -1;
-    data["states"].back()["z"] = data["states"].back()["z"].get<double>() * -1;
-    data["states"].back()["v"] = data["states"].back()["v"].get<double>() * -1;
-    data["states"].back()["w"] = data["states"].back()["w"].get<double>() * -1;
-    data["states"].back()["q"] = data["states"].back()["q"].get<double>() * -1;
-    data["states"].back()["r"] = data["states"].back()["r"].get<double>() * -1;
+    // position
+    data["states"].back()["y"] =
+        data["states"].back()["y"].get<double>() * -1.0;
+    data["states"].back()["z"] =
+        data["states"].back()["z"].get<double>() * -1.0;
+
+    // quaternion transfrom from gz frame to NED frame
+
+    gz::math::Quaterniond gz_quad = gz::math::Quaterniond(
+        data["states"].back()["qr"].get<double>(),
+        data["states"].back()["qi"].get<double>(),
+        data["states"].back()["qj"].get<double>(),
+        data["states"].back()["qk"].get<double>());
+
+    gz::math::Quaterniond ned_quad =
+        gz::math::Quaterniond(0, 1, 0, 0) * gz_quad;
+
+    data["states"].back()["qi"] = ned_quad.X();
+    data["states"].back()["qj"] = ned_quad.Y();
+    data["states"].back()["qk"] = ned_quad.Z();
+    data["states"].back()["qr"] = ned_quad.W();
+
+    // Linear vel in NED frame velocity
+    auto ned_lin_vel = gz::math::Vector3d{
+        data["states"].back()["u"].get<double>(),
+        data["states"].back()["v"].get<double>() * -1.0,
+        data["states"].back()["w"].get<double>() * -1.0};
+    // Transform lin vel from NED to Body frame in Xdyn
+    auto body_lin_vel = ned_quad.RotateVector(ned_lin_vel);
+
+    // angular speed
+    data["states"].back()["q"] =
+        data["states"].back()["q"].get<double>() * -1.0;
+    data["states"].back()["r"] =
+        data["states"].back()["r"].get<double>() * -1.0;
+
+    // {
+    //     worksheet_write_number(
+    //         worksheet, row, 0, data["states"].back()["t"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 1, data["states"].back()["x"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 2, data["states"].back()["y"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 3, data["states"].back()["z"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 4, data["states"].back()["u"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 5, data["states"].back()["v"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 6, data["states"].back()["w"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 7, data["states"].back()["qi"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 8, data["states"].back()["qj"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 9, data["states"].back()["qk"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet,
+    //         row,
+    //         10,
+    //         data["states"].back()["qr"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 11, data["states"].back()["p"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 12, data["states"].back()["q"].get<double>(),
+    //         NULL);
+    //     worksheet_write_number(
+    //         worksheet, row, 13, data["states"].back()["r"].get<double>(),
+    //         NULL);
+    //     row += 1;
+    // }
 
     auto cmd = json::object();
     for (auto &&cmd_msg : m_xdyn_cmd[_entity].cmd()) {
@@ -233,7 +352,6 @@ std::optional<std::tuple<json, DomainType>> XdynWebsocket::getNewState(
 bool XdynWebsocket::send(const gz::sim::Entity &_entity, std::string message)
 {
     websocketpp::lib::error_code ec;
-
     m_client.send(
         m_connection_mapping[_entity]->get_handle(),
         message,
@@ -257,8 +375,9 @@ bool XdynWebsocket::send(const gz::sim::Entity &_entity, std::string message)
     }
 }
 
-void XdynWebsocket::thrustCmd(const gz_liquidai_msgs::msg::XdynCmd &_msg)
+void XdynWebsocket::thrustCmd(const gz_liquidai_msgs::msgs::XdynCmd &_msg)
 {
+    std::cout << "Received: " << _msg.name() << std::endl;
     if (m_entity_mapping.find(_msg.name()) != m_entity_mapping.end()) {
         m_xdyn_cmd[m_entity_mapping[_msg.name()]] = std::move(_msg);
     }

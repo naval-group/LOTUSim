@@ -15,7 +15,7 @@
 #ifndef ROS_GZ_BRIDGE__CONVERT__RCL_INTERFACES_HPP_
 #define ROS_GZ_BRIDGE__CONVERT__RCL_INTERFACES_HPP_
 
-// Ignition messages
+// GZ messages
 #include <gz/msgs/any.pb.h>
 
 // ROS 2 messages
@@ -25,20 +25,15 @@
 
 #include <ros_gz_bridge/convert_decl.hpp>
 
-namespace ros_gz_bridge
-{
+namespace ros_gz_bridge {
 
-template<>
-void
-convert_ros_to_gz(
-  const rcl_interfaces::msg::ParameterValue & ros_msg,
-  gz::msgs::Any & ign_msg);
+template <>
+void convert_ros_to_gz(
+    const rcl_interfaces::msg::ParameterValue &ros_msg, gz::msgs::Any &ign_msg);
 
-template<>
-void
-convert_gz_to_ros(
-  const gz::msgs::Any & ign_msg,
-  rcl_interfaces::msg::ParameterValue & ros_msg);
+template <>
+void convert_gz_to_ros(
+    const gz::msgs::Any &ign_msg, rcl_interfaces::msg::ParameterValue &ros_msg);
 
-}  // namespace ros_gz_bridge
-#endif  // ROS_GZ_BRIDGE__CONVERT__RCL_INTERFACES_HPP_
+} // namespace ros_gz_bridge
+#endif // ROS_GZ_BRIDGE__CONVERT__RCL_INTERFACES_HPP_

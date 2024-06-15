@@ -9,7 +9,7 @@ AISPlugin::AISPlugin()
     , m_last_pub(std::chrono::seconds(0))
 {
     m_gz_node = std::make_shared<gz::transport::Node>();
-    m_ais_pub = m_gz_node->Advertise<gz_liquidai_msgs::msg::AISArray>("AIS");
+    m_ais_pub = m_gz_node->Advertise<gz_liquidai_msgs::msgs::AISArray>("AIS");
 }
 
 void AISPlugin::Configure(
@@ -60,7 +60,7 @@ void AISPlugin::PostUpdate(
 
     if (_info.simTime - m_last_pub >= m_update_period) {
         m_last_pub = _info.simTime;
-        gz_liquidai_msgs::msg::AISArray array_msg;
+        gz_liquidai_msgs::msgs::AISArray array_msg;
 
         for (auto &&entity : m_vessel_entities) {
             auto coord_opt = gz::sim::sphericalCoordinates(entity, _ecm);
@@ -68,7 +68,8 @@ void AISPlugin::PostUpdate(
                 _ecm.Component<gz::sim::components::WorldLinearVelocity>(
                     entity);
             if (coord_opt && vel_opt) {
-                gz_liquidai_msgs::msg::AISArray_AIS *msg = array_msg.add_data();
+                gz_liquidai_msgs::msgs::AISArray_AIS *msg =
+                    array_msg.add_data();
                 msg->set_user_id(entity);
                 msg->set_longitude(coord_opt.value().Y());
                 msg->set_latitude(coord_opt.value().X());

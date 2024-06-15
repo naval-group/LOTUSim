@@ -50,7 +50,10 @@ class MessageMapping:
 
     def gz_type(self):
         # Return GZ type of a message (eg gz::msgs::Bool)
-        return f'gz::msgs::{self.gz_message_name}'
+        if ":" in self.gz_message_name:
+            return f'{self.gz_message_name}'
+        else:
+            return f'gz::msgs::{self.gz_message_name}'
 
     def unique(self):
         return f'{self.gz_message_name.lower()}_{self.ros2_message_name.lower()}'

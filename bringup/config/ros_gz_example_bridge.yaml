@@ -7,7 +7,7 @@
 - ros_topic_name: "/clock"
   gz_topic_name: "/clock"
   ros_type_name: "rosgraph_msgs/msg/Clock"
-  gz_type_name: "gz.msgs.Clock"
+  gz_type_name: "ignition.msgs.Clock"
   direction: GZ_TO_ROS
 # - ros_topic_name: "/diff_drive/odometry"
 #   gz_topic_name: "/model/diff_drive/odometry"
@@ -37,18 +37,18 @@
 
 # TODO: Verify the progress of the https://github.com/gazebosim/ros_gz/pull/380 pull request
 # which would make possible the use of SpawnEntity, DeleteEntity, & SetEntityPose from ROS2
-- ros_topic_name: "ros_gz_interfaces/srv/SpawnEntity"
-  gz_topic_name: "/world/demo/create"
-  ros_type_name: "ros_gz_interfaces/msg/EntityFactory"
-  gz_type_name: "gz.msgs.EntityFactory"
-  direction: BIDIRECTIONAL
+# - ros_topic_name: "ros_gz_interfaces/srv/SpawnEntity"
+#   gz_topic_name: "/world/demo/create"
+#   ros_type_name: "ros_gz_interfaces/msg/EntityFactory"
+#   gz_type_name: "gz.msgs.EntityFactory"
+#   direction: BIDIRECTIONAL
 - ros_topic_name: "gz_sched"
   gz_topic_name: "/gz_sched"
   ros_type_name: "std_msgs/msg/Int32"
-  gz_type_name: "gz.msgs.Int32"
+  gz_type_name: "ignition.msgs.Int32"
   direction: GZ_TO_ROS
 - ros_topic_name: "activate_slowdown"
   gz_topic_name: "/activate_slowdown"
   ros_type_name: "std_msgs/msg/Bool"
-  gz_type_name: "gz.msgs.Boolean"
+  gz_type_name: "ignition.msgs.Boolean"
   direction: ROS_TO_GZ

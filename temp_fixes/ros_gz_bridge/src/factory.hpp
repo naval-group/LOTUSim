@@ -65,77 +65,71 @@ public:
     return publisher;
   }
 
-  gz::transport::Node::Publisher
-  create_gz_publisher(
-    std::shared_ptr<gz::transport::Node> gz_node,
-    const std::string & topic_name,
-    size_t /*queue_size*/)
-  {
-    return gz_node->Advertise<GZ_T>(topic_name);
-  }
+    gz::transport::Node::Publisher create_gz_publisher(
+        std::shared_ptr<gz::transport::Node> gz_node,
+        const std::string &topic_name,
+        size_t /*queue_size*/)
+    {
+        return gz_node->Advertise<GZ_T>(topic_name);
+    }
 
-  rclcpp::SubscriptionBase::SharedPtr
-  create_ros_subscriber(
-    rclcpp::Node::SharedPtr ros_node,
-    const std::string & topic_name,
-    size_t queue_size,
-    gz::transport::Node::Publisher & gz_pub)
-  {
-    std::function<void(std::shared_ptr<const ROS_T>)> fn = std::bind(
-      &Factory<ROS_T, GZ_T>::ros_callback,
-      std::placeholders::_1, gz_pub,
-      ros_type_name_, gz_type_name_,
-      ros_node);
-    auto options = rclcpp::SubscriptionOptions();
-    // Ignore messages that are published from this bridge.
-    options.ignore_local_publications = true;
-    // Allow QoS overriding
-    options.qos_overriding_options =
-      rclcpp::QosOverridingOptions::with_default_policies();
-    std::shared_ptr<rclcpp::Subscription<ROS_T>> subscription =
-      ros_node->create_subscription<ROS_T>(
-      topic_name, rclcpp::QoS(rclcpp::KeepLast(queue_size)), fn, options);
-    return subscription;
-  }
-
-  void
-  create_gz_subscriber(
-    std::shared_ptr<gz::transport::Node> node,
-    const std::string & topic_name,
-    size_t /*queue_size*/,
-    rclcpp::PublisherBase::SharedPtr ros_pub)
-  {
-    std::function<void(const GZ_T &,
-      const gz::transport::MessageInfo &)> subCb =
-      [this, ros_pub](const GZ_T & _msg,
-        const gz::transport::MessageInfo & _info)
-      {
+    rclcpp::SubscriptionBase::SharedPtr create_ros_subscriber(
+        rclcpp::Node::SharedPtr ros_node,
+        const std::string &topic_name,
+        size_t queue_size,
+        gz::transport::Node::Publisher &gz_pub)
+    {
+        std::function<void(std::shared_ptr<const ROS_T>)> fn = std::bind(
+            &Factory<ROS_T, GZ_T>::ros_callback,
+            std::placeholders::_1,
+            gz_pub,
+            ros_type_name_,
+            gz_type_name_,
+            ros_node);
+        auto options = rclcpp::SubscriptionOptions();
         // Ignore messages that are published from this bridge.
         if (!_info.IntraProcess()) {
           this->gz_callback(_msg, ros_pub);
         }
       };
 
-    node->Subscribe(topic_name, subCb);
-  }
+    void create_gz_subscriber(
+        std::shared_ptr<gz::transport::Node> node,
+        const std::string &topic_name,
+        size_t /*queue_size*/,
+        rclcpp::PublisherBase::SharedPtr ros_pub)
+    {
+        std::function<void(const GZ_T &, const gz::transport::MessageInfo &)>
+            subCb =
+                [this, ros_pub](
+                    const GZ_T &_msg, const gz::transport::MessageInfo &_info) {
+                    // Ignore messages that are published from this bridge.
+                    if (!_info.IntraProcess()) {
+                        this->gz_callback(_msg, ros_pub);
+                    }
+                };
+
+        node->Subscribe(topic_name, subCb);
+    }
 
 protected:
-  static
-  void ros_callback(
-    std::shared_ptr<const ROS_T> ros_msg,
-    gz::transport::Node::Publisher & gz_pub,
-    const std::string & ros_type_name,
-    const std::string & gz_type_name,
-    rclcpp::Node::SharedPtr ros_node)
-  {
-    GZ_T gz_msg;
-    convert_ros_to_gz(*ros_msg, gz_msg);
-    gz_pub.Publish(gz_msg);
-    RCLCPP_INFO_ONCE(
-      ros_node->get_logger(),
-      "Passing message from ROS %s to Gazebo %s (showing msg only once per type)",
-      ros_type_name.c_str(), gz_type_name.c_str());
-  }
+    static void ros_callback(
+        std::shared_ptr<const ROS_T> ros_msg,
+        gz::transport::Node::Publisher &gz_pub,
+        const std::string &ros_type_name,
+        const std::string &gz_type_name,
+        rclcpp::Node::SharedPtr ros_node)
+    {
+        GZ_T gz_msg;
+        convert_ros_to_gz(*ros_msg, gz_msg);
+        gz_pub.Publish(gz_msg);
+        RCLCPP_INFO_ONCE(
+            ros_node->get_logger(),
+            "Passing message from ROS %s to Gazebo %s (showing msg only once "
+            "per type)",
+            ros_type_name.c_str(),
+            gz_type_name.c_str());
+    }
 
   static
   void gz_callback(

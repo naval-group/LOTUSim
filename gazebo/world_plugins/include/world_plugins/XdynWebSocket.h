@@ -1,7 +1,7 @@
 #ifndef __XDYN_WEBSOCKET_HH__
 #define __XDYN_WEBSOCKET_HH__
 
-#include "gz_liquidai_msgs/msg/xdyncmdmsg.pb.h"
+#include "gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h"
 
 #include <nlohmann/json.hpp>
 #include <optional>
@@ -12,6 +12,8 @@
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
+
+// #include <xlsxwriter.h>
 
 namespace liquidai {
 namespace gazebo {
@@ -87,7 +89,7 @@ private:
     onOpen(const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl);
     void
     onFail(const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl);
-    void thrustCmd(const gz_liquidai_msgs::msg::XdynCmd &_msg);
+    void thrustCmd(const gz_liquidai_msgs::msgs::XdynCmd &_msg);
 
 private:
     // Websocket stuff
@@ -131,8 +133,12 @@ private:
         m_msg_cv;
     static std::unordered_map<gz::sim::Entity, json> m_saved_state;
 
-    std::unordered_map<gz::sim::Entity, gz_liquidai_msgs::msg::XdynCmd>
+    std::unordered_map<gz::sim::Entity, gz_liquidai_msgs::msgs::XdynCmd>
         m_xdyn_cmd;
+
+    // int row = 1;
+    // lxw_workbook *workbook;
+    // lxw_worksheet *worksheet;
 };
 } // namespace gazebo
 } // namespace liquidai

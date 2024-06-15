@@ -10,7 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
-find_package(custom_gz_interfaces REQUIRED)
+find_package(liquidai_msgs REQUIRED)
 find_package(rclcpp_components REQUIRED)
 
 # add_executable(agent  src/agent_cpp/agent.cpp
@@ -47,7 +47,7 @@ ament_target_dependencies(agent_component
   rclcpp_lifecycle
   rclcpp_components
   lifecycle_msgs
-  custom_gz_interfaces
+  liquidai_msgs
 )
 
 rclcpp_components_register_node(

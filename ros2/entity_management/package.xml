@@ -10,7 +10,10 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>custom_gz_interfaces</depend>
+  <depend>ament_index_cpp</depend>
+  <depend>liquidai_msgs</depend>
+  <depend>gazebo_step_control</depend>
+  <depend>std_srvs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

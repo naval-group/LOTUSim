@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+<<<<<<<< HEAD:gazebo/gz_liquidai_msgs/proto/gz_liquidai_msgs/msg/wavemsg.proto
+package gz_liquidai_msgs.msg;
+========
+package gz_liquidai_msgs.msgs;
+>>>>>>>> underwater_merged:gazebo/gz_liquidai_msgs/proto/gz_liquidai_msgs/msgs/wavemsg.proto
+import "gz/msgs/vector2d.proto";
+
+/// \brief Wave param msg
+message WaveParam
+{
+   double amplitude = 1;
+   double period = 2;
+   gz.msgs.Vector2d direction = 3;
+}

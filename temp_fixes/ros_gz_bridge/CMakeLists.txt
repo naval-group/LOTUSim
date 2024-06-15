@@ -15,6 +15,20 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 
+include(GNUInstallDirs)
+message ("dir " ${CMAKE_INSTALL_FULL_LIBDIR})
+
+# Custom gz msg
+# find_package(gz_liquidai_msgs REQUIRED)
+# message("gz_liquidai_msgs Lib found " ${gz_liquidai_msgs_FOUND})
+# message("gz_liquidai_msgs Lib include dir " ${gz_liquidai_msgs_INCLUDE_DIRS})
+message("gz_liquidai_msgs link dir " ${CMAKE_CURRENT_BINARY_DIR}/../gz_liquidai_msgs)
+message("gz_liquidai_msgs bin dir " ${CMAKE_BINARY_DIR})
+message("gz_liquidai_msgs source dir " ${CMAKE_CURRENT_SOURCE_DIR})
+message("gz_liquidai_msgs install_name dir " ${CMAKE_INSTALL_NAME_DIR})
+message("gz_liquidai_msgs PROJECT_BINARY_DIR " ${PROJECT_BINARY_DIR})
+
+
 # TODO(CH3): Deprecated. Remove on tock.
 if("$ENV{GZ_VERSION}" STREQUAL "" AND NOT "$ENV{IGNITION_VERSION}" STREQUAL "")
   message(DEPRECATION "Environment variable [IGNITION_VERSION] is deprecated. Use [GZ_VERSION] instead.")
@@ -31,14 +45,28 @@ if("$ENV{GZ_VERSION}" STREQUAL "edifice")
   set(GZ_TRANSPORT_VER ${ignition-transport10_VERSION_MAJOR})
 
   message(STATUS "Compiling against Ignition Edifice")
-# Garden
-elseif("$ENV{GZ_VERSION}" STREQUAL "garden")
-  find_package(gz-transport12 REQUIRED)
-  find_package(gz-msgs9 REQUIRED)
+# Fortress
+elseif("$ENV{GZ_VERSION}" STREQUAL "fortress")
+  find_package(ignition-transport11 REQUIRED)
+  find_package(ignition-msgs8 REQUIRED)
+  set(GZ_TARGET_PREFIX ignition)
+  set(GZ_MSGS_VER ${ignition-msgs8_VERSION_MAJOR})
+  set(GZ_TRANSPORT_VER ${ignition-transport11_VERSION_MAJOR})
+
+  message(STATUS "Compiling against Ignition Fortress")
+# Default to Garden
+else()
+  find_package(gz-transport13 REQUIRED)
+  find_package(gz-msgs10 REQUIRED)
+  message("include_dir ${gz-msgs10_INCLUDE_DIRS}")
+  message("msgs9_LIBRARIES ${gz-msgs10_LIBRARIES}")
+
+  find_package(gz-sim8 REQUIRED)
+  set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
 
   set(GZ_TARGET_PREFIX gz)
-  set(GZ_MSGS_VER ${gz-msgs9_VERSION_MAJOR})
-  set(GZ_TRANSPORT_VER ${gz-transport12_VERSION_MAJOR})
+  set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
+  set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
 
   message(STATUS "Compiling against Gazebo Garden")
 elseif("$ENV{GZ_VERSION}" STREQUAL "harmonic")
@@ -61,6 +89,15 @@ else()
 
   message(STATUS "Compiling against Ignition Fortress")
 endif()
+
+include_directories(
+  include
+  # Ahoy Desperate measures for gz_liquidai_msgs linker
+  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
+)
+link_directories(
+${CMAKE_INSTALL_FULL_LIBDIR}
+)
 
 set(GZ_MSGS_VERSION_MAJOR ${${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}_VERSION_MAJOR})
 set(GZ_MSGS_VERSION_MINOR ${${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}_VERSION_MINOR})
@@ -136,9 +173,22 @@ add_library(${bridge_lib}
   ${generated_files}
 )
 
+target_include_directories(${bridge_lib}
+  PUBLIC 
+  include
+  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
+  PRIVATE src ${generated_path} 
+  # $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../gz_liquidai_msgs>  
+)
+target_link_directories(${bridge_lib} 
+PUBLIC 
+${CMAKE_INSTALL_FULL_LIBDIR})
+
+
 target_link_libraries(${bridge_lib}
   ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
   ${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER}::core
+  gz_liquidai_msgs-msgs 
 )
 
 ament_target_dependencies(${bridge_lib}
@@ -148,19 +198,13 @@ ament_target_dependencies(${bridge_lib}
   ${BRIDGE_MESSAGE_TYPES}
 )
 
-target_include_directories(${bridge_lib}
-  PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
-  PRIVATE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>"
-)
-
-target_link_libraries(${bridge_lib}
-  ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
-  ${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER}::core
-)
+message("PROJECT_BINARY_DIR ${PROJECT_BINARY_DIR}")
+message("CMAKE_INSTALL_DATAROOTDIR ${CMAKE_INSTALL_DATAROOTDIR}")
+message("CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
+message("CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}")
+message("CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}")
+message("CMAKE_FILES_DIRECTORY ${CMAKE_FILES_DIRECTORY}")
+message("INCLUDE_INSTALL_DIR_FULL ${INCLUDE_INSTALL_DIR_FULL}")
 
 rclcpp_components_register_node(
   ${bridge_lib}

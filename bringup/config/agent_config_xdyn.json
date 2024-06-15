@@ -1,0 +1,12 @@
+{
+    "lrauv_xdyn": [
+        {
+            "name": "Test_ship_spawned",
+            "pose": "0 20 0 0 0 0"
+        },
+        {
+            "name": "Test_ship_spawned2",
+            "pose": "0 40 0 0 0 0"
+        }
+    ]
+}

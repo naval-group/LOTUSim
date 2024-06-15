@@ -41,9 +41,7 @@ void signal_handler(int _signal)
 }
 
 //////////////////////////////////////////////////
-bool control_world(
-  const gz::msgs::WorldControl &,
-  gz::msgs::Boolean & _res)
+bool control_world(const gz::msgs::WorldControl &, gz::msgs::Boolean &_res)
 {
   _res.set_data(true);
   return true;

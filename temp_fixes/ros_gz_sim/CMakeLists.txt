@@ -57,7 +57,7 @@ elseif("$ENV{GZ_VERSION}" STREQUAL "garden")
   set(GZ_TARGET_PREFIX gz)
 
   message(STATUS "Compiling against Gazebo Garden")
-elseif("$ENV{GZ_VERSION}" STREQUAL "harmonic")
+else() # Default to harmonics
   find_package(gz-math7 REQUIRED)
   set(GZ_MATH_VER ${gz-math7_VERSION_MAJOR})
 
@@ -73,26 +73,6 @@ elseif("$ENV{GZ_VERSION}" STREQUAL "harmonic")
   set(GZ_TARGET_PREFIX gz)
 
   message(STATUS "Compiling against Gazebo Harmonic")
-# Default to Fortress
-else()
-  find_package(ignition-math6 REQUIRED)
-  set(GZ_MATH_VER ${ignition-math6_VERSION_MAJOR})
-
-  find_package(ignition-transport11 REQUIRED)
-  set(GZ_TRANSPORT_VER ${ignition-transport11_VERSION_MAJOR})
-
-  find_package(ignition-msgs8 REQUIRED)
-  set(GZ_MSGS_VER ${ignition-msgs8_VERSION_MAJOR})
-
-  find_package(ignition-gazebo6 REQUIRED)
-  set(GZ_SIM_VER ${ignition-gazebo6_VERSION_MAJOR})
-
-  set(GZ_TARGET_PREFIX ignition)
-
-  message(STATUS "Compiling against Gazebo Fortress")
-  macro(gz_find_package)
-    ign_find_package(${ARGV})
-  endmacro()
 endif()
 
 gz_find_package(gflags

@@ -4,7 +4,6 @@ project(bringup)
 
 find_package(ament_cmake REQUIRED)
 find_package(assets REQUIRED)
-#find_package(ros_gz_example_gazebo REQUIRED)
 
 # Install project launch files
 install(

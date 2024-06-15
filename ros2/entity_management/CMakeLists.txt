@@ -7,11 +7,13 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(custom_gz_interfaces REQUIRED)
+find_package(liquidai_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 add_executable(entity_management_service src/entity_management_service.cpp)
-ament_target_dependencies(entity_management_service rclcpp custom_gz_interfaces)  
+ament_target_dependencies(entity_management_service rclcpp liquidai_msgs ament_index_cpp std_srvs)  
 
 install(TARGETS
   entity_management_service

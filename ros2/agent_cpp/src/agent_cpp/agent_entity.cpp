@@ -1,91 +1,100 @@
 #include "agent_entity.hpp"
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-    AgentEntity::on_configure(const rclcpp_lifecycle::State & previous_state)
-    {
-        RCLCPP_INFO(get_logger(), "on_configure() is called.");
+AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
+{
+    RCLCPP_INFO(get_logger(), "on_configure() is called.");
 
-        bool isFine = true;
+    bool isFine = true;
 
-        entity_management_client_node = rclcpp::Node::make_shared("entity_management_client_node");
-        isFine = isFine && this->spawn();
+    entity_management_client_node =
+        rclcpp::Node::make_shared("entity_management_client_node");
+    isFine = isFine && this->spawn();
 
-        if(isFine){
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
-        }
-        else{
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
-        }
+    if (isFine) {
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::SUCCESS;
     }
+    else {
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::ERROR;
+    }
+}
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-    AgentEntity::on_activate(const rclcpp_lifecycle::State & previous_state)
-    {
-        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
-    }
+AgentEntity::on_activate(const rclcpp_lifecycle::State &previous_state)
+{
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+        CallbackReturn::SUCCESS;
+}
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-    AgentEntity::on_deactivate(const rclcpp_lifecycle::State & previous_state)
-    {
-        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
-    }
+AgentEntity::on_deactivate(const rclcpp_lifecycle::State &previous_state)
+{
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+        CallbackReturn::SUCCESS;
+}
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-    AgentEntity::on_cleanup(const rclcpp_lifecycle::State & previous_state)
-    {
-        RCLCPP_INFO(get_logger(), "on_cleanup() is called.");
-        
-        bool isFine = true;
+AgentEntity::on_cleanup(const rclcpp_lifecycle::State &previous_state)
+{
+    RCLCPP_INFO(get_logger(), "on_cleanup() is called.");
 
-        isFine = isFine && this->despawn();
+    bool isFine = true;
 
-        if(isFine){
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
-        }
-        else
-        {
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
-        }
+    isFine = isFine && this->despawn();
+
+    if (isFine) {
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::SUCCESS;
     }
+    else {
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::ERROR;
+    }
+}
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-    AgentEntity::on_shutdown(const rclcpp_lifecycle::State & previous_state)
-    {
-        RCLCPP_INFO(get_logger(), "on_shutdown() is called.");
+AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
+{
+    RCLCPP_INFO(get_logger(), "on_shutdown() is called.");
 
-        bool isFine = true;
+    bool isFine = true;
 
-        isFine = isFine && this->despawn();
+    isFine = isFine && this->despawn();
 
-        if(isFine){
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
-        }
-        else{
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
-        }
+    if (isFine) {
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::SUCCESS;
     }
+    else {
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::ERROR;
+    }
+}
 
-
-bool AgentEntity::spawn(){
-    char full_name[100]; 
-    strcpy(full_name,this->get_namespace());
-    strcat(full_name,"/");
-    strcat(full_name,this->get_name());
+bool AgentEntity::spawn()
+{
+    char full_name[100];
+    strcpy(full_name, this->get_namespace());
+    strcat(full_name, "/");
+    strcat(full_name, this->get_name());
     RCLCPP_DEBUG(get_logger(), "Creating ros2 node of agent %s", full_name);
 
     // Parse the pose string
     float pose_components[6];
     int i = 0;
     stringstream ssin(pose_str);
-    while (ssin.good() && i < 6){
+    while (ssin.good() && i < 6) {
         ssin >> pose_components[i];
         ++i;
     }
 
-    rclcpp::Client<custom_gz_interfaces::srv::AddEntity>::SharedPtr client =
-    entity_management_client_node->create_client<custom_gz_interfaces::srv::AddEntity>("/add_entity");
+    rclcpp::Client<liquidai_msgs::srv::AddEntity>::SharedPtr client =
+        entity_management_client_node
+            ->create_client<liquidai_msgs::srv::AddEntity>("/gz_add_entity");
 
-    auto request = std::make_shared<custom_gz_interfaces::srv::AddEntity::Request>();
+    auto request = std::make_shared<liquidai_msgs::srv::AddEntity::Request>();
 
     request->name = full_name;
     request->model_filepath = this->sdf_file_;
@@ -106,43 +115,62 @@ bool AgentEntity::spawn(){
     while (!client->wait_for_service(1s)) {
         // If ROS is shutdown before the service is activated, show this error
         if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
-        return false;
+            RCLCPP_ERROR(
+                rclcpp::get_logger("rclcpp"),
+                "Interrupted while waiting for the service. Exiting.");
+            return false;
         }
-        // Print in the screen some information so the user knows what is happening
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%s service not available, waiting again...", full_name);
+        // Print in the screen some information so the user knows what is
+        // happening
+        RCLCPP_INFO(
+            rclcpp::get_logger("rclcpp"),
+            "%s service not available, waiting again...",
+            full_name);
     }
 
     // Client sends its asynchronous request
     auto res = client->async_send_request(request);
 
     // Wait for the result
-    if (rclcpp::spin_until_future_complete(entity_management_client_node, res) == rclcpp::FutureReturnCode::SUCCESS) {
+    if (rclcpp::spin_until_future_complete(
+            entity_management_client_node, res) ==
+        rclcpp::FutureReturnCode::SUCCESS) {
         // Get the response's success field to see if all checks passed
         if (res.get()->result) {
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "The checks were successful!");
+            RCLCPP_INFO(
+                rclcpp::get_logger("rclcpp"), "The checks were successful!");
             return true;
-        } else {
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "The checks were not successful: %s", "");
+        }
+        else {
+            RCLCPP_WARN(
+                rclcpp::get_logger("rclcpp"),
+                "The checks were not successful: %s",
+                "");
             return false;
         }
-    } else {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
+    }
+    else {
+        RCLCPP_ERROR(
+            rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
         return false;
     }
 }
 
-bool AgentEntity::despawn(){
-    char full_name[100]; 
-    strcpy(full_name,this->get_namespace());
-    strcat(full_name,"/");
-    strcat(full_name,this->get_name());
+bool AgentEntity::despawn()
+{
+    char full_name[100];
+    strcpy(full_name, this->get_namespace());
+    strcat(full_name, "/");
+    strcat(full_name, this->get_name());
     RCLCPP_DEBUG(get_logger(), "Destroying ros2 node of agent %s", full_name);
-    
-    rclcpp::Client<custom_gz_interfaces::srv::RemoveEntity>::SharedPtr client =
-        entity_management_client_node->create_client<custom_gz_interfaces::srv::RemoveEntity>("/remove_entity");
 
-    auto request = std::make_shared<custom_gz_interfaces::srv::RemoveEntity::Request>();
+    rclcpp::Client<liquidai_msgs::srv::RemoveEntity>::SharedPtr client =
+        entity_management_client_node
+            ->create_client<liquidai_msgs::srv::RemoveEntity>(
+                "/gz_remove_entity");
+
+    auto request =
+        std::make_shared<liquidai_msgs::srv::RemoveEntity::Request>();
 
     request->name = full_name;
 
@@ -150,27 +178,42 @@ bool AgentEntity::despawn(){
     while (!client->wait_for_service(1s)) {
         // If ROS is shutdown before the service is activated, show this error
         if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
-        return false;
+            RCLCPP_ERROR(
+                rclcpp::get_logger("rclcpp"),
+                "Interrupted while waiting for the service. Exiting.");
+            return false;
         }
-        // Print in the screen some information so the user knows what is happening
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%s service not available, waiting again...", full_name);
+        // Print in the screen some information so the user knows what is
+        // happening
+        RCLCPP_INFO(
+            rclcpp::get_logger("rclcpp"),
+            "%s service not available, waiting again...",
+            full_name);
     }
 
     // Client sends its asynchronous request
     auto res = client->async_send_request(request);
 
     // Wait for the result
-    if (rclcpp::spin_until_future_complete(entity_management_client_node, res) == rclcpp::FutureReturnCode::SUCCESS) {
+    if (rclcpp::spin_until_future_complete(
+            entity_management_client_node, res) ==
+        rclcpp::FutureReturnCode::SUCCESS) {
         // Get the response's success field to see if all checks passed
         if (res.get()->result) {
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "The checks were successful!");
+            RCLCPP_INFO(
+                rclcpp::get_logger("rclcpp"), "The checks were successful!");
             return true;
-        } else {
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "The checks were not successful: %s", "bruh");
+        }
+        else {
+            RCLCPP_WARN(
+                rclcpp::get_logger("rclcpp"),
+                "The checks were not successful: %s",
+                "bruh");
             return false;
         }
-    } else {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
+    }
+    else {
+        RCLCPP_ERROR(
+            rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
     }
 }

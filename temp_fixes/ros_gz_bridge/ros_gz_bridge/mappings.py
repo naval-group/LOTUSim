@@ -109,6 +109,12 @@ MAPPINGS = {
         Mapping('Detection3DArray', 'AnnotatedOriented3DBox_V'),
         Mapping('Detection3D', 'AnnotatedOriented3DBox'),
     ],
+    'liquidai_msgs': [
+        Mapping('FloatStamped', 'Double'),
+        Mapping('GPS', 'NavSat'),
+        Mapping('AISArray', 'gz_liquidai_msgs::msgs::AISArray'),
+        Mapping('Xdyncmd', 'gz_liquidai_msgs::msgs::XdynCmd'),
+    ],
 }
 
 MAPPINGS_8_4_0 = {

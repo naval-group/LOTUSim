@@ -47,6 +47,12 @@
         <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
         </plugin>
 
+        <plugin filename="gazebo_step_control" name="step_control::GazeboStepControl">
+            <enable_control>false</enable_control>
+        </plugin>
+
+        <plugin filename="gz_entity_management" name="entity_management::EntityManagement">
+        </plugin>
 
         <plugin filename="gz-sim-buoyancy-system" name="gz::sim::systems::Buoyancy">
             <graded_buoyancy>

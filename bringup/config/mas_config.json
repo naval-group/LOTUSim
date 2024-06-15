@@ -1,10 +1,11 @@
 {
     "params": {
-        "world_name": "poc_test_mas.world",
-        "verbose": 2
+        "world_name": "xdyn_test.world",
+        "verbose": 4,
+        "gui-config": "gui/design.config"
     },
     "plugins": [],
     "agent_configs": [
-        "agent_config1.json"
+        "agent_config_xdyn.json"
     ]
-  }
+}

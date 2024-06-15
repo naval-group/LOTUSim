@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+    <model name='dtmb'>
+        <link name="base_link">
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://dtmb_hull/dtmb.stl</uri>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+    </model>
+</sdf>

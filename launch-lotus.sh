@@ -26,11 +26,11 @@ fi
 
 
 # Default config file 
-CONFIG_FILE="${2:-"gui/design.config"}"
+# CONFIG_FILE="${2:-"gui/design.config"}"
 
 # Définition des chemins
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
-LOTUSIM_PATH="src/lotusim"
+LOTUSIM_PATH="$(pwd)"
 ASSETS_MODELS_PATH="assets/models"
 ASV_WAVE_SIM_PATH="gazebo/asv_wave_sim/gz-waves-models/world_models"
 OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
@@ -40,6 +40,8 @@ cd ../..
 # Source de la configuration ROS
 # shellcheck source=/dev/null
 source "$ROS_SETUP_PATH"
+export ROS_DISTRO=humble
+export GZ_VERSION=harmonic
 
 # Source de l'environnement installé
 # shellcheck source=/dev/null
@@ -58,11 +60,12 @@ GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"
 export GZ_SIM_RESOURCE_PATH
 echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
 
-# Variable d'environnement des autres lib de GZ GUI (plugins)
-GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-8/plugins"
-export GZ_GUI_PLUGIN_PATH
 echo -e "GZ_GUI_PLUGIN_PATH : ${GREEN}$GZ_GUI_PLUGIN_PATH${NC}"
 echo -e "${GREEN}Launching LOTUSim...${NC}"
 echo -e "$CONFIG_FILE"
-#gz sim "$WORLD_FILE" --gui-config="$CONFIG_FILE"
-ros2 launch bringup mas.launch.py
+
+# Dirty fix of common issue
+unset GTK_PATH
+
+# gz sim "$WORLD_FILE"
+ros2 launch bringup mas.launch.py & rqt
