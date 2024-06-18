@@ -9,8 +9,8 @@ This simulation is built on Gazebo Harmonic and ROS Humble
 </div>
 
 [[_TOC_]]
-
-## Installing
+## Get Started
+### Installing
 
 1. Install [gazebo Harmonic](https://gazebosim.org/docs/harmonic/install_ubuntu) and [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html)
 
@@ -38,7 +38,7 @@ git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-g
 source config-lotus.bash
 ```
 
-## Tutorial
+### Running
 
 This is an example launch for a surface and underwater vessel
 
@@ -73,7 +73,7 @@ ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=test_ship_
 ### Workflow
 We use the Gitflow collaborating workflow. You can find the explanation of this workflow [here](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 
-We are using the default Gitflow branch naming like (here)[https://www.gitkraken.com/blog/gitflow].
+We are using the default Gitflow branch naming like [here](https://www.gitkraken.com/blog/gitflow).
 
 ### Issues
 
