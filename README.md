@@ -1,3 +1,5 @@
+<div align="center">
+
 # Lotusim
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn) and [asv_wave_sim](https://github.com/srmainwaring/asv_wave_sim).
@@ -45,6 +47,28 @@ colcon build --merge-install
 
 ### Running
 
+#### Configuration
+
+Configure `bringup/config/mas_config.json` (world name, agent configs to launch, etc).
+
+Configure agent configs in `bringup/config/...` using the `<model_type_name>` you want to use, set on `assets/models/<model_type_name>`.
+
+Configure the `physics_server_interface`, especially the `ip`, for all the models in use in `assets/models/<model_type_name>/model.sdf`.
+
+Set up the `ip` of the machine running the visualization by modifying the `render_plugin` in `assets/worlds/<world_name>.world`.
+
+Build the project by running `./config-lotus.sh`.
+
+#### Launch
+
+Launch xdyn underwater or surface by using either `./launch-xdynSurface.sh` or `./launch-xdyxUnderwater.sh`.
+
+Launch Gazebo and the main ROS2 MAS by running `./launch-lotus.sh`.
+
+Open `Plugins/Services/Service Caller` in the newly opened `rqt` window. Call the `/SC_change_state_of_all` with an `id` of 1 to configure and spawn all the agents.
+
+### Running without the MAS
+
 This is an example launch for a surface and underwater vessel
 
 and
@@ -53,18 +77,18 @@ Using xdyn-for-cs websocket
 
 ```
 # Terminal 1 launching surface xdyn
-export LD_LIBRARY_PATH=/home/malcom/release_ws/src/lotusim/physics/xdynSurface/
+export LD_LIBRARY_PATH=/home/buche/LOTUSim_ws/src/lotusim/physics/xdynSurface/
 cd src/liquidai/physics/xdynSurface
 clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 2 launching underwater xdyn
-export LD_LIBRARY_PATH=/home/malcom/release_ws/src/lotusim/physics/xdynUnderwater
+export LD_LIBRARY_PATH=/home/buche/LOTUSim_ws/src/lotusim/physics/xdynUnderwater
 cd src/lotusim/physics/xdynUnderwater/
 clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 3 Launch gz sim
 export GZ_SIM_RESOURCE_PATH=$(pwd)/assets/models:$(pwd)/asv_wave_sim/gz-waves-models/world_models
-export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/malcom/release_ws/install/lib
+export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/buche/LOTUSim_ws/install/lib
 clear; gz sim -v4 -s -r assets/worlds/xdyn_underwater.world
 
 # Terminal 4 bridge ROS2 and gz stuff
