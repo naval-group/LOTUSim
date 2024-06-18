@@ -4,7 +4,11 @@ This is an opensource simulator for EDB's project and is created based on openso
 
 This simulation is built on Gazebo Harmonic and ROS Humble
 
-## Installing
+</div>
+
+[[_TOC_]]
+## Get Started
+### Installing
 
 1. Install [gazebo Harmonic](https://gazebosim.org/docs/harmonic/install_ubuntu) and [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html)
 
@@ -39,7 +43,7 @@ source /opt/ros/humble/setup.bash
 colcon build --merge-install
 ```
 
-## Tutorial
+### Running
 
 This is an example launch for a surface and underwater vessel
 
@@ -69,3 +73,19 @@ ros2 launch dtmb_description ros_bridge.launch.py
 # Terminal 5 keyboard control
 ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=test_ship_vessel
 ```
+## Contributing
+
+### Workflow
+We use the Gitflow collaborating workflow. You can find the explanation of this workflow [here](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+
+We are using the default Gitflow branch naming like (here)[https://www.gitkraken.com/blog/gitflow].
+
+### Issues
+
+When you open an issue, you need to put the correct label corresponding to the category of the issue e.g. ~bug or ~suggestion. It needs to be written in english.
+
+**IMPORTANT** You have to put ~"project::development" or ~"project::management" label on each issue as they are used for filtering in the different issue boards
+
+You can find the description of the labels [here](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotusim/-/labels).
+
+
