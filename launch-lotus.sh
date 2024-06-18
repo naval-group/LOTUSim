@@ -32,7 +32,6 @@ fi
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
 LOTUSIM_PATH="$(pwd)"
 ASSETS_MODELS_PATH="assets/models"
-ASV_WAVE_SIM_PATH="gazebo/asv_wave_sim/gz-waves-models/world_models"
 OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
 
 cd ../..
@@ -56,7 +55,7 @@ echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH : ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
 cd "$LOTUSIM_PATH" || return 
 
 # Définition de la variable d'environnement GZ_SIM_RESOURCE_PATH
-GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"
+GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}"
 export GZ_SIM_RESOURCE_PATH
 echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
 

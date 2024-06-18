@@ -8,7 +8,6 @@ NC='\033[0m' # No Color
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
 LOTUSIM_PATH="src/lotusim"
 ASSETS_MODELS_PATH="assets/models"
-ASV_WAVE_SIM_PATH="gazebo/asv_wave_sim/gz-waves-models/world_models"
 
 NEW_GZ_GUI_LIB_PATH="gui/lib"
 OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
@@ -31,11 +30,6 @@ fi
 
 if [ ! -d "${ASSETS_MODELS_PATH}" ]; then
     echo -e "${RED}Erreur:${NC} Le répertoire des modèles assets n'existe pas à $ASSETS_MODELS_PATH."
-    return 1
-fi
-
-if [ ! -d "${ASV_WAVE_SIM_PATH}" ]; then
-    echo -e "${RED}Erreur:${NC} Le répertoire des modèles de simulation ASV n'existe pas à $ASV_WAVE_SIM_PATH."
     return 1
 fi
 
@@ -62,11 +56,11 @@ if [ -d "build" ] || [ -d "install" ] || [ -d "log" ]; then
     fi
     read -rp "Voulez-vous reconstruire ces dossiers ? (y/n) " response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-        colcon build --merge-install
+        colcon build --merge-install --allow-overriding ros_gz_bridge
     fi
 else
     # Construction de l'environnement
-    colcon build --merge-install
+    colcon build --merge-install --allow-overriding ros_gz_bridge
 fi
 
 # Source de l'environnement installé
@@ -82,6 +76,6 @@ echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH : ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
 cd "$LOTUSIM_PATH" || return 1
 
 # Définition de la variable d'environnement GZ_SIM_RESOURCE_PATH
-GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"
+GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}"
 export GZ_SIM_RESOURCE_PATH
 echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
