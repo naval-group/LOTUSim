@@ -14,7 +14,7 @@ bool WaypointFollowerPlugin::Load(
     sdf::ElementPtr _sdf = _model->Data().Element();
 
     if (!_sdf->HasElement("follower")) {
-        return false;
+        return true;
     }
     else {
         _sdf = _sdf->GetElement("follower");
@@ -180,13 +180,14 @@ void WaypointFollowerPlugin::Configure(
 void WaypointFollowerPlugin::PreUpdate(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
-    _ecm.EachNew<gz::sim::components::ModelSdf>(
-        std::bind(&WaypointFollowerPlugin::Load, this, _1, _2, &_ecm));
 }
 //////////////////////////////////////////////////
 void WaypointFollowerPlugin::Update(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
+    _ecm.EachNew<gz::sim::components::ModelSdf>(
+        std::bind(&WaypointFollowerPlugin::Load, this, _1, _2, &_ecm));
+
     double dt =
         std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt).count();
 

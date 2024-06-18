@@ -2,7 +2,7 @@
 <!-- World to test model -->
 <sdf version="1.9"
     xmlns:xacro="http://ros.org/wiki/xacro">
-    <world name="test">
+    <world name="demo">
         <scene>
             <ambient>1.0 1.0 1.0</ambient>
             <background>0.8 0.8 0.8</background>
@@ -25,7 +25,7 @@
         </plugin>
         <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
             <connection_protocol>udp</connection_protocol>
-            <ip>192.168.50.178</ip>
+            <ip>127.0.0.1</ip>
             <port>23456</port>
         </plugin>
         <!-- <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">

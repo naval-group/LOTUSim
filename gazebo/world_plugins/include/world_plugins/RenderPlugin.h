@@ -34,6 +34,7 @@ class RenderPlugin :
     public gz::sim::System,
     public gz::sim::ISystemConfigure,
     public gz::sim::ISystemPreUpdate,
+    public gz::sim::ISystemUpdate,
     public gz::sim::ISystemPostUpdate {
 public:
     RenderPlugin();
@@ -47,6 +48,10 @@ public:
         const std::shared_ptr<const sdf::Element> &_sdf,
         gz::sim::EntityComponentManager &_ecm,
         gz::sim::EventManager &_eventMgr) final;
+
+    void Update(
+        const gz::sim::UpdateInfo &_info,
+        gz::sim::EntityComponentManager &_ecm) final;
 
     void PostUpdate(
         const gz::sim::UpdateInfo &_info,

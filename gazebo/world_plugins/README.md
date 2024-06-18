@@ -7,7 +7,7 @@ TODO:
 - Currently the plugin is directly using ROS2 node. It shouldn't have direct link and should be seperated by ignition bridge. However, as the bridge does not support ignition services at time of development, ROS2 node is used instead.
 
 ```
-export IGN_GAZEBO_SYSTEM_PLUGIN_PATH=/home/malcom/liquidAi/install/uuv_world_ros_plugins_ignition/lib:/home/malcom/liquidAi/install/test_hello_world/lib
+export IGN_GAZEBO_SYSTEM_PLUGIN_PATH=/home/buche/LOTUSim_ws/install/uuv_world_ros_plugins_ignition/lib:/home/buche/LOTUSim_ws/install/test_hello_world/lib
 
 export IGN_GUI_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/ign-gui-6/plugins/gui/
 
