@@ -96,12 +96,6 @@ void EntityManagement::PostUpdate(
 {
 }
 
-// void Reset(const gz::sim::UpdateInfo &_info,
-//   gz::sim::EntityComponentManager &_ecm)
-//   {
-//     // gzmsg << "SampleSystem::Reset" << std::endl;
-//   }
-
 void EntityManagement::OnAddEntity(
     const std::shared_ptr<liquidai_msgs::srv::AddEntity::Request> request,
     std::shared_ptr<liquidai_msgs::srv::AddEntity::Response> response)
@@ -147,6 +141,7 @@ void EntityManagement::OnAddEntity(
     orientation->set_y(rotation.Y());
     orientation->set_z(rotation.Z());
     orientation->set_w(rotation.W());
+    pose->set_allocated_orientation(orientation);
 
     req.set_allocated_pose(pose);
 
