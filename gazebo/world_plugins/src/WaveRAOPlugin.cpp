@@ -19,6 +19,10 @@ void WaveRaoPlugin::Configure(
     m_entity = _entity;
     gzdbg << "WaveRaoPlugin initiated" << std::endl;
     auto sdfPtr = const_cast<sdf::Element *>(_sdf.get());
+
+    this->world_ = _ecm.EntityByComponents(gz::sim::components::World());
+    this->worldName = _ecm.Component<gz::sim::components::Name>(world_)->Data();
+
     if (sdfPtr->HasElement("debug")) {
         m_debug = sdfPtr->Get<bool>("debug");
         m_log_pub = m_gz_node->Advertise<gz::msgs::Int32>("/gz_sched");
@@ -333,6 +337,18 @@ void WaveRaoPlugin::Update(
         else {
             gzwarn << vessel_entity << " update failed." << std::endl;
         }
+
+        if (m_debug) {
+            gz::msgs::Int32 msg;
+            msg.set_data(vessel_entity);
+            m_log_pub.Publish(msg);
+        }
+    }
+
+    if (m_debug) {
+        gz::msgs::Int32 msg;
+        msg.set_data(m_entity);
+        m_log_pub.Publish(msg);
     }
 }
 
