@@ -3,8 +3,8 @@
 #define ROS_GZ_BRIDGE__CONVERT__LIQUIDAI_MSGS_HPP_
 
 // Gazebo Msgs
-#include "gz_liquidai_msgs/msgs/aismsg.pb.h"
-#include "gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h"
+#include <gz_liquidai_msgs/msgs/aismsg.pb.h>
+#include <gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h>
 #include <gz/msgs/double.pb.h>
 #include <gz/msgs/navsat.pb.h>
 

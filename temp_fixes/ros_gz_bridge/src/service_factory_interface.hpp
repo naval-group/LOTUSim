@@ -29,6 +29,8 @@ namespace ros_gz_bridge
 class ServiceFactoryInterface
 {
 public:
+  virtual ~ServiceFactoryInterface() = 0;
+
   virtual
   rclcpp::ServiceBase::SharedPtr
   create_ros_service(

@@ -2,6 +2,62 @@
 Changelog for package ros_gz_bridge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.244.14 (2024-04-08)
+---------------------
+* Added conversion for Detection3D and Detection3DArray (`#523 <https://github.com/gazebosim/ros_gz/issues/523>`_) (`#526 <https://github.com/gazebosim/ros_gz/issues/526>`_)
+  Co-authored-by: wittenator <9154515+wittenator@users.noreply.github.com>
+* Add ROS namespaces to GZ topics (`#512 <https://github.com/gazebosim/ros_gz/issues/512>`_)
+  Co-authored-by: Alejandro Hernández Cordero <ahcorde@gmail.com>
+* Correctly export ros_gz_bridge for downstream targets (`#503 <https://github.com/gazebosim/ros_gz/issues/503>`_) (`#506 <https://github.com/gazebosim/ros_gz/issues/506>`_)
+* Add a virtual destructor to suppress compiler warning (`#502 <https://github.com/gazebosim/ros_gz/issues/502>`_) (`#505 <https://github.com/gazebosim/ros_gz/issues/505>`_)
+  Co-authored-by: Michael Carroll <mjcarroll@intrinsic.ai>
+* Add option to change material color from ROS. (`#486 <https://github.com/gazebosim/ros_gz/issues/486>`_)
+  * Message and bridge for MaterialColor.
+  This allows bridging MaterialColor from ROS to GZ and is
+  important for allowing simulation users to create status lights.
+  ---------
+  Co-authored-by: Alejandro Hernández Cordero <ahcorde@gmail.com>
+  Co-authored-by: Addisu Z. Taddese <addisuzt@intrinsic.ai>
+  Co-authored-by: Addisu Z. Taddese <addisu@openrobotics.org>
+* Contributors: Alejandro Hernández Cordero, Benjamin Perseghetti, Krzysztof Wojciechowski, Michael Carroll
+
+0.244.13 (2024-01-23)
+---------------------
+* backport pr 374 (`#489 <https://github.com/gazebosim/ros_gz/issues/489>`_)
+* populate imu covariances when converting (`#488 <https://github.com/gazebosim/ros_gz/issues/488>`_)
+* Contributors: El Jawad Alaa
+
+0.244.12 (2023-12-13)
+---------------------
+* Backport: Add conversion for geometry_msgs/msg/TwistStamped <-> gz.msgs.Twist (`#468 <https://github.com/gazebosim/ros_gz/issues/468>`_) (`#470 <https://github.com/gazebosim/ros_gz/issues/470>`_)
+* Add support for Harmonic/Humble pairing (`#462 <https://github.com/gazebosim/ros_gz/issues/462>`_)
+* Added messages for 2D Bounding Boxes to ros_gz_bridge (`#458 <https://github.com/gazebosim/ros_gz/issues/458>`_)
+* Fix double wait in ros_gz_bridge (`#347 <https://github.com/gazebosim/ros_gz/issues/347>`_) (`#450 <https://github.com/gazebosim/ros_gz/issues/450>`_)
+* [backport humble] SensorNoise msg bridging (`#417 <https://github.com/gazebosim/ros_gz/issues/417>`_)
+* [backport humble] Added Altimeter msg bridging (`#413 <https://github.com/gazebosim/ros_gz/issues/413>`_) (`#414 <https://github.com/gazebosim/ros_gz/issues/414>`_) (`#426 <https://github.com/gazebosim/ros_gz/issues/426>`_)
+* [backport humble] Update README.md (`#411 <https://github.com/gazebosim/ros_gz/issues/411>`_)
+  The ROS type for gz.msgs.NavSat messages should be **sensor_msgs/msg/NavSatFix** instead of **sensor_msgs/msg/NavSatFixed**
+* Contributors: Addisu Z. Taddese, Alejandro Hernández Cordero, Arjun K Haridas, wittenator
+
+0.244.11 (2023-05-23)
+---------------------
+* Add actuator_msgs to humble bridge. (`#394 <https://github.com/gazebosim/ros_gz/issues/394>`_)
+* Contributors: Benjamin Perseghetti
+
+0.244.10 (2023-05-03)
+---------------------
+* Fix warning message (`#371 <https://github.com/gazebosim/ros_gz/issues/371>`_)
+* Introduce WrenchStamped into bridge (`#327 <https://github.com/gazebosim/ros_gz/issues/327>`_)
+* Humbly bringing the Joy to gazebo. (`#353 <https://github.com/gazebosim/ros_gz/issues/353>`_)
+* Make the bridge aware of both gz and ignition msgs (`#349 <https://github.com/gazebosim/ros_gz/issues/349>`_)
+* Contributors: Benjamin Perseghetti, El Jawad Alaa, Michael Carroll, livanov93
+
+0.244.9 (2022-11-03)
+--------------------
+
+0.244.8 (2022-10-28)
+--------------------
+
 0.244.7 (2022-10-12)
 --------------------
 * Make sure that ign\_* yaml configs work as well (`#310 <https://github.com/gazebosim/ros_gz/issues/310>`_)
@@ -98,7 +154,7 @@ Changelog for package ros_gz_bridge
 * Edifice support (`#140 <https://github.com/gazebosim/ros_gz/issues/140>`_)
 * Add JointTrajectory message conversion (`#121 <https://github.com/gazebosim/ros_gz/issues/121>`_)
   Conversion between
-  - gz::msgs::JointTrajectory
+  - ignition::msgs::JointTrajectory
   - trajectory_msgs::msg::JointTrajectory
 * Add TFMessage / Pose_V and Float64 / Double conversions (`#117 <https://github.com/gazebosim/ros_gz/issues/117>`_)
   Addresses issue `#116 <https://github.com/gazebosim/ros_gz/issues/116>`_
@@ -209,8 +265,8 @@ Changelog for package ros_gz_bridge
 0.3.0 (2019-06-28)
 ------------------
 * 0.2.0
-* Conversion between nav_msgs/Odometry and gz::msgs::Odometry (`#22 <https://github.com/osrf/ros1_ign_bridge/issues/22>`_)
-  * Conversion between nav_msgs/Odometry and gz::msgs::Odometry.
+* Conversion between nav_msgs/Odometry and ignition::msgs::Odometry (`#22 <https://github.com/osrf/ros1_ign_bridge/issues/22>`_)
+  * Conversion between nav_msgs/Odometry and ignition::msgs::Odometry.
   * Update documentation.
   * More time to run tests
   * Cleaning test_utils.

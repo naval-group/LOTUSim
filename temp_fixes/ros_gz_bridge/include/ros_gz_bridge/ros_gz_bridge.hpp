@@ -19,68 +19,75 @@
 #include <string>
 #include <vector>
 
-#include "ros_gz_bridge/bridge_config.hpp"
-
 #include <gz/msgs/config.hh>
 #include <gz/transport/Node.hh>
 #include <rclcpp/node.hpp>
+#include "ros_gz_bridge/bridge_config.hpp"
 
 // Dataframe is available from versions 8.4.0 (fortress) forward
 // This can be removed when the minimum supported version passes 8.4.0
 #if (IGNITION_MSGS_MAJOR_VERSION > 8) || \
-    ((IGNITION_MSGS_MAJOR_VERSION == 8) && (IGNITION_MSGS_MINOR_VERSION >= 4))
+  ((IGNITION_MSGS_MAJOR_VERSION == 8) && (IGNITION_MSGS_MINOR_VERSION >= 4))
 #define HAVE_DATAFRAME true
 #endif
 
 #if (GZ_MSGS_MAJOR_VERSION > 8) || \
-    ((GZ_MSGS_MAJOR_VERSION == 8) && (GZ_MSGS_MINOR_VERSION >= 4))
+  ((GZ_MSGS_MAJOR_VERSION == 8) && (GZ_MSGS_MINOR_VERSION >= 4))
 #define HAVE_DATAFRAME true
 #endif
 
-namespace ros_gz_bridge {
+// MaterialColor is available from versions 10.1.0 (Harmonic) forward
+// This can be removed when the minimum supported version passes 10.1.0
+#if (GZ_MSGS_MAJOR_VERSION > 10) || \
+  ((GZ_MSGS_MAJOR_VERSION == 10) && (GZ_MSGS_MINOR_VERSION >= 1))
+#define HAVE_MATERIALCOLOR true
+#endif
+
+namespace ros_gz_bridge
+{
 /// Forward declarations
 class BridgeHandle;
 
 /// \brief Component container for the ROS-GZ Bridge
-class RosGzBridge : public rclcpp::Node {
+class RosGzBridge : public rclcpp::Node
+{
 public:
-    /// \brief Constructor
-    /// \param[in] options options control creation of the ROS 2 node
-    explicit RosGzBridge(
-        const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
+  /// \brief Constructor
+  /// \param[in] options options control creation of the ROS 2 node
+  explicit RosGzBridge(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
-    /// \brief Add a new ROS-IGN bridge to the node
-    /// \param[in] config Parameters to control creation of a new bridge
-    void add_bridge(const BridgeConfig &config);
+  /// \brief Add a new ROS-IGN bridge to the node
+  /// \param[in] config Parameters to control creation of a new bridge
+  void add_bridge(const BridgeConfig & config);
 
-    /// \brief Create a new ROS-GZ bridge for a service
-    /// \param[in] ros_type_name Name of the ROS service (eg
-    /// ros_bz_interfaces/srv/ControlWorld) \param[in] gz_req_type_name Gazebo
-    /// service request type \param[in] gz_req_type_name Gazebo service response
-    /// type \param[in] service_name Address of the service to be bridged
-    void add_service_bridge(
-        const std::string &ros_type_name,
-        const std::string &gz_req_type_name,
-        const std::string &gz_rep_type_name,
-        const std::string &service_name);
-
-protected:
-    /// \brief Periodic callback to check connectivity and liveliness
-    void spin();
+  /// \brief Create a new ROS-GZ bridge for a service
+  /// \param[in] ros_type_name Name of the ROS service (eg ros_bz_interfaces/srv/ControlWorld)
+  /// \param[in] gz_req_type_name Gazebo service request type
+  /// \param[in] gz_req_type_name Gazebo service response type
+  /// \param[in] service_name Address of the service to be bridged
+  void add_service_bridge(
+    const std::string & ros_type_name,
+    const std::string & gz_req_type_name,
+    const std::string & gz_rep_type_name,
+    const std::string & service_name);
 
 protected:
-    /// \brief Pointer to Gazebo node used to create publishers/subscribers
-    std::shared_ptr<gz::transport::Node> gz_node_;
+  /// \brief Periodic callback to check connectivity and liveliness
+  void spin();
 
-    /// \brief List of bridge handles
-    std::vector<std::shared_ptr<ros_gz_bridge::BridgeHandle>> handles_;
+protected:
+  /// \brief Pointer to Gazebo node used to create publishers/subscribers
+  std::shared_ptr<gz::transport::Node> gz_node_;
 
-    /// \brief List of bridged ROS services
-    std::vector<rclcpp::ServiceBase::SharedPtr> services_;
+  /// \brief List of bridge handles
+  std::vector<std::shared_ptr<ros_gz_bridge::BridgeHandle>> handles_;
 
-    /// \brief Timer to control periodic callback
-    rclcpp::TimerBase::SharedPtr heartbeat_timer_;
+  /// \brief List of bridged ROS services
+  std::vector<rclcpp::ServiceBase::SharedPtr> services_;
+
+  /// \brief Timer to control periodic callback
+  rclcpp::TimerBase::SharedPtr heartbeat_timer_;
 };
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // ROS_GZ_BRIDGE__ROS_GZ_BRIDGE_HPP_
+#endif  // ROS_GZ_BRIDGE__ROS_GZ_BRIDGE_HPP_
