@@ -7,8 +7,11 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
 
     bool isFine = true;
 
-    entity_management_client_node =
-        rclcpp::Node::make_shared("entity_management_client_node");
+    this->add_entity_client =
+        entity_management_client_node
+            ->create_client<liquidai_msgs::srv::AddEntitySrvArray>(
+                "/gz_add_entity_V");
+
     isFine = isFine && this->spawn();
 
     if (isFine) {
@@ -73,12 +76,15 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
     }
 }
 
+/// @brief Spawn command called on OnConfigure()
+/// @return Returns true if successfully spawned entity
 bool AgentEntity::spawn()
 {
     char full_name[100];
-    strcpy(full_name, this->get_namespace());
-    strcat(full_name, "/");
-    strcat(full_name, this->get_name());
+    // strcpy(full_name, this->get_namespace());
+    // strcat(full_name, "/");
+    // strcat(full_name, this->get_name());
+    strcpy(full_name, this->get_name());
     RCLCPP_DEBUG(get_logger(), "Creating ros2 node of agent %s", full_name);
 
     // Parse the pose string
@@ -90,48 +96,49 @@ bool AgentEntity::spawn()
         ++i;
     }
 
-    rclcpp::Client<liquidai_msgs::srv::AddEntity>::SharedPtr client =
-        entity_management_client_node
-            ->create_client<liquidai_msgs::srv::AddEntity>("/gz_add_entity");
+    // When send a create_multiple request through the gz_entity_management
+    // package
+    auto request_V =
+        std::make_shared<liquidai_msgs::srv::AddEntitySrvArray::Request>();
 
-    auto request = std::make_shared<liquidai_msgs::srv::AddEntity::Request>();
+    auto request =
+        std::make_shared<liquidai_msgs::srv::AddEntitySrv::Request>();
 
-    request->name = full_name;
-    request->model_filepath = this->sdf_file_;
+    request->data.name = full_name;
+    request->data.model_filepath = this->sdf_file_;
 
     geometry_msgs::msg::Point p;
     p.set__x(pose_components[0]);
     p.set__y(pose_components[1]);
     p.set__z(pose_components[2]);
-    request->location = p;
+    request->data.location = p;
 
     geometry_msgs::msg::Vector3 r;
     r.set__x(pose_components[3]);
     r.set__y(pose_components[4]);
     r.set__z(pose_components[5]);
-    request->rotation = r;
+    request->data.rotation = r;
 
     // Wait for the service to be activated
-    while (!client->wait_for_service(1s)) {
-        // If ROS is shutdown before the service is activated, show this error
+    while (!this->add_entity_client->wait_for_service(1s)) {
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(
                 rclcpp::get_logger("rclcpp"),
                 "Interrupted while waiting for the service. Exiting.");
             return false;
         }
-        // Print in the screen some information so the user knows what is
-        // happening
+
         RCLCPP_INFO(
             rclcpp::get_logger("rclcpp"),
             "%s service not available, waiting again...",
             full_name);
     }
 
-    // Client sends its asynchronous request
-    auto res = client->async_send_request(request);
+    // Possibility of spawning multiple things here
+    request_V->data.push_back(request->data);
 
-    // Wait for the result
+    auto res = this->add_entity_client->async_send_request(request_V);
+
     if (rclcpp::spin_until_future_complete(
             entity_management_client_node, res) ==
         rclcpp::FutureReturnCode::SUCCESS) {
@@ -156,6 +163,8 @@ bool AgentEntity::spawn()
     }
 }
 
+/// @brief Despawn command called on OnCleanup() or OnShutdown()
+/// @return Returns true if successfully despawned
 bool AgentEntity::despawn()
 {
     char full_name[100];
@@ -176,25 +185,21 @@ bool AgentEntity::despawn()
 
     // Wait for the service to be activated
     while (!client->wait_for_service(1s)) {
-        // If ROS is shutdown before the service is activated, show this error
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(
                 rclcpp::get_logger("rclcpp"),
                 "Interrupted while waiting for the service. Exiting.");
             return false;
         }
-        // Print in the screen some information so the user knows what is
-        // happening
+
         RCLCPP_INFO(
             rclcpp::get_logger("rclcpp"),
             "%s service not available, waiting again...",
             full_name);
     }
 
-    // Client sends its asynchronous request
     auto res = client->async_send_request(request);
 
-    // Wait for the result
     if (rclcpp::spin_until_future_complete(
             entity_management_client_node, res) ==
         rclcpp::FutureReturnCode::SUCCESS) {
@@ -215,5 +220,90 @@ bool AgentEntity::despawn()
     else {
         RCLCPP_ERROR(
             rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
+    }
+}
+
+bool AgentEntity::GetSensors()
+{
+    string sdfPath = ament_index_cpp::get_package_share_directory("assets") +
+                     "/" + sdf_file_;
+
+    // load and check sdf file
+    sdf::SDFPtr sdfElement(new sdf::SDF());
+    sdf::init(sdfElement);
+    if (!sdf::readFile(sdfPath, sdfElement)) {
+        std::cerr << sdfPath << " is not a valid SDF file!" << std::endl;
+        return -2;
+    }
+
+    // start parsing model
+    const sdf::ElementPtr rootElement = sdfElement->Root();
+    if (!rootElement->HasElement("model")) {
+        std::cerr << sdfPath << " is not a model SDF file!" << std::endl;
+        return -3;
+    }
+    const sdf::ElementPtr modelElement = rootElement->GetElement("model");
+    const std::string modelName = modelElement->Get<std::string>("name");
+    std::cout << "Found " << modelName << " model!" << std::endl;
+
+    // parse model links
+    sdf::ElementPtr linkElement = modelElement->GetElement("link");
+    while (linkElement) {
+        const std::string linkName = linkElement->Get<std::string>("name");
+        std::cout << "Found " << linkName << " link in " << modelName
+                  << " model!" << std::endl;
+        linkElement = linkElement->GetNextElement("link");
+    }
+
+    // parse model joints
+    sdf::ElementPtr jointElement = modelElement->GetElement("joint");
+    while (jointElement) {
+        const std::string jointName = jointElement->Get<std::string>("name");
+        std::cout << "Found " << jointName << " joint in " << modelName
+                  << " model!" << std::endl;
+
+        const sdf::ElementPtr parentElement =
+            jointElement->GetElement("parent");
+        const std::string parentLinkName = parentElement->Get<std::string>();
+
+        const sdf::ElementPtr childElement = jointElement->GetElement("child");
+        const std::string childLinkName = childElement->Get<std::string>();
+
+        std::cout << "Joint " << jointName << " connects " << parentLinkName
+                  << " link to " << childLinkName << " link" << std::endl;
+
+        jointElement = jointElement->GetNextElement("joint");
+    }
+
+    if (!modelElement->HasElement("sensors")) {
+        std::cerr << sdfPath << " does not have sensors!" << std::endl;
+        return -3;
+    }
+
+    // Get the sensors element
+    sdf::ElementPtr sensorsElement = modelElement->GetElement("sensors");
+
+    // Iterate through each sensor
+    sdf::ElementPtr pluginElement =
+        sensorsElement->GetFirstElement(); // Get the first child element
+
+    while (pluginElement) {
+        if (pluginElement->HasElement("plugin")) {
+            // Process the sdf tag here
+            // For example, you can retrieve attributes or nested elements
+            // Assuming sdfElement is the sdf tag you want to work with
+            // Example code to retrieve attributes:
+            std::string sdfName = pluginElement->Get<std::string>("name");
+
+            // Example code to retrieve nested elements
+            sdf::ElementPtr nestedElement =
+                pluginElement->GetElement("nested_element_name");
+
+            // Continue processing as needed
+
+            // Move to the next sdf element
+        }
+        // Move to the next element under sensors
+        pluginElement = pluginElement->GetNextElement();
     }
 }

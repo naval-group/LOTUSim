@@ -1,5 +1,5 @@
 #include "liquidai_msgs/srv/activate_slowdown.hpp"
-#include "liquidai_msgs/srv/add_entity.hpp"
+#include "liquidai_msgs/srv/add_entity_srv.hpp"
 #include "liquidai_msgs/srv/empty_srv.hpp"
 #include "liquidai_msgs/srv/remove_entity.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -11,6 +11,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include <std_srvs/srv/set_bool.hpp>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -26,6 +27,13 @@ public:
     {
         change_state_client_node =
             rclcpp::Node::make_shared("change_state_client_node");
+
+        SC_step_control_client_node_ =
+            rclcpp::Node::make_shared("SC_step_control_client_node");
+
+        SC_step_control_client_ =
+            SC_step_control_client_node_->create_client<std_srvs::srv::SetBool>(
+                "step_control_enable");
 
         ros_entity_events_publisher_ =
             this->create_publisher<std_msgs::msg::Int32>(
@@ -58,6 +66,13 @@ public:
             request,
         std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response)
     {
+        // Pause the simulation
+        auto pause_request =
+            std::make_shared<std_srvs::srv::SetBool::Request>();
+        pause_request->data = true;
+        auto pause_req_res =
+            SC_step_control_client_->async_send_request(pause_request);
+
         std::string command = "ros2 lifecycle nodes";
         std::string res = exec_command(command.data());
         RCLCPP_INFO(
@@ -98,6 +113,11 @@ public:
             i++;
         }
 
+        // UnPause the simulation
+        pause_request->data = false;
+        auto pause_req_res2 =
+            SC_step_control_client_->async_send_request(pause_request);
+
         response->success = success == size;
     }
 
@@ -119,8 +139,6 @@ public:
 
         // Wait for the service to be activated
         while (!client->wait_for_service(std::chrono::seconds(1))) {
-            // If ROS is shutdown before the service is activated, show this
-            // error
             if (!rclcpp::ok()) {
                 RCLCPP_ERROR(
                     rclcpp::get_logger("rclcpp"),
@@ -141,7 +159,6 @@ public:
         // Wait for the result
         if (rclcpp::spin_until_future_complete(change_state_client_node, res) ==
             rclcpp::FutureReturnCode::SUCCESS) {
-            // Get the response's success field to see if all checks passed
             if (res.get()->success) {
                 RCLCPP_INFO(
                     rclcpp::get_logger("rclcpp"),
@@ -178,7 +195,11 @@ public:
     }
 
 private:
-    std::shared_ptr<rclcpp::Node> change_state_client_node;
+    rclcpp::Node::SharedPtr change_state_client_node;
+
+    rclcpp::Node::SharedPtr SC_step_control_client_node_;
+
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr SC_step_control_client_;
 
     rclcpp::Service<lifecycle_msgs::srv::ChangeState>::SharedPtr
         SC_change_state_of_all;
@@ -207,14 +228,6 @@ private:
             throw;
         }
         pclose(pipe);
-        return result;
-    }
-
-    int runCommand(const char *command)
-    {
-        // Run the command
-        int result = system(command);
-
         return result;
     }
 };

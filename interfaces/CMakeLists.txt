@@ -7,6 +7,7 @@ find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/AddEntity.msg"
   "msg/AIS.msg"
   "msg/AISArray.msg"  
   "msg/GPS.msg"
@@ -36,7 +37,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetFloat.srv" 
   "srv/GetListParam.srv" 
   "srv/GetThrusterConversionFcn.srv"
-  "srv/AddEntity.srv"
+  "srv/AddEntitySrv.srv"
+  "srv/AddEntitySrvArray.srv"
   "srv/RemoveEntity.srv"
   "srv/EmptySrv.srv"
   "srv/ActivateSlowdown.srv"

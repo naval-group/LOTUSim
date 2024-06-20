@@ -2,6 +2,7 @@
 #define AGENT_ENTITY_HH_
 
 #include "agent.hpp"
+#include <sdf/sdf.hh>
 
 // An agent that is an entity in Gazebo
 class AgentEntity : public Agent
@@ -11,6 +12,7 @@ private:
     string pose_str;
     string spawn_on_startup_;
     std::shared_ptr<rclcpp::Node> entity_management_client_node;
+    rclcpp::Client<liquidai_msgs::srv::AddEntitySrvArray>::SharedPtr add_entity_client;
 
 public:
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -34,8 +36,7 @@ public:
         get_parameter("sdf_file", sdf_file_);
         get_parameter("pose", pose_str);
 
-        // // Client for entity management; not ideal for it to be in constructor, but useful
-        // entity_management_client_node = rclcpp::Node::make_shared("entity_management_client_node");
+        entity_management_client_node = rclcpp::Node::make_shared("entity_management_client_node");
 
         // // Spawn entity on Gazebo at startup, may be unstable
         // spawn();
@@ -44,6 +45,8 @@ public:
     bool spawn();
 
     bool despawn();
+
+    bool GetSensors();
 };
 
 #endif
