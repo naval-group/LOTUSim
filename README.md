@@ -18,7 +18,7 @@ This simulation is built on Gazebo Harmonic and ROS Humble
 
 ```bash
 # ROS libraries
-sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gz ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions ros-humble-nav2-common ros-humble-navigation2
+sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzharmonic ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions ros-humble-nav2-common ros-humble-navigation2
 
 # Other libraries
 sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
@@ -37,8 +37,6 @@ git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-g
 ```bash
 source config-lotus.bash
 ```
-
-### Running
 
 ### Running
 
