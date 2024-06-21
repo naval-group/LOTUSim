@@ -59,8 +59,11 @@ cd src/lotusim/physics/xdynUnderwater/
 clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 3 Launch gz sim
-export GZ_SIM_RESOURCE_PATH=$(pwd)/assets/models:$(pwd)/asv_wave_sim/gz-waves-models/world_models
-export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/malcom/release_ws/install/lib
+cd lotusim_ws
+source "$(pwd)/install/setup.bash"
+export GZ_SIM_SYSTEM_PLUGIN_PATH="$(pwd)/install/lib"
+cd src/lotusim
+export GZ_SIM_RESOURCE_PATH="$(pwd)/assets/models:$(pwd)/gazebo/asv_wave_sim/gz-waves-models/world_models"
 clear; gz sim -v4 -s -r assets/worlds/xdyn_underwater.world
 
 # Terminal 4 bridge ROS2 and gz stuff
