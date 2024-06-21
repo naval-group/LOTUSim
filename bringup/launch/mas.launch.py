@@ -45,19 +45,9 @@ def generate_launch_description():
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')),
-        launch_arguments={'gz_args': '-v {} '.format(json_data['params']['verbose']) + os.path.join( # Reduce the verbose number to reduce the log messages
-            pkg_project_description,
-            'worlds',
-            json_data['params']['world_name']
-        ) + " --gui-config={}".format(json_data['params']['gui-config'])}.items(),
-    )
-
-    entity_management = Node(
-        package='entity_management',
-        executable='entity_management_service',
-        parameters=[{'use_sim_time': True,
-            }],
-        output='screen'
+        launch_arguments={'gz_args': '-v {} '.format(json_data['params']['verbose']) 
+            + os.path.join(pkg_project_description,'worlds',json_data['params']['world_filename']) 
+            + " --gui-config={}".format(json_data['params']['gui-config'])}.items(),
     )
 
     simulation_control = Node(
@@ -68,7 +58,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # We create the list of spawn robots commands
     spawn_agents_cmds = []
 
     namespace_nb = 1
@@ -79,7 +68,8 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(
                     os.path.join(pkg_project_bringup, 'launch', 'multi_agent_spawn.launch.py')),
                 launch_arguments={'agent_config': str(agent_config),
-                                  'ns_base': 'ns_main'
+                                  'ns_base': 'ns_main',
+                                  'asset_sim_path': pkg_project_description
                                 }.items())
         )
         namespace_nb = namespace_nb + 1
@@ -127,7 +117,6 @@ def generate_launch_description():
         # DeclareLaunchArgument('rviz', default_value='true',
         #                       description='Open RViz.'),
         simulation_control,
-        entity_management,
         agent_launch,
         bridge,
         # robot_state_publisher,

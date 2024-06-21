@@ -6,6 +6,11 @@
 
     <!-- Body -->
     <link name="base_link">
+      <sensor name="imu_sensor" type="imu">
+        <always_on>1</always_on>
+        <update_rate>1</update_rate>
+        <visualize>true</visualize>
+      </sensor>
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>

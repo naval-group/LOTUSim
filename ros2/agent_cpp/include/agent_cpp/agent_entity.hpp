@@ -9,6 +9,7 @@ class AgentEntity : public Agent
 {
 private:
     string sdf_file_;
+    string sdf_filename_;
     string pose_str;
     string spawn_on_startup_;
     std::shared_ptr<rclcpp::Node> entity_management_client_node;
@@ -34,6 +35,7 @@ public:
         : Agent("agent_entity", options)
     {
         get_parameter("sdf_file", sdf_file_);
+        get_parameter("sdf_filename", sdf_filename_);
         get_parameter("pose", pose_str);
 
         entity_management_client_node = rclcpp::Node::make_shared("entity_management_client_node");

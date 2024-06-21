@@ -105,7 +105,8 @@ bool AgentEntity::spawn()
         std::make_shared<liquidai_msgs::srv::AddEntitySrv::Request>();
 
     request->data.name = full_name;
-    request->data.model_filepath = this->sdf_file_;
+    request->data.model_filepath = this->sdf_filename_;
+    request->data.model_file = this->sdf_file_;
 
     geometry_msgs::msg::Point p;
     p.set__x(pose_components[0]);
@@ -168,9 +169,10 @@ bool AgentEntity::spawn()
 bool AgentEntity::despawn()
 {
     char full_name[100];
-    strcpy(full_name, this->get_namespace());
-    strcat(full_name, "/");
-    strcat(full_name, this->get_name());
+    // strcpy(full_name, this->get_namespace());
+    // strcat(full_name, "/");
+    // strcat(full_name, this->get_name());
+    strcpy(full_name, this->get_name());
     RCLCPP_DEBUG(get_logger(), "Destroying ros2 node of agent %s", full_name);
 
     rclcpp::Client<liquidai_msgs::srv::RemoveEntity>::SharedPtr client =

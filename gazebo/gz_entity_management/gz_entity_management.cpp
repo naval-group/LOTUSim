@@ -105,9 +105,10 @@ void EntityManagement::PostUpdate(
 {
 }
 
-/// @brief Callback for adding one entity. Prefer using the array version of this function.
-/// @param request 
-/// @param response 
+/// @brief Callback for adding one entity. Prefer using the array version of
+/// this function.
+/// @param request
+/// @param response
 void EntityManagement::OnAddEntity(
     const std::shared_ptr<liquidai_msgs::srv::AddEntitySrv::Request> request,
     std::shared_ptr<liquidai_msgs::srv::AddEntitySrv::Response> response)
@@ -153,14 +154,19 @@ void EntityManagement::OnAddEntity_V(
     gz::msgs::EntityFactory_V reqs;
 
     for (liquidai_msgs::msg::AddEntity msg : request->data) {
-        std::string full_model_filepath =
-            ament_index_cpp::get_package_share_directory("assets") + "/" +
-            msg.model_filepath;
 
         ::gz::msgs::EntityFactory *req = reqs.add_data();
 
         req->set_name(msg.name.c_str());
-        req->set_sdf_filename(full_model_filepath.c_str());
+        if (!msg.model_file.empty()) {
+            req->set_sdf(msg.model_file.c_str());
+        }
+        else if (!msg.model_filepath.empty()) {
+            std::string full_model_filepath =
+                ament_index_cpp::get_package_share_directory("assets") + "/" +
+                msg.model_filepath;
+            req->set_sdf_filename(full_model_filepath.c_str());
+        }
 
         gz::msgs::Pose *pose = new gz::msgs::Pose();
 

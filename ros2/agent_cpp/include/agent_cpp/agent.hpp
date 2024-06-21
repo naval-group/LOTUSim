@@ -40,6 +40,7 @@ public:
     {
         // We need to declare all parameters here
         declare_parameter("sdf_file", "");
+        declare_parameter("sdf_filename", "");
         declare_parameter("pose", "");
 
         auto param_change_callback =

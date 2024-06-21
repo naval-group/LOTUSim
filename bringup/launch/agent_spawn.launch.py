@@ -14,20 +14,9 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     ns = LaunchConfiguration('ns')
     sdf_file  =  LaunchConfiguration('sdf_file')
+    sdf_filename  =  LaunchConfiguration('sdf_filename')
     name  =  LaunchConfiguration('name')
     pose  =  LaunchConfiguration('pose')
-
-    agent_node = Node(
-        package='agent_cpp',
-        name=name,
-        executable='agent',
-        namespace=ns,
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time,
-                     'sdf_file': sdf_file,
-                     'pose': pose,
-                     }],
-    )
     
     agent_node_component = ComposableNodeContainer(
     name='container',
@@ -40,10 +29,10 @@ def generate_launch_description():
             plugin='AgentEntity',
             name=name,
             namespace=ns,
-            # ..
             extra_arguments=[{'use_intra_process_comms': True}],
             parameters=[{'use_sim_time': use_sim_time,
                 'sdf_file': sdf_file,
+                'sdf_filename': sdf_filename,
                 'pose': pose,
                 }],
         ),

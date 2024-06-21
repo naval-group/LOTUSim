@@ -1,6 +1,7 @@
 {
     "params": {
-        "world_name": "xdyn_test.world",
+        "world_filename": "xdyn_test.world",
+        "world_name": "lotusim",
         "verbose": 4,
         "gui-config": "gui/design.config"
     },
