@@ -7,12 +7,7 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
 
     bool isFine = true;
 
-    this->add_entity_client =
-        entity_management_client_node
-            ->create_client<liquidai_msgs::srv::AddEntitySrvArray>(
-                "/gz_add_entity_V");
-
-    isFine = isFine && this->spawn();
+    isFine = isFine && this->perform_spawn();
 
     if (isFine) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
@@ -45,7 +40,7 @@ AgentEntity::on_cleanup(const rclcpp_lifecycle::State &previous_state)
 
     bool isFine = true;
 
-    isFine = isFine && this->despawn();
+    isFine = isFine && this->perform_despawn();
 
     if (isFine) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
@@ -64,7 +59,7 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
 
     bool isFine = true;
 
-    isFine = isFine && this->despawn();
+    isFine = isFine && this->perform_despawn();
 
     if (isFine) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
@@ -73,155 +68,6 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
     else {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::ERROR;
-    }
-}
-
-/// @brief Spawn command called on OnConfigure()
-/// @return Returns true if successfully spawned entity
-bool AgentEntity::spawn()
-{
-    char full_name[100];
-    // strcpy(full_name, this->get_namespace());
-    // strcat(full_name, "/");
-    // strcat(full_name, this->get_name());
-    strcpy(full_name, this->get_name());
-    RCLCPP_DEBUG(get_logger(), "Creating ros2 node of agent %s", full_name);
-
-    // Parse the pose string
-    float pose_components[6];
-    int i = 0;
-    stringstream ssin(pose_str);
-    while (ssin.good() && i < 6) {
-        ssin >> pose_components[i];
-        ++i;
-    }
-
-    // When send a create_multiple request through the gz_entity_management
-    // package
-    auto request_V =
-        std::make_shared<liquidai_msgs::srv::AddEntitySrvArray::Request>();
-
-    auto request =
-        std::make_shared<liquidai_msgs::srv::AddEntitySrv::Request>();
-
-    request->data.name = full_name;
-    request->data.model_filepath = this->sdf_filename_;
-    request->data.model_file = this->sdf_file_;
-
-    geometry_msgs::msg::Point p;
-    p.set__x(pose_components[0]);
-    p.set__y(pose_components[1]);
-    p.set__z(pose_components[2]);
-    request->data.location = p;
-
-    geometry_msgs::msg::Vector3 r;
-    r.set__x(pose_components[3]);
-    r.set__y(pose_components[4]);
-    r.set__z(pose_components[5]);
-    request->data.rotation = r;
-
-    // Wait for the service to be activated
-    while (!this->add_entity_client->wait_for_service(1s)) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(
-                rclcpp::get_logger("rclcpp"),
-                "Interrupted while waiting for the service. Exiting.");
-            return false;
-        }
-
-        RCLCPP_INFO(
-            rclcpp::get_logger("rclcpp"),
-            "%s service not available, waiting again...",
-            full_name);
-    }
-
-    // Possibility of spawning multiple things here
-    request_V->data.push_back(request->data);
-
-    auto res = this->add_entity_client->async_send_request(request_V);
-
-    if (rclcpp::spin_until_future_complete(
-            entity_management_client_node, res) ==
-        rclcpp::FutureReturnCode::SUCCESS) {
-        // Get the response's success field to see if all checks passed
-        if (res.get()->result) {
-            RCLCPP_INFO(
-                rclcpp::get_logger("rclcpp"), "The checks were successful!");
-            return true;
-        }
-        else {
-            RCLCPP_WARN(
-                rclcpp::get_logger("rclcpp"),
-                "The checks were not successful: %s",
-                "");
-            return false;
-        }
-    }
-    else {
-        RCLCPP_ERROR(
-            rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
-        return false;
-    }
-}
-
-/// @brief Despawn command called on OnCleanup() or OnShutdown()
-/// @return Returns true if successfully despawned
-bool AgentEntity::despawn()
-{
-    char full_name[100];
-    // strcpy(full_name, this->get_namespace());
-    // strcat(full_name, "/");
-    // strcat(full_name, this->get_name());
-    strcpy(full_name, this->get_name());
-    RCLCPP_DEBUG(get_logger(), "Destroying ros2 node of agent %s", full_name);
-
-    rclcpp::Client<liquidai_msgs::srv::RemoveEntity>::SharedPtr client =
-        entity_management_client_node
-            ->create_client<liquidai_msgs::srv::RemoveEntity>(
-                "/gz_remove_entity");
-
-    auto request =
-        std::make_shared<liquidai_msgs::srv::RemoveEntity::Request>();
-
-    request->name = full_name;
-
-    // Wait for the service to be activated
-    while (!client->wait_for_service(1s)) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(
-                rclcpp::get_logger("rclcpp"),
-                "Interrupted while waiting for the service. Exiting.");
-            return false;
-        }
-
-        RCLCPP_INFO(
-            rclcpp::get_logger("rclcpp"),
-            "%s service not available, waiting again...",
-            full_name);
-    }
-
-    auto res = client->async_send_request(request);
-
-    if (rclcpp::spin_until_future_complete(
-            entity_management_client_node, res) ==
-        rclcpp::FutureReturnCode::SUCCESS) {
-        // Get the response's success field to see if all checks passed
-        if (res.get()->result) {
-            RCLCPP_INFO(
-                rclcpp::get_logger("rclcpp"), "The checks were successful!");
-            return true;
-        }
-        else {
-            RCLCPP_WARN(
-                rclcpp::get_logger("rclcpp"),
-                "The checks were not successful: %s",
-                "bruh");
-            return false;
-        }
-    }
-    else {
-        RCLCPP_ERROR(
-            rclcpp::get_logger("rclcpp"), "Failed to call service 'checks'");
     }
 }
 

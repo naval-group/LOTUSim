@@ -31,6 +31,11 @@
 #include "liquidai_msgs/srv/add_entity_srv_array.hpp"
 #include "liquidai_msgs/srv/remove_entity.hpp"
 
+#include "DespawnInterface.hpp"
+#include "DespawnOnGazebo.hpp"
+#include "SpawnInterface.hpp"
+#include "SpawnOnGazebo.hpp"
+
 using namespace std;
 
 class Agent : public rclcpp_lifecycle::LifecycleNode {
@@ -82,15 +87,28 @@ public:
         CallbackReturn
         on_shutdown(const rclcpp_lifecycle::State &previous_state);
 
-    virtual bool spawn() = 0;
+    void set_spawn(std::shared_ptr<SpawnInterface> spawn)
+    {
+        spawnInterface = spawn;
+    }
 
-    virtual bool despawn() = 0;
+    void set_despawn(std::shared_ptr<DespawnInterface> despawn)
+    {
+        despawnInterface = despawn;
+    }
+
+    bool perform_spawn() { return spawnInterface->spawn(); }
+
+    bool perform_despawn() { return despawnInterface->despawn(); }
 
     string exec_command(const char *cmd);
 
 protected:
     rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr
         param_change_callback_handle_;
+
+    std::shared_ptr<SpawnInterface> spawnInterface;
+    std::shared_ptr<DespawnInterface> despawnInterface;
 };
 
 #endif

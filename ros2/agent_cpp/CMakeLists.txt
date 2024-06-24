@@ -13,6 +13,7 @@ find_package(lifecycle_msgs REQUIRED)
 find_package(liquidai_msgs REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sdformat14 REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 # add_executable(agent  src/agent_cpp/agent.cpp
 #                       src/agent_cpp/agent_entity.cpp
@@ -50,6 +51,7 @@ ament_target_dependencies(agent_component
   lifecycle_msgs
   liquidai_msgs
   sdformat14
+  geometry_msgs
 )
 
 rclcpp_components_register_node(
