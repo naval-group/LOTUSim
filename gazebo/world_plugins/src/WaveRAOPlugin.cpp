@@ -324,22 +324,6 @@ void WaveRaoPlugin::Update(
             gz::math::Quaterniond(update["qr"].back(), update["qi"].back(),
             update["qj"].back(), update["qk"].back()));
 
-            // auto location = new gz::msgs::Vector3d();
-            // location->set_x(update["x"].back());
-            // location->set_y(update["y"].back());
-            // location->set_z(update["z"].back());
-            // req.set_allocated_position(location);
-
-            // auto orientation = new gz::msgs::Quaternion();
-            // orientation->set_x(update["qr"].back());
-            // orientation->set_y(update["qi"].back());
-            // orientation->set_z(update["qj"].back());
-            // orientation->set_w(update["qk"].back());
-            // req.set_allocated_orientation(orientation);
-
-            // gzmsg << "Request: [" << req.DebugString() << "]" <<
-            // std::endl;
-
             gz::msgs::Boolean rep;
             bool result;
             unsigned int timeout = 5000;
