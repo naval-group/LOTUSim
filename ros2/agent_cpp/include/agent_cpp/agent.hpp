@@ -98,7 +98,6 @@ public:
     }
 
     bool perform_spawn() { return spawnInterface->spawn(); }
-
     bool perform_despawn() { return despawnInterface->despawn(); }
 
     string exec_command(const char *cmd);
