@@ -16,6 +16,7 @@
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/PoseCmd.hh>
+#include <gz/sim/components/World.hh>
 
 // #include "world_plugins/ManualRAO.h"
 // #include "world_plugins/XdynGrpc.h"
@@ -151,6 +152,12 @@ private:
      *
      */
     std::shared_ptr<gz::transport::Node> m_gz_node;
+
+    /// World name
+    std::string worldName;
+
+    /// World entity
+    gz::sim::Entity world_;
 
     /**
      * @brief Logging system publisher

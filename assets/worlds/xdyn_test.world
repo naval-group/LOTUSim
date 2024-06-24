@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- World to test model -->
 <sdf version="1.9"
     xmlns:xacro="http://ros.org/wiki/xacro">
@@ -17,11 +17,14 @@
         </physics>
 
         <gravity>0 0 0</gravity>
+        <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin>
         <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
         </plugin>
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
         </plugin>
         <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
+            <debug>true</debug>
         </plugin>
         <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
             <connection_protocol>udp</connection_protocol>
@@ -36,6 +39,10 @@
         </plugin>
 
         <plugin filename="gz_entity_management" name="entity_management::EntityManagement">
+        </plugin>
+
+        <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu">
         </plugin>
 
         <!-- <include>

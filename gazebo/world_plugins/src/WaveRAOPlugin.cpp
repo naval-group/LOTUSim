@@ -314,25 +314,63 @@ void WaveRaoPlugin::Update(
             auto ang_vel = gz::math::Vector3d{
                 update["p"].back(), update["q"].back(), update["r"].back()};
 
-            bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
-                vessel_entity, pose);
-            if (!res)
-                gzwarn << "WaveRaoPlugin::Update " << vessel_name
-                       << " Change Position failed." << std::endl;
-            res =
-                _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-                    m_vessels_base_link_map[vessel_name], lin_vel);
-            if (!res)
-                gzwarn << "WaveRaoPlugin::Update " << vessel_name
-                       << " Change linear velocity failed." << std::endl;
-            const auto angularVel =
-                _ecm.Component<gz::sim::components::WorldAngularVelocity>(
-                    m_vessels_base_link_map[vessel_name]);
-            *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
-            if (!res) {
-                gzwarn << "WaveRaoPlugin::Update " << vessel_name
-                       << " Change position failed." << std::endl;
-            }
+            gz::msgs::Pose req = gz::msgs::Pose();
+
+            req.set_id(vessel_entity);
+
+            gz::msgs::Set(req.mutable_position(),
+            gz::math::Vector3d(update["x"].back(), update["y"].back(),
+            update["z"].back())); gz::msgs::Set(req.mutable_orientation(),
+            gz::math::Quaterniond(update["qr"].back(), update["qi"].back(),
+            update["qj"].back(), update["qk"].back()));
+
+            // auto location = new gz::msgs::Vector3d();
+            // location->set_x(update["x"].back());
+            // location->set_y(update["y"].back());
+            // location->set_z(update["z"].back());
+            // req.set_allocated_position(location);
+
+            // auto orientation = new gz::msgs::Quaternion();
+            // orientation->set_x(update["qr"].back());
+            // orientation->set_y(update["qi"].back());
+            // orientation->set_z(update["qj"].back());
+            // orientation->set_w(update["qk"].back());
+            // req.set_allocated_orientation(orientation);
+
+            // gzmsg << "Request: [" << req.DebugString() << "]" <<
+            // std::endl;
+
+            gz::msgs::Boolean rep;
+            bool result;
+            unsigned int timeout = 5000;
+
+            std::string service = "/world/" + this->worldName + "/set_pose";
+
+            bool executed =
+                m_gz_node->Request(service, req, timeout, rep, result);
+
+            gzdbg << "ID: " << vessel_entity << std::endl;
+            gzdbg << "Executed: " << executed << std::endl;
+
+            // bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
+            //     vessel_entity, pose);
+            // if (!res)
+            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
+            //            << " Change Position failed." << std::endl;
+            // res =
+            //     _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
+            //         m_vessels_base_link_map[vessel_name], lin_vel);
+            // if (!res)
+            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
+            //            << " Change linear velocity failed." << std::endl;
+            // const auto angularVel =
+            //     _ecm.Component<gz::sim::components::WorldAngularVelocity>(
+            //         m_vessels_base_link_map[vessel_name]);
+            // *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
+            // if (!res) {
+            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
+            //            << " Change position failed." << std::endl;
+            // }
         }
         else {
             gzwarn << vessel_entity << " update failed." << std::endl;
