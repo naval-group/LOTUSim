@@ -1,12 +1,17 @@
 <div align="center">
 
+
 # Lotusim
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn).
 
-This simulation is built on Gazebo Harmonic and ROS Humble
+This simulation is built on Gazebo Harmonic and ROS Humble.
 
 </div>
+
+[[_TOC_]]
+
+## Installing
 
 [[_TOC_]]
 ## Get Started
@@ -27,18 +32,20 @@ sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
 3. Creating workspace
 
 ```bash
-mkdir -p lotusim_ws/src; 
+cd;
+mkdir -p lotusim_ws/src;
 cd lotusim_ws/src;
-git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git
+git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git;
 ```
 
 4. Building
 
 ```bash
-source config-lotus.bash
+cd lotusim;
+source config-lotus.sh;
 ```
 
-### Running
+## Tutorial
 
 This is an example launch for a surface and underwater vessel
 
