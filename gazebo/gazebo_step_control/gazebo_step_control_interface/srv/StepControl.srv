@@ -1,0 +1,6 @@
+# Request to send step count to simulator
+int64 steps                 #  number of steps to be executed by simulator
+bool block                  #  whether to block service until all steps executed
+---
+bool success                       # return true if set wrench successful
+string status_message              # comments if available

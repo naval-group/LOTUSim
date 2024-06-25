@@ -2,6 +2,37 @@
 <sdf version="1.7">
 
   <model name='wamv'>
+    <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
+    </plugin>
+  <name>wamv_vessel</name>
+                <pose>0 0 0 0 0 0</pose>
+                <plugin filename="gz-waves1-hydrodynamics-system"
+                    name="gz::sim::systems::Hydrodynamics">
+                    <enable>wave_world::wamv_vessel::base_link</enable>
+
+                    <hydrodynamics>
+                        <damping_on>1</damping_on>
+                        <viscous_drag_on>1</viscous_drag_on>
+                        <pressure_drag_on>1</pressure_drag_on>
+
+                        <!-- Linear and Angular Damping -->
+                        <cDampL1>1.0E-6</cDampL1>
+                        <cDampL2>1.0E-6</cDampL2>
+                        <cDampR1>1.0E-6</cDampR1>
+                        <cDampR2>1.0E-6</cDampR2>
+
+                        <!-- 'Pressure' Drag -->
+                        <cPDrag1>1.0E+2</cPDrag1>
+                        <cPDrag2>1.0E+2</cPDrag2>
+                        <fPDrag>0.4</fPDrag>
+                        <cSDrag1>1.0E+2</cSDrag1>
+                        <cSDrag2>1.0E+2</cSDrag2>
+                        <fSDrag>0.4</fSDrag>
+                        <vRDrag>1.0</vRDrag>
+                    </hydrodynamics>
+                </plugin>
     <link name="base_link">
       <visual name="visual">
         <geometry>

@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+<!-- World to test model -->
+<sdf version="1.9"
+    xmlns:xacro="http://ros.org/wiki/xacro">
+    <world name="test">
+        <scene>
+            <ambient>1.0 1.0 1.0</ambient>
+            <background>0.8 0.8 0.8</background>
+            <grid>1</grid>
+        </scene>
+
+        <physics type="ignore">
+            <!-- This is <10fps  -->
+            <max_step_size>0.2</max_step_size>
+            <real_time_factor>1</real_time_factor>
+            <real_time_update_rate>1</real_time_update_rate>
+        </physics>
+
+        <gravity>0 0 0</gravity>
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+        <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
+            <debug>true</debug>
+        </plugin>
+        <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
+            <connection_protocol>udp</connection_protocol>
+            <ip>127.0.0.1</ip>
+            <port>23456</port>
+        </plugin>
+        <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
+        </plugin>
+
+        <!-- <include>
+            <uri>model://duck</uri>
+            <name>duck1</name>
+            <pose>300 300 0 0 0 0</pose>
+            <publish_ais>false</publish_ais>
+        </include>
+
+        <include>
+            <uri>model://duck</uri>
+            <name>duck2</name>
+            <pose>0 0 0 0 0 0</pose>
+            <publish_ais>false</publish_ais>
+        </include> -->
+
+        <include>
+            <uri>model://test_ship</uri>
+            <name>frigate</name>
+            <pose>0 0 0 0 0 0</pose>
+            <publish_ais>false</publish_ais>
+        </include>
+
+        <include>
+            <uri>model://lrauv_xdyn</uri>
+            <name>lrauv</name>
+            <pose>0 0 0 0 0 0</pose>
+            <publish_ais>false</publish_ais>
+        </include>
+    </world>
+</sdf>

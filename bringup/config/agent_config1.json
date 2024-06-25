@@ -1,0 +1,83 @@
+{
+    "auv": [],
+    "boat_small": [
+        {
+            "name": "Smallboat_1",
+            "pose": "100 100 0 0 0 0"
+        },
+        {
+            "name": "Smallboat_2",
+            "pose": "-100 100 0 0 0 0"
+        },
+        {
+            "name": "Smallboat_3",
+            "pose": "20 0 0 0 0 1"
+        }
+    ],
+    "boat": [
+        {
+            "name": "boat",
+            "pose": "25 100 0 0 0 0"
+        },
+        {
+            "name": "boat2",
+            "pose": "0 0 2 0 0 0 0"
+        }
+    ],
+    "mine": [
+        {
+            "name": "Mine_1",
+            "pose": "100 50 -15 0 0 0 0"
+        },
+        {
+            "name": "Mine_2",
+            "pose": "0 150 -20 0 0 0 0"
+        },
+        {
+            "name": "Mine_3",
+            "pose": "100 0 -30 0 0 0 0"
+        },
+        {
+            "name": "Mine_4",
+            "pose": "150 20 -40 0 0 0 0"
+        },
+        {
+            "name": "Mine_5",
+            "pose": "-100 -100 -50 0 0 0 0"
+        }
+    ],
+    "lrauv": [
+        {
+            "name": "lrauv",
+            "pose": "-5 0 -5 0 0 1"
+        },
+        {
+            "name": "lrauv2",
+            "pose": "5 -5 -10 0 0 -1"
+        }
+    ],
+    "lrauv_float": [
+        {
+            "name": "lrauv_float",
+            "pose": "8 5 0.5 0 0 0"
+        },
+        {
+            "name": "lrauv_float2",
+            "pose": "-10 -8 0.5 0 0 0"
+        },
+        {
+            "name": "lrauv_float3",
+            "pose": "-3 12 0.5 0 0 0"
+        }
+    ],
+    "rexrov2": [
+        {
+            "name": "rexrov",
+            "pose": "-10 8 -12 0 0 0"
+        },
+        {
+            "name": "rexrov2",
+            "pose": "-6 -8 -7 0 0 0"
+        }
+    ]
+}

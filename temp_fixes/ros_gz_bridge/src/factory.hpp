@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 
-#include <ignition/transport/Node.hh>
+#include <gz/transport/Node.hh>
 
 // include ROS 2
 #include <rclcpp/rclcpp.hpp>
@@ -60,8 +60,8 @@ public:
         return publisher;
     }
 
-    ignition::transport::Node::Publisher create_gz_publisher(
-        std::shared_ptr<ignition::transport::Node> gz_node,
+    gz::transport::Node::Publisher create_gz_publisher(
+        std::shared_ptr<gz::transport::Node> gz_node,
         const std::string &topic_name,
         size_t /*queue_size*/)
     {
@@ -72,7 +72,7 @@ public:
         rclcpp::Node::SharedPtr ros_node,
         const std::string &topic_name,
         size_t queue_size,
-        ignition::transport::Node::Publisher &gz_pub)
+        gz::transport::Node::Publisher &gz_pub)
     {
         std::function<void(std::shared_ptr<const ROS_T>)> fn = std::bind(
             &Factory<ROS_T, GZ_T>::ros_callback,
@@ -97,21 +97,20 @@ public:
     }
 
     void create_gz_subscriber(
-        std::shared_ptr<ignition::transport::Node> node,
+        std::shared_ptr<gz::transport::Node> node,
         const std::string &topic_name,
         size_t /*queue_size*/,
         rclcpp::PublisherBase::SharedPtr ros_pub)
     {
-        std::function<void(
-            const GZ_T &, const ignition::transport::MessageInfo &)>
-            subCb = [this, ros_pub](
-                        const GZ_T &_msg,
-                        const ignition::transport::MessageInfo &_info) {
-                // Ignore messages that are published from this bridge.
-                if (!_info.IntraProcess()) {
-                    this->gz_callback(_msg, ros_pub);
-                }
-            };
+        std::function<void(const GZ_T &, const gz::transport::MessageInfo &)>
+            subCb =
+                [this, ros_pub](
+                    const GZ_T &_msg, const gz::transport::MessageInfo &_info) {
+                    // Ignore messages that are published from this bridge.
+                    if (!_info.IntraProcess()) {
+                        this->gz_callback(_msg, ros_pub);
+                    }
+                };
 
         node->Subscribe(topic_name, subCb);
     }
@@ -119,7 +118,7 @@ public:
 protected:
     static void ros_callback(
         std::shared_ptr<const ROS_T> ros_msg,
-        ignition::transport::Node::Publisher &gz_pub,
+        gz::transport::Node::Publisher &gz_pub,
         const std::string &ros_type_name,
         const std::string &gz_type_name,
         rclcpp::Node::SharedPtr ros_node)

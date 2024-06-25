@@ -18,6 +18,10 @@
         <steepness>2</steepness>
       </wave>
     </plugin>
+    <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
+    </plugin>
 
     <link name="base_link">
       <visual name="visual">

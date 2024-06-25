@@ -14,6 +14,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ThrusterConversionFcn.msg"
   "msg/FloatStamped.msg"
   "msg/WaveParam.msg"
+  "msg/Xdyncmd.msg"
+  "msg/XdynThrustercmd.msg"
   "srv/SetCurrentModel.srv"
   "srv/GetCurrentModel.srv" 
   "srv/SetCurrentVelocity.srv"
@@ -34,6 +36,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetFloat.srv" 
   "srv/GetListParam.srv" 
   "srv/GetThrusterConversionFcn.srv"
+  "srv/AddEntity.srv"
+  "srv/RemoveEntity.srv"
+  "srv/EmptySrv.srv"
+  "srv/ActivateSlowdown.srv"
   DEPENDENCIES 
     builtin_interfaces
     geometry_msgs 

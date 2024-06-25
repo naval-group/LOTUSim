@@ -8,9 +8,14 @@ NC='\033[0m' # No Color
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"
 LOTUSIM_PATH="src/lotusim"
 ASSETS_MODELS_PATH="assets/models"
-ASV_WAVE_SIM_PATH="asv_wave_sim/gz-waves-models/world_models"
+
 NEW_GZ_GUI_LIB_PATH="gui/lib"
 OLD_GZ_GUI_LIB_PATH="/lib/x86_64-linux-gnu"
+
+# Définition de la variable d'environnement ROS_DISTRO
+export ROS_DISTRO=humble
+# Définition de la variable d'environnement GAZEBO_VERSION
+export GZ_VERSION=harmonic
 
 # Vérification de l'existence des répertoires
 if [ ! -f "$ROS_SETUP_PATH" ]; then
@@ -28,11 +33,6 @@ if [ ! -d "${ASSETS_MODELS_PATH}" ]; then
     return 1
 fi
 
-if [ ! -d "${ASV_WAVE_SIM_PATH}" ]; then
-    echo -e "${RED}Erreur:${NC} Le répertoire des modèles de simulation ASV n'existe pas à $ASV_WAVE_SIM_PATH."
-    return 1
-fi
-
 # Vérification de l'installation de colcon-clean
 if ! command -v colcon clean &>/dev/null; then
     echo -e "${RED}Erreur:${NC} Le package colcon-clean n'est pas installé."
@@ -45,6 +45,8 @@ cd ../..
 # Source de la configuration ROS
 # shellcheck source=/dev/null
 source "$ROS_SETUP_PATH"
+
+export GZ_VERSION
 
 # Vérification de la présence des dossiers build, install et log
 if [ -d "build" ] || [ -d "install" ] || [ -d "log" ]; then
@@ -74,18 +76,6 @@ echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH : ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
 cd "$LOTUSIM_PATH" || return 1
 
 # Définition de la variable d'environnement GZ_SIM_RESOURCE_PATH
-GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}:$(pwd)/$ASV_WAVE_SIM_PATH"
+GZ_SIM_RESOURCE_PATH="$(pwd)/${ASSETS_MODELS_PATH}"
 export GZ_SIM_RESOURCE_PATH
 echo -e "GZ_SIM_RESOURCE_PATH : ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
-
-# Remplacement de certaines librairies de GZ GUI
-# La modification de ces libraires permet d'afficher le logo NG + corporate sensitivity
-read -rp "Voulez-vous modifier les binaires de gazebo (interface) ? (y/n) " response
-if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    sudo cp "$NEW_GZ_GUI_LIB_PATH"/* "$OLD_GZ_GUI_LIB_PATH"
-fi
-
-# Variable d'environnement des autres lib de GZ GUI (plugins)
-GZ_GUI_PLUGIN_PATH="${OLD_GZ_GUI_LIB_PATH}/gz-gui-7/plugins"
-export GZ_GUI_PLUGIN_PATH
-echo -e "GZ_GUI_PLUGIN_PATH : ${GREEN}$GZ_GUI_PLUGIN_PATH${NC}"

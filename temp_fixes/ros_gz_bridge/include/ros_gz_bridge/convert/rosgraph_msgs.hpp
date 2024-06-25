@@ -16,23 +16,28 @@
 #define ROS_GZ_BRIDGE__CONVERT__ROSGRAPH_MSGS_HPP_
 
 // Gazebo Msgs
-#include <ignition/msgs.hh>
+#include <gz/msgs/clock.pb.h>
 
 // ROS 2 messages
 #include <rosgraph_msgs/msg/clock.hpp>
 
 #include <ros_gz_bridge/convert_decl.hpp>
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Clock &gz_msg, rosgraph_msgs::msg::Clock &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Clock & gz_msg,
+  rosgraph_msgs::msg::Clock & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const rosgraph_msgs::msg::Clock &ros_msg, ignition::msgs::Clock &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const rosgraph_msgs::msg::Clock & ros_msg,
+  gz::msgs::Clock & gz_msg);
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // ROS_GZ_BRIDGE__CONVERT__ROSGRAPH_MSGS_HPP_
+#endif  // ROS_GZ_BRIDGE__CONVERT__ROSGRAPH_MSGS_HPP_

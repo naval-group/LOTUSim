@@ -22,7 +22,7 @@
   <depend>gz-cmake3</depend>
   <depend>liquidai_msgs</depend>
   <depend>gz_liquidai_msgs</depend>
-  
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+    <model name='test_ship'>
+        <publish_render>true</publish_render>
+        <unity_type_name>test_ship</unity_type_name>
+
+        <link name="base_link">
+            <pose>-9.355 0 -3.21 3.1419 0 0</pose>
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://test_ship/test_ship.stl</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </visual>
+            <inertial>
+                <pose>0 -0.12 0 0 0 0</pose>
+                <mass>1.5</mass>
+                <inertia>
+                    <ixx>0.083137104</ixx>
+                    <ixy>0</ixy>
+                    <iyy>0.387382402</iyy>
+                    <ixz>0</ixz>
+                    <iyz>0</iyz>
+                    <izz>0.469845106</izz>
+                </inertia>
+            </inertial>
+
+            <collision name="body_collision">
+                <geometry>
+                    <mesh>
+                        <uri>model://test_ship/test_ship.stl</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+        </link>
+        <collision name='base_link_fixed_joint_lump__front_camera_post_collision_collision'>
+            <pose>0.7 0.3 1.38475 0 0 0</pose>
+            <geometry>
+                <cylinder>
+                    <length>0.17649999999999999</length>
+                    <radius>0.0076</radius>
+                </cylinder>
+            </geometry>
+        </collision>
+
+        <physics_server_interface>
+            <surface>
+                <ConnectionType>XDynWebSocket</ConnectionType>
+                <uri>ws://127.0.0.1:12345</uri>
+                <thrusters>
+                    <thursters1>PSPropRudd</thursters1>
+                    <thursters2>SBPropRudd</thursters2>
+                </thrusters>
+            </surface>
+            <init_state>Surface</init_state>
+        </physics_server_interface>
+    </model>
+</sdf>

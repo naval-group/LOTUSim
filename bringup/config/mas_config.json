@@ -1,0 +1,11 @@
+{
+    "params": {
+        "world_name": "xdyn_test.world",
+        "verbose": 4,
+        "gui-config": "gui/design.config"
+    },
+    "plugins": [],
+    "agent_configs": [
+        "agent_config_xdyn.json"
+    ]
+}

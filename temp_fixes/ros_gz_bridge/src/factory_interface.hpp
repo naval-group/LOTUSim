@@ -12,47 +12,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef FACTORY_INTERFACE_HPP_
-#define FACTORY_INTERFACE_HPP_
+#ifndef  FACTORY_INTERFACE_HPP_
+#define  FACTORY_INTERFACE_HPP_
 
 #include <memory>
 #include <string>
 
 // include Gazebo Transport
-#include <ignition/transport/Node.hh>
+#include <gz/transport/Node.hh>
 
 // include ROS 2
 #include <rclcpp/rclcpp.hpp>
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
-class FactoryInterface {
+class FactoryInterface
+{
 public:
-    virtual ~FactoryInterface() = 0;
+  virtual ~FactoryInterface() = 0;
 
-    virtual rclcpp::PublisherBase::SharedPtr create_ros_publisher(
-        rclcpp::Node::SharedPtr ros_node,
-        const std::string &topic_name,
-        size_t queue_size) = 0;
+  virtual
+  rclcpp::PublisherBase::SharedPtr
+  create_ros_publisher(
+    rclcpp::Node::SharedPtr ros_node,
+    const std::string & topic_name,
+    size_t queue_size) = 0;
 
-    virtual ignition::transport::Node::Publisher create_gz_publisher(
-        std::shared_ptr<ignition::transport::Node> gz_node,
-        const std::string &topic_name,
-        size_t queue_size) = 0;
+  virtual
+  gz::transport::Node::Publisher
+  create_gz_publisher(
+    std::shared_ptr<gz::transport::Node> gz_node,
+    const std::string & topic_name,
+    size_t queue_size) = 0;
 
-    virtual rclcpp::SubscriptionBase::SharedPtr create_ros_subscriber(
-        rclcpp::Node::SharedPtr ros_node,
-        const std::string &topic_name,
-        size_t queue_size,
-        ignition::transport::Node::Publisher &gz_pub) = 0;
+  virtual
+  rclcpp::SubscriptionBase::SharedPtr
+  create_ros_subscriber(
+    rclcpp::Node::SharedPtr ros_node,
+    const std::string & topic_name,
+    size_t queue_size,
+    gz::transport::Node::Publisher & gz_pub) = 0;
 
-    virtual void create_gz_subscriber(
-        std::shared_ptr<ignition::transport::Node> node,
-        const std::string &topic_name,
-        size_t queue_size,
-        rclcpp::PublisherBase::SharedPtr ros_pub) = 0;
+  virtual
+  void
+  create_gz_subscriber(
+    std::shared_ptr<gz::transport::Node> node,
+    const std::string & topic_name,
+    size_t queue_size,
+    rclcpp::PublisherBase::SharedPtr ros_pub) = 0;
 };
 
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge
 
-#endif // FACTORY_INTERFACE_HPP_
+#endif  // FACTORY_INTERFACE_HPP_

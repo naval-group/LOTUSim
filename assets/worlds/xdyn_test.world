@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!-- World to test model -->
-<sdf version="1.6"
+<sdf version="1.9"
     xmlns:xacro="http://ros.org/wiki/xacro">
     <world name="test">
         <scene>
@@ -9,21 +9,40 @@
             <grid>1</grid>
         </scene>
 
-        <gravity>0 0 0</gravity>
+        <physics type="ignore">
+            <!-- This is <10fps  -->
+            <max_step_size>0.2</max_step_size>
+            <real_time_factor>1</real_time_factor>
+            <real_time_update_rate>1</real_time_update_rate>
+        </physics>
 
+        <gravity>0 0 0</gravity>
         <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
         </plugin>
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
         </plugin>
+        <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
+        </plugin>
+        <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
+            <connection_protocol>udp</connection_protocol>
+            <ip>192.168.50.178</ip>
+            <port>23456</port>
+        </plugin>
+        <!-- <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
+        </plugin> -->
 
-        <include>
-            <uri>model://5415_hull</uri>
-            <name>hull</name>
+        <plugin filename="gazebo_step_control" name="step_control::GazeboStepControl">
+            <enable_control>false</enable_control>
+        </plugin>
+
+        <plugin filename="gz_entity_management" name="entity_management::EntityManagement">
+        </plugin>
+
+        <!-- <include>
+            <uri>model://test_ship</uri>
+            <name>test_ship_vessel</name>
             <pose>0 0 0 0 0 0</pose>
-            <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
-                <uri>ws://127.0.0.1:12345</uri>
-                <connection_type>XDynWebSocket</connection_type>
-            </plugin>
-        </include>
+            <publish_ais>false</publish_ais>
+        </include> -->
     </world>
 </sdf>

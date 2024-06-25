@@ -4,6 +4,10 @@
     <publish_render>true</publish_render>
      <plugin filename="gz-waves1-hydrodynamics-system" name="gz::sim::systems::Hydrodynamics">
     </plugin>
+    <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
+    </plugin>
  
     <!-- Body -->
     <link name="base_link">

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package gz_liquidai_msgs.msgs;
+import "gz/msgs/vector2d.proto";
+
+/// \brief Wave param msg
+message WaveParam
+{
+   double amplitude = 1;
+   double period = 2;
+   gz.msgs.Vector2d direction = 3;
+}

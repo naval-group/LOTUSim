@@ -17,7 +17,10 @@ public:
     static std::shared_ptr<WaveRaoInterface> getInstance();
     std::optional<json>
     getNewState(const std::string &name, json previous_state, float time_dif);
-    bool createConnection(const std::string &name, const std::string &uri);
+    bool createConnection(
+        const std::string &name,
+        const std::vector<std::string> &thrusters_name,
+        const std::string &uri);
 
 private:
     static std::weak_ptr<WaveRaoInterface> m_instance;

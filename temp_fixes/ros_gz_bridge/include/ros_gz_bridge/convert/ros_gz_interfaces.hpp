@@ -16,197 +16,250 @@
 #define ROS_GZ_BRIDGE__CONVERT__ROS_GZ_INTERFACES_HPP_
 
 // Gazebo Msgs
-#include <ignition/msgs/contact.pb.h>
-#include <ignition/msgs/contacts.pb.h>
-#include <ignition/msgs/entity.pb.h>
-#include <ignition/msgs/float_v.pb.h>
-#include <ignition/msgs/gui_camera.pb.h>
-#include <ignition/msgs/joint_wrench.pb.h>
-#include <ignition/msgs/light.pb.h>
-#include <ignition/msgs/param.pb.h>
-#include <ignition/msgs/param_v.pb.h>
-#include <ignition/msgs/stringmsg_v.pb.h>
-#include <ignition/msgs/track_visual.pb.h>
-#include <ignition/msgs/video_record.pb.h>
-#include <ignition/msgs/world_control.pb.h>
+#include <gz/msgs/altimeter.pb.h>
+#include <gz/msgs/entity.pb.h>
+#include <gz/msgs/joint_wrench.pb.h>
+#include <gz/msgs/contact.pb.h>
+#include <gz/msgs/contacts.pb.h>
+#include <gz/msgs/dataframe.pb.h>
+#include <gz/msgs/float_v.pb.h>
+#include <gz/msgs/gui_camera.pb.h>
+#include <gz/msgs/light.pb.h>
+#include <gz/msgs/param.pb.h>
+#include <gz/msgs/param_v.pb.h>
+#include <gz/msgs/sensor_noise.pb.h>
+#include <gz/msgs/stringmsg_v.pb.h>
+#include <gz/msgs/track_visual.pb.h>
+#include <gz/msgs/video_record.pb.h>
+#include <gz/msgs/world_control.pb.h>
 
 // ROS 2 messages
+#include <ros_gz_interfaces/msg/altimeter.hpp>
+#include <ros_gz_interfaces/msg/entity.hpp>
+#include <ros_gz_interfaces/msg/joint_wrench.hpp>
 #include <ros_gz_interfaces/msg/contact.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
-#include <ros_gz_interfaces/msg/entity.hpp>
+#include <ros_gz_interfaces/msg/dataframe.hpp>
 #include <ros_gz_interfaces/msg/float32_array.hpp>
 #include <ros_gz_interfaces/msg/gui_camera.hpp>
-#include <ros_gz_interfaces/msg/joint_wrench.hpp>
 #include <ros_gz_interfaces/msg/light.hpp>
 #include <ros_gz_interfaces/msg/param_vec.hpp>
+#include <ros_gz_interfaces/msg/sensor_noise.hpp>
 #include <ros_gz_interfaces/msg/string_vec.hpp>
 #include <ros_gz_interfaces/msg/track_visual.hpp>
 #include <ros_gz_interfaces/msg/video_record.hpp>
 #include <ros_gz_interfaces/msg/world_control.hpp>
 
-// Required for HAVE_DATAFRAME definition
 #include <ros_gz_bridge/ros_gz_bridge.hpp>
-
-#if HAVE_DATAFRAME
-#include <ignition/msgs/dataframe.pb.h>
-#include <ros_gz_interfaces/msg/dataframe.hpp>
-#endif // HAVE_DATAFRAME
 
 #include <ros_gz_bridge/convert_decl.hpp>
 
-namespace ros_gz_bridge {
+namespace ros_gz_bridge
+{
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::JointWrench &ros_msg,
-    ignition::msgs::JointWrench &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::JointWrench & ros_msg,
+  gz::msgs::JointWrench & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::JointWrench &gz_msg,
-    ros_gz_interfaces::msg::JointWrench &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::JointWrench & gz_msg,
+  ros_gz_interfaces::msg::JointWrench & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::Entity &ros_msg,
-    ignition::msgs::Entity &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Altimeter & ros_msg,
+  gz::msgs::Altimeter & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Entity &gz_msg,
-    ros_gz_interfaces::msg::Entity &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Altimeter & gz_msg,
+  ros_gz_interfaces::msg::Altimeter & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::Contact &ros_msg,
-    ignition::msgs::Contact &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Entity & ros_msg,
+  gz::msgs::Entity & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Contact &gz_msg,
-    ros_gz_interfaces::msg::Contact &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Entity & gz_msg,
+  ros_gz_interfaces::msg::Entity & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::Contacts &ros_msg,
-    ignition::msgs::Contacts &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Contact & ros_msg,
+  gz::msgs::Contact & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Contacts &gz_msg,
-    ros_gz_interfaces::msg::Contacts &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Contact & gz_msg,
+  ros_gz_interfaces::msg::Contact & ros_msg);
 
-#if HAVE_DATAFRAME
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::Dataframe &ros_msg,
-    ignition::msgs::Dataframe &ign_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Contacts & ros_msg,
+  gz::msgs::Contacts & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Dataframe &ign_msg,
-    ros_gz_interfaces::msg::Dataframe &ros_msg);
-#endif // HAVE_DATAFRAME
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Contacts & gz_msg,
+  ros_gz_interfaces::msg::Contacts & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::GuiCamera &ros_msg,
-    ignition::msgs::GUICamera &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Dataframe & ros_msg,
+  gz::msgs::Dataframe & ign_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::GUICamera &gz_msg,
-    ros_gz_interfaces::msg::GuiCamera &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Dataframe & ign_msg,
+  ros_gz_interfaces::msg::Dataframe & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::Light &ros_msg,
-    ignition::msgs::Light &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::GuiCamera & ros_msg,
+  gz::msgs::GUICamera & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Light &gz_msg,
-    ros_gz_interfaces::msg::Light &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::GUICamera & gz_msg,
+  ros_gz_interfaces::msg::GuiCamera & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::StringVec &ros_msg,
-    ignition::msgs::StringMsg_V &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Light & ros_msg,
+  gz::msgs::Light & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::StringMsg_V &gz_msg,
-    ros_gz_interfaces::msg::StringVec &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Light & gz_msg,
+  ros_gz_interfaces::msg::Light & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::ParamVec &ros_msg,
-    ignition::msgs::Param &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::SensorNoise & ros_msg,
+  gz::msgs::SensorNoise & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Param &gz_msg,
-    ros_gz_interfaces::msg::ParamVec &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::SensorNoise & gz_msg,
+  ros_gz_interfaces::msg::SensorNoise & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::ParamVec &ros_msg,
-    ignition::msgs::Param_V &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::StringVec & ros_msg,
+  gz::msgs::StringMsg_V & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Param_V &gz_msg,
-    ros_gz_interfaces::msg::ParamVec &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::StringMsg_V & gz_msg,
+  ros_gz_interfaces::msg::StringVec & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::TrackVisual &ros_msg,
-    ignition::msgs::TrackVisual &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::ParamVec & ros_msg,
+  gz::msgs::Param & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::TrackVisual &gz_msg,
-    ros_gz_interfaces::msg::TrackVisual &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Param & gz_msg,
+  ros_gz_interfaces::msg::ParamVec & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::VideoRecord &ros_msg,
-    ignition::msgs::VideoRecord &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::ParamVec & ros_msg,
+  gz::msgs::Param_V & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::VideoRecord &gz_msg,
-    ros_gz_interfaces::msg::VideoRecord &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Param_V & gz_msg,
+  ros_gz_interfaces::msg::ParamVec & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::WorldControl &ros_msg,
-    ignition::msgs::WorldControl &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::TrackVisual & ros_msg,
+  gz::msgs::TrackVisual & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::WorldControl &gz_msg,
-    ros_gz_interfaces::msg::WorldControl &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::TrackVisual & gz_msg,
+  ros_gz_interfaces::msg::TrackVisual & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::WorldReset &ros_msg,
-    ignition::msgs::WorldReset &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::VideoRecord & ros_msg,
+  gz::msgs::VideoRecord & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::WorldReset &gz_msg,
-    ros_gz_interfaces::msg::WorldReset &ros_msg);
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::VideoRecord & gz_msg,
+  ros_gz_interfaces::msg::VideoRecord & ros_msg);
 
-template <>
-void convert_ros_to_gz(
-    const ros_gz_interfaces::msg::Float32Array &ros_msg,
-    ignition::msgs::Float_V &gz_msg);
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::WorldControl & ros_msg,
+  gz::msgs::WorldControl & gz_msg);
 
-template <>
-void convert_gz_to_ros(
-    const ignition::msgs::Float_V &gz_msg,
-    ros_gz_interfaces::msg::Float32Array &ros_msg);
-} // namespace ros_gz_bridge
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::WorldControl & gz_msg,
+  ros_gz_interfaces::msg::WorldControl & ros_msg);
 
-#endif // ROS_GZ_BRIDGE__CONVERT__ROS_GZ_INTERFACES_HPP_
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::WorldReset & ros_msg,
+  gz::msgs::WorldReset & gz_msg);
+
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::WorldReset & gz_msg,
+  ros_gz_interfaces::msg::WorldReset & ros_msg);
+
+template<>
+void
+convert_ros_to_gz(
+  const ros_gz_interfaces::msg::Float32Array & ros_msg,
+  gz::msgs::Float_V & gz_msg);
+
+template<>
+void
+convert_gz_to_ros(
+  const gz::msgs::Float_V & gz_msg,
+  ros_gz_interfaces::msg::Float32Array & ros_msg);
+}  // namespace ros_gz_bridge
+
+#endif  // ROS_GZ_BRIDGE__CONVERT__ROS_GZ_INTERFACES_HPP_
