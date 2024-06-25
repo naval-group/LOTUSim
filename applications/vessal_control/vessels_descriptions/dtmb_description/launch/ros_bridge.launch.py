@@ -19,7 +19,8 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             '/AIS@liquidai_msgs/msg/AISArray@gz_liquidai_msgs.msgs.AISArray',
-            'test_ship_vessel/cmd_vel@liquidai_msgs/msg/Xdyncmd@gz_liquidai_msgs.msgs.XdynCmd',
+            '/frigate/cmd_vel@liquidai_msgs/msg/Xdyncmd@gz_liquidai_msgs.msgs.XdynCmd',
+            '/lrauv/cmd_vel@liquidai_msgs/msg/Xdyncmd@gz_liquidai_msgs.msgs.XdynCmd',
             '/imu@sensor_msgs/msg/Imu@ignition.msgs.IMU',
             # '/magnetometer@sensor_msgs/msg/MagneticField@ignition.msgs.Magnetometer',
             # '/gps@liquidai_msgs/msg/GPS@ignition.msgs.NavSat',
