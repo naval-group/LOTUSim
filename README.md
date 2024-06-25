@@ -31,13 +31,14 @@ sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
 cd;
 mkdir -p lotusim_ws/src;
 cd lotusim_ws/src;
-git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git
+git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git;
 ```
 
 4. Building
 
 ```bash
-source config-lotus.sh
+cd lotusim;
+source config-lotus.sh;
 ```
 
 ## Tutorial
