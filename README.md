@@ -1,8 +1,15 @@
+<div align="center">
+
+
 # Lotusim
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn).
 
-This simulation is built on Gazebo Harmonic and ROS Humble
+This simulation is built on Gazebo Harmonic and ROS Humble.
+
+</div>
+
+[[_TOC_]]
 
 ## Installing
 
@@ -10,7 +17,7 @@ This simulation is built on Gazebo Harmonic and ROS Humble
 
 2. Libraries needed
 
-```
+```bash
 # ROS libraries
 sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzgarden ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
 
@@ -20,23 +27,17 @@ sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
 
 3. Creating workspace
 
-```
-cd; mkdir -p lotusim_ws/src; cd lotusim_ws/src;
-
-<clone repo>
+```bash
+cd;
+mkdir -p lotusim_ws/src;
+cd lotusim_ws/src;
+git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git
 ```
 
 4. Building
 
-```
-cd ~/lotusim_ws/src/lotusim
-git submodule init
-git submodule update
-
-# Building
-cd ~/lotusim_ws/src/lotusim
+```bash
 source config-lotus.sh
-
 ```
 
 ## Tutorial
@@ -47,7 +48,7 @@ and
 
 Using xdyn-for-cs websocket
 
-```
+```bash
 # Terminal 1 launching surface xdyn
 cd ~/lotusim_ws/src/lotusim/physics/xdynSurface
 export LD_LIBRARY_PATH="$(pwd)"
