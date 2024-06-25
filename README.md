@@ -12,7 +12,7 @@ This simulation is built on Gazebo Harmonic and ROS Humble
 
 ```
 # ROS libraries
-sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gz ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions ros-humble-nav2-common ros-humble-navigation2
+sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzgarden ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
 
 # Other libraries
 sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
@@ -75,3 +75,16 @@ cd ~/lotusim_ws
 source "$(pwd)/install/setup.bash"
 ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=<name of vessel to control>
 ```
+## Development
+### Workflow
+We use the Gitflow collaborating workflow. You can find the explanation of this workflow [here](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+
+We are using the default Gitflow branch naming like (here)[https://www.gitkraken.com/blog/gitflow].
+
+### Issues
+
+When you open an issue, you need to put the correct label corresponding to the category of the issue e.g. ~bug or ~suggestion. It needs to be written in english.
+
+**IMPORTANT** You have to put ~"project::development" or ~"project::management" label on each issue as they are used for filtering in the different issue boards
+
+You can find the description of the labels [here](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotusim/-/labels).
