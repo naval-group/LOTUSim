@@ -78,12 +78,13 @@ void GazeboStepControl::PreUpdate(
     else if (paused_) {
         SetPaused(false);
     }
+
+    rclcpp::spin_some(ros_node_);
 }
 
 void GazeboStepControl::Update(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
-    rclcpp::spin_some(ros_node_);
 }
 
 void GazeboStepControl::PostUpdate(
