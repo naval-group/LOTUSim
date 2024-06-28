@@ -18,6 +18,7 @@
     <depend>gz-plugin2</depend>
     <depend>gz-common5</depend>
     <depend>gz-sim8</depend>
+    <depend>sdformat14</depend>
 
     <export>
         <build_type>ament_cmake</build_type>

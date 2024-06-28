@@ -36,7 +36,7 @@
       </inertial>
     </link>
 
-    <follower>
+    <!-- <follower>
       <loop>true</loop>
       <circle>
         <radius>300</radius>
@@ -48,6 +48,6 @@
       <range_tolerance>30.0</range_tolerance>
     </follower>
 
-    <publish_render>true</publish_render>
+    <publish_render>true</publish_render> -->
   </model>
 </sdf>

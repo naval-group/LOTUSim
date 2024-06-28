@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
-  <model xmlns:xacro="http://www.ros.org/wiki/xacro" name="lrauv">
-
-    <xacro:arg name="asset_sim_path" default="" />
-    <xacro:property name="asset_sim_path" value="$(arg asset_sim_path)" />
+  <model xmlns:xacro="http://www.ros.org/wiki/xacro" name="lrauv_xdyn">
 
     <xacro:arg name="namespace" default="" />
     <xacro:property name="namespace" value="$(arg namespace)" />
@@ -36,7 +33,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <mesh>
-              <uri>${asset_sim_path}/models/lrauv_xdyn/meshes/tethys.dae</uri>
+              <uri>model://lrauv_xdyn/meshes/tethys.dae</uri>
               <submesh>
                 <name>Body</name>
                 <center>false</center>
@@ -64,10 +61,10 @@
       <specular>1.0 1.0 1.0</specular>
       <pbr>
         <metal>
-          <albedo_map>${asset_sim_path}/models/lrauv_xdyn/materials/textures/Tethys_Albedo.png</albedo_map>
-          <normal_map>${asset_sim_path}/models/lrauv_xdyn/materials/textures/Tethys_Normal.png</normal_map>
-          <metalness_map>${asset_sim_path}/models/lrauv_xdyn/materials/textures/Tethys_Metalness.png</metalness_map>
-          <roughness_map>${asset_sim_path}/models/lrauv_xdyn/materials/textures/Tethys_Roughness.png</roughness_map>
+          <albedo_map>model://lrauv_xdyn/materials/textures/Tethys_Albedo.png</albedo_map>
+          <normal_map>model://lrauv_xdyn/materials/textures/Tethys_Normal.png</normal_map>
+          <metalness_map>model://lrauv_xdyn/materials/textures/Tethys_Metalness.png</metalness_map>
+          <roughness_map>model://lrauv_xdyn/materials/textures/Tethys_Roughness.png</roughness_map>
         </metal>
       </pbr>
     </xacro:macro>

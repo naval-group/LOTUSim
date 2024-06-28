@@ -6,6 +6,7 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     get_parameter("sdf_file", sdf_file_);
     get_parameter("sdf_filename", sdf_filename_);
     get_parameter("pose", pose_str);
+    get_parameter<bool>("configure_on_startup", configure_on_startup);
 
     entity_management_client_node =
         rclcpp::Node::make_shared("entity_management_client_node");
@@ -48,6 +49,28 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     auto despawnBehavior = std::make_shared<DespawnOnGazebo>(
         despawn_request, entity_management_client_node);
     this->set_despawn(despawnBehavior);
+
+    const rclcpp::NodeOptions &node_options = rclcpp::NodeOptions();
+    // this->get_node_base_interface()
+    // auto sensor = std::shared_ptr<MyIMUSensor>(new
+    // MyIMUSensor(options_sensor)); this->add_sensor(sensor);
+
+    char cmd[100];
+    strcpy(cmd, "ros2 component load ");
+    strcat(cmd, this->get_namespace());
+    strcat(cmd, "/container agent_cpp MyIMUSensor --node-namespace ");
+    strcat(cmd, this->get_namespace());
+    strcat(cmd, " -n IMU");
+    RCLCPP_INFO(this->get_logger(), cmd);
+
+    // std::thread cmdThread([this, cmd]() { system(cmd); });
+    // cmdThread.detach(); // Detach the thread to run it independently
+
+    // exec_command(cmd);
+
+    if (configure_on_startup) {
+        this->on_configure(this->get_current_state());
+    }
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -58,6 +81,8 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
     bool isFine = true;
 
     isFine = isFine && this->perform_spawn();
+
+    // exec_command(cmd);
 
     if (isFine) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
@@ -205,3 +230,5 @@ bool AgentEntity::GetSensors()
         pluginElement = pluginElement->GetNextElement();
     }
 }
+
+RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)

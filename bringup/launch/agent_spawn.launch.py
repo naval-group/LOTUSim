@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import json
 from ament_index_python.packages import get_package_share_directory
@@ -12,6 +13,7 @@ def generate_launch_description():
 
     # Declare the launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    configure_on_startup = LaunchConfiguration('configure_on_startup')
     ns = LaunchConfiguration('ns')
     sdf_file  =  LaunchConfiguration('sdf_file')
     sdf_filename  =  LaunchConfiguration('sdf_filename')
@@ -19,7 +21,7 @@ def generate_launch_description():
     pose  =  LaunchConfiguration('pose')
     
     agent_node_component = ComposableNodeContainer(
-    name='container',
+    name='AgentContainer',
     namespace=ns,
     package='rclcpp_components',
     executable='component_container',
@@ -34,6 +36,7 @@ def generate_launch_description():
                 'sdf_file': sdf_file,
                 'sdf_filename': sdf_filename,
                 'pose': pose,
+                'configure_on_startup': configure_on_startup
                 }],
         ),
     ]

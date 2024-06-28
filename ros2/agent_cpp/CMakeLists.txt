@@ -8,12 +8,15 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(liquidai_msgs REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sdformat14 REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(composition_interfaces REQUIRED)
 
 # add_executable(agent  src/agent_cpp/agent.cpp
 #                       src/agent_cpp/agent_entity.cpp
@@ -25,8 +28,7 @@ find_package(geometry_msgs REQUIRED)
 #   )
 
 add_library(agent_component SHARED src/agent_cpp/agent.cpp
-                  src/agent_cpp/agent_entity.cpp
-                  src/agent_node.cpp)
+                  src/agent_cpp/agent_entity.cpp)
 
 target_include_directories(agent_component PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -52,6 +54,7 @@ ament_target_dependencies(agent_component
   liquidai_msgs
   sdformat14
   geometry_msgs
+  sensor_msgs
 )
 
 rclcpp_components_register_node(
@@ -68,9 +71,56 @@ install(TARGETS agent_component
         RUNTIME DESTINATION bin
 )
 
+add_library(IMU_component SHARED src/MyIMUSensor.cpp)
+
+target_include_directories(IMU_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
+ament_target_dependencies(IMU_component
+  rclcpp
+  rclcpp_lifecycle
+  rclcpp_components
+  lifecycle_msgs
+  liquidai_msgs
+  sdformat14
+  geometry_msgs
+  sensor_msgs
+)
+
+rclcpp_components_register_node(
+  IMU_component
+    PLUGIN "MyIMUSensor"
+    EXECUTABLE imu_node
+)
+
+ament_export_targets(export_IMU_component)
+install(TARGETS IMU_component
+        EXPORT export_IMU_component
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+)
 
 # install(TARGETS agent
 #   DESTINATION lib/${PROJECT_NAME})
 
+# Scheduler
+
+add_executable(scheduler src/Scheduler.cpp)
+target_link_libraries(scheduler
+  ${rclcpp_LIBRARIES}
+  ${rclcpp_components_LIBRARIES}
+)
+
+ament_target_dependencies(scheduler
+  rclcpp
+  rclcpp_components
+  composition_interfaces
+)
+
+install(TARGETS
+  scheduler
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

@@ -26,7 +26,6 @@ shared_ptr<AgentEntity> agent_node;
 //     return 0;
 // }
 
-RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)
 
 // int main(int argc, char** argv) {
 //     rclcpp::init(argc, argv);

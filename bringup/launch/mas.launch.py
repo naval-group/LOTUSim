@@ -69,7 +69,8 @@ def generate_launch_description():
                     os.path.join(pkg_project_bringup, 'launch', 'multi_agent_spawn.launch.py')),
                 launch_arguments={'agent_config': str(agent_config),
                                   'ns_base': 'ns_main',
-                                  'asset_sim_path': pkg_project_description
+                                  'asset_sim_path': pkg_project_description,
+                                  'configure_on_startup_default': str(json_data['params']['configure_on_startup_default'])
                                 }.items())
         )
         namespace_nb = namespace_nb + 1
@@ -112,7 +113,14 @@ def generate_launch_description():
         output='screen'
     )
 
+    scheduler = Node(
+        package='agent_cpp',
+        executable='scheduler',
+        name='scheduler_node' 
+    )
+
     return LaunchDescription([
+        scheduler,
         gz_sim,
         # DeclareLaunchArgument('rviz', default_value='true',
         #                       description='Open RViz.'),

@@ -36,7 +36,7 @@ ekf_filter_node:
         debug: false
 
 # Defaults to "robot_localization_debug.txt" if unspecified. Please specify the full path.
-        debug_out_file: /home/malcom/garden_ws/run_logs/file.txt
+        debug_out_file: /home/buche/LOTUSim_ws/run_logs/file.txt
 
 # Whether we'll allow old measurements to cause a re-publication of the updated state
         permit_corrected_publication: false

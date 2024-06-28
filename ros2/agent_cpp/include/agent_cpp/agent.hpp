@@ -23,49 +23,26 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp_lifecycle/lifecycle_publisher.hpp>
 
+#include "rclcpp_components/component_manager.hpp"
 #include "rclcpp_components/node_factory.hpp"
 #include "rclcpp_components/register_node_macro.hpp"
 
-#include "liquidai_msgs/msg/add_entity.hpp"
 #include "liquidai_msgs/srv/add_entity_srv.hpp"
 #include "liquidai_msgs/srv/add_entity_srv_array.hpp"
 #include "liquidai_msgs/srv/remove_entity.hpp"
 
 #include "DespawnInterface.hpp"
 #include "DespawnOnGazebo.hpp"
+#include "SensorInterface.hpp"
 #include "SpawnInterface.hpp"
 #include "SpawnOnGazebo.hpp"
+#include "MyIMUSensor.hpp"
 
 using namespace std;
 
 class Agent : public rclcpp_lifecycle::LifecycleNode {
 public:
-    Agent(const string &node_name, const rclcpp::NodeOptions &options)
-        : rclcpp_lifecycle::LifecycleNode(node_name, options)
-    {
-        // We need to declare all parameters here
-        declare_parameter("sdf_file", "");
-        declare_parameter("sdf_filename", "");
-        declare_parameter("pose", "");
-
-        auto param_change_callback =
-            [this](std::vector<rclcpp::Parameter> parameters)
-            -> rcl_interfaces::msg::SetParametersResult {
-            auto result = rcl_interfaces::msg::SetParametersResult();
-            result.successful = true;
-            for (auto parameter : parameters) {
-                RCLCPP_INFO(
-                    this->get_logger(),
-                    "parameter '%s' is now: %s",
-                    parameter.get_name().c_str(),
-                    parameter.value_to_string().c_str());
-            }
-            return result;
-        };
-
-        param_change_callback_handle_ =
-            this->add_on_set_parameters_callback(param_change_callback);
-    }
+    Agent(const string &node_name, const rclcpp::NodeOptions &options);
 
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
@@ -100,6 +77,25 @@ public:
     bool perform_spawn() { return spawnInterface->spawn(); }
     bool perform_despawn() { return despawnInterface->despawn(); }
 
+    void add_sensor(std::shared_ptr<SensorInterface> s)
+    {
+        sensorInterfaces.push_back(s);
+    }
+
+    void remove_sensor(std::shared_ptr<SensorInterface> s)
+    {
+        sensorInterfaces.erase(
+            std::remove(sensorInterfaces.begin(), sensorInterfaces.end(), s),
+            sensorInterfaces.end());
+    }
+
+    void fetch_sensors_data()
+    {
+        for (std::shared_ptr<SensorInterface> s : sensorInterfaces) {
+            s->fetchData();
+        }
+    }
+
     string exec_command(const char *cmd);
 
 protected:
@@ -108,6 +104,7 @@ protected:
 
     std::shared_ptr<SpawnInterface> spawnInterface;
     std::shared_ptr<DespawnInterface> despawnInterface;
+    std::vector<std::shared_ptr<SensorInterface>> sensorInterfaces;
 };
 
 #endif

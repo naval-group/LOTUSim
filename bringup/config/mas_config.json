@@ -3,10 +3,11 @@
         "world_filename": "xdyn_test.world",
         "world_name": "lotusim",
         "verbose": 4,
-        "gui-config": "gui/design.config"
+        "gui-config": "gui/design.config",
+        "configure_on_startup_default": "true"
     },
     "plugins": [],
     "agent_configs": [
-        "agent_config_xdyn.json"
+        "agent_config_xdyn2_canard.json"
     ]
 }

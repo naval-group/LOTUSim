@@ -27,14 +27,14 @@
                 </inertia>
             </inertial>
 
-            <collision name="body_collision">
+            <!-- <collision name="body_collision">
                 <geometry>
                     <mesh>
                         <uri>model://test_ship/test_ship.stl</uri>
                         <scale>1 1 1</scale>
                     </mesh>
                 </geometry>
-            </collision>
+            </collision> -->
         </link>
         <collision name='base_link_fixed_joint_lump__front_camera_post_collision_collision'>
             <pose>0.7 0.3 1.38475 0 0 0</pose>
@@ -49,7 +49,7 @@
         <physics_server_interface>
             <surface>
                 <ConnectionType>XDynWebSocket</ConnectionType>
-                <uri>ws://192.168.50.132:12345</uri>
+                <uri>ws://127.0.0.1:12346</uri>
                 <thrusters>
                     <thursters1>PSPropRudd</thursters1>
                     <thursters2>SBPropRudd</thursters2>

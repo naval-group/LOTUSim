@@ -17,6 +17,8 @@ find_package(gz-common5 REQUIRED)
 # find_package(gz_sim_vendor REQUIRED)
 find_package(gz-sim8 REQUIRED)
 
+find_package(sdformat14 REQUIRED)
+
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")

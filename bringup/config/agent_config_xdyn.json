@@ -3,26 +3,6 @@
         {
             "name": "Test_ship_spawned",
             "pose": "0 0 0 0 0 0"
-        },
-        {
-            "name": "Test_ship_spawned2",
-            "pose": "0 5 0 0 0 0"
-        },
-        {
-            "name": "Test_ship_spawned3",
-            "pose": "0 10 0 0 0 0"
-        },
-        {
-            "name": "Test_ship_spawned4",
-            "pose": "0 0 -5 0 0 0"
-        },
-        {
-            "name": "Test_ship_spawned5",
-            "pose": "0 5 -5 0 0 0"
-        },
-        {
-            "name": "Test_ship_spawned6",
-            "pose": "0 10 -5 0 0 0"
         }
     ]
 }

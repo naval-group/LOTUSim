@@ -12,10 +12,12 @@ private:
     string sdf_file_;
     string sdf_filename_;
     string pose_str;
-    string spawn_on_startup_;
+    bool configure_on_startup;
     rclcpp::Node::SharedPtr entity_management_client_node;
 
 public:
+    AgentEntity(const rclcpp::NodeOptions &options);
+
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_configure(const rclcpp_lifecycle::State &previous_state) override;
 
@@ -30,8 +32,6 @@ public:
 
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
-
-    AgentEntity(const rclcpp::NodeOptions &options);
 
     bool GetSensors();
 };
