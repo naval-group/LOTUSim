@@ -333,9 +333,6 @@ void WaveRaoPlugin::Update(
             bool executed =
                 m_gz_node->Request(service, req, timeout, rep, result);
 
-            gzdbg << "ID: " << vessel_entity << std::endl;
-            gzdbg << "Executed: " << executed << std::endl;
-
             // bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
             //     vessel_entity, pose);
             // if (!res)
