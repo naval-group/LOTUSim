@@ -12,6 +12,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <random>
+#include <rclcpp/client.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/component_manager.hpp>
 #include <string>
@@ -20,22 +21,27 @@
 
 namespace fs = std::filesystem;
 
+// enum class SchedulerType { EXECUTOR_IN_THREADS, RANDOMISED_EXECUTOR };
+rclcpp::Client<composition_interfaces::srv::LoadNode>::SharedPtr
+    load_node_client;
+
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
     for (int i = 0; i < argc - 1; i++) {
-        std::cerr << argv[i] << std::endl;
+        std::cout << argv[i] << std::endl;
     }
 
     int ns_index = 1;
 
-    if (argc < 2) {
+    if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <path_to_json_file>"
-                  << std::endl;
+                  << "<namespace_base>" << std::endl;
         return 1;
     }
 
     std::string json_file_name = argv[1];
+    std::string namespace_base = argv[2];
     std::string json_file_path =
         (fs::path(ament_index_cpp::get_package_share_directory("bringup")) /
          "config" / json_file_name)
@@ -70,33 +76,53 @@ int main(int argc, char *argv[])
             std::cerr << "Found agent data for this type: " << agent_data.dump()
                       << std::endl;
 
-            std::string namespace_str = "ns_main" + std::to_string(ns_index);
+            std::string namespace_str =
+                namespace_base + std::to_string(ns_index);
 
             // TODO: Find a way to generate the xacro here
 
             std::string sdf_file = "";
             // sched->AddExecutor(executor);
 
-            // Based on
-            // https://liusongran.github.io/Blog/ROS2/Slides_refs/6.%20ROSWorld2021-Executor-Ralph%20Lange.pdf
-            auto executor_thread = std::thread([&]() {
-                auto executor = std::make_shared<
-                    rclcpp::executors::MultiThreadedExecutor>();
-                auto component_manager =
-                    std::make_shared<rclcpp_components::ComponentManager>(
-                        executor, namespace_str + "_manager");
-                executor->add_node(component_manager);
-                int nice = -5; // -20 to 19
-                setpriority(PRIO_PROCESS, gettid(), nice);
-                executor->spin();
-            });
+            // TODO: To change because condition not working but I pushed it anyway
+            if(true)
+            // if (sched->GetSchedulerType() ==
+            //     SchedulerType::EXECUTOR_IN_THREADS) 
+                {
+                // Based on
+                // https://liusongran.github.io/Blog/ROS2/Slides_refs/6.%20ROSWorld2021-Executor-Ralph%20Lange.pdf
+                auto executor_thread = std::thread([&]() {
+                    auto executor = std::make_shared<
+                        rclcpp::executors::MultiThreadedExecutor>();
+                    auto component_manager =
+                        std::make_shared<rclcpp_components::ComponentManager>(
+                            executor, namespace_str + "_manager");
+                    executor->add_node(component_manager);
+                    int nice = -5; // -20 to 19
+                    setpriority(PRIO_PROCESS, gettid(), nice);
+                    executor->spin();
+                });
 
-            executor_thread.detach();
+                executor_thread.detach();
 
-            auto load_node_client =
-                node->create_client<composition_interfaces::srv::LoadNode>(
-                    // "/Test" + std::to_string(i) + "/_container/load_node");
-                    namespace_str + "_manager" + "/_container/load_node");
+                load_node_client =
+                    node->create_client<composition_interfaces::srv::LoadNode>(
+                        namespace_str + "_manager" + "/_container/load_node");
+            }
+            else if (
+                sched->GetSchedulerType() ==
+                SchedulerType::RANDOMISED_EXECUTOR) {
+                sched->AddComponentManager(namespace_str + "_manager");
+
+                load_node_client =
+                    node->create_client<composition_interfaces::srv::LoadNode>(
+                        namespace_str + "_manager" + "/_container/load_node");
+            }
+            else {
+                std::cerr << "BRRRRUUUUUUUUUHHHHHHHHHHHHHHHHHHHHHH"
+                          << std::endl;
+                throw std::invalid_argument("scheduler_type is not defined");
+            }
 
             i++;
 
@@ -118,8 +144,8 @@ int main(int argc, char *argv[])
                 composition_interfaces::srv::LoadNode::Request();
             load_node_req.set__node_name(agent_data["name"]);
             load_node_req.set__node_namespace("/" + namespace_str);
-            load_node_req.set__package_name("agent_cpp");
-            load_node_req.set__plugin_name("AgentEntity");
+            load_node_req.set__package_name(agent_data["package_name"]);
+            load_node_req.set__plugin_name(agent_data["plugin_name"]);
 
             load_node_req.parameters.push_back(
                 rclcpp::Parameter("use_sim_time", true).to_parameter_msg());

@@ -23,6 +23,8 @@ from launch.actions import IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import ComposableNodeContainer
+from launch_ros.descriptions import ComposableNode
 
 from launch_ros.actions import Node
 from pathlib import Path  # Import the Path class for secure file path manipulation
@@ -69,7 +71,6 @@ def generate_launch_description():
                     os.path.join(pkg_project_bringup, 'launch', 'multi_agent_spawn.launch.py')),
                 launch_arguments={'agent_config': str(agent_config),
                                   'ns_base': 'ns_main',
-                                  'asset_sim_path': pkg_project_description,
                                   'configure_on_startup_default': str(json_data['params']['configure_on_startup_default'])
                                 }.items())
         )
@@ -116,16 +117,41 @@ def generate_launch_description():
     scheduler = Node(
         package='agent_cpp',
         executable='scheduler',
-        name='scheduler_node' 
+        parameters=[{'use_sim_time': True,
+            }],
     )
+    
+    agent_factory = Node(
+        package='agent_cpp',
+        executable='agent_factory',
+        arguments=[{json_data['agent_configs'][0]}, {'main'}],
+        parameters=[{'use_sim_time': True,
+            }],
+    )
+    
+    # agent_node_component = ComposableNodeContainer(
+    # name='AgentContainer',
+    # package='rclcpp_components',
+    # executable='component_container',
+    # namespace='bruh',
+    # composable_node_descriptions=[
+    #     ComposableNode(
+    #         package='agent_cpp',
+    #         plugin='SchedulerSingleton',
+    #         name="Testing",
+    #     ),
+    # ]
+    # )
 
     return LaunchDescription([
         scheduler,
+        agent_factory,
         gz_sim,
+        # agent_node_component,
         # DeclareLaunchArgument('rviz', default_value='true',
         #                       description='Open RViz.'),
         simulation_control,
-        agent_launch,
+        # agent_launch,
         bridge,
         # robot_state_publisher,
         # rviz

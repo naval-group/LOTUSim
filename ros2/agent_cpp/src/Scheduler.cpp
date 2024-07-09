@@ -39,64 +39,46 @@ int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
 
-    // auto factory = std::make_shared<AgentFactory>();
-    // AgentEntity::UniquePtr a =  factory->createAgent();
+    SchedulerSingleton *sched = SchedulerSingleton::GetInstance();
 
-    auto exec = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
-    auto manager = std::make_shared<rclcpp_components::ComponentManager>(exec);
-    auto sub_manager = std::make_shared<rclcpp_components::ComponentManager>(exec);
+    sched->AddComponentManager("Test1");
+    sched->AddComponentManager("Test2");
+    sched->AddComponentManager("Test3");
 
-    exec->add_node(manager);
-    exec->add_node(sub_manager);
+    auto service_list = sched->get_service_names_and_types();
+    RCLCPP_INFO(sched->get_logger(), mapToString2(service_list).c_str());
 
-    auto service_list = manager->get_service_names_and_types();
+    auto callback_grp =
+        rclcpp::CallbackGroup(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-    RCLCPP_INFO(manager->get_logger(), mapToString2(service_list).c_str());
+    // while (rclcpp::ok()) {
+    //     RCLCPP_INFO(manager1->get_logger(), "Spinning everything");
+    //     sched->ChangeExecutorsOrder(RandomisedType::RANDOM);
+    //     for (std::shared_ptr<rclcpp::executors::SingleThreadedExecutor>
+    //              executor : sched->GetExecutors()) {
+    //         executor->spin_once();
+    //     }
+    // }
 
-    auto LoadNodeClient =
-        manager->create_client<composition_interfaces::srv::LoadNode>(
-            "/scheduler_node/_container/load_node");
+    std::random_device rd;
+    std::default_random_engine rng(rd());
 
-    // Wait for the service to be available
-    while (!LoadNodeClient->wait_for_service(std::chrono::seconds(1))) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(
-                manager->get_logger(),
-                "Interrupted while waiting for the service. Exiting.");
-            return 1;
+    auto managers = sched->GetManagers();
+    auto executor = sched->GetExecutor();
+
+    while (rclcpp::ok()) {
+        for (std::shared_ptr<rclcpp_components::ComponentManager> manager :
+             managers) {
+            executor->remove_node(manager->get_node_base_interface());
         }
-        RCLCPP_INFO(
-            manager->get_logger(), "Service not available, waiting again...");
+        std::shuffle(managers.begin(), managers.end(), rng);
+        for (std::shared_ptr<rclcpp_components::ComponentManager> manager :
+             managers) {
+            executor->add_node(manager->get_node_base_interface());
+        }
+        executor->spin_once(std::chrono::milliseconds(100));
     }
 
-    auto LoadNodeReq = composition_interfaces::srv::LoadNode::Request();
-    LoadNodeReq.set__node_name("my_dynamic_component_node");
-    LoadNodeReq.set__package_name("agent_cpp");
-    LoadNodeReq.set__plugin_name("AgentEntity");
-
-    LoadNodeReq.parameters.push_back(
-        rclcpp::Parameter("use_sim_time", true).to_parameter_msg());
-    LoadNodeReq.parameters.push_back(
-        rclcpp::Parameter("sdf_file", "").to_parameter_msg());
-    LoadNodeReq.parameters.push_back(
-        rclcpp::Parameter("sdf_filename", "models/test_ship/model.sdf").to_parameter_msg());
-    LoadNodeReq.parameters.push_back(
-        rclcpp::Parameter("pose", "15 0 0 0 0 0").to_parameter_msg());
-    LoadNodeReq.parameters.push_back(
-        rclcpp::Parameter("configure_on_startup", true).to_parameter_msg());
-
-    // Set extra arguments
-    LoadNodeReq.extra_arguments.push_back(rcl_interfaces::msg::Parameter());
-    LoadNodeReq.extra_arguments.back().name = "use_intra_process_comms";
-    LoadNodeReq.extra_arguments.back().value.type =
-        rcl_interfaces::msg::ParameterType::PARAMETER_BOOL;
-    LoadNodeReq.extra_arguments.back().value.bool_value = true;
-
-    auto req = LoadNodeClient->async_send_request(
-        std::make_shared<composition_interfaces::srv::LoadNode::Request>(
-            LoadNodeReq));
-
-    exec->spin();
     rclcpp::shutdown();
     return 0;
 }

@@ -20,7 +20,6 @@ import xacro
 #
 
 agent_launch = LaunchDescription()
-agent_fullnames = []
 
 def render_xacro(context: LaunchContext, agent_config, ns_base, configure_on_startup_default):
     # Transforms the LaunchConfiguration variables into str
@@ -80,7 +79,7 @@ def generate_launch_description():
         DeclareLaunchArgument('ns_base', default_value='ns_default'),
         DeclareLaunchArgument('configure_on_startup_default'),
         OpaqueFunction(function=render_xacro, args=[LaunchConfiguration('agent_config'),LaunchConfiguration('ns_base'), LaunchConfiguration('configure_on_startup_default')]),
-        agent_launch,
+        # agent_launch,
     ])
 
 if __name__ == '__main__':

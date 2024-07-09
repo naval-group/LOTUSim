@@ -17,6 +17,7 @@ find_package(sdformat14 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(composition_interfaces REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
 
 # add_executable(agent  src/agent_cpp/agent.cpp
 #                       src/agent_cpp/agent_entity.cpp
@@ -44,6 +45,8 @@ include_directories(
   ${rclcpp_components_INCLUDE_DIRS}
   )
 
+# Agent component
+
 target_compile_features(agent_component PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
 ament_target_dependencies(agent_component
@@ -70,6 +73,8 @@ install(TARGETS agent_component
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
 )
+
+# IMU
 
 add_library(IMU_component SHARED src/MyIMUSensor.cpp)
 
@@ -102,9 +107,6 @@ install(TARGETS IMU_component
         RUNTIME DESTINATION bin
 )
 
-# install(TARGETS agent
-#   DESTINATION lib/${PROJECT_NAME})
-
 # Scheduler
 
 add_executable(scheduler src/Scheduler.cpp)
@@ -121,6 +123,25 @@ ament_target_dependencies(scheduler
 
 install(TARGETS
   scheduler
+  DESTINATION lib/${PROJECT_NAME})
+
+# Agent Factory
+
+add_executable(agent_factory src/AgentFactory.cpp)
+target_link_libraries(agent_factory
+  ${rclcpp_LIBRARIES}
+  ${rclcpp_components_LIBRARIES}
+  nlohmann_json::nlohmann_json
+)
+
+ament_target_dependencies(agent_factory
+  rclcpp
+  rclcpp_components
+  composition_interfaces
+)
+
+install(TARGETS
+  agent_factory
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

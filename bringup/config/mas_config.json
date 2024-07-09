@@ -8,6 +8,6 @@
     },
     "plugins": [],
     "agent_configs": [
-        "agent_config_xdyn2_canard.json"
+        "agent_config_canard.json"
     ]
 }
