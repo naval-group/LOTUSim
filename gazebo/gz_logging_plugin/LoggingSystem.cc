@@ -41,6 +41,7 @@ void LoggingSystem::Configure(
     gz::sim::EntityComponentManager &_ecm,
     gz::sim::EventManager &_eventMgr)
 {
+    ecm_ = &_ecm;
     gzmsg << "[" << "Configuring..." << "] SampleSystem::Configure the Entity ["
           << _entity << "]" << std::endl;
     this->entity = _entity;
@@ -83,6 +84,12 @@ void LoggingSystem::Configure(
     gz::transport::AdvertiseMessageOptions options3;
     pocPub = node.Advertise<gz::msgs::Int32>("/poc_mas", options3);
 
+    node.Subscribe(
+        "/GazeboPosition",
+        std::function<void(const gz::msgs::Pose &)>(
+            std::bind(
+                &LoggingSystem::MoveCallback, this, std::placeholders::_1)));
+
     gz::transport::SubscribeOptions options4;
     node.Subscribe(
         "/activate_slowdown",
@@ -94,6 +101,17 @@ void LoggingSystem::Configure(
         gzerr << "Error advertising topic [" << topic << "]" << std::endl;
         return;
     }
+}
+
+void LoggingSystem::MoveCallback(const gz::msgs::Pose &msg)
+{
+    gz::msgs::Boolean rep;
+    bool result;
+    unsigned int timeout = 5000;
+
+    std::string service = "/world/" + this->worldName + "/set_pose";
+
+    bool executed = m_gz_node->Request(service, msg, timeout, rep, result);
 }
 
 void LoggingSystem::slowDownCallback(const gz::msgs::Boolean &_msg)
@@ -190,7 +208,8 @@ void LoggingSystem::Update(
 
         // std::string service = "/world/" + this->worldName + "/set_pose";
 
-        // bool executed = m_gz_node->Request(service, req, timeout, rep, result);
+        // bool executed = m_gz_node->Request(service, req, timeout, rep,
+        // result);
 
         // gzdbg << "ID: " << entity << std::endl;
         // gzdbg << "Executed: " << executed << std::endl;
@@ -216,7 +235,8 @@ void LoggingSystem::Update(
 
         //     std::string service = "/world/" + worldName + "/control";
 
-        //     bool executed = m_gz_node->Request(service, req, timeout, rep, result);
+        //     bool executed = m_gz_node->Request(service, req, timeout, rep,
+        //     result);
         // }
     }
 }

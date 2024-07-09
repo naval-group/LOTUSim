@@ -6,10 +6,10 @@
 #include <gz/sim/Model.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/World.hh>
+#include <gz/sim/components/Material.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/World.hh>
-#include <gz/sim/components/Material.hh>
 #include <gz/transport/Node.hh>
 
 #include <atomic>
@@ -46,6 +46,7 @@ private:
         previousRealTime2, previousSimTime3, previousRealTime3;
     std::string worldName;
     gz::math::Color contactColor, defaultColor;
+    gz::sim::EntityComponentManager* ecm_;
 
 private:
     gz::sim::Entity entity;
@@ -66,7 +67,8 @@ public:
     ~LoggingSystem() override;
 
 public:
-    void EditEntityVisualColor(const gz::sim::Entity &_entity, gz::math::Color _color);
+    void EditEntityVisualColor(
+        const gz::sim::Entity &_entity, gz::math::Color _color);
 
 public:
     void Configure(
@@ -95,6 +97,9 @@ public:
 
 public:
     void slowDownCallback(const gz::msgs::Boolean &_msg);
+
+public:
+    void MoveCallback(const gz::msgs::Pose &msg);
 };
 } // namespace logging_system
 

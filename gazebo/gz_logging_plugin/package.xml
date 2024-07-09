@@ -19,6 +19,7 @@
     <depend>gz-common5</depend>
     <depend>gz-sim8</depend>
     <depend>sdformat14</depend>
+    <depend>liquidai_msgs</depend>
 
     <export>
         <build_type>ament_cmake</build_type>
