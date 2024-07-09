@@ -3,6 +3,7 @@
 
 #include "convert/utils.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
+#include "gz/msgs/pose.pb.h"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 #include "ros_gz_bridge/convert/liquidai_msgs.hpp"
@@ -136,5 +137,23 @@ void convert_gz_to_ros(
         r_msg.beta = g_msg.beta();
         ros_msg.cmd.push_back(r_msg);
     }
+}
+
+template <>
+void convert_ros_to_gz(
+    const liquidai_msgs::msg::EntityPosition &ros_msg, gz::msgs::Pose &gz_msg)
+{
+    gz_msg.set_id(ros_msg.id);
+    convert_ros_to_gz(ros_msg.position, *gz_msg.mutable_position());
+    convert_ros_to_gz(ros_msg.rotation, *gz_msg.mutable_orientation());
+}
+
+template <>
+void convert_gz_to_ros(
+    const gz::msgs::Pose &gz_msg, liquidai_msgs::msg::EntityPosition &ros_msg)
+{
+    ros_msg.set__id(gz_msg.id());
+    convert_gz_to_ros(gz_msg.position(), ros_msg.position);
+    convert_gz_to_ros(gz_msg.orientation(), ros_msg.rotation);
 }
 } // namespace ros_gz_bridge

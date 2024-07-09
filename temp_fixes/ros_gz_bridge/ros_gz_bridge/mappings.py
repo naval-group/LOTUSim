@@ -117,6 +117,7 @@ MAPPINGS = {
         Mapping('GPS', 'NavSat'),
         Mapping('AISArray', 'gz_liquidai_msgs::msgs::AISArray'),
         Mapping('Xdyncmd', 'gz_liquidai_msgs::msgs::XdynCmd'),
+        Mapping('EntityPosition', 'gz::msgs::Pose'),
     ],
 }
 
