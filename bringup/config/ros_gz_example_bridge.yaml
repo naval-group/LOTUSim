@@ -47,6 +47,11 @@
   ros_type_name: "std_msgs/msg/Int32"
   gz_type_name: "ignition.msgs.Int32"
   direction: GZ_TO_ROS
+- ros_topic_name: "agent_demo_sched"
+  gz_topic_name: "/agent_demo_sched"
+  ros_type_name: "std_msgs/msg/Int32"
+  gz_type_name: "ignition.msgs.Int32"
+  direction: GZ_TO_ROS
 - ros_topic_name: "activate_slowdown"
   gz_topic_name: "/activate_slowdown"
   ros_type_name: "std_msgs/msg/Bool"

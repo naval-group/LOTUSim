@@ -58,7 +58,7 @@ private:
     std::shared_ptr<gz::transport::Node> m_gz_node;
 
 private:
-    gz::transport::Node::Publisher nodePub, schedNodePub, pocPub;
+    gz::transport::Node::Publisher nodePub, schedNodePub, pocPub, agent_demo_sched;
 
 public:
     LoggingSystem();

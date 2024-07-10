@@ -17,6 +17,7 @@
 #include <liquidai_msgs/msg/xdyn_thrustercmd.hpp>
 #include <liquidai_msgs/msg/xdyncmd.hpp>
 #include <liquidai_msgs/msg/entity_position.hpp>
+#include <liquidai_msgs/msg/add_entity.hpp>
 
 #include <ros_gz_bridge/convert_decl.hpp>
 
@@ -57,6 +58,14 @@ template <>
 void convert_gz_to_ros(
     const gz_liquidai_msgs::msgs::XdynCmd &gz_msg,
     liquidai_msgs::msg::Xdyncmd &ros_msg);
+
+template <>
+void convert_ros_to_gz(
+    const liquidai_msgs::msg::EntityPosition &ros_msg, gz::msgs::Pose &gz_msg);
+
+template <>
+void convert_gz_to_ros(
+    const gz::msgs::Pose &gz_msg, liquidai_msgs::msg::EntityPosition &ros_msg);
 
 template <>
 void convert_ros_to_gz(

@@ -97,6 +97,8 @@ void EntityManagement::Update(
 {
     rclcpp::spin_some(ros_node_);
     rclcpp::spin_some(step_control_client_node_);
+
+    ecm_->CreateEntity();
 }
 
 void EntityManagement::PostUpdate(
@@ -123,6 +125,7 @@ void EntityManagement::OnAddEntity(
     OnAddEntity_V(req_array, res_array);
 
     response->result = res_array->result;
+    response->id = res_array->ids.front();
 }
 
 /// @brief Callback for adding one or multiple entities
@@ -202,6 +205,12 @@ void EntityManagement::OnAddEntity_V(
         if (result) {
             std::cout << "Response: [" << rep.data() << "]" << std::endl;
             response->result = rep.data();
+            std::vector<Entity> ids;
+            for (liquidai_msgs::msg::AddEntity msg : request->data) {
+                ids.push_back(
+                    ecm_->EntityByComponents(components::Name(msg.name)));
+            }
+            response->ids = ids;
         }
         else {
             std::cout << "Service call failed" << std::endl;

@@ -81,14 +81,15 @@ void LoggingSystem::Configure(
     gz::transport::AdvertiseMessageOptions options2;
     schedNodePub = node.Advertise<gz::msgs::Int32>("/gz_sched", options2);
 
+    agent_demo_sched = node.Advertise<gz::msgs::Int32>("/agent_demo_sched");
+
     gz::transport::AdvertiseMessageOptions options3;
     pocPub = node.Advertise<gz::msgs::Int32>("/poc_mas", options3);
 
     node.Subscribe(
         "/GazeboPosition",
-        std::function<void(const gz::msgs::Pose &)>(
-            std::bind(
-                &LoggingSystem::MoveCallback, this, std::placeholders::_1)));
+        std::function<void(const gz::msgs::Pose &)>(std::bind(
+            &LoggingSystem::MoveCallback, this, std::placeholders::_1)));
 
     gz::transport::SubscribeOptions options4;
     node.Subscribe(
@@ -105,6 +106,12 @@ void LoggingSystem::Configure(
 
 void LoggingSystem::MoveCallback(const gz::msgs::Pose &msg)
 {
+    if (msg.id() == entity) {
+        gz::msgs::Int32 dbg_msg;
+        dbg_msg.set_data(msg.id());
+        agent_demo_sched.Publish(dbg_msg);
+    }
+
     gz::msgs::Boolean rep;
     bool result;
     unsigned int timeout = 5000;
@@ -130,6 +137,9 @@ void LoggingSystem::slowDownCallback(const gz::msgs::Boolean &_msg)
 void LoggingSystem::PreUpdate(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
+    gz::msgs::Int32 dbg_msg;
+    dbg_msg.set_data(0);
+    schedNodePub.Publish(dbg_msg);
     if (!_info.paused) {
         gz::msgs::Int32 msg;
         msg.set_data(entity);

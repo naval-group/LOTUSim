@@ -57,4 +57,4 @@ cd "$LOTUSIM_PATH" || return
 echo -e "${GREEN}Launching LOTUSim...${NC}"
 
 # gz sim "$WORLD_FILE"
-ros2 launch bringup mas.launch.py & rqt
+ros2 launch bringup mas.launch.py

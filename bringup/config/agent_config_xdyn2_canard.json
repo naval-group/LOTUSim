@@ -20,13 +20,6 @@
             "configure_on_startup": true,
             "package_name": "agent_cpp",
             "plugin_name": "AgentEntity"
-        },
-        {
-            "name": "talker3",
-            "pose": "5 0 0 0 0 0",
-            "configure_on_startup": true,
-            "package_name": "demo_nodes_py",
-            "executable_name": "talker"
         }
     ]
 }
