@@ -5,6 +5,7 @@
 #include <memory>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <string>
 
 class AgentDemoCpp : public rclcpp::Node {
@@ -18,6 +19,9 @@ public:
         pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
             "/GazeboPosition", 10);
 
+        debug_pub_ = this->create_publisher<std_msgs::msg::Int32>(
+            "/agent_demo_sched", 10);
+
         timer_ = this->create_wall_timer(
             std::chrono::milliseconds(500),
             std::bind(&AgentDemoCpp::timer_callback, this));
@@ -26,6 +30,10 @@ public:
 private:
     void timer_callback()
     {
+        std_msgs::msg::Int32 dbg_msg;
+        dbg_msg.data = 0;
+        debug_pub_->publish(dbg_msg);
+
         auto message = liquidai_msgs::msg::EntityPosition();
         message.id = gazebo_id;
         x = x + 0.1;
@@ -33,13 +41,18 @@ private:
         RCLCPP_INFO(
             this->get_logger(),
             "Publishing: '%s' on id %d",
-            std::to_string(message.position.x).c_str(), gazebo_id);
+            std::to_string(message.position.x).c_str(),
+            gazebo_id);
         pose_pub_->publish(message);
+
+        dbg_msg.data = gazebo_id;
+        debug_pub_->publish(dbg_msg);
     }
     float x = 0;
     int gazebo_id;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<liquidai_msgs::msg::EntityPosition>::SharedPtr pose_pub_;
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr debug_pub_;
 };
 
 int main(int argc, char **argv)

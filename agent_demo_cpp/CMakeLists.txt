@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(liquidai_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 
 add_executable(agent_demo_node src/agent_demo_node.cpp)
 target_include_directories(agent_demo_node PUBLIC
@@ -19,6 +20,7 @@ target_compile_features(agent_demo_node PUBLIC c_std_99 cxx_std_17)  # Require C
 ament_target_dependencies(agent_demo_node
   rclcpp
   liquidai_msgs
+  std_msgs
 )
 
 install(TARGETS agent_demo_node

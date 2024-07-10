@@ -119,6 +119,12 @@ void LoggingSystem::MoveCallback(const gz::msgs::Pose &msg)
     std::string service = "/world/" + this->worldName + "/set_pose";
 
     bool executed = m_gz_node->Request(service, msg, timeout, rep, result);
+
+    if (msg.id() == entity) {
+        gz::msgs::Int32 dbg_msg;
+        dbg_msg.set_data(0);
+        agent_demo_sched.Publish(dbg_msg);
+    }
 }
 
 void LoggingSystem::slowDownCallback(const gz::msgs::Boolean &_msg)
