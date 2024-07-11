@@ -3,6 +3,7 @@
 #include <functional>
 #include <liquidai_msgs/msg/entity_position.hpp>
 #include <memory>
+#include <rclcpp/create_timer.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
@@ -10,8 +11,8 @@
 
 class AgentDemoCpp : public rclcpp::Node {
 public:
-    AgentDemoCpp()
-        : rclcpp::Node("agent_demo_cpp_node")
+    AgentDemoCpp(rclcpp::NodeOptions &options)
+        : rclcpp::Node("agent_demo_cpp_node", options)
     {
         declare_parameter<int>("gazebo_id");
         get_parameter<int>("gazebo_id", gazebo_id);
@@ -22,12 +23,14 @@ public:
         debug_pub_ = this->create_publisher<std_msgs::msg::Int32>(
             "/agent_demo_sched", 10);
 
-        timer_ = this->create_wall_timer(
+        timer_ = rclcpp::create_timer(
+            this,
+            this->get_clock(),
             std::chrono::milliseconds(500),
             std::bind(&AgentDemoCpp::timer_callback, this));
     }
 
-private:
+public:
     void timer_callback()
     {
         std_msgs::msg::Int32 dbg_msg;
@@ -63,7 +66,9 @@ int main(int argc, char **argv)
     printf("hello world agent_demo_cpp package\n");
 
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<AgentDemoCpp>());
+    rclcpp::NodeOptions options;
+    auto node = std::make_shared<AgentDemoCpp>(options);
+    rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
 }
