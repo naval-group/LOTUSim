@@ -31,7 +31,7 @@ public:
             "Creating ros2 node of agent %s",
             request_.data.name);
 
-        // When send a create_multiple request through the gz_entity_management
+        // We send a create_multiple request through the gz_entity_management
         // package
         auto request_V = liquidai_msgs::srv::AddEntitySrvArray::Request();
 

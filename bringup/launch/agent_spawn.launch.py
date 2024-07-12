@@ -19,6 +19,7 @@ def generate_launch_description():
     sdf_filename  =  LaunchConfiguration('sdf_filename')
     name  =  LaunchConfiguration('name')
     pose  =  LaunchConfiguration('pose')
+    gazebo_id  =  LaunchConfiguration('gazebo_id')
     
     agent_node_component = ComposableNodeContainer(
     name='AgentContainer',
@@ -36,28 +37,31 @@ def generate_launch_description():
                 'sdf_file': sdf_file,
                 'sdf_filename': sdf_filename,
                 'pose': pose,
-                'configure_on_startup': configure_on_startup
+                'configure_on_startup': configure_on_startup,
                 }],
         ),
     ]
 )
+    
+    agent_node = Node(
+        package='agent_cpp',
+        executable='agent_node',
+        name=name,
+        namespace=ns,
+        parameters=[{'use_sim_time': True,
+            'sdf_file': sdf_file,
+            'sdf_filename': sdf_filename,
+            'pose': pose,
+            'configure_on_startup': configure_on_startup,
+            'gazebo_id': gazebo_id
+            }],
+    )
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='true',
-            description='Use simulation (Gazebo) clock if true'),
         # DeclareLaunchArgument(
-        #     'ns',
-        #     default_value='ns_default',
-        #     description='Name of the namespace'),
-        # agent_node,
-        agent_node_component
-        # Node(
-        #     package='robot_state_publisher',
-        #     executable='robot_state_publisher',
-        #     name='robot_state_publisher',
-        #     output='screen',
-        #     parameters=[{'use_sim_time': use_sim_time, 'robot_description': robot_desc}],
-        #     arguments=[urdf]),
+        #     'use_sim_time',
+        #     default_value='true',
+        #     description='Use simulation (Gazebo) clock if true'),
+        agent_node,
+        # agent_node_component
     ])

@@ -1,13 +1,14 @@
 {
     "params": {
-        "world_filename": "poc_canard.world",
+        "world_filename": "agent_demo_ros.world",
         "world_name": "lotusim",
         "verbose": 4,
         "gui-config": "gui/design.config",
-        "configure_on_startup_default": "true"
+        "automatic_namespace": true,
+        "default_namespace": "ns_main"
     },
     "plugins": [],
     "agent_configs": [
-        "agent_config_canard.json"
+        "agent_config_xdyn2.json"
     ]
 }

@@ -17,13 +17,12 @@
 #include <thread>
 #include <vector>
 
-namespace simulation_control {
 std::string ENTITY_EVENTS_TOPIC = "/entity_events";
 
 class SimulationControl : public rclcpp::Node {
 public:
-    SimulationControl(std::string name)
-        : rclcpp::Node(name)
+    SimulationControl(const rclcpp::NodeOptions &options)
+        : rclcpp::Node("simulation_control_node", options)
     {
         change_state_client_node =
             rclcpp::Node::make_shared("change_state_client_node");
@@ -73,6 +72,7 @@ public:
         auto pause_req_res =
             SC_step_control_client_->async_send_request(pause_request);
 
+        // We fetch all lifecycle nodes. This is not optimal but it works.
         std::string command = "ros2 lifecycle nodes";
         std::string res = exec_command(command.data());
         RCLCPP_INFO(
@@ -231,15 +231,6 @@ private:
         return result;
     }
 };
-} // namespace simulation_control
 
-int main(int argc, char **argv)
-{
-    rclcpp::init(argc, argv);
-
-    auto node = std::make_shared<simulation_control::SimulationControl>(
-        "simulation_control_node");
-
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(SimulationControl)

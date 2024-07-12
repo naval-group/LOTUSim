@@ -25,7 +25,6 @@
 
 #include "rclcpp_components/component_manager.hpp"
 #include "rclcpp_components/node_factory.hpp"
-#include "rclcpp_components/register_node_macro.hpp"
 
 #include "liquidai_msgs/srv/add_entity_srv.hpp"
 #include "liquidai_msgs/srv/add_entity_srv_array.hpp"

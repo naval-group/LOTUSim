@@ -71,8 +71,6 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
 
     isFine = isFine && this->perform_spawn();
 
-    // exec_command(cmd);
-
     if (isFine) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::SUCCESS;
@@ -137,4 +135,5 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
 
 bool AgentEntity::GetSensors() {}
 
+#include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)

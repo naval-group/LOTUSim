@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(liquidai_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 add_executable(agent_demo_node src/agent_demo_node.cpp)
 target_include_directories(agent_demo_node PUBLIC
@@ -21,6 +22,7 @@ ament_target_dependencies(agent_demo_node
   rclcpp
   liquidai_msgs
   std_msgs
+  geometry_msgs
 )
 
 install(TARGETS agent_demo_node

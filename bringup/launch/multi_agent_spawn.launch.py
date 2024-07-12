@@ -21,11 +21,10 @@ import xacro
 
 agent_launch = LaunchDescription()
 
-def render_xacro(context: LaunchContext, agent_config, ns_base, configure_on_startup_default):
+def render_xacro(context: LaunchContext, agent_config, ns_base):
     # Transforms the LaunchConfiguration variables into str
     agent_config_str = context.perform_substitution(agent_config)
     ns_base_str:str = context.perform_substitution(ns_base)
-    configure_on_startup_default_str:str = context.perform_substitution(configure_on_startup_default)
 
     pkg_project_bringup = get_package_share_directory('bringup')
     pkg_project_description = get_package_share_directory('assets')
@@ -53,9 +52,6 @@ def render_xacro(context: LaunchContext, agent_config, ns_base, configure_on_sta
                                                 'name': agent_data['name']})
                 sdf_file = doc.toxml()
                 print("sdf_file generated: " + sdf_file)
-
-            if(not "configure_on_startup" in agent_data):
-                agent_data.update({'configure_on_startup': configure_on_startup_default_str})
             
             agent_data.update(
                 {'sdf_file': sdf_file,
@@ -77,9 +73,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('agent_config', default_value='default_agent_config.json'),
         DeclareLaunchArgument('ns_base', default_value='ns_default'),
-        DeclareLaunchArgument('configure_on_startup_default'),
-        OpaqueFunction(function=render_xacro, args=[LaunchConfiguration('agent_config'),LaunchConfiguration('ns_base'), LaunchConfiguration('configure_on_startup_default')]),
-        # agent_launch,
+        OpaqueFunction(function=render_xacro, args=[LaunchConfiguration('agent_config'),LaunchConfiguration('ns_base')]),
+        agent_launch
     ])
 
 if __name__ == '__main__':

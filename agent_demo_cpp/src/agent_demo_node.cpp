@@ -8,6 +8,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
 #include <string>
+#include <geometry_msgs/msg/point.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
+#include "liquidai_msgs/msg/add_entity.hpp"
+#include "liquidai_msgs/srv/add_entity_srv.hpp"
+#include "liquidai_msgs/srv/add_entity_srv_array.hpp"
+#include "liquidai_msgs/srv/remove_entity.hpp"
 
 class AgentDemoCpp : public rclcpp::Node {
 public:
@@ -18,10 +24,10 @@ public:
         get_parameter<int>("gazebo_id", gazebo_id);
 
         pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
-            "/GazeboPosition", 10);
+            "/GazeboPosition", 100);
 
         debug_pub_ = this->create_publisher<std_msgs::msg::Int32>(
-            "/agent_demo_sched", 10);
+            "/agent_demo_sched", 100);
 
         timer_ = rclcpp::create_timer(
             this,
