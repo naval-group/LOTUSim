@@ -24,9 +24,9 @@ public:
         get_parameter<int>("gazebo_id", gazebo_id);
 
         pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
-            "/effector_demo_sched", 100);
+            "/effector_demo_sched", 10);
         debug_pub_ = this->create_publisher<std_msgs::msg::Int32>(
-            "/agent_demo_sched", 100);
+            "/agent_demo_sched" + std::to_string(gazebo_id), 10);
 
         sensor_sub_ = this->create_subscription<std_msgs::msg::Int32>(
             "/sensor_demo_sched",
