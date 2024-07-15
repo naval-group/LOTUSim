@@ -11,6 +11,11 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     entity_management_client_node =
         rclcpp::Node::make_shared("entity_management_client_node");
 
+    get_id_by_name_client_ =
+        entity_management_client_node
+            ->create_client<liquidai_msgs::srv::GetIdByName>(
+                "/gz_get_id_by_name");
+
     // Parse the pose string
     float pose_components[6];
     int i = 0;
@@ -55,11 +60,20 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     // auto sensor = std::shared_ptr<MyIMUSensor>(new
     // MyIMUSensor(options_sensor)); this->add_sensor(sensor);
 
-    // Load itself into the scheduler ?
+    timer_ = rclcpp::create_timer(
+        this,
+        this->get_clock(),
+        std::chrono::milliseconds(500),
+        std::bind(&AgentEntity::timer_callback, this));
 
     if (configure_on_startup) {
         this->on_configure(this->get_current_state());
     }
+}
+
+void AgentEntity::timer_callback()
+{
+    RCLCPP_INFO(get_logger(), "my id is %d", gazebo_id);
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -67,18 +81,59 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_configure() is called.");
 
-    bool isFine = true;
-
-    isFine = isFine && this->perform_spawn();
-
-    if (isFine) {
-        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-            CallbackReturn::SUCCESS;
-    }
-    else {
+    if (!this->perform_spawn()) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::ERROR;
     }
+
+    // Wait for the service to be activated
+    while (!get_id_by_name_client_->wait_for_service(std::chrono::seconds(1))) {
+        if (!rclcpp::ok()) {
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "Interrupted while waiting for the service. Exiting.");
+            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+                CallbackReturn::ERROR;
+        }
+        // Print in the screen some information so the user knows what is
+        // happening
+        RCLCPP_INFO(
+            this->get_logger(), "Service not available, waiting again...");
+    }
+
+    auto request = std::make_shared<liquidai_msgs::srv::GetIdByName::Request>();
+    std::string name = this->get_name();
+    request->set__entity_name(name);
+
+    // Client sends its asynchronous request
+    auto res = get_id_by_name_client_->async_send_request(request);
+
+    // Wait for the result
+    if (rclcpp::spin_until_future_complete(
+            entity_management_client_node, res) ==
+        rclcpp::FutureReturnCode::SUCCESS) {
+        int id = res.get()->id;
+        if (id != 0) {
+            RCLCPP_INFO(this->get_logger(), "The checks were successful!");
+            gazebo_id = id;
+        }
+        else {
+            RCLCPP_WARN(
+                this->get_logger(),
+                "The checks were not successful: %s",
+                "bruh");
+            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+                CallbackReturn::ERROR;
+        }
+    }
+    else {
+        RCLCPP_ERROR(this->get_logger(), "Failed to call service 'checks'");
+        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+            CallbackReturn::ERROR;
+    }
+
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+        CallbackReturn::SUCCESS;
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -100,18 +155,13 @@ AgentEntity::on_cleanup(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_cleanup() is called.");
 
-    bool isFine = true;
-
-    isFine = isFine && this->perform_despawn();
-
-    if (isFine) {
+    if (!this->perform_despawn()) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::SUCCESS;
     }
-    else {
-        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-            CallbackReturn::ERROR;
-    }
+
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+        CallbackReturn::ERROR;
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -119,18 +169,13 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_shutdown() is called.");
 
-    bool isFine = true;
-
-    isFine = isFine && this->perform_despawn();
-
-    if (isFine) {
+    if (!this->perform_despawn()) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::SUCCESS;
     }
-    else {
-        return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-            CallbackReturn::ERROR;
-    }
+
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
+        CallbackReturn::ERROR;
 }
 
 bool AgentEntity::GetSensors() {}

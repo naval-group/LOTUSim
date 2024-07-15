@@ -5,6 +5,7 @@
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <sdf/sdf.hh>
+#include "liquidai_msgs/srv/get_id_by_name.hpp"
 
 // An agent that is an entity in Gazebo
 class AgentEntity : public Agent {
@@ -14,6 +15,9 @@ private:
     string pose_str;
     bool configure_on_startup;
     rclcpp::Node::SharedPtr entity_management_client_node;
+    rclcpp::Client<liquidai_msgs::srv::GetIdByName>::SharedPtr get_id_by_name_client_;
+    int gazebo_id;
+    rclcpp::TimerBase::SharedPtr timer_;
 
 public:
     AgentEntity(const rclcpp::NodeOptions &options);
@@ -34,6 +38,8 @@ public:
     on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
 
     bool GetSensors();
+
+    void timer_callback();
 };
 
 #endif

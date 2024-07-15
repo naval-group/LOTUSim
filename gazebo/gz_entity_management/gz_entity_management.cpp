@@ -63,6 +63,15 @@ void EntityManagement::Configure(
                 std::placeholders::_1,
                 std::placeholders::_2));
 
+    get_id_by_name_service_ =
+        ros_node_->create_service<liquidai_msgs::srv::GetIdByName>(
+            "gz_get_id_by_name",
+            std::bind(
+                &EntityManagement::OnGetIdByName,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2));
+
     this->step_control_client_node_ =
         rclcpp::Node::make_shared("step_control_client_node2");
 
@@ -125,7 +134,6 @@ void EntityManagement::OnAddEntity(
     OnAddEntity_V(req_array, res_array);
 
     response->result = res_array->result;
-    response->id = res_array->ids.front();
 }
 
 /// @brief Callback for adding one or multiple entities
@@ -205,12 +213,6 @@ void EntityManagement::OnAddEntity_V(
         if (result) {
             std::cout << "Response: [" << rep.data() << "]" << std::endl;
             response->result = rep.data();
-            std::vector<Entity> ids;
-            for (liquidai_msgs::msg::AddEntity msg : request->data) {
-                ids.push_back(
-                    ecm_->EntityByComponents(components::Name(msg.name)));
-            }
-            response->ids = ids;
         }
         else {
             std::cout << "Service call failed" << std::endl;
@@ -270,6 +272,15 @@ void EntityManagement::OnRemoveEntity(
         std::cerr << "Service call timed out" << std::endl;
         response->result = false;
     }
+}
+
+void EntityManagement::OnGetIdByName(
+    const std::shared_ptr<liquidai_msgs::srv::GetIdByName::Request> request,
+    std::shared_ptr<liquidai_msgs::srv::GetIdByName::Response> response)
+{
+    int id = ecm_->EntityByComponents(components::Name(request->entity_name));
+    response->id = id;
+    gzmsg << "The id of " << request->entity_name << " is " << id;
 }
 
 void EntityManagement::CreateBridge(

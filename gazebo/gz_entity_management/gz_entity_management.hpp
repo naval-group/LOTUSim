@@ -12,6 +12,7 @@
 #include "liquidai_msgs/msg/add_entity.hpp"
 #include "liquidai_msgs/srv/add_entity_srv.hpp"
 #include "liquidai_msgs/srv/add_entity_srv_array.hpp"
+#include "liquidai_msgs/srv/get_id_by_name.hpp"
 #include "liquidai_msgs/srv/remove_entity.hpp"
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -80,6 +81,11 @@ public:
         std::shared_ptr<liquidai_msgs::srv::RemoveEntity::Response> response);
 
 public:
+    void OnGetIdByName(
+        const std::shared_ptr<liquidai_msgs::srv::GetIdByName::Request> request,
+        std::shared_ptr<liquidai_msgs::srv::GetIdByName::Response> response);
+
+public:
     void CreateBridge(
         std::string topic_name,
         std::string ros_type_name,
@@ -95,12 +101,12 @@ private:
 
     rclcpp::Service<liquidai_msgs::srv::AddEntitySrv>::SharedPtr
         add_entity_service_;
-
     rclcpp::Service<liquidai_msgs::srv::AddEntitySrvArray>::SharedPtr
         add_entity_V_service_;
-
     rclcpp::Service<liquidai_msgs::srv::RemoveEntity>::SharedPtr
         remove_entity_service_;
+    rclcpp::Service<liquidai_msgs::srv::GetIdByName>::SharedPtr
+        get_id_by_name_service_;
 
     rclcpp::Node::SharedPtr step_control_client_node_;
 

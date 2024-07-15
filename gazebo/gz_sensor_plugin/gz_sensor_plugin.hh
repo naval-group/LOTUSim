@@ -25,8 +25,8 @@
 #include <unistd.h>
 #include <vector>
 
-namespace logging_system {
-class LoggingSystem :
+namespace sensor_plugin {
+class gz_sensor_plugin :
     // This class is a system.
     public gz::sim::System,
 
@@ -42,11 +42,10 @@ class LoggingSystem :
 private:
     bool slowdown = false;
     bool has_published_poc_data = false;
-    float previousSimTime1, previousRealTime1, previousSimTime2,
-        previousRealTime2, previousSimTime3, previousRealTime3;
+    float previousSimTime;
     std::string worldName;
     gz::math::Color contactColor, defaultColor;
-    gz::sim::EntityComponentManager* ecm_;
+    gz::sim::EntityComponentManager *ecm_;
 
 private:
     gz::sim::Entity entity;
@@ -58,17 +57,16 @@ private:
     std::shared_ptr<gz::transport::Node> m_gz_node;
 
 private:
-    gz::transport::Node::Publisher nodePub, schedNodePub, pocPub;
+    gz::transport::Node::Publisher sensor_demo_sched, agent_demo_sched, plugin_demo_sched;
 
 public:
-    LoggingSystem();
+    gz_sensor_plugin();
 
 public:
-    ~LoggingSystem() override;
+    ~gz_sensor_plugin() override;
 
 public:
-    void EditEntityVisualColor(
-        const gz::sim::Entity &_entity, gz::math::Color _color);
+    void MoveCallback(const gz::msgs::Pose &msg);
 
 public:
     void Configure(
@@ -96,9 +94,8 @@ public:
     //              gz::sim::EntityComponentManager &_ecm) override;
 
 public:
-    void slowDownCallback(const gz::msgs::Boolean &_msg);
-
+    void EffectorCallback(const gz::msgs::Pose &msg);
 };
-} // namespace logging_system
+} // namespace sensor_plugin
 
 #endif
