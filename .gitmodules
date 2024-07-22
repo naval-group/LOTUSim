@@ -5,6 +5,3 @@
 	path = gazebo/explosivemine
 	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/explosivemine.git
 	branch = harmonic
-[submodule "sdformat"]
-	path = sdformat
-	url = https://github.com/osrf/sdformat
