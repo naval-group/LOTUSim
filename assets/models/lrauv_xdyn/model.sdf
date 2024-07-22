@@ -2,9 +2,15 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
+    <unity_type_name>lrauv</unity_type_name>
 
     <!-- Body -->
     <link name="base_link">
+      <sensor name="imu_sensor" type="imu">
+        <always_on>1</always_on>
+        <update_rate>1</update_rate>
+        <visualize>true</visualize>
+      </sensor>
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
@@ -51,7 +57,7 @@
     <physics_server_interface>
       <underwater>
         <ConnectionType>XDynWebSocket</ConnectionType>
-        <uri>ws://127.0.0.1:12346</uri>
+        <uri>ws://127.0.0.1:12345</uri>
         <thrusters>
           <thursters1>propeller</thursters1>
         </thrusters>

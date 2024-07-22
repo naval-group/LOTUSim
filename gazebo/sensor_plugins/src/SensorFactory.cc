@@ -37,7 +37,7 @@ void SensorSystem::PreUpdate(
                       << std::endl;
             }
             else {
-                return false;
+                return true;
             }
 
             // Set sensor parent

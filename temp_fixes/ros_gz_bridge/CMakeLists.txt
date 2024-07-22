@@ -27,6 +27,8 @@ message("gz_liquidai_msgs bin dir " ${CMAKE_BINARY_DIR})
 message("gz_liquidai_msgs source dir " ${CMAKE_CURRENT_SOURCE_DIR})
 message("gz_liquidai_msgs install_name dir " ${CMAKE_INSTALL_NAME_DIR})
 message("gz_liquidai_msgs PROJECT_BINARY_DIR " ${PROJECT_BINARY_DIR})
+cmake_path(GET CMAKE_BINARY_DIR PARENT_PATH PARENT_DIR)
+message("gz_liquidai_msgs parent bin dir " ${PARENT_DIR})
 
 
 # TODO(CH3): Deprecated. Remove on tock.
@@ -45,30 +47,35 @@ if("$ENV{GZ_VERSION}" STREQUAL "edifice")
   set(GZ_TRANSPORT_VER ${ignition-transport10_VERSION_MAJOR})
 
   message(STATUS "Compiling against Ignition Edifice")
-# Fortress
-elseif("$ENV{GZ_VERSION}" STREQUAL "fortress")
-  find_package(ignition-transport11 REQUIRED)
-  find_package(ignition-msgs8 REQUIRED)
-  set(GZ_TARGET_PREFIX ignition)
-  set(GZ_MSGS_VER ${ignition-msgs8_VERSION_MAJOR})
-  set(GZ_TRANSPORT_VER ${ignition-transport11_VERSION_MAJOR})
+# Garden
+elseif("$ENV{GZ_VERSION}" STREQUAL "garden")
+  find_package(gz-transport12 REQUIRED)
+  find_package(gz-msgs9 REQUIRED)
 
-  message(STATUS "Compiling against Ignition Fortress")
-# Default to Garden
-else()
+  set(GZ_TARGET_PREFIX gz)
+  set(GZ_MSGS_VER ${gz-msgs9_VERSION_MAJOR})
+  set(GZ_TRANSPORT_VER ${gz-transport12_VERSION_MAJOR})
+
+  message(STATUS "Compiling against Gazebo Garden")
+elseif("$ENV{GZ_VERSION}" STREQUAL "harmonic")
   find_package(gz-transport13 REQUIRED)
   find_package(gz-msgs10 REQUIRED)
-  message("include_dir ${gz-msgs10_INCLUDE_DIRS}")
-  message("msgs9_LIBRARIES ${gz-msgs10_LIBRARIES}")
-
-  find_package(gz-sim8 REQUIRED)
-  set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
 
   set(GZ_TARGET_PREFIX gz)
   set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
   set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
 
-  message(STATUS "Compiling against Gazebo Garden")
+  message(STATUS "Compiling against Gazebo Harmonic")
+# Default to Fortress
+else()
+  find_package(ignition-transport11 REQUIRED)
+  find_package(ignition-msgs8 REQUIRED)
+
+  set(GZ_TARGET_PREFIX ignition)
+  set(GZ_MSGS_VER ${ignition-msgs8_VERSION_MAJOR})
+  set(GZ_TRANSPORT_VER ${ignition-transport11_VERSION_MAJOR})
+
+  message(STATUS "Compiling against Ignition Fortress")
 endif()
 
 include_directories(
@@ -87,7 +94,9 @@ set(GZ_MSGS_VERSION_FULL ${GZ_MSGS_VERSION_MAJOR}.${GZ_MSGS_VERSION_MINOR}.${GZ_
 
 set(BRIDGE_MESSAGE_TYPES
   builtin_interfaces
+  actuator_msgs
   geometry_msgs
+  gps_msgs
   nav_msgs
   rcl_interfaces
   ros_gz_interfaces
@@ -96,6 +105,7 @@ set(BRIDGE_MESSAGE_TYPES
   std_msgs
   tf2_msgs
   trajectory_msgs
+  vision_msgs
   liquidai_msgs
 )
 
@@ -136,7 +146,7 @@ add_custom_command(
   COMMENT "Generating factories for interface types")
 
 set(bridge_lib
-  ros_gz_bridge_lib
+  ros_gz_bridge
 )
 
 add_library(${bridge_lib}
@@ -146,19 +156,20 @@ add_library(${bridge_lib}
   src/bridge_handle_ros_to_gz.cpp
   src/bridge_handle_gz_to_ros.cpp
   src/factory_interface.cpp
+  src/service_factory_interface.cpp
   src/service_factories/ros_gz_interfaces.cpp
   src/ros_gz_bridge.cpp
   ${convert_files}
   ${generated_files}
 )
 
-target_include_directories(${bridge_lib}
-  PUBLIC 
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-  PRIVATE src ${generated_path} 
-  # $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../gz_liquidai_msgs>  
-)
+# target_include_directories(${bridge_lib}
+#   PUBLIC 
+#   include
+#   ${CMAKE_INSTALL_FULL_INCLUDEDIR}
+#   PRIVATE src ${generated_path} 
+#   # $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../gz_liquidai_msgs>  
+# )
 target_link_directories(${bridge_lib} 
 PUBLIC 
 ${CMAKE_INSTALL_FULL_LIBDIR})
@@ -177,31 +188,37 @@ ament_target_dependencies(${bridge_lib}
   ${BRIDGE_MESSAGE_TYPES}
 )
 
-message("PROJECT_BINARY_DIR ${PROJECT_BINARY_DIR}")
-message("CMAKE_INSTALL_DATAROOTDIR ${CMAKE_INSTALL_DATAROOTDIR}")
-message("CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
-message("CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}")
-message("CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}")
-message("CMAKE_FILES_DIRECTORY ${CMAKE_FILES_DIRECTORY}")
-message("INCLUDE_INSTALL_DIR_FULL ${INCLUDE_INSTALL_DIR_FULL}")
+
+
+target_include_directories(${bridge_lib}
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+  PRIVATE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>"
+    "$<BUILD_INTERFACE:${PARENT_DIR}/gz_liquidai_msgs/gz_liquidai_msgs-msgs_genmsg>"
+)
+
+# target_link_libraries(${bridge_lib}
+#   ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}::core
+#   ${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER}::core
+# )
 
 rclcpp_components_register_node(
   ${bridge_lib}
   PLUGIN ros_gz_bridge::RosGzBridge
   EXECUTABLE bridge_node)
 
-install(TARGETS ${bridge_lib}
+install(TARGETS ${bridge_lib} EXPORT export_${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
 
 install(
   DIRECTORY include/
-  DESTINATION include
+  DESTINATION include/${PROJECT_NAME}
 )
-
-ament_export_include_directories(include)
-ament_export_libraries(${bridge_lib})
 
 set(bridge_executables
   parameter_bridge
@@ -221,7 +238,7 @@ foreach(bridge ${bridge_executables})
     ${BRIDGE_MESSAGE_TYPES}
   )
   install(TARGETS ${bridge}
-    DESTINATION lib/${PROJECT_NAME}
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
   )
 endforeach()
 
@@ -285,6 +302,7 @@ endforeach()
 #     std_msgs
 #     tf2_msgs
 #     trajectory_msgs
+#     vision_msgs
 #   )
 
 #   set(generated_path "${CMAKE_BINARY_DIR}/generated/test")
@@ -375,9 +393,19 @@ endforeach()
 
 # endif()
 
-ament_export_dependencies(
-  rclcpp
-  ${BRIDGE_MESSAGE_TYPES}
-)
+# Export old-style CMake variables
+ament_export_include_directories("include/${PROJECT_NAME}")
+ament_export_libraries(${bridge_lib})
+
+# Export modern CMake targets
+ament_export_targets(export_${PROJECT_NAME})
+
+# specific order: dependents before dependencies
+ament_export_dependencies(rclcpp)
+ament_export_dependencies(rclcpp_components)
+ament_export_dependencies(${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER})
+ament_export_dependencies(${GZ_TARGET_PREFIX}-transport${GZ_TRANSPORT_VER})
+ament_export_dependencies(yaml_cpp_vendor)
+ament_export_dependencies(${BRIDGE_MESSAGE_TYPES})
 
 ament_package()

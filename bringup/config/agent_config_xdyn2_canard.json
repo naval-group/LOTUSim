@@ -1,0 +1,25 @@
+{
+    "lrauv_xdyn": [
+        {
+            "name": "talker1",
+            "pose": "315.8 0 -9.45 0 0 0",
+            "configure_on_startup": true,
+            "package_name": "agent_cpp",
+            "plugin_name": "AgentEntity"
+        },
+        {
+            "name": "talker2",
+            "pose": "0 0 0 0 0 0",
+            "configure_on_startup": true,
+            "package_name": "agent_cpp",
+            "plugin_name": "AgentEntity"
+        },
+        {
+            "name": "talker3",
+            "pose": "5 0 0 0 0 0",
+            "configure_on_startup": true,
+            "package_name": "agent_cpp",
+            "plugin_name": "AgentEntity"
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+AddEntity[] data
+---
+bool result
+uint64[] ids

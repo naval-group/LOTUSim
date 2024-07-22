@@ -28,6 +28,10 @@ public:
 
     virtual bool DestroyVessel(const std::string &vessel_name) = 0;
 
+    virtual bool SendCreateMessage(std::string name, std::string type) = 0;
+
+    virtual bool SendDestroyMessage(std::string name) = 0;
+
 protected:
     gz::transport::Node m_gz_node;
 };

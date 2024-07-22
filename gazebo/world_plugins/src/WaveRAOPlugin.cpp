@@ -19,6 +19,10 @@ void WaveRaoPlugin::Configure(
     m_entity = _entity;
     gzdbg << "WaveRaoPlugin initiated" << std::endl;
     auto sdfPtr = const_cast<sdf::Element *>(_sdf.get());
+
+    this->world_ = _ecm.EntityByComponents(gz::sim::components::World());
+    this->worldName = _ecm.Component<gz::sim::components::Name>(world_)->Data();
+
     if (sdfPtr->HasElement("debug")) {
         m_debug = sdfPtr->Get<bool>("debug");
         m_log_pub = m_gz_node->Advertise<gz::msgs::Int32>("/gz_sched");
@@ -27,6 +31,11 @@ void WaveRaoPlugin::Configure(
 
 void WaveRaoPlugin::PreUpdate(
     const gz::sim::UpdateInfo &, gz::sim::EntityComponentManager &_ecm)
+{
+}
+
+void WaveRaoPlugin::Update(
+    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
     _ecm.EachNew<gz::sim::components::ModelSdf>(
         [&](const gz::sim::Entity &_entity,
@@ -43,7 +52,7 @@ void WaveRaoPlugin::PreUpdate(
                 gzwarn << "WaveRaoPlugin::PreUpdate: No vessel name found. "
                           "Ignoring model."
                        << std::endl;
-                return false;
+                return true;
             }
 
             if (sdfptr->HasElement("physics_server_interface")) {
@@ -72,8 +81,7 @@ void WaveRaoPlugin::PreUpdate(
                 sdf::ElementPtr physics_sdf_ptr =
                     sdfptr->GetElement("physics_server_interface");
                 gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                      << " physics update request detected."
-                      << "\n";
+                      << " physics update request detected." << "\n";
 
                 // If vessel has aerial component
                 if (physics_sdf_ptr->HasElement("aerial")) {
@@ -202,7 +210,7 @@ void WaveRaoPlugin::PreUpdate(
                         gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
                               << "init state no state found. Failed "
                                  "\n";
-                        return false;
+                        return true;
                     }
                     }
                     m_current_vessel_interface[_entity]->activateConnection(
@@ -216,15 +224,10 @@ void WaveRaoPlugin::PreUpdate(
 
             // Add the uri and domain info
             gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                  << " physics successfully created."
-                  << "\n";
+                  << " physics successfully created." << "\n";
             return true;
         });
-}
 
-void WaveRaoPlugin::Update(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
-{
     if (_info.dt.count() == 0) {
         return;
     }
@@ -311,30 +314,114 @@ void WaveRaoPlugin::Update(
             auto ang_vel = gz::math::Vector3d{
                 update["p"].back(), update["q"].back(), update["r"].back()};
 
-            bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
-                vessel_entity, pose);
-            if (!res)
-                gzwarn << "WaveRaoPlugin::Update " << vessel_name
-                       << " Change Position failed." << std::endl;
-            res =
-                _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-                    m_vessels_base_link_map[vessel_name], lin_vel);
-            if (!res)
-                gzwarn << "WaveRaoPlugin::Update " << vessel_name
-                       << " Change linear velocity failed." << std::endl;
-            const auto angularVel =
-                _ecm.Component<gz::sim::components::WorldAngularVelocity>(
-                    m_vessels_base_link_map[vessel_name]);
-            *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
-            if (!res) {
-                gzwarn << "WaveRaoPlugin::Update " << vessel_name
-                       << " Change position failed." << std::endl;
-            }
+            gz::msgs::Pose req = gz::msgs::Pose();
+
+            req.set_id(vessel_entity);
+
+            gz::msgs::Set(req.mutable_position(),
+            gz::math::Vector3d(update["x"].back(), update["y"].back(),
+            update["z"].back())); gz::msgs::Set(req.mutable_orientation(),
+            gz::math::Quaterniond(update["qr"].back(), update["qi"].back(),
+            update["qj"].back(), update["qk"].back()));
+
+            gz::msgs::Boolean rep;
+            bool result;
+            unsigned int timeout = 5000;
+
+            std::string service = "/world/" + this->worldName + "/set_pose";
+
+            bool executed =
+                m_gz_node->Request(service, req, timeout, rep, result);
+
+            // bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
+            //     vessel_entity, pose);
+            // if (!res)
+            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
+            //            << " Change Position failed." << std::endl;
+            // res =
+            //     _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
+            //         m_vessels_base_link_map[vessel_name], lin_vel);
+            // if (!res)
+            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
+            //            << " Change linear velocity failed." << std::endl;
+            // const auto angularVel =
+            //     _ecm.Component<gz::sim::components::WorldAngularVelocity>(
+            //         m_vessels_base_link_map[vessel_name]);
+            // *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
+            // if (!res) {
+            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
+            //            << " Change position failed." << std::endl;
+            // }
         }
         else {
             gzwarn << vessel_entity << " update failed." << std::endl;
         }
+
+        if (m_debug) {
+            gz::msgs::Int32 msg;
+            msg.set_data(vessel_entity);
+            m_log_pub.Publish(msg);
+        }
     }
+
+    if (m_debug) {
+        gz::msgs::Int32 msg;
+        msg.set_data(m_entity);
+        m_log_pub.Publish(msg);
+    }
+}
+
+void WaveRaoPlugin::PostUpdate(
+    const gz::sim::UpdateInfo &_info,
+    const gz::sim::EntityComponentManager &_ecm)
+{
+    _ecm.EachRemoved<
+        gz::sim::components::ModelSdf,
+        gz::sim::components::ParentEntity>(
+        [&](const gz::sim::Entity &_entity,
+            const gz::sim::components::ModelSdf *_model,
+            const gz::sim::components::ParentEntity *_parent) -> bool {
+            gz::sim::Entity base_link;
+            sdf::Model data = _model->Data();
+            sdf::ElementPtr sdfptr = data.Element();
+            auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
+            std::string vessel_name;
+            if (name_opt) {
+                vessel_name = name_opt->Data();
+            }
+            else {
+                gzwarn << "WaveRaoPlugin::PreUpdate: No vessel name found. "
+                          "Ignoring model."
+                       << std::endl;
+                return true;
+            }
+
+            if (sdfptr->HasElement("physics_server_interface")) {
+                gzdbg << sdfptr->ToString("") << std::endl;
+                gzdbg << "[LOTUSim]: Removing the entity from the xdyn "
+                         "connection..."
+                      << std::endl;
+
+                gzdbg << "[LOTUSim]: Entity count before: "
+                      << m_vessels_entities.size() << std::endl;
+
+                m_vessels_entities.erase(
+                    std::remove(
+                        m_vessels_entities.begin(),
+                        m_vessels_entities.end(),
+                        _entity),
+                    m_vessels_entities.end());
+
+                gzdbg << "[LOTUSim]: Entity count after: "
+                      << m_vessels_entities.size() << std::endl;
+
+                // Remove from other vectors ?
+                // m_vessels_model_map[vessel_name] = _entity;
+                // m_vessels_name_map[_entity] = vessel_name;
+            }
+
+            return true;
+        });
 }
 
 std::shared_ptr<WaveRaoInterface> WaveRaoPlugin::createConnection(
@@ -434,4 +521,5 @@ GZ_ADD_PLUGIN(
     gz::sim::System,
     liquidai::gazebo::WaveRaoPlugin::ISystemConfigure,
     liquidai::gazebo::WaveRaoPlugin::ISystemPreUpdate,
-    liquidai::gazebo::WaveRaoPlugin::ISystemUpdate)
+    liquidai::gazebo::WaveRaoPlugin::ISystemUpdate,
+    liquidai::gazebo::WaveRaoPlugin::ISystemPostUpdate)

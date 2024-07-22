@@ -8,27 +8,15 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(liquidai_msgs REQUIRED)
-find_package(rclcpp_components REQUIRED)
-
-# add_executable(agent  src/agent_cpp/agent.cpp
-#                       src/agent_cpp/agent_entity.cpp
-#                       src/agent_node.cpp)
-#   target_link_libraries(agent
-#   ${rclcpp_lifecycle_LIBRARIES}
-#   ${lifecycle_msgs_LIBRARIES}
-#   ${rclcpp_components_LIBRARIES}
-#   )
-
-add_library(agent_component SHARED src/agent_cpp/agent.cpp
-                  src/agent_cpp/agent_entity.cpp
-                  src/agent_node.cpp)
-
-target_include_directories(agent_component PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
+find_package(sdformat14 REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(composition_interfaces REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
 
 include_directories(include/${PROJECT_NAME})
 
@@ -38,35 +26,107 @@ include_directories(
   ${rclcpp_lifecycle_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
   ${rclcpp_components_INCLUDE_DIRS}
+)
+
+# Agent entity node
+
+add_executable(agent_entity src/agent_entity_node.cpp src/agent_cpp/agent_entity.cpp src/agent_cpp/agent.cpp)
+target_link_libraries(agent_entity
+  ${rclcpp_lifecycle_LIBRARIES}
+  ${lifecycle_msgs_LIBRARIES}
+  ${rclcpp_components_LIBRARIES}
   )
 
-target_compile_features(agent_component PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(agent_entity PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(agent_entity PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-ament_target_dependencies(agent_component
+ament_target_dependencies(agent_entity
   rclcpp
   rclcpp_lifecycle
   rclcpp_components
   lifecycle_msgs
   liquidai_msgs
+  sdformat14
+  geometry_msgs
+  sensor_msgs
 )
 
-rclcpp_components_register_node(
-    agent_component
-    PLUGIN "AgentEntity"
-    EXECUTABLE agent_node
+install(TARGETS agent_entity
+  DESTINATION lib/${PROJECT_NAME})
+
+# Agent component
+
+# add_library(agent_component SHARED src/agent_cpp/agent.cpp
+#                   src/agent_cpp/agent_entity.cpp)
+
+# target_include_directories(agent_component PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include>)
+
+# target_compile_features(agent_component PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
+# ament_target_dependencies(agent_component
+#   rclcpp
+#   rclcpp_lifecycle
+#   rclcpp_components
+#   lifecycle_msgs
+#   liquidai_msgs
+#   sdformat14
+#   geometry_msgs
+#   sensor_msgs
+# )
+
+# rclcpp_components_register_node(
+#     agent_component
+#     PLUGIN "AgentEntity"
+#     EXECUTABLE agent_node
+# )
+
+# ament_export_targets(export_agent_component)
+# install(TARGETS agent_component
+#         EXPORT export_agent_component
+#         ARCHIVE DESTINATION lib
+#         LIBRARY DESTINATION lib
+#         RUNTIME DESTINATION bin
+# )
+
+# Scheduler
+
+add_executable(scheduler src/Scheduler.cpp)
+target_link_libraries(scheduler
+  ${rclcpp_LIBRARIES}
+  ${rclcpp_components_LIBRARIES}
 )
 
-ament_export_targets(export_agent_component)
-install(TARGETS agent_component
-        EXPORT export_agent_component
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin
+ament_target_dependencies(scheduler
+  rclcpp
+  rclcpp_components
+  composition_interfaces
 )
 
+install(TARGETS
+  scheduler
+  DESTINATION lib/${PROJECT_NAME})
 
-# install(TARGETS agent
-#   DESTINATION lib/${PROJECT_NAME})
+# Agent Factory
 
+add_executable(agent_factory src/AgentFactory.cpp)
+target_link_libraries(agent_factory
+  ${rclcpp_LIBRARIES}
+  ${rclcpp_components_LIBRARIES}
+  nlohmann_json::nlohmann_json
+)
+
+ament_target_dependencies(agent_factory
+  rclcpp
+  rclcpp_components
+  composition_interfaces
+)
+
+install(TARGETS
+  agent_factory
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

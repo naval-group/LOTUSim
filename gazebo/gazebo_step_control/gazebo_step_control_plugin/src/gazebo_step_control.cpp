@@ -33,7 +33,9 @@ void GazeboStepControl::Configure(
     world_ = _ecm.EntityByComponents(components::World());
     this->worldName = _ecm.Component<gz::sim::components::Name>(world_)->Data();
 
-    rclcpp::init(0, nullptr);
+    if (!rclcpp::ok()) {
+        rclcpp::init(0, nullptr);
+    }
 
     ros_node_ = rclcpp::Node::make_shared("gazebo_step_control_node");
 
@@ -54,7 +56,7 @@ void GazeboStepControl::Configure(
                     this,
                     std::placeholders::_1,
                     std::placeholders::_2));
-    
+
     // Offer transient local durability on the clock topic so that if publishing
     // is infrequent (e.g. the simulation is paused), late subscribers can
     // receive the previously published message(s).

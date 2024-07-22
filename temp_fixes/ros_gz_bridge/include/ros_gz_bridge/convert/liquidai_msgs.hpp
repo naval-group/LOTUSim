@@ -3,10 +3,11 @@
 #define ROS_GZ_BRIDGE__CONVERT__LIQUIDAI_MSGS_HPP_
 
 // Gazebo Msgs
-#include "gz_liquidai_msgs/msgs/aismsg.pb.h"
-#include "gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h"
+#include <gz_liquidai_msgs/msgs/aismsg.pb.h>
+#include <gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h>
 #include <gz/msgs/double.pb.h>
 #include <gz/msgs/navsat.pb.h>
+#include <gz/msgs/pose.pb.h>
 
 // ROS 2 messages
 #include <liquidai_msgs/msg/ais.hpp>
@@ -15,6 +16,8 @@
 #include <liquidai_msgs/msg/gps.hpp>
 #include <liquidai_msgs/msg/xdyn_thrustercmd.hpp>
 #include <liquidai_msgs/msg/xdyncmd.hpp>
+#include <liquidai_msgs/msg/entity_position.hpp>
+#include <liquidai_msgs/msg/add_entity.hpp>
 
 #include <ros_gz_bridge/convert_decl.hpp>
 
@@ -55,6 +58,22 @@ template <>
 void convert_gz_to_ros(
     const gz_liquidai_msgs::msgs::XdynCmd &gz_msg,
     liquidai_msgs::msg::Xdyncmd &ros_msg);
+
+template <>
+void convert_ros_to_gz(
+    const liquidai_msgs::msg::EntityPosition &ros_msg, gz::msgs::Pose &gz_msg);
+
+template <>
+void convert_gz_to_ros(
+    const gz::msgs::Pose &gz_msg, liquidai_msgs::msg::EntityPosition &ros_msg);
+
+template <>
+void convert_ros_to_gz(
+    const liquidai_msgs::msg::EntityPosition &ros_msg, gz::msgs::Pose &gz_msg);
+
+template <>
+void convert_gz_to_ros(
+    const gz::msgs::Pose &gz_msg, liquidai_msgs::msg::EntityPosition &ros_msg);
 
 } // namespace ros_gz_bridge
 

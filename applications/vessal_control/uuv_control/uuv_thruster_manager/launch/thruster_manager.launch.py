@@ -18,11 +18,11 @@ ARGUMENTS = [
     DeclareLaunchArgument("timeout", default_value="-1"),
     DeclareLaunchArgument("reset_tam", default_value="false"),
     DeclareLaunchArgument(
-        "output_dir", default_value="/home/malcom/garden_ws/src/wamv_description/config"),
+        "output_dir", default_value="/home/buche/LOTUSim_ws/src/wamv_description/config"),
     DeclareLaunchArgument(
-        "config_file", default_value="/home/malcom/garden_ws/src/wamv_description/config/thruster_manager.yaml"),
+        "config_file", default_value="/home/buche/LOTUSim_ws/src/wamv_description/config/thruster_manager.yaml"),
     DeclareLaunchArgument(
-        "tam_file", default_value="/home/malcom/garden_ws/src/wamv_description/config/TAM.yaml"),
+        "tam_file", default_value="/home/buche/LOTUSim_ws/src/wamv_description/config/TAM.yaml"),
     DeclareLaunchArgument("urdf_file", default_value=""),
 ]
 

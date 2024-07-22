@@ -7,6 +7,7 @@ find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/AddEntity.msg"
   "msg/AIS.msg"
   "msg/AISArray.msg"  
   "msg/GPS.msg"
@@ -16,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/WaveParam.msg"
   "msg/Xdyncmd.msg"
   "msg/XdynThrustercmd.msg"
+  "msg/EntityPosition.msg"
   "srv/SetCurrentModel.srv"
   "srv/GetCurrentModel.srv" 
   "srv/SetCurrentVelocity.srv"
@@ -36,10 +38,12 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetFloat.srv" 
   "srv/GetListParam.srv" 
   "srv/GetThrusterConversionFcn.srv"
-  "srv/AddEntity.srv"
+  "srv/AddEntitySrv.srv"
+  "srv/AddEntitySrvArray.srv"
   "srv/RemoveEntity.srv"
   "srv/EmptySrv.srv"
   "srv/ActivateSlowdown.srv"
+  "srv/GetIdByName.srv"
   DEPENDENCIES 
     builtin_interfaces
     geometry_msgs 

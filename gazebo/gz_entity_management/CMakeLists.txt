@@ -34,7 +34,7 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
  
 # Add sources for each plugin to be registered.
-add_library(gz_entity_management SHARED src/gz_entity_management.cpp)
+add_library(gz_entity_management SHARED gz_entity_management.cpp)
 set_property(TARGET gz_entity_management PROPERTY CXX_STANDARD 17)
 target_link_libraries(gz_entity_management
   gz-common5::gz-common5

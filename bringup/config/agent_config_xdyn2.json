@@ -1,0 +1,10 @@
+{
+    "lrauv_mas1": [
+        {
+            "name": "Test_ship_spawned",
+            "pose": "0 0 0 0 0 0",
+            "gazebo_id": "-1",
+            "configure_on_startup": "false"
+        }
+    ]
+}

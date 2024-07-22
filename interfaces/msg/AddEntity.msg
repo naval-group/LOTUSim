@@ -1,6 +1,5 @@
 string name
+string model_file
 string model_filepath
 geometry_msgs/Point location
 geometry_msgs/Vector3 rotation
----
-bool result

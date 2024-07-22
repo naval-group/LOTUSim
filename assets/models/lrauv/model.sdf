@@ -6,6 +6,12 @@
     <plugin
       filename="LoggingSystem"
       name="logging_system::LoggingSystem">
+      <colors>
+        <r>0.0</r>
+        <g>0.0</g>
+        <b>1.0</b>
+        <a>1.0</a>
+    </colors>
     </plugin>
 
     <!-- Body -->

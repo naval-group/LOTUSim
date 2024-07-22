@@ -31,6 +31,12 @@ void RenderPlugin::Configure(
 void RenderPlugin::PreUpdate(
     const gz::sim::UpdateInfo &, gz::sim::EntityComponentManager &_ecm)
 {
+}
+
+void RenderPlugin::Update(
+    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+{
+    // TODO: To handle the MAS
     _ecm.EachNew<
         gz::sim::components::ModelSdf,
         gz::sim::components::ParentEntity>(
@@ -39,7 +45,12 @@ void RenderPlugin::PreUpdate(
             const gz::sim::components::ParentEntity *_parent) -> bool {
             sdf::Model data = _model->Data();
             bool publish_render{false};
+            std::string unity_type_name = "";
             sdf::ElementPtr sdfptr = data.Element();
+
+            gzmsg << "[LOTUSim]: Detected creation of a new entity"
+                  << std::endl;
+
             if (sdfptr->HasElement("publish_render")) {
                 publish_render = sdfptr->Get<bool>("publish_render");
             }
@@ -47,21 +58,18 @@ void RenderPlugin::PreUpdate(
                 auto name_opt =
                     _ecm.Component<gz::sim::components::Name>(_entity);
                 m_vessel_entity[name_opt->Data()] = _entity;
-                m_render_interface->CreateVessel(name_opt->Data(), sdfptr);
-            }
-            return true;
-        });
 
-    _ecm.EachRemoved<
-        gz::sim::components::ModelSdf,
-        gz::sim::components::ParentEntity>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::ModelSdf *_model,
-            const gz::sim::components::ParentEntity *_parent) -> bool {
-            auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
-            if (m_vessel_entity.find(name_opt->Data()) ==
-                m_vessel_entity.end()) {
-                m_render_interface->DestroyVessel(name_opt->Data());
+                gzmsg << "[LOTUSim]: Creation detected of vessel named "
+                      << name_opt->Data() << std::endl;
+                
+                if (sdfptr->HasElement("unity_type_name")) {
+                    unity_type_name =
+                        sdfptr->Get<std::string>("unity_type_name");
+                }
+                if (unity_type_name != "") {
+                    m_render_interface->SendCreateMessage(
+                        name_opt->Data(), unity_type_name);
+                }
             }
             return true;
         });
@@ -73,6 +81,45 @@ void RenderPlugin::PostUpdate(
 {
     if (!m_render_interface)
         return;
+
+    _ecm.EachRemoved<
+        gz::sim::components::ModelSdf,
+        gz::sim::components::ParentEntity>(
+        [&](const gz::sim::Entity &_entity,
+            const gz::sim::components::ModelSdf *_model,
+            const gz::sim::components::ParentEntity *_parent) -> bool {
+            sdf::Model data = _model->Data();
+            bool publish_render{false};
+            std::string unity_type_name = "";
+            sdf::ElementPtr sdfptr = data.Element();
+            if (sdfptr->HasElement("publish_render")) {
+                publish_render = sdfptr->Get<bool>("publish_render");
+            }
+            if (sdfptr->HasElement("unity_type_name")) {
+                unity_type_name = sdfptr->Get<std::string>("unity_type_name");
+            }
+
+            if (publish_render) {
+                auto name_opt =
+                    _ecm.Component<gz::sim::components::Name>(_entity);
+
+                gzmsg << "[LOTUSim]: Deletion detected of vessel named "
+                      << name_opt->Data() << std::endl;
+
+                if (unity_type_name != "") {
+                    m_render_interface->SendDestroyMessage(name_opt->Data());
+                }
+            }
+            for (auto it = m_vessel_entity.begin(); it != m_vessel_entity.end();
+                 ++it) {
+                if (it->second == _entity) {
+                    m_vessel_entity.erase(
+                        it); // Erase the element using the iterator
+                    break;   // Exit the loop after erasing the element
+                }
+            }
+            return true;
+        });
 
     // get a vector of vessel name, pose
     std::vector<std::pair<std::string, gz::math::Pose3d>> vessel_pose;
@@ -92,4 +139,5 @@ GZ_ADD_PLUGIN(
     gz::sim::System,
     liquidai::gazebo::RenderPlugin::ISystemConfigure,
     liquidai::gazebo::RenderPlugin::ISystemPreUpdate,
+    liquidai::gazebo::RenderPlugin::ISystemUpdate,
     liquidai::gazebo::RenderPlugin::ISystemPostUpdate)

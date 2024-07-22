@@ -13,8 +13,10 @@
 #include <gz/sim/components/Link.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
+#include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/PoseCmd.hh>
+#include <gz/sim/components/World.hh>
 
 // #include "world_plugins/ManualRAO.h"
 // #include "world_plugins/XdynGrpc.h"
@@ -80,7 +82,8 @@ class WaveRaoPlugin :
     public gz::sim::System,
     public gz::sim::ISystemConfigure,
     public gz::sim::ISystemPreUpdate,
-    public gz::sim::ISystemUpdate {
+    public gz::sim::ISystemUpdate,
+    public gz::sim::ISystemPostUpdate {
 
 public:
     WaveRaoPlugin();
@@ -99,6 +102,10 @@ public:
     void Update(
         const gz::sim::UpdateInfo &_info,
         gz::sim::EntityComponentManager &_ecm) final;
+
+    void PostUpdate(
+        const gz::sim::UpdateInfo &_info,
+        const gz::sim::EntityComponentManager &_ecm) final;
 
 private:
     /**
@@ -145,6 +152,12 @@ private:
      *
      */
     std::shared_ptr<gz::transport::Node> m_gz_node;
+
+    /// World name
+    std::string worldName;
+
+    /// World entity
+    gz::sim::Entity world_;
 
     /**
      * @brief Logging system publisher

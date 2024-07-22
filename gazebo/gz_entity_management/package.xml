@@ -2,9 +2,9 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>gz_entity_management</name>
-  <version>3.5.3</version>
+  <version>1.0.0</version>
   <description>
-    Plugin to provide gazebo step control via service
+    Plugin to provide Gazebo entity management through ros2 services
   </description>
 
   <maintainer email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</maintainer>

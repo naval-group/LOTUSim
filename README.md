@@ -23,7 +23,7 @@ This simulation is built on Gazebo Harmonic and ROS Humble.
 
 ```bash
 # ROS libraries
-sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzgarden ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
+sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzharmonic ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions ros-humble-nav2-common ros-humble-navigation2
 
 # Other libraries
 sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
@@ -46,6 +46,28 @@ source config-lotus.sh;
 ```
 
 ## Tutorial
+
+#### Configuration
+
+Configure `bringup/config/mas_config.json` (world name, agent configs to launch, etc).
+
+Configure agent configs in `bringup/config/...` using the `<model_type_name>` you want to use, set on `assets/models/<model_type_name>`.
+
+Configure the `physics_server_interface`, especially the `ip`, for all the models in use in `assets/models/<model_type_name>/model.sdf`.
+
+Set up the `ip` of the machine running the visualization by modifying the `render_plugin` in `assets/worlds/<world_name>.world`.
+
+Build the project by running `./config-lotus.sh`.
+
+#### Launch
+
+Launch xdyn underwater or surface by using either `./launch-xdynSurface.sh` or `./launch-xdyxUnderwater.sh`.
+
+Launch Gazebo and the main ROS2 MAS by running `./launch-lotus.sh`.
+
+Open `Plugins/Services/Service Caller` in the newly opened `rqt` window. Call the `/SC_change_state_of_all` with an `id` of 1 to configure and spawn all the agents.
+
+### Running without the MAS
 
 This is an example launch for a surface and underwater vessel
 

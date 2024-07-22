@@ -49,7 +49,7 @@
                 <item>lrauv</item>
                 <item>rexrov2</item>
                 <item>lrauv_float</item>
-                <item>ns_main</item>
+                <item>Duck</item>
             </targets>
             <namespace>mine</namespace>
             <time>0.001</time>

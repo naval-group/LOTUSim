@@ -1,8 +1,11 @@
 {
     "params": {
-        "world_name": "xdyn_test.world",
+        "world_filename": "xdyn_test.world",
+        "world_name": "lotusim",
         "verbose": 4,
-        "gui-config": "gui/design.config"
+        "gui-config": "gui/design.config",
+        "automatic_namespace": true,
+        "default_namespace": "ns_main"
     },
     "plugins": [],
     "agent_configs": [

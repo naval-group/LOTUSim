@@ -14,7 +14,7 @@
 
 
 #include <gtest/gtest.h>
-#include <ignition/transport.hh>
+#include <gz/transport.hh>
 
 #include <chrono>
 #include <memory>
@@ -47,14 +47,14 @@ public: void Cb(const GZ_T & _msg)
 public: bool callbackExecuted = false;
 
 /// \brief Transport node;
-private: ignition::transport::Node node;
+private: gz::transport::Node node;
 };
 
 @[for m in mappings]@
 /////////////////////////////////////////////////
 TEST(GzSubscriberTest, @(m.unique()))
 {
-  MyTestClass<@(m.gz_type())> client("@(m.unique())");
+  MyTestClass<@(m.ign_type())> client("@(m.unique())");
 
   using namespace std::chrono_literals;
   ros_gz_bridge::testing::waitUntilBoolVar(

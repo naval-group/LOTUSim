@@ -23,41 +23,23 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp_lifecycle/lifecycle_publisher.hpp>
 
+#include "rclcpp_components/component_manager.hpp"
 #include "rclcpp_components/node_factory.hpp"
-#include "rclcpp_components/register_node_macro.hpp"
 
-#include "liquidai_msgs/srv/add_entity.hpp"
+#include "liquidai_msgs/srv/add_entity_srv.hpp"
+#include "liquidai_msgs/srv/add_entity_srv_array.hpp"
 #include "liquidai_msgs/srv/remove_entity.hpp"
+
+#include "DespawnInterface.hpp"
+#include "DespawnOnGazebo.hpp"
+#include "SpawnInterface.hpp"
+#include "SpawnOnGazebo.hpp"
 
 using namespace std;
 
 class Agent : public rclcpp_lifecycle::LifecycleNode {
 public:
-    Agent(const string &node_name, const rclcpp::NodeOptions &options)
-        : rclcpp_lifecycle::LifecycleNode(node_name, options)
-    {
-        // We need to declare all parameters here
-        declare_parameter("sdf_file", "");
-        declare_parameter("pose", "");
-
-        auto param_change_callback =
-            [this](std::vector<rclcpp::Parameter> parameters)
-            -> rcl_interfaces::msg::SetParametersResult {
-            auto result = rcl_interfaces::msg::SetParametersResult();
-            result.successful = true;
-            for (auto parameter : parameters) {
-                RCLCPP_INFO(
-                    this->get_logger(),
-                    "parameter '%s' is now: %s",
-                    parameter.get_name().c_str(),
-                    parameter.value_to_string().c_str());
-            }
-            return result;
-        };
-
-        param_change_callback_handle_ =
-            this->add_on_set_parameters_callback(param_change_callback);
-    }
+    Agent(const string &node_name, const rclcpp::NodeOptions &options);
 
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
@@ -79,15 +61,27 @@ public:
         CallbackReturn
         on_shutdown(const rclcpp_lifecycle::State &previous_state);
 
-    virtual bool spawn() = 0;
+    void set_spawn(std::shared_ptr<SpawnInterface> spawn)
+    {
+        spawnInterface = spawn;
+    }
 
-    virtual bool despawn() = 0;
+    void set_despawn(std::shared_ptr<DespawnInterface> despawn)
+    {
+        despawnInterface = despawn;
+    }
+
+    bool perform_spawn() { return spawnInterface->spawn(); }
+    bool perform_despawn() { return despawnInterface->despawn(); }
 
     string exec_command(const char *cmd);
 
 protected:
     rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr
         param_change_callback_handle_;
+
+    std::shared_ptr<SpawnInterface> spawnInterface;
+    std::shared_ptr<DespawnInterface> despawnInterface;
 };
 
 #endif
