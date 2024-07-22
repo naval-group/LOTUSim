@@ -27,13 +27,8 @@
 
 namespace sensor_plugin {
 class gz_sensor_plugin :
-    // This class is a system.
     public gz::sim::System,
-
     public gz::sim::ISystemConfigure,
-    // This class also implements the ISystemPreUpdate, ISystemUpdate,
-    // and ISystemPostUpdate interfaces.
-
     public gz::sim::ISystemPreUpdate,
     public gz::sim::ISystemUpdate,
     public gz::sim::ISystemPostUpdate

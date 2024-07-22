@@ -26,24 +26,24 @@ public:
     /// @return Returns true if successfully despawned
     bool despawn() override
     {
-        RCLCPP_DEBUG(
-            rclcpp::get_logger("rclcpp"),
+        RCLCPP_INFO(
+            this->node_->get_logger(),
             "Destroying ros2 node of agent %s",
-            request_.name);
+            request_.name.c_str());
 
         // Wait for the service to be activated
         while (!remove_entity_client_->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
                 RCLCPP_ERROR(
-                    rclcpp::get_logger("rclcpp"),
+                    this->node_->get_logger(),
                     "Interrupted while waiting for the service. Exiting.");
                 return false;
             }
 
             RCLCPP_INFO(
-                rclcpp::get_logger("rclcpp"),
+                this->node_->get_logger(),
                 "%s service not available, waiting again...",
-                request_.name);
+                request_.name.c_str());
         }
 
         auto res = remove_entity_client_->async_send_request(
@@ -51,16 +51,15 @@ public:
 
         if (rclcpp::spin_until_future_complete(node_, res) ==
             rclcpp::FutureReturnCode::SUCCESS) {
-            // Get the response's success field to see if all checks passed
             if (res.get()->result) {
                 RCLCPP_INFO(
-                    rclcpp::get_logger("rclcpp"),
+                    this->node_->get_logger(),
                     "The checks were successful!");
                 return true;
             }
             else {
                 RCLCPP_WARN(
-                    rclcpp::get_logger("rclcpp"),
+                    this->node_->get_logger(),
                     "The checks were not successful: %s",
                     "bruh");
                 return false;
@@ -68,7 +67,7 @@ public:
         }
         else {
             RCLCPP_ERROR(
-                rclcpp::get_logger("rclcpp"),
+                this->node_->get_logger(),
                 "Failed to call service 'checks'");
             return false;
         }

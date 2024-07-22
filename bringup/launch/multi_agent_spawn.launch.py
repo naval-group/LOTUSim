@@ -72,7 +72,7 @@ def render_xacro(context: LaunchContext, agent_config, ns_base):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('agent_config', default_value='default_agent_config.json'),
-        DeclareLaunchArgument('ns_base', default_value='ns_default'),
+        DeclareLaunchArgument('ns_base', default_value='namespace'),
         OpaqueFunction(function=render_xacro, args=[LaunchConfiguration('agent_config'),LaunchConfiguration('ns_base')]),
         agent_launch
     ])

@@ -27,20 +27,12 @@ public:
         change_state_client_node =
             rclcpp::Node::make_shared("change_state_client_node");
 
-        SC_step_control_client_node_ =
-            rclcpp::Node::make_shared("SC_step_control_client_node");
-
         SC_step_control_client_ =
-            SC_step_control_client_node_->create_client<std_srvs::srv::SetBool>(
+            this->create_client<std_srvs::srv::SetBool>(
                 "step_control_enable");
-
-        ros_entity_events_publisher_ =
-            this->create_publisher<std_msgs::msg::Int32>(
-                ENTITY_EVENTS_TOPIC, 10);
         activate_slowdown_publisher_ =
             this->create_publisher<std_msgs::msg::Bool>(
                 "activate_slowdown", 10);
-
         this->SC_change_state_of_all =
             this->create_service<lifecycle_msgs::srv::ChangeState>(
                 "SC_change_state_of_all",
@@ -49,7 +41,6 @@ public:
                     this,
                     std::placeholders::_1,
                     std::placeholders::_2));
-
         this->SC_activate_slowdown =
             this->create_service<liquidai_msgs::srv::ActivateSlowdown>(
                 "SC_activate_slowdown",
@@ -60,6 +51,10 @@ public:
                     std::placeholders::_2));
     }
 
+    /// @brief Change state of all Lifecycle Node on the scene by transitioning
+    /// them.
+    /// @param request
+    /// @param response
     void ChangeStateOfAll(
         const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request>
             request,
@@ -85,7 +80,6 @@ public:
         size_t pos = 0;
         std::string token;
         std::vector<std::string> agent_names;
-
         while ((pos = res.find(delimiter)) != std::string::npos) {
             token = res.substr(0, pos);
             agent_names.push_back(token);
@@ -94,12 +88,8 @@ public:
         int i = 1;
         int size = agent_names.size();
         int success = 0;
-
+        // Change state of all lifecycle nodes agents
         for (auto agent_name : agent_names) {
-            std_msgs::msg::Int32 msg;
-            msg.data = 1;
-            ros_entity_events_publisher_->publish(msg);
-
             if (ChangeState(agent_name, request)) {
                 success++;
             }
@@ -141,14 +131,14 @@ public:
         while (!client->wait_for_service(std::chrono::seconds(1))) {
             if (!rclcpp::ok()) {
                 RCLCPP_ERROR(
-                    rclcpp::get_logger("rclcpp"),
+                    this->get_logger(),
                     "Interrupted while waiting for the service. Exiting.");
                 return false;
             }
             // Print in the screen some information so the user knows what is
             // happening
             RCLCPP_INFO(
-                rclcpp::get_logger("rclcpp"),
+                this->get_logger(),
                 "%s service not available, waiting again...",
                 agent_name.c_str());
         }
@@ -160,23 +150,18 @@ public:
         if (rclcpp::spin_until_future_complete(change_state_client_node, res) ==
             rclcpp::FutureReturnCode::SUCCESS) {
             if (res.get()->success) {
-                RCLCPP_INFO(
-                    rclcpp::get_logger("rclcpp"),
-                    "The checks were successful!");
+                sleep(5);
+                RCLCPP_INFO(this->get_logger(), "The checks were successful!");
                 return true;
             }
             else {
                 RCLCPP_WARN(
-                    rclcpp::get_logger("rclcpp"),
-                    "The checks were not successful: %s",
-                    "bruh");
+                    this->get_logger(), "The checks were not successful");
                 return false;
             }
         }
         else {
-            RCLCPP_ERROR(
-                rclcpp::get_logger("rclcpp"),
-                "Failed to call service 'checks'");
+            RCLCPP_ERROR(this->get_logger(), "Failed to call service 'checks'");
             return false;
         }
     }
@@ -197,8 +182,6 @@ public:
 private:
     rclcpp::Node::SharedPtr change_state_client_node;
 
-    rclcpp::Node::SharedPtr SC_step_control_client_node_;
-
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr SC_step_control_client_;
 
     rclcpp::Service<lifecycle_msgs::srv::ChangeState>::SharedPtr
@@ -206,8 +189,6 @@ private:
     rclcpp::Service<liquidai_msgs::srv::ActivateSlowdown>::SharedPtr
         SC_activate_slowdown;
 
-    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
-        ros_entity_events_publisher_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
         activate_slowdown_publisher_;
 

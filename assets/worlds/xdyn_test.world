@@ -2,7 +2,7 @@
 <!-- World to test model -->
 <sdf version="1.9"
     xmlns:xacro="http://ros.org/wiki/xacro">
-    <world name="demo">
+    <world name="lotusim">
         <scene>
             <ambient>1.0 1.0 1.0</ambient>
             <background>0.8 0.8 0.8</background>
@@ -41,13 +41,18 @@
         <plugin filename="gz_entity_management" name="entity_management::EntityManagement">
         </plugin>
 
+        <plugin
+            filename="gz_sensor_plugin"
+            name="sensor_plugin::gz_sensor_plugin">
+        </plugin>
+
         <plugin filename="gz-sim-imu-system"
             name="gz::sim::systems::Imu">
         </plugin>
 
         <!-- <include>
             <uri>model://test_ship</uri>
-            <name>test_ship_vessel</name>
+            <name>Cruiser_test</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
         </include> -->

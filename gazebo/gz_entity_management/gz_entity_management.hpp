@@ -96,7 +96,6 @@ private:
     int RunCommand(const char *command);
 
 private:
-    /// Gazebo-ROS node
     rclcpp::Node::SharedPtr ros_node_;
 
     rclcpp::Service<liquidai_msgs::srv::AddEntitySrv>::SharedPtr

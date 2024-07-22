@@ -3,7 +3,9 @@
 <package format="3">
   <name>simulation_control</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>This package is suposed to expose services to the user so that he can have runtime
+    control over the simulation. For now, these services can be called from RQT Service Caller, but
+    a UI can later be implemented.</description>
   <maintainer email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</maintainer>
   <license>TODO: License declaration</license>
 

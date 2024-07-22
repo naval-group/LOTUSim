@@ -137,13 +137,15 @@ AgentEntity::on_cleanup(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_cleanup() is called.");
 
+    gazebo_id = 0;
+
     if (!this->perform_despawn()) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-            CallbackReturn::SUCCESS;
+            CallbackReturn::ERROR;
     }
 
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-        CallbackReturn::ERROR;
+        CallbackReturn::SUCCESS;
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -151,14 +153,16 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_shutdown() is called.");
 
+    gazebo_id = 0;
+
     if (!this->perform_despawn()) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-            CallbackReturn::SUCCESS;
+            CallbackReturn::ERROR;
     }
 
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-        CallbackReturn::ERROR;
+        CallbackReturn::SUCCESS;
 }
 
-#include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)
+// #include "rclcpp_components/register_node_macro.hpp"
+// RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)

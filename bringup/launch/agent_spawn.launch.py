@@ -19,7 +19,6 @@ def generate_launch_description():
     sdf_filename  =  LaunchConfiguration('sdf_filename')
     name  =  LaunchConfiguration('name')
     pose  =  LaunchConfiguration('pose')
-    gazebo_id  =  LaunchConfiguration('gazebo_id')
     
     agent_node_component = ComposableNodeContainer(
     name='AgentContainer',
@@ -52,9 +51,8 @@ def generate_launch_description():
             'sdf_file': sdf_file,
             'sdf_filename': sdf_filename,
             'pose': pose,
-            'configure_on_startup': configure_on_startup,
-            'gazebo_id': gazebo_id
-            }],
+            'configure_on_startup': configure_on_startup
+        }],
     )
 
     return LaunchDescription([

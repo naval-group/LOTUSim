@@ -4,7 +4,6 @@
 #include "agent.hpp"
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
-#include <sdf/sdf.hh>
 #include "liquidai_msgs/srv/get_id_by_name.hpp"
 
 // An agent that is an entity in Gazebo

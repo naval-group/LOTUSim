@@ -27,9 +27,9 @@ public:
     bool spawn() override
     {
         RCLCPP_DEBUG(
-            rclcpp::get_logger("rclcpp"),
+            this->node_->get_logger(),
             "Creating ros2 node of agent %s",
-            request_.data.name);
+            request_.data.name.c_str());
 
         // We send a create_multiple request through the gz_entity_management
         // package
@@ -41,15 +41,15 @@ public:
         while (!this->add_entity_client_->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
                 RCLCPP_ERROR(
-                    rclcpp::get_logger("rclcpp"),
+                    this->node_->get_logger(),
                     "Interrupted while waiting for the service. Exiting.");
                 return false;
             }
 
             RCLCPP_INFO(
-                rclcpp::get_logger("rclcpp"),
+                node_->get_logger(),
                 "%s service not available, waiting again...",
-                request_.data.name);
+                request_.data.name.c_str());
         }
 
         auto res = this->add_entity_client_->async_send_request(
@@ -61,20 +61,20 @@ public:
             // Get the response's success field to see if all checks passed
             if (res.get()->result) {
                 RCLCPP_INFO(
-                    rclcpp::get_logger("rclcpp"),
+                    this->node_->get_logger(),
                     "The checks were successful!");
                 return true;
             }
             else {
                 RCLCPP_WARN(
-                    rclcpp::get_logger("rclcpp"),
+                    this->node_->get_logger(),
                     "The checks were not successful");
                 return false;
             }
         }
         else {
             RCLCPP_ERROR(
-                rclcpp::get_logger("rclcpp"),
+                this->node_->get_logger(),
                 "Failed to call service 'checks'");
             return false;
         }

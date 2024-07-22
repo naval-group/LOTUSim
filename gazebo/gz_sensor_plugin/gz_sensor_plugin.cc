@@ -52,7 +52,7 @@ void gz_sensor_plugin::EffectorCallback(const gz::msgs::Pose &msg)
 
     std::string service = "/world/" + this->worldName + "/set_pose";
 
-    bool executed = m_gz_node->Request(service, msg, timeout, rep, result);
+    // bool executed = m_gz_node->Request(service, msg, timeout, rep, result);
 
     dbg_msg.set_data(msg.id());
     agent_demo_sched.Publish(dbg_msg);
@@ -81,7 +81,7 @@ void gz_sensor_plugin::PostUpdate(
         plugin_demo_sched.Publish(msg);
 
         previousSimTime = _info.simTime.count();
-        msg.set_data(10);
+        msg.set_data(100);
         sensor_demo_sched.Publish(msg);
         plugin_demo_sched.Publish(msg);
 

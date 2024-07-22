@@ -74,7 +74,6 @@ void EntityManagement::Configure(
 
     this->step_control_client_node_ =
         rclcpp::Node::make_shared("step_control_client_node2");
-
     this->step_control_client_ =
         step_control_client_node_->create_client<std_srvs::srv::SetBool>(
             "step_control_enable");
@@ -106,8 +105,6 @@ void EntityManagement::Update(
 {
     rclcpp::spin_some(ros_node_);
     rclcpp::spin_some(step_control_client_node_);
-
-    ecm_->CreateEntity();
 }
 
 void EntityManagement::PostUpdate(
