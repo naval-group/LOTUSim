@@ -32,10 +32,8 @@
 
 #include "DespawnInterface.hpp"
 #include "DespawnOnGazebo.hpp"
-#include "SensorInterface.hpp"
 #include "SpawnInterface.hpp"
 #include "SpawnOnGazebo.hpp"
-#include "MyIMUSensor.hpp"
 
 using namespace std;
 
@@ -76,25 +74,6 @@ public:
     bool perform_spawn() { return spawnInterface->spawn(); }
     bool perform_despawn() { return despawnInterface->despawn(); }
 
-    void add_sensor(std::shared_ptr<SensorInterface> s)
-    {
-        sensorInterfaces.push_back(s);
-    }
-
-    void remove_sensor(std::shared_ptr<SensorInterface> s)
-    {
-        sensorInterfaces.erase(
-            std::remove(sensorInterfaces.begin(), sensorInterfaces.end(), s),
-            sensorInterfaces.end());
-    }
-
-    void fetch_sensors_data()
-    {
-        for (std::shared_ptr<SensorInterface> s : sensorInterfaces) {
-            s->fetchData();
-        }
-    }
-
     string exec_command(const char *cmd);
 
 protected:
@@ -103,7 +82,6 @@ protected:
 
     std::shared_ptr<SpawnInterface> spawnInterface;
     std::shared_ptr<DespawnInterface> despawnInterface;
-    std::vector<std::shared_ptr<SensorInterface>> sensorInterfaces;
 };
 
 #endif

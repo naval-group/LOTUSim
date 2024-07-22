@@ -25,25 +25,3 @@ shared_ptr<AgentEntity> agent_node;
 
 //     return 0;
 // }
-
-
-// int main(int argc, char** argv) {
-//     rclcpp::init(argc, argv);
-//     auto node = std::make_shared<rclcpp::Node>("my_composition");
-
-//     // Create a node factory for the component
-//     auto node_factory = std::make_shared<rclcpp_components::NodeFactory>(
-//         node->get_node_base_interface(), node->get_node_topics_interface(),
-//         node->get_node_graph_interface(), node->get_node_services_interface(),
-//         node->get_node_timers_interface(), node->get_node_parameters_interface());
-
-//     rclcpp::NodeOptions options;
-
-//     // Create an instance of the component node
-//     auto my_component = node_factory->create_node_instance(options);
-
-//     rclcpp::spin(node);
-
-//     rclcpp::shutdown();
-//     return 0;
-// }

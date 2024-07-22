@@ -178,7 +178,5 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
         CallbackReturn::ERROR;
 }
 
-bool AgentEntity::GetSensors() {}
-
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)

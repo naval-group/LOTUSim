@@ -37,8 +37,6 @@ public:
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
 
-    bool GetSensors();
-
     void timer_callback();
 };
 
