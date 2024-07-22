@@ -25,13 +25,12 @@ void RenderPlugin::Configure(
     }
 
     m_render_interface = CreateRenderInterface(connection_protocol);
-    m_render_interface->ConfigureInterface(_sdf, m_gz_node);
+    m_render_interface->ConfigureInterface(_sdf);
 }
 
 void RenderPlugin::PreUpdate(
     const gz::sim::UpdateInfo &, gz::sim::EntityComponentManager &_ecm)
 {
-    // TODO: To handle the MAS
     _ecm.EachNew<
         gz::sim::components::ModelSdf,
         gz::sim::components::ParentEntity>(
@@ -40,25 +39,15 @@ void RenderPlugin::PreUpdate(
             const gz::sim::components::ParentEntity *_parent) -> bool {
             sdf::Model data = _model->Data();
             bool publish_render{false};
-            std::string unity_type_name = "";
             sdf::ElementPtr sdfptr = data.Element();
             if (sdfptr->HasElement("publish_render")) {
                 publish_render = sdfptr->Get<bool>("publish_render");
             }
-            if (sdfptr->HasElement("unity_type_name")) {
-                unity_type_name = sdfptr->Get<std::string>("unity_type_name");
-            }
-            gzmsg << "RenderPlugin checking model: " << data.Name()
-                  << " publishing model " << publish_render << "\n";
             if (publish_render) {
                 auto name_opt =
                     _ecm.Component<gz::sim::components::Name>(_entity);
                 m_vessel_entity[name_opt->Data()] = _entity;
-
-                if (unity_type_name != "") {
-                    // m_render_interface->SendCreateMessage(
-                    //     name_opt->Data(), unity_type_name);
-                }
+                m_render_interface->CreateVessel(name_opt->Data(), sdfptr);
             }
             return true;
         });
@@ -69,25 +58,10 @@ void RenderPlugin::PreUpdate(
         [&](const gz::sim::Entity &_entity,
             const gz::sim::components::ModelSdf *_model,
             const gz::sim::components::ParentEntity *_parent) -> bool {
-            sdf::Model data = _model->Data();
-            bool publish_render{false};
-            std::string unity_type_name = "";
-            sdf::ElementPtr sdfptr = data.Element();
-            if (sdfptr->HasElement("publish_render")) {
-                publish_render = sdfptr->Get<bool>("publish_render");
-            }
-            if (sdfptr->HasElement("unity_type_name")) {
-                unity_type_name = sdfptr->Get<std::string>("unity_type_name");
-            }
-
-            if (publish_render) {
-                auto name_opt =
-                    _ecm.Component<gz::sim::components::Name>(_entity);
-
-                if (unity_type_name != "") {
-                    // m_render_interface->SendDestroyMessage(
-                    //     name_opt->Data());
-                }
+            auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
+            if (m_vessel_entity.find(name_opt->Data()) ==
+                m_vessel_entity.end()) {
+                m_render_interface->DestroyVessel(name_opt->Data());
             }
             return true;
         });
