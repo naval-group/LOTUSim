@@ -10,7 +10,6 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
 
     entity_management_client_node =
         rclcpp::Node::make_shared("entity_management_client_node");
-
     get_id_by_name_client_ =
         entity_management_client_node
             ->create_client<liquidai_msgs::srv::GetIdByName>(
@@ -24,12 +23,10 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
         ssin >> pose_components[i];
         ++i;
     }
-
     geometry_msgs::msg::Point p;
     p.set__x(pose_components[0]);
     p.set__y(pose_components[1]);
     p.set__z(pose_components[2]);
-
     geometry_msgs::msg::Vector3 r;
     r.set__x(pose_components[3]);
     r.set__y(pose_components[4]);
@@ -42,23 +39,15 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     spawn_request.data.model_file = this->sdf_file_;
     spawn_request.data.location = p;
     spawn_request.data.rotation = r;
-
     auto spawnBehavior = std::make_shared<SpawnOnGazebo>(
         spawn_request, entity_management_client_node);
     this->set_spawn(spawnBehavior);
 
     auto despawn_request = liquidai_msgs::srv::RemoveEntity::Request();
-
     despawn_request.name = this->get_name();
-
     auto despawnBehavior = std::make_shared<DespawnOnGazebo>(
         despawn_request, entity_management_client_node);
     this->set_despawn(despawnBehavior);
-
-    const rclcpp::NodeOptions &node_options = rclcpp::NodeOptions();
-    // this->get_node_base_interface()
-    // auto sensor = std::shared_ptr<MyIMUSensor>(new
-    // MyIMUSensor(options_sensor)); this->add_sensor(sensor);
 
     timer_ = rclcpp::create_timer(
         this,
@@ -86,7 +75,6 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
             CallbackReturn::ERROR;
     }
 
-    // Wait for the service to be activated
     while (!get_id_by_name_client_->wait_for_service(std::chrono::seconds(1))) {
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(
@@ -95,8 +83,6 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
             return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
                 CallbackReturn::ERROR;
         }
-        // Print in the screen some information so the user knows what is
-        // happening
         RCLCPP_INFO(
             this->get_logger(), "Service not available, waiting again...");
     }
@@ -104,30 +90,26 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
     auto request = std::make_shared<liquidai_msgs::srv::GetIdByName::Request>();
     std::string name = this->get_name();
     request->set__entity_name(name);
-
-    // Client sends its asynchronous request
     auto res = get_id_by_name_client_->async_send_request(request);
 
-    // Wait for the result
     if (rclcpp::spin_until_future_complete(
             entity_management_client_node, res) ==
         rclcpp::FutureReturnCode::SUCCESS) {
         int id = res.get()->id;
         if (id != 0) {
-            RCLCPP_INFO(this->get_logger(), "The checks were successful!");
+            RCLCPP_INFO(this->get_logger(), "Successfully got and set the ID from Gazebo!");
             gazebo_id = id;
         }
         else {
             RCLCPP_WARN(
                 this->get_logger(),
-                "The checks were not successful: %s",
-                "bruh");
+                "The checks were not successful");
             return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
                 CallbackReturn::ERROR;
         }
     }
     else {
-        RCLCPP_ERROR(this->get_logger(), "Failed to call service 'checks'");
+        RCLCPP_ERROR(this->get_logger(), "Failed to call service");
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::ERROR;
     }

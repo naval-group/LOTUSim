@@ -12,7 +12,6 @@ find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(liquidai_msgs REQUIRED)
-find_package(rclcpp_components REQUIRED)
 find_package(sdformat14 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -69,39 +68,6 @@ rclcpp_components_register_node(
 ament_export_targets(export_agent_component)
 install(TARGETS agent_component
         EXPORT export_agent_component
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin
-)
-
-# IMU
-
-add_library(IMU_component SHARED src/MyIMUSensor.cpp)
-
-target_include_directories(IMU_component PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-
-ament_target_dependencies(IMU_component
-  rclcpp
-  rclcpp_lifecycle
-  rclcpp_components
-  lifecycle_msgs
-  liquidai_msgs
-  sdformat14
-  geometry_msgs
-  sensor_msgs
-)
-
-rclcpp_components_register_node(
-  IMU_component
-    PLUGIN "MyIMUSensor"
-    EXECUTABLE imu_node
-)
-
-ament_export_targets(export_IMU_component)
-install(TARGETS IMU_component
-        EXPORT export_IMU_component
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
