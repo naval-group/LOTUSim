@@ -78,15 +78,15 @@ void WaveRaoPlugin::Update(
                 }
 
                 // Init Interface
-                sdf::ElementPtr render_sdf_ptr =
+                sdf::ElementPtr physics_sdf_ptr =
                     sdfptr->GetElement("physics_server_interface");
                 gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
                       << " physics update request detected." << "\n";
 
                 // If vessel has aerial component
-                if (render_sdf_ptr->HasElement("aerial")) {
+                if (physics_sdf_ptr->HasElement("aerial")) {
                     sdf::ElementPtr aerial_sdf =
-                        render_sdf_ptr->GetElement("aerial");
+                        physics_sdf_ptr->GetElement("aerial");
 
                     ConnectionType aerial_connection_type;
 
@@ -107,9 +107,9 @@ void WaveRaoPlugin::Update(
                 }
 
                 // If vessel has surface component
-                if (render_sdf_ptr->HasElement("surface")) {
+                if (physics_sdf_ptr->HasElement("surface")) {
                     sdf::ElementPtr surface_sdf =
-                        render_sdf_ptr->GetElement("surface");
+                        physics_sdf_ptr->GetElement("surface");
 
                     ConnectionType surface_connection_type;
                     if (!surface_sdf->HasElement("ConnectionType") ||
@@ -129,9 +129,9 @@ void WaveRaoPlugin::Update(
                 }
 
                 // If vessel has underwater component
-                if (render_sdf_ptr->HasElement("underwater")) {
+                if (physics_sdf_ptr->HasElement("underwater")) {
                     sdf::ElementPtr underwater_sdf =
-                        render_sdf_ptr->GetElement("underwater");
+                        physics_sdf_ptr->GetElement("underwater");
 
                     ConnectionType underwater_connection_type;
 
@@ -152,9 +152,9 @@ void WaveRaoPlugin::Update(
                 }
                 // Add warning that the init is not found and find the
                 // possible state
-                if (render_sdf_ptr->HasElement("init_state")) {
+                if (physics_sdf_ptr->HasElement("init_state")) {
                     DomainType init_domain =
-                        DomainTypeMap[render_sdf_ptr->Get<std::string>(
+                        DomainTypeMap[physics_sdf_ptr->Get<std::string>(
                             "init_state")];
 
                     switch (init_domain) {

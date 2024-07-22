@@ -1,12 +1,17 @@
 <div align="center">
 
+
 # Lotusim
 
-This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn) and [asv_wave_sim](https://github.com/srmainwaring/asv_wave_sim).
+This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn).
 
-This simulation is built on Gazebo Harmonic and ROS Humble
+This simulation is built on Gazebo Harmonic and ROS Humble.
 
 </div>
+
+[[_TOC_]]
+
+## Installing
 
 [[_TOC_]]
 ## Get Started
@@ -27,18 +32,20 @@ sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
 3. Creating workspace
 
 ```bash
-mkdir -p lotusim_ws/src; 
+cd;
+mkdir -p lotusim_ws/src;
 cd lotusim_ws/src;
-git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git
+git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git;
 ```
 
 4. Building
 
 ```bash
-source config-lotus.bash
+cd lotusim;
+source config-lotus.sh;
 ```
 
-### Running
+## Tutorial
 
 #### Configuration
 
@@ -70,25 +77,31 @@ Using xdyn-for-cs websocket
 
 ```bash
 # Terminal 1 launching surface xdyn
-export LD_LIBRARY_PATH=/home/buche/LOTUSim_ws/src/lotusim/physics/xdynSurface/
-cd src/liquidai/physics/xdynSurface
+cd ~/lotusim_ws/src/lotusim/physics/xdynSurface
+export LD_LIBRARY_PATH="$(pwd)"
 clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 2 launching underwater xdyn
-export LD_LIBRARY_PATH=/home/buche/LOTUSim_ws/src/lotusim/physics/xdynUnderwater
-cd src/lotusim/physics/xdynUnderwater/
-clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
+cd ~/lotusim_ws/src/lotusim/physics/xdynUnderwater
+export LD_LIBRARY_PATH="$(pwd)"
+clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2
 
 # Terminal 3 Launch gz sim
-export GZ_SIM_RESOURCE_PATH=$(pwd)/assets/models:$(pwd)/asv_wave_sim/gz-waves-models/world_models
-export GZ_SIM_SYSTEM_PLUGIN_PATH=/home/buche/LOTUSim_ws/install/lib
-clear; gz sim -v4 -s -r assets/worlds/xdyn_underwater.world
+cd ~/lotusim_ws
+source "$(pwd)/install/setup.bash"
+export GZ_SIM_SYSTEM_PLUGIN_PATH="$(pwd)/install/lib"
+export GZ_SIM_RESOURCE_PATH="$(pwd)/src/lotusim/assets/models"
+clear; gz sim -v4 -s -r src/lotusim/assets/worlds/xdyn_underwater.world
 
 # Terminal 4 bridge ROS2 and gz stuff
+cd ~/lotusim_ws
+source "$(pwd)/install/setup.bash"
 ros2 launch dtmb_description ros_bridge.launch.py
 
 # Terminal 5 keyboard control
-ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=test_ship_vessel
+cd ~/lotusim_ws
+source "$(pwd)/install/setup.bash"
+ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=<name of vessel to control>
 ```
 ## Contributing
 

@@ -64,7 +64,6 @@ private:
      */
     std::unordered_map<std::string, gz::sim::Entity> m_vessel_entity;
 
-    std::shared_ptr<gz::transport::Node> m_gz_node;
     std::chrono::steady_clock::duration m_update_period;
     std::chrono::steady_clock::duration m_last_pub;
     std::shared_ptr<RenderInterfaceBase> m_render_interface;
