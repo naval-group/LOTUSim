@@ -45,6 +45,7 @@ void RenderPlugin::Update(
             const gz::sim::components::ParentEntity *_parent) -> bool {
             sdf::Model data = _model->Data();
             bool publish_render{false};
+            std::string unity_type_name = "";
             sdf::ElementPtr sdfptr = data.Element();
 
             gzmsg << "[LOTUSim]: Detected creation of a new entity"
@@ -60,7 +61,11 @@ void RenderPlugin::Update(
 
                 gzmsg << "[LOTUSim]: Creation detected of vessel named "
                       << name_opt->Data() << std::endl;
-
+                
+                if (sdfptr->HasElement("unity_type_name")) {
+                    unity_type_name =
+                        sdfptr->Get<std::string>("unity_type_name");
+                }
                 if (unity_type_name != "") {
                     m_render_interface->SendCreateMessage(
                         name_opt->Data(), unity_type_name);
