@@ -1,8 +1,14 @@
 {
     "lrauv_xdyn": [
         {
-            "name": "Test_ship_spawned",
-            "pose": "0 0 0 0 0 0"
+            "name": "Duck1",
+            "pose": "0 0 0 0 0 0",
+            "configure_on_startup": "true"
+        },
+        {
+            "name": "Duck2",
+            "pose": "0 2 0 0 0 0",
+            "configure_on_startup": "true"
         }
     ]
 }

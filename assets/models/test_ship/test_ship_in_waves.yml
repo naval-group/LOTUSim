@@ -53,7 +53,7 @@ environment models:
 # Fixed frame: NED
 bodies: # All bodies have NED as parent frame
   - name: TestShip
-    mesh: /usr/demos/test_ship.stl
+    mesh: ../../assets/models/test_ship/test_ship.stl
     position of body frame relative to mesh:
         frame: mesh
         x: {value: 9.355, unit: m}
@@ -105,10 +105,20 @@ bodies: # All bodies have NED as parent frame
     external forces:
       - model: gravity
       # - model: non-linear hydrostatic (fast)
+
+
+commands:
+  # Taken from tutorial_06_propulsion
+  - name: propeller
+    t: [0,1,3,10]
+    rpm: {unit: rad/s, values: [3, 30, 30, 40]}
+    P/D: {unit: 1, values: [1.064935,1.064935,1.064935,1.064935]}
+
 output:
-# - format: hdf5
-#   filename: test.h5
-#   data: [mesh, command line, yaml, python scripts, matlab scripts, spectra, waves]
+- format: hdf5
+  filename: waves.h5
+  data: [spectra]
 - format: csv
-  filename: filtered_states.csv
-  data: [t, 'z(TestShip)']
+  filename: test_ship.csv
+  data: [x(TestShip), y(TestShip), z(TestShip), psi(TestShip), theta(TestShip), phi(TestShip)]
+
