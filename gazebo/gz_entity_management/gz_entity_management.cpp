@@ -1,17 +1,3 @@
-// Copyright 2018 Open Source Robotics Foundation, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include "gz_entity_management.hpp"
 
 using namespace gz;
@@ -28,11 +14,8 @@ void EntityManagement::Configure(
     gz::sim::EventManager &_eventMgr)
 {
     ecm_ = &_ecm;
-
     world_ = _ecm.EntityByComponents(components::World());
     this->worldName = _ecm.Component<gz::sim::components::Name>(world_)->Data();
-
-    // rclcpp::init(0, nullptr);
 
     ros_node_ = rclcpp::Node::make_shared("gz_entity_management_node");
 
@@ -125,11 +108,8 @@ void EntityManagement::OnAddEntity(
 
     liquidai_msgs::srv::AddEntitySrvArray::Request::SharedPtr req_array;
     req_array->data.push_back(request->data);
-
     liquidai_msgs::srv::AddEntitySrvArray::Response::SharedPtr res_array;
-
     OnAddEntity_V(req_array, res_array);
-
     response->result = res_array->result;
 }
 
@@ -164,7 +144,6 @@ void EntityManagement::OnAddEntity_V(
     for (liquidai_msgs::msg::AddEntity msg : request->data) {
 
         ::gz::msgs::EntityFactory *req = reqs.add_data();
-
         req->set_name(msg.name.c_str());
         if (!msg.model_file.empty()) {
             req->set_sdf(msg.model_file.c_str());
@@ -195,8 +174,6 @@ void EntityManagement::OnAddEntity_V(
 
         req->set_allocated_pose(pose);
     }
-
-    gzmsg << "Request: [" << reqs.DebugString() << "]" << std::endl;
 
     gz::msgs::Boolean rep;
     bool result;
@@ -292,14 +269,6 @@ void EntityManagement::CreateBridge(
     std::string command = command_stream.str();
     std::thread cmdThread([this, command]() { RunCommand(command.data()); });
     cmdThread.detach(); // Detach the thread to run it independently
-}
-
-int EntityManagement::RunCommand(const char *command)
-{
-    // Run the command
-    int result = system(command);
-
-    return result;
 }
 
 GZ_ADD_PLUGIN(

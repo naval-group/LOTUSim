@@ -31,6 +31,10 @@ public:
             request,
         std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);
 
+    /// @brief Change state of an agent by its name
+    /// @param agent_name 
+    /// @param request 
+    /// @return 
     bool ChangeState(
         std::string agent_name,
         const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request>

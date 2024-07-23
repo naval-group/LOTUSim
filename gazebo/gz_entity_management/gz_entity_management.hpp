@@ -24,13 +24,8 @@
 
 namespace entity_management {
 class EntityManagement :
-    // This class is a system.
     public gz::sim::System,
-
     public gz::sim::ISystemConfigure,
-    // This class also implements the ISystemPreUpdate, ISystemUpdate,
-    // and ISystemPostUpdate interfaces.
-
     public gz::sim::ISystemPreUpdate,
     public gz::sim::ISystemUpdate,
     public gz::sim::ISystemPostUpdate
@@ -93,11 +88,7 @@ public:
         std::string direction = "@");
 
 private:
-    int RunCommand(const char *command);
-
-private:
     rclcpp::Node::SharedPtr ros_node_;
-
     rclcpp::Service<liquidai_msgs::srv::AddEntitySrv>::SharedPtr
         add_entity_service_;
     rclcpp::Service<liquidai_msgs::srv::AddEntitySrvArray>::SharedPtr
@@ -106,20 +97,12 @@ private:
         remove_entity_service_;
     rclcpp::Service<liquidai_msgs::srv::GetIdByName>::SharedPtr
         get_id_by_name_service_;
-
     rclcpp::Node::SharedPtr step_control_client_node_;
-
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr step_control_client_;
 
     gz::sim::EntityComponentManager *ecm_;
-
-    /// World name
     std::string worldName;
-
-    /// World entity
     gz::sim::Entity world_;
-
-    // Transport node
     gz::transport::Node node;
 };
 } // namespace entity_management
