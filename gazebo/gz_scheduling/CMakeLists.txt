@@ -24,7 +24,7 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
  
 # Add sources for each plugin to be registered.
-add_library(gz_scheduling SHARED src/gz_scheduling.cc) #SampleSystem2.cc)
+add_library(gz_scheduling SHARED src/gz_scheduling.cc)
 set_property(TARGET gz_scheduling PROPERTY CXX_STANDARD 17)
 target_link_libraries(gz_scheduling
   gz-common5::gz-common5

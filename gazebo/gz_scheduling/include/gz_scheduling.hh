@@ -1,5 +1,4 @@
-#ifndef SAMPLEPLUGIN_HH_
-#define SAMPLEPLUGIN_HH_
+#pragma once
 
 #include <gz/msgs.hh>
 #include <gz/plugin/Register.hh>
@@ -77,11 +76,6 @@ public:
     // public: void Reset(const gz::sim::UpdateInfo &_info,
     //              gz::sim::EntityComponentManager &_ecm) override;
 
-    void EffectorCallback(const gz::msgs::Pose &msg);
     void PoseEffectorCallback(const gz::msgs::Pose &msg);
-
-    void MoveCallback(const gz::msgs::Pose &msg);
 };
 } // namespace scheduling_plugin
-
-#endif

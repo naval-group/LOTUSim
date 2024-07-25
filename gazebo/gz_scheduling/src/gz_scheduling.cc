@@ -30,7 +30,7 @@ void gz_scheduling::Configure(
             node.Advertise<gz::msgs::Int32>("/plugin_demo_sched");
         agent_demo_sched = node.Advertise<gz::msgs::Int32>("/agent_demo_sched");
     }
-    
+
     /*
     Publishing sensor information from this plugin is optional since it is
     usually done by distributed Gazebo plugins
@@ -64,7 +64,7 @@ void gz_scheduling::PoseEffectorCallback(const gz::msgs::Pose &msg)
         agent_demo_sched.Publish(dbg_msg);
     }
 
-    // Creates an effector of
+    // Creates an effector and adds it to the effectors list for processing
     auto effector = std::make_shared<PoseEffector>(m_gz_node, msg, worldName);
     effectors.push_back(effector);
 
@@ -84,6 +84,17 @@ void gz_scheduling::PreUpdate(
         std::random_device rd;
         std::mt19937 g(rd());
         std::shuffle(effectors.begin(), effectors.end(), g);
+
+        if (m_debug) {
+            gz::msgs::Int32 msg;
+            msg.set_data(0);
+            plugin_demo_sched.Publish(msg);
+            msg.set_data(50);
+            plugin_demo_sched.Publish(msg);
+            msg.set_data(0);
+            plugin_demo_sched.Publish(msg);
+        }
+
         while (!effectors.empty()) {
             effectors.back()->apply_effector();
             effectors.pop_back();
