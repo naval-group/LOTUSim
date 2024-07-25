@@ -17,30 +17,11 @@
 #include <gazebo_step_control_interface/srv/step_control.hpp>
 #include <gazebo_step_control_interface/srv/copy_param.hpp>
 
-// #include <iostream>
-// #include <unistd.h>
-// #include <sys/mman.h>
-// #include <sys/stat.h>
-// #include <fcntl.h>
-
-// #include <string>
-// #include <vector>
-// #include <atomic>
-// #include <chrono>
-// #include <csignal>
-// #include <iostream>
-// #include <thread>
-
 namespace step_control
 {
   class GazeboStepControl:
-    // This class is a system.
     public gz::sim::System,
-
     public gz::sim::ISystemConfigure,
-    // This class also implements the ISystemPreUpdate, ISystemUpdate,
-    // and ISystemPostUpdate interfaces.
-
     public gz::sim::ISystemPreUpdate,
     public gz::sim::ISystemUpdate,
     public gz::sim::ISystemPostUpdate
@@ -110,13 +91,8 @@ namespace step_control
   /// If the service call to be blocked untill all steps executed
   bool step_blocking_call_;
 
-  /// World name
   std::string worldName;
-
-  /// World entity
   gz::sim::Entity world_;
-
-  // Transport node
   gz::transport::Node node;
 
   bool paused_ = true;

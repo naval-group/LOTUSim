@@ -37,6 +37,7 @@
 
 using namespace std;
 
+/// @brief Every C++ agent should derive from this class. It is a LifecycleNode.
 class Agent : public rclcpp_lifecycle::LifecycleNode {
 public:
     Agent(const string &node_name, const rclcpp::NodeOptions &options);
