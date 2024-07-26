@@ -1,5 +1,4 @@
-#ifndef SAMPLEPLUGIN_HH_
-#define SAMPLEPLUGIN_HH_
+#pragma once
 
 #include <gz/msgs.hh>
 #include <gz/sim/Entity.hh>
@@ -40,13 +39,13 @@ class LoggingSystem :
 // public gz::sim::ISystemReset
 {
 private:
-    bool slowdown = false;
+    bool debug;
     bool has_published_poc_data = false;
     float previousSimTime1, previousRealTime1, previousSimTime2,
         previousRealTime2, previousSimTime3, previousRealTime3;
     std::string worldName;
     gz::math::Color contactColor, defaultColor;
-    gz::sim::EntityComponentManager* ecm_;
+    gz::sim::EntityComponentManager *ecm_;
 
 private:
     gz::sim::Entity entity;
@@ -97,8 +96,5 @@ public:
 
 public:
     void slowDownCallback(const gz::msgs::Boolean &_msg);
-
 };
 } // namespace logging_system
-
-#endif

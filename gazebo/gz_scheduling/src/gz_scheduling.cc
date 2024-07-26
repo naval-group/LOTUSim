@@ -80,16 +80,26 @@ void gz_scheduling::PoseEffectorCallback(const gz::msgs::Pose &msg)
 void gz_scheduling::PreUpdate(
     const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
 {
+    if (m_debug) {
+        gz::msgs::Int32 msg;
+        msg.set_data(0);
+        plugin_demo_sched.Publish(msg);
+        msg.set_data(-1);
+        plugin_demo_sched.Publish(msg);
+        msg.set_data(0);
+        plugin_demo_sched.Publish(msg);
+    }
+
     if (!effectors.empty()) {
         std::random_device rd;
-        std::mt19937 g(rd());
-        std::shuffle(effectors.begin(), effectors.end(), g);
+        std::default_random_engine rng(rd());
+        std::shuffle(effectors.begin(), effectors.end(), rng);
 
         if (m_debug) {
             gz::msgs::Int32 msg;
             msg.set_data(0);
             plugin_demo_sched.Publish(msg);
-            msg.set_data(50);
+            msg.set_data(42 * effectors.size());
             plugin_demo_sched.Publish(msg);
             msg.set_data(0);
             plugin_demo_sched.Publish(msg);

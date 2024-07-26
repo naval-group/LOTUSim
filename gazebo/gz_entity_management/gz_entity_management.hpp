@@ -1,5 +1,4 @@
-#ifndef STEPCONTROL_HH_
-#define STEPCONTROL_HH_
+#pragma once
 
 #include <gz/msgs.hh>
 #include <gz/plugin/Register.hh>
@@ -106,5 +105,3 @@ private:
     gz::transport::Node node;
 };
 } // namespace entity_management
-
-#endif

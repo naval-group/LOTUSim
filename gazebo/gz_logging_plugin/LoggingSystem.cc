@@ -2,7 +2,7 @@
 
 using namespace logging_system;
 
-LoggingSystem::LoggingSystem()
+LoggingSystem::LoggingSystem() : debug(false)
 {
     m_gz_node = std::make_shared<gz::transport::Node>();
 }
@@ -55,22 +55,6 @@ void LoggingSystem::Configure(
     auto color = gz::math::Color(1.0, 1.0, 1.0, 1.0);
     EditEntityVisualColor(6, color);
 
-    if (sdf->HasElement("colors")) {
-        sdf::ElementPtr colors = sdf->GetElement("colors");
-        if (colors->HasElement("r") && colors->HasElement("g") &&
-            colors->HasElement("b") && colors->HasElement("a")) {
-            this->contactColor = gz::math::Color(
-                colors->GetElement("r")->Get<double>(),
-                colors->GetElement("g")->Get<double>(),
-                colors->GetElement("b")->Get<double>(),
-                colors->GetElement("a")->Get<double>());
-
-            gzdbg << "Color set to (" << this->contactColor.R() << ","
-                  << this->contactColor.G() << "," << this->contactColor.B()
-                  << "," << this->contactColor.A() << ")" << std::endl;
-        }
-    }
-
     gz::sim::Model model_ = gz::sim::Model(entity);
     gzmsg << "This entity is a model of name " << model_.Name(_ecm);
 
@@ -84,29 +68,9 @@ void LoggingSystem::Configure(
     gz::transport::AdvertiseMessageOptions options3;
     pocPub = node.Advertise<gz::msgs::Int32>("/poc_mas", options3);
 
-    gz::transport::SubscribeOptions options4;
-    node.Subscribe(
-        "/activate_slowdown",
-        std::function<void(const gz::msgs::Boolean &)>(std::bind(
-            &LoggingSystem::slowDownCallback, this, std::placeholders::_1)),
-        options4);
-
     if (!nodePub) {
         gzerr << "Error advertising topic [" << topic << "]" << std::endl;
         return;
-    }
-}
-
-void LoggingSystem::slowDownCallback(const gz::msgs::Boolean &_msg)
-{
-    gzmsg << "Callback called" << std::endl;
-    if (_msg.data()) {
-        gzmsg << "Slowdown activated" << std::endl;
-        this->slowdown = true;
-    }
-    else {
-        gzmsg << "Slowdown deactivated" << std::endl;
-        this->slowdown = false;
     }
 }
 
@@ -128,7 +92,7 @@ void LoggingSystem::PreUpdate(
         float realDelta = _info.realTime.count() - previousRealTime1;
         previousSimTime1 = _info.simTime.count();
         previousRealTime1 = _info.realTime.count();
-        if (this->slowdown) {
+        if (this->debug) {
             gzmsg << "[simTime:" << _info.simTime.count() << "]"
                   << " [realTime:" << _info.realTime.count()
                   << "] [simDelta:" << simDelta << "] [realDelta:" << realDelta
@@ -157,7 +121,7 @@ void LoggingSystem::Update(
         previousRealTime2 = _info.realTime.count();
         auto seconds = std::chrono::duration_cast<std::chrono::milliseconds>(
             _info.simTime);
-        if (this->slowdown) {
+        if (this->debug) {
             gzmsg << "[simTime:" << _info.simTime.count() << "]"
                   << " [realTime:" << _info.realTime.count()
                   << "] [simDelta:" << simDelta << "] [realDelta:" << realDelta
@@ -168,62 +132,6 @@ void LoggingSystem::Update(
 
         nodePub.Publish(msg);
         schedNodePub.Publish(msg);
-
-        // gz::math::Pose3d pose_before =
-        //     _ecm.Component<gz::sim::components::Pose>(entity)->Data();
-
-        // gz::msgs::Pose req = gz::msgs::Pose();
-
-        // req.set_id(entity);
-
-        // gz::msgs::Set(
-        //     req.mutable_position(),
-        //     gz::math::Vector3d(
-        //         pose_before.X() + 0.01, pose_before.Y(), pose_before.Z()));
-        // // gz::msgs::Set(
-        // //     req.mutable_orientation(),
-        // //     gz::math::Quaterniond(
-        // //         update["qr"].back(),
-        // //         update["qi"].back(),
-        // //         update["qj"].back(),
-        // //         update["qk"].back()));
-
-        // gz::msgs::Boolean rep;
-        // bool result;
-        // unsigned int timeout = 5000;
-
-        // std::string service = "/world/" + this->worldName + "/set_pose";
-
-        // bool executed = m_gz_node->Request(service, req, timeout, rep,
-        // result);
-
-        // gzdbg << "ID: " << entity << std::endl;
-        // gzdbg << "Executed: " << executed << std::endl;
-
-        // gz::math::Pose3d pose_after =
-        //     _ecm.Component<gz::sim::components::Pose>(entity)->Data();
-
-        // if (pose_after.X() >= 10 && has_published_poc_data == false) {
-        //     has_published_poc_data = true;
-        //     gz::msgs::Int32 msg;
-        //     msg.set_data(entity);
-
-        //     pocPub.Publish(msg);
-
-        //     EditEntityVisualColor(6, this->contactColor);
-
-        //     gz::msgs::WorldControl req;
-        //     req.set_pause(true);
-
-        //     gz::msgs::Boolean rep;
-        //     bool result;
-        //     unsigned int timeout = 5000;
-
-        //     std::string service = "/world/" + worldName + "/control";
-
-        //     bool executed = m_gz_node->Request(service, req, timeout, rep,
-        //     result);
-        // }
     }
 }
 
