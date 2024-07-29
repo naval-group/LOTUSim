@@ -57,5 +57,22 @@
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
         </include> -->
+
+        <model name="plane">
+            <static>true</static>
+            <pose>11 0 0 0 0 0</pose>
+            <link name="link">
+                <visual name="visual">
+                    <geometry>
+                        <box>
+                            <size>1 10 5</size>
+                        </box>
+                    </geometry>
+                    <material>
+                        <emissive>1 1 1</emissive>
+                    </material>
+                </visual>
+            </link>
+        </model>
     </world>
 </sdf>
