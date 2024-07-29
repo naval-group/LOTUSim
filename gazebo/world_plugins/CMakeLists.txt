@@ -165,6 +165,7 @@ install(
 # Render plugin
 add_library(render_plugin 
   SHARED   
+  src/UDPRenderInterface.cpp
   src/RenderPlugin.cpp
 )
 target_include_directories(render_plugin

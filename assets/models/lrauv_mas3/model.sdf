@@ -2,6 +2,16 @@
 <sdf version="1.6">
   <model name="lrauv_mas3">
     <publish_render>true</publish_render>
+    <physics_server_interface>
+      <underwater>
+        <ConnectionType>XDynWebSocket</ConnectionType>
+        <uri>ws://127.0.0.1:12345</uri>
+        <thrusters>
+          <thursters1>propeller</thursters1>
+        </thrusters>
+      </underwater>
+      <init_state>Underwater</init_state>
+    </physics_server_interface>
 
     <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
 

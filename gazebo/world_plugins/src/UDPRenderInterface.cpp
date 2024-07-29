@@ -1,5 +1,6 @@
-
 #include "world_plugins/UDPRenderInterface.h"
+
+using namespace liquidai::gazebo;
 
 bool UDPRenderInterface::ConfigureInterface(
     const std::shared_ptr<const sdf::Element> &_sdf)
@@ -128,7 +129,7 @@ bool UDPRenderInterface::CreateVessel(
         m_gz_node.Subscribe(
             vessel_name + "/cmd_vel", &UDPRenderInterface::ThrustCmd, this);
     }
-    // SendCreateMessage(vessel_name, unity_type_name);
+    SendCreateMessage(vessel_name, unity_type_name);
 };
 
 bool UDPRenderInterface::DestroyVessel(const std::string &vessel_name)
@@ -137,7 +138,7 @@ bool UDPRenderInterface::DestroyVessel(const std::string &vessel_name)
         m_xdyn_cmd.erase(vessel_name);
         m_gz_node.Unsubscribe(vessel_name + "/cmd_vel");
     }
-    // SendDestroyMessage(vessel_name);
+    SendDestroyMessage(vessel_name);
 };
 
 // Not tested

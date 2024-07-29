@@ -45,7 +45,6 @@ void RenderPlugin::Update(
             const gz::sim::components::ParentEntity *_parent) -> bool {
             sdf::Model data = _model->Data();
             bool publish_render{false};
-            std::string unity_type_name = "";
             sdf::ElementPtr sdfptr = data.Element();
 
             gzmsg << "[LOTUSim]: Detected creation of a new entity"
@@ -61,15 +60,9 @@ void RenderPlugin::Update(
 
                 gzmsg << "[LOTUSim]: Creation detected of vessel named "
                       << name_opt->Data() << std::endl;
-                
-                if (sdfptr->HasElement("unity_type_name")) {
-                    unity_type_name =
-                        sdfptr->Get<std::string>("unity_type_name");
-                }
-                if (unity_type_name != "") {
-                    m_render_interface->SendCreateMessage(
-                        name_opt->Data(), unity_type_name);
-                }
+
+                return m_render_interface->CreateVessel(
+                    name_opt->Data(), sdfptr);
             }
             return true;
         });
@@ -90,13 +83,9 @@ void RenderPlugin::PostUpdate(
             const gz::sim::components::ParentEntity *_parent) -> bool {
             sdf::Model data = _model->Data();
             bool publish_render{false};
-            std::string unity_type_name = "";
             sdf::ElementPtr sdfptr = data.Element();
             if (sdfptr->HasElement("publish_render")) {
                 publish_render = sdfptr->Get<bool>("publish_render");
-            }
-            if (sdfptr->HasElement("unity_type_name")) {
-                unity_type_name = sdfptr->Get<std::string>("unity_type_name");
             }
 
             if (publish_render) {
@@ -106,9 +95,7 @@ void RenderPlugin::PostUpdate(
                 gzmsg << "[LOTUSim]: Deletion detected of vessel named "
                       << name_opt->Data() << std::endl;
 
-                if (unity_type_name != "") {
-                    m_render_interface->SendDestroyMessage(name_opt->Data());
-                }
+                m_render_interface->DestroyVessel(name_opt->Data());
             }
             for (auto it = m_vessel_entity.begin(); it != m_vessel_entity.end();
                  ++it) {
