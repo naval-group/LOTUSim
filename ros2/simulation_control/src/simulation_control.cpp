@@ -10,21 +10,11 @@ SimulationControl::SimulationControl(const rclcpp::NodeOptions &options)
 
     SC_step_control_client_ =
         this->create_client<std_srvs::srv::SetBool>("step_control_enable");
-    activate_slowdown_publisher_ =
-        this->create_publisher<std_msgs::msg::Bool>("activate_slowdown", 10);
     this->SC_change_state_of_all =
         this->create_service<lifecycle_msgs::srv::ChangeState>(
             "SC_change_state_of_all",
             std::bind(
                 &SimulationControl::ChangeStateOfAll,
-                this,
-                std::placeholders::_1,
-                std::placeholders::_2));
-    this->SC_activate_slowdown =
-        this->create_service<liquidai_msgs::srv::ActivateSlowdown>(
-            "SC_activate_slowdown",
-            std::bind(
-                &SimulationControl::ActivateSlowdown,
                 this,
                 std::placeholders::_1,
                 std::placeholders::_2));
@@ -134,18 +124,6 @@ bool SimulationControl::ChangeState(
         RCLCPP_ERROR(this->get_logger(), "Failed to call service 'checks'");
         return false;
     }
-}
-
-void SimulationControl::ActivateSlowdown(
-    const std::shared_ptr<liquidai_msgs::srv::ActivateSlowdown::Request>
-        request,
-    std::shared_ptr<liquidai_msgs::srv::ActivateSlowdown::Response> response)
-{
-    std_msgs::msg::Bool message;
-    message.data = request->activation;
-    activate_slowdown_publisher_->publish(message);
-
-    response->success = true;
 }
 
 #include "rclcpp_components/register_node_macro.hpp"

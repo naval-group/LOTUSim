@@ -14,6 +14,12 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
         entity_management_client_node
             ->create_client<liquidai_msgs::srv::GetIdByName>(
                 "/gz_get_id_by_name");
+    
+    // Subscription to the Gazebo pose
+    // gz_poses_sub_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
+    //     "/model/" + name_ + "/pose",
+    //     10,
+    //     std::bind(&AgentEntity::gz_pose_callback, this, std::placeholders::_1));
 
     // Parse the pose string
     float pose_components[6];
@@ -52,7 +58,7 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     timer_ = rclcpp::create_timer(
         this,
         this->get_clock(),
-        std::chrono::milliseconds(500),
+        std::chrono::milliseconds(10),
         std::bind(&AgentEntity::timer_callback, this));
 
     if (configure_on_startup) {
@@ -62,7 +68,7 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
 
 void AgentEntity::timer_callback()
 {
-    RCLCPP_INFO(get_logger(), "my id is %d", gazebo_id);
+    // RCLCPP_INFO(get_logger(), "my id is %d", gazebo_id);
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -97,13 +103,14 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
         rclcpp::FutureReturnCode::SUCCESS) {
         int id = res.get()->id;
         if (id != 0) {
-            RCLCPP_INFO(this->get_logger(), "Successfully got and set the ID from Gazebo!");
+            RCLCPP_INFO(
+                this->get_logger(),
+                "Successfully got and set the ID %d from Gazebo!",
+                id);
             gazebo_id = id;
         }
         else {
-            RCLCPP_WARN(
-                this->get_logger(),
-                "The checks were not successful");
+            RCLCPP_WARN(this->get_logger(), "The checks were not successful");
             return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
                 CallbackReturn::ERROR;
         }
@@ -163,6 +170,18 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn::SUCCESS;
 }
+
+// void AgentEntity::gz_pose_callback(
+//     const geometry_msgs::msg::PoseArray::SharedPtr msg)
+// {
+//     for (auto pose : msg->poses) {
+//         RCLCPP_INFO(
+//             this->get_logger(),
+//             "Has pose: 'x: %s' on id %d",
+//             std::to_string(pose.position.x).c_str(),
+//             gazebo_id);
+//     }
+// }
 
 // #include "rclcpp_components/register_node_macro.hpp"
 // RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)

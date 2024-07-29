@@ -83,6 +83,7 @@ protected:
 
     std::shared_ptr<SpawnInterface> spawnInterface;
     std::shared_ptr<DespawnInterface> despawnInterface;
+    std::string name_;
 };
 
 #endif

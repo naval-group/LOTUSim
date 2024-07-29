@@ -40,21 +40,11 @@ public:
         const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request>
             request);
 
-    void ActivateSlowdown(
-        const std::shared_ptr<liquidai_msgs::srv::ActivateSlowdown::Request>
-            request,
-        std::shared_ptr<liquidai_msgs::srv::ActivateSlowdown::Response>
-            response);
-
 private:
     rclcpp::Node::SharedPtr change_state_client_node;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr SC_step_control_client_;
     rclcpp::Service<lifecycle_msgs::srv::ChangeState>::SharedPtr
         SC_change_state_of_all;
-    rclcpp::Service<liquidai_msgs::srv::ActivateSlowdown>::SharedPtr
-        SC_activate_slowdown;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
-        activate_slowdown_publisher_;
 
     std::string exec_command(const char *cmd)
     {
