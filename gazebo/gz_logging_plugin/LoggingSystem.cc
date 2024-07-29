@@ -9,32 +9,6 @@ LoggingSystem::LoggingSystem() : debug(false)
 
 LoggingSystem::~LoggingSystem() {}
 
-void LoggingSystem::EditEntityVisualColor(
-    const gz::sim::Entity &_entity, gz::math::Color _color)
-{
-    std::function<void(const gz::msgs::Boolean &, const bool)> cb =
-        [](const gz::msgs::Boolean & /*_rep*/, const bool _result) {
-            if (!_result)
-                gzerr << "Error setting material color configuration"
-                      << " on visual" << std::endl;
-        };
-    gz::msgs::Visual req;
-    req.set_id(_entity);
-
-    gz::msgs::Set(req.mutable_material()->mutable_ambient(), _color);
-    gz::msgs::Set(req.mutable_material()->mutable_diffuse(), _color);
-    gz::msgs::Set(req.mutable_material()->mutable_specular(), _color);
-    gz::msgs::Set(req.mutable_material()->mutable_emissive(), _color);
-
-    auto test = std::string("/world/" + this->worldName + "/visual_config");
-    auto materialCmdService = gz::transport::TopicUtils::AsValidTopic(test);
-    if (materialCmdService.empty()) {
-        gzerr << "Invalid material command service topic provided" << std::endl;
-        return;
-    }
-    this->node.Request(materialCmdService, req, cb);
-}
-
 void LoggingSystem::Configure(
     const gz::sim::Entity &_entity,
     const std::shared_ptr<const sdf::Element> &_sdf,
@@ -52,9 +26,6 @@ void LoggingSystem::Configure(
         _ecm.EntityByComponents(gz::sim::components::World());
     this->worldName = _ecm.Component<gz::sim::components::Name>(world)->Data();
 
-    auto color = gz::math::Color(1.0, 1.0, 1.0, 1.0);
-    EditEntityVisualColor(6, color);
-
     gz::sim::Model model_ = gz::sim::Model(entity);
     gzmsg << "This entity is a model of name " << model_.Name(_ecm);
 
@@ -64,9 +35,6 @@ void LoggingSystem::Configure(
 
     gz::transport::AdvertiseMessageOptions options2;
     schedNodePub = node.Advertise<gz::msgs::Int32>("/gz_sched", options2);
-
-    gz::transport::AdvertiseMessageOptions options3;
-    pocPub = node.Advertise<gz::msgs::Int32>("/poc_mas", options3);
 
     if (!nodePub) {
         gzerr << "Error advertising topic [" << topic << "]" << std::endl;

@@ -66,10 +66,6 @@ public:
     ~LoggingSystem() override;
 
 public:
-    void EditEntityVisualColor(
-        const gz::sim::Entity &_entity, gz::math::Color _color);
-
-public:
     void Configure(
         const gz::sim::Entity &_entity,
         const std::shared_ptr<const sdf::Element> &_sdf,
@@ -93,8 +89,5 @@ public:
 
     // public: void Reset(const gz::sim::UpdateInfo &_info,
     //              gz::sim::EntityComponentManager &_ecm) override;
-
-public:
-    void slowDownCallback(const gz::msgs::Boolean &_msg);
 };
 } // namespace logging_system

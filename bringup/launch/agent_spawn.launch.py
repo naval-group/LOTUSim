@@ -44,7 +44,7 @@ def generate_launch_description():
     
     agent_node = Node(
         package='agent_cpp',
-        executable='agent_node',
+        executable='agent_entity',
         name=name,
         namespace=ns,
         parameters=[{'use_sim_time': True,

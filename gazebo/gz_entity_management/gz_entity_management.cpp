@@ -138,6 +138,11 @@ void EntityManagement::OnAddEntity_V(
         pose->set_allocated_orientation(orientation);
 
         req->set_allocated_pose(pose);
+
+        CreateBridge(
+            "/model/" + msg.name + "/pose",
+            "geometry_msgs/msg/PoseArray",
+            "ignition.msgs.Pose_V");
     }
 
     gz::msgs::Boolean rep;

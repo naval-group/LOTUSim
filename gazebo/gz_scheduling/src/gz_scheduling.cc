@@ -65,7 +65,7 @@ void gz_scheduling::PoseEffectorCallback(const gz::msgs::Pose &msg)
     }
 
     // Creates an effector and adds it to the effectors list for processing
-    auto effector = std::make_shared<PoseEffector>(m_gz_node, msg, worldName);
+    auto effector = std::make_shared<PoseEffector>(m_gz_node, msg, worldName, ecm_);
     effectors.push_back(effector);
 
     if (m_debug) {
@@ -99,7 +99,7 @@ void gz_scheduling::PreUpdate(
             gz::msgs::Int32 msg;
             msg.set_data(0);
             plugin_demo_sched.Publish(msg);
-            msg.set_data(42 * effectors.size());
+            msg.set_data(10 * effectors.size());
             plugin_demo_sched.Publish(msg);
             msg.set_data(0);
             plugin_demo_sched.Publish(msg);
