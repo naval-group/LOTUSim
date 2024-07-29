@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <package format="3">
-    <name>gz_sensor_plugin</name>
+    <name>gz_scheduling</name>
     <version>1.0.0</version>
     <description></description>
 

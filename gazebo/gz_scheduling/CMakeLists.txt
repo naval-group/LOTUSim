@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
-project(gz_sensor_plugin)
+project(gz_scheduling)
 
 list(APPEND CMAKE_MODULE_PATH /usr/share/cmake/gz-cmake3/cmake3)
 
@@ -19,17 +19,17 @@ find_package(gz-sim8 REQUIRED)
 
 find_package(sdformat14 REQUIRED)
 
-include_directories(${GAZEBO_INCLUDE_DIRS})
+include_directories(include ${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
  
 # Add sources for each plugin to be registered.
-add_library(gz_sensor_plugin SHARED gz_sensor_plugin.cc) #SampleSystem2.cc)
-set_property(TARGET gz_sensor_plugin PROPERTY CXX_STANDARD 17)
-target_link_libraries(gz_sensor_plugin
+add_library(gz_scheduling SHARED src/gz_scheduling.cc)
+set_property(TARGET gz_scheduling PROPERTY CXX_STANDARD 17)
+target_link_libraries(gz_scheduling
   gz-common5::gz-common5
   gz-plugin2::gz-plugin2
   gz-sim8::gz-sim8
 )
 
-install(TARGETS gz_sensor_plugin DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(TARGETS gz_scheduling DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

@@ -57,13 +57,13 @@
   ros_type_name: "std_msgs/msg/Int32"
   gz_type_name: "ignition.msgs.Int32"
   direction: GZ_TO_ROS
-- ros_topic_name: "sensor_demo_sched"
-  gz_topic_name: "/sensor_demo_sched"
+- ros_topic_name: "pose_sensor"
+  gz_topic_name: "/pose_sensor"
   ros_type_name: "std_msgs/msg/Int32"
   gz_type_name: "ignition.msgs.Int32"
   direction: GZ_TO_ROS
-- ros_topic_name: "effector_demo_sched"
-  gz_topic_name: "/effector_demo_sched"
+- ros_topic_name: "pose_effector"
+  gz_topic_name: "/pose_effector"
   ros_type_name: "liquidai_msgs/msg/EntityPosition"
   gz_type_name: "gz.msgs.Pose"
   direction: ROS_TO_GZ

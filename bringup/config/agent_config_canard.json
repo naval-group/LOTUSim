@@ -1,38 +1,30 @@
 {
     "lrauv_mas4": [
         {
-            "name": "Duck1",
-            "pose": "0 -3 0 0 0 0",
-            "configure_on_startup": true,
-            "package_name": "agent_cpp",
-            "plugin_name": "AgentEntity"
+            "name": "Duck4",
+            "pose": "0 -3 0 0 0 0 0",
+            "configure_on_startup": "true"
         }
     ],
     "lrauv_mas2": [
         {
             "name": "Duck2",
             "pose": "0 -1 0 0 0 0",
-            "configure_on_startup": true,
-            "package_name": "agent_cpp",
-            "plugin_name": "AgentEntity"
+            "configure_on_startup": "true"
         }
     ],
     "lrauv_mas3": [
         {
             "name": "Duck3",
             "pose": "0 1 0 0 0 0",
-            "configure_on_startup": true,
-            "package_name": "agent_cpp",
-            "plugin_name": "AgentEntity"
+            "configure_on_startup": "true"
         }
     ],
     "lrauv_mas1": [
         {
-            "name": "Duck4",
+            "name": "Duck1",
             "pose": "0 3 0 0 0 0",
-            "configure_on_startup": true,
-            "package_name": "agent_cpp",
-            "plugin_name": "AgentEntity"
+            "configure_on_startup": "true"
         }
     ]
 }

@@ -9,6 +9,8 @@ Agent::Agent(const string &node_name, const rclcpp::NodeOptions &options)
     declare_parameter("pose", "");
     declare_parameter<bool>("configure_on_startup");
 
+    name_ = this->get_name();
+
     // TODO: make sure this works
     auto param_change_callback =
         [this](std::vector<rclcpp::Parameter> parameters)

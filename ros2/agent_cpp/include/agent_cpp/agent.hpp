@@ -37,6 +37,7 @@
 
 using namespace std;
 
+/// @brief Every C++ agent should derive from this class. It is a LifecycleNode.
 class Agent : public rclcpp_lifecycle::LifecycleNode {
 public:
     Agent(const string &node_name, const rclcpp::NodeOptions &options);
@@ -82,6 +83,7 @@ protected:
 
     std::shared_ptr<SpawnInterface> spawnInterface;
     std::shared_ptr<DespawnInterface> despawnInterface;
+    std::string name_;
 };
 
 #endif

@@ -1,7 +1,7 @@
-#ifndef SAMPLEPLUGIN_HH_
-#define SAMPLEPLUGIN_HH_
+#pragma once
 
 #include <gz/msgs.hh>
+#include <gz/plugin/Register.hh>
 #include <gz/sim/Entity.hh>
 #include <gz/sim/Model.hh>
 #include <gz/sim/System.hh>
@@ -12,11 +12,12 @@
 #include <gz/sim/components/World.hh>
 #include <gz/transport/Node.hh>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <csignal>
-#include <gz/plugin/Register.hh>
 #include <iostream>
+#include <random>
 #include <sdf/Element.hh>
 #include <sdf/Material.hh>
 #include <sdf/sdf.hh>
@@ -25,8 +26,11 @@
 #include <unistd.h>
 #include <vector>
 
-namespace sensor_plugin {
-class gz_sensor_plugin :
+#include "generic_effector.hh"
+#include "pose_effector.hh"
+
+namespace scheduling_plugin {
+class gz_scheduling :
     public gz::sim::System,
     public gz::sim::ISystemConfigure,
     public gz::sim::ISystemPreUpdate,
@@ -35,52 +39,36 @@ class gz_sensor_plugin :
 // public gz::sim::ISystemReset
 {
 private:
-    bool slowdown = false;
-    bool has_published_poc_data = false;
     float previousSimTime;
     std::string worldName;
-    gz::math::Color contactColor, defaultColor;
     gz::sim::EntityComponentManager *ecm_;
-
-private:
     gz::sim::Entity entity;
-
-private:
     gz::transport::Node node;
-
-private:
     std::shared_ptr<gz::transport::Node> m_gz_node;
-
-private:
-    gz::transport::Node::Publisher sensor_demo_sched, agent_demo_sched, plugin_demo_sched;
-
-public:
-    gz_sensor_plugin();
+    gz::transport::Node::Publisher pose_sensor, agent_demo_sched,
+        plugin_demo_sched;
+    std::vector<std::shared_ptr<GenericEffector>> effectors;
+    bool m_debug;
 
 public:
-    ~gz_sensor_plugin() override;
+    gz_scheduling();
 
-public:
-    void MoveCallback(const gz::msgs::Pose &msg);
+    ~gz_scheduling() override;
 
-public:
     void Configure(
         const gz::sim::Entity &_entity,
         const std::shared_ptr<const sdf::Element> &_sdf,
         gz::sim::EntityComponentManager &_ecm,
         gz::sim::EventManager &_eventMgr) override;
 
-public:
     void PreUpdate(
         const gz::sim::UpdateInfo &_info,
         gz::sim::EntityComponentManager &_ecm) override;
 
-public:
     void Update(
         const gz::sim::UpdateInfo &_info,
         gz::sim::EntityComponentManager &_ecm) override;
 
-public:
     void PostUpdate(
         const gz::sim::UpdateInfo &_info,
         const gz::sim::EntityComponentManager &_ecm) override;
@@ -88,9 +76,6 @@ public:
     // public: void Reset(const gz::sim::UpdateInfo &_info,
     //              gz::sim::EntityComponentManager &_ecm) override;
 
-public:
-    void EffectorCallback(const gz::msgs::Pose &msg);
+    void PoseEffectorCallback(const gz::msgs::Pose &msg);
 };
-} // namespace sensor_plugin
-
-#endif
+} // namespace scheduling_plugin

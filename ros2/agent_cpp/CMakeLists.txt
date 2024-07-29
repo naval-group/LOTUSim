@@ -30,7 +30,7 @@ include_directories(
 
 # Agent entity node
 
-add_executable(agent_entity src/agent_entity_node.cpp src/agent_cpp/agent_entity.cpp src/agent_cpp/agent.cpp)
+add_executable(agent_entity src/agent_entity_node.cpp src/agent_cpp/agent_entity.cpp src/agent_cpp/agent.cpp src/SpawnOnGazebo.cpp src/DespawnOnGazebo.cpp)
 target_link_libraries(agent_entity
   ${rclcpp_lifecycle_LIBRARIES}
   ${lifecycle_msgs_LIBRARIES}

@@ -23,7 +23,7 @@
 
 class DespawnInterface {
 public:
-    virtual bool despawn() { return true; };
+    virtual bool despawn() = 0;
 };
 
 #endif

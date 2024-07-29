@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
+
   <model name="lrauv_mas4">
     <publish_render>true</publish_render>
+
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+
+      <odom_frame>world</odom_frame>
+      <dimensions>3</dimensions>
+
+    </plugin>
 
     <plugin
       filename="LoggingSystem"
@@ -11,14 +19,14 @@
         <g>1.0</g>
         <b>0.0</b>
         <a>1.0</a>
-    </colors>
+      </colors>
     </plugin>
 
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
-         <pose>0 0 0 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <!-- 146.5671 subtracted by battery mass -->
         <mass>147.8671</mass>
         <!--<mass>146.5671</mass>-->
@@ -27,7 +35,7 @@
           <ixx>3.000000</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-         
+
           <iyy>41.980233</iyy>
           <iyz>0</iyz>
           <izz>41.980233</izz>

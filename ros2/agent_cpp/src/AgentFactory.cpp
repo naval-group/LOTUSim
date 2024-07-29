@@ -21,7 +21,6 @@
 
 namespace fs = std::filesystem;
 
-// enum class SchedulerType { EXECUTOR_IN_THREADS, RANDOMISED_EXECUTOR };
 rclcpp::Client<composition_interfaces::srv::LoadNode>::SharedPtr
     load_node_client;
 
