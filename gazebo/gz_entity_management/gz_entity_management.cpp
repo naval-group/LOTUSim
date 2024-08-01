@@ -110,6 +110,8 @@ void EntityManagement::OnAddEntity_V(
 
         ::gz::msgs::EntityFactory *req = reqs.add_data();
         req->set_name(msg.name.c_str());
+        // If a sdf file is provided, use it. Else, get the sdf provided by the
+        // path.
         if (!msg.model_file.empty()) {
             req->set_sdf(msg.model_file.c_str());
         }
@@ -214,6 +216,7 @@ void EntityManagement::OnGetIdByName(
     gzmsg << "The id of " << request->entity_name << " is " << id;
 }
 
+// TODO: Improve this function
 void EntityManagement::CreateBridge(
     std::string topic_name,
     std::string ros_type_name,

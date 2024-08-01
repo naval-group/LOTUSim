@@ -9,6 +9,7 @@ Agent::Agent(const string &node_name, const rclcpp::NodeOptions &options)
     declare_parameter("pose", "");
     declare_parameter<bool>("configure_on_startup");
 
+    node_base_interface_ = this->get_node_base_interface();
     name_ = this->get_name();
 
     // TODO: make sure this works

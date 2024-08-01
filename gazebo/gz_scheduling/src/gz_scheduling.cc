@@ -51,7 +51,7 @@ void gz_scheduling::Configure(
             &gz_scheduling::PoseEffectorCallback,
             this,
             std::placeholders::_1)));
-    // ... other effector
+    // ... other effectors
 }
 
 void gz_scheduling::PoseEffectorCallback(const gz::msgs::Pose &msg)

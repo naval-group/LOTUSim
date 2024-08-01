@@ -84,6 +84,7 @@ protected:
     std::shared_ptr<SpawnInterface> spawnInterface;
     std::shared_ptr<DespawnInterface> despawnInterface;
     std::string name_;
+    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_interface_;
 };
 
 #endif

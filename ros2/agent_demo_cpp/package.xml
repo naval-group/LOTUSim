@@ -3,9 +3,10 @@
 <package format="3">
   <name>agent_demo_cpp</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="cedric.buche@pacific.naval-group.com">buche</maintainer>
+  <description>This package is used to demonstrate the capabilities of the MAS, notably scheduling</description>
+  <maintainer email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</maintainer>
   <license>TODO: License declaration</license>
+  <author email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

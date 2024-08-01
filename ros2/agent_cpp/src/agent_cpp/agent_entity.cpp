@@ -14,12 +14,15 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
         entity_management_client_node
             ->create_client<liquidai_msgs::srv::GetIdByName>(
                 "/gz_get_id_by_name");
-    
+
     // Subscription to the Gazebo pose
-    // gz_poses_sub_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
-    //     "/model/" + name_ + "/pose",
-    //     10,
-    //     std::bind(&AgentEntity::gz_pose_callback, this, std::placeholders::_1));
+    gz_poses_sub_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
+        "/model/" + name_ + "/pose",
+        10,
+        std::bind(&AgentEntity::gz_pose_callback, this, std::placeholders::_1));
+
+    pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
+        "/pose_effector", 10);
 
     // Parse the pose string
     float pose_components[6];
@@ -58,7 +61,7 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     timer_ = rclcpp::create_timer(
         this,
         this->get_clock(),
-        std::chrono::milliseconds(10),
+        std::chrono::milliseconds(1000),
         std::bind(&AgentEntity::timer_callback, this));
 
     if (configure_on_startup) {
@@ -68,7 +71,32 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
 
 void AgentEntity::timer_callback()
 {
-    // RCLCPP_INFO(get_logger(), "my id is %d", gazebo_id);
+    if (gazebo_id == 0) {
+        return;
+    }
+
+    // Print the current state for demo purposes
+    if (!pose_pub_->is_activated()) {
+        RCLCPP_DEBUG(
+            get_logger(),
+            "Lifecycle publisher is currently inactive. Messages are not "
+            "published.");
+    }
+    else {
+        RCLCPP_DEBUG(get_logger(), "Lifecycle publisher is active. Publishing...");
+
+        auto message = liquidai_msgs::msg::EntityPosition();
+        message.id = gazebo_id;
+        message.position.set__x(pose_.position.x + 0.1);
+        message.position.set__y(pose_.position.y);
+        message.position.set__z(pose_.position.z);
+        RCLCPP_INFO(
+            this->get_logger(),
+            "Publishing: '%s' on id %d",
+            std::to_string(message.position.x).c_str(),
+            gazebo_id);
+        pose_pub_->publish(message);
+    }
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -81,42 +109,7 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
             CallbackReturn::ERROR;
     }
 
-    while (!get_id_by_name_client_->wait_for_service(std::chrono::seconds(1))) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(
-                this->get_logger(),
-                "Interrupted while waiting for the service. Exiting.");
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-                CallbackReturn::ERROR;
-        }
-        RCLCPP_INFO(
-            this->get_logger(), "Service not available, waiting again...");
-    }
-
-    auto request = std::make_shared<liquidai_msgs::srv::GetIdByName::Request>();
-    std::string name = this->get_name();
-    request->set__entity_name(name);
-    auto res = get_id_by_name_client_->async_send_request(request);
-
-    if (rclcpp::spin_until_future_complete(
-            entity_management_client_node, res) ==
-        rclcpp::FutureReturnCode::SUCCESS) {
-        int id = res.get()->id;
-        if (id != 0) {
-            RCLCPP_INFO(
-                this->get_logger(),
-                "Successfully got and set the ID %d from Gazebo!",
-                id);
-            gazebo_id = id;
-        }
-        else {
-            RCLCPP_WARN(this->get_logger(), "The checks were not successful");
-            return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
-                CallbackReturn::ERROR;
-        }
-    }
-    else {
-        RCLCPP_ERROR(this->get_logger(), "Failed to call service");
+    if (!this->get_gazebo_id()) {
         return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
             CallbackReturn::ERROR;
     }
@@ -128,6 +121,11 @@ AgentEntity::on_configure(const rclcpp_lifecycle::State &previous_state)
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 AgentEntity::on_activate(const rclcpp_lifecycle::State &previous_state)
 {
+
+    LifecycleNode::on_activate(previous_state);
+
+    RCLCPP_INFO(get_logger(), "on_activate() is called.");
+
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn::SUCCESS;
 }
@@ -135,6 +133,10 @@ AgentEntity::on_activate(const rclcpp_lifecycle::State &previous_state)
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 AgentEntity::on_deactivate(const rclcpp_lifecycle::State &previous_state)
 {
+    LifecycleNode::on_deactivate(previous_state);
+
+    RCLCPP_INFO(get_logger(), "on_deactivate() is called.");
+
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn::SUCCESS;
 }
@@ -144,6 +146,8 @@ AgentEntity::on_cleanup(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_cleanup() is called.");
 
+    timer_.reset();
+    pose_pub_.reset();
     gazebo_id = 0;
 
     if (!this->perform_despawn()) {
@@ -160,6 +164,8 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
 {
     RCLCPP_INFO(get_logger(), "on_shutdown() is called.");
 
+    timer_.reset();
+    pose_pub_.reset();
     gazebo_id = 0;
 
     if (!this->perform_despawn()) {
@@ -171,17 +177,54 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
         CallbackReturn::SUCCESS;
 }
 
-// void AgentEntity::gz_pose_callback(
-//     const geometry_msgs::msg::PoseArray::SharedPtr msg)
-// {
-//     for (auto pose : msg->poses) {
-//         RCLCPP_INFO(
-//             this->get_logger(),
-//             "Has pose: 'x: %s' on id %d",
-//             std::to_string(pose.position.x).c_str(),
-//             gazebo_id);
-//     }
-// }
+bool AgentEntity::get_gazebo_id()
+{
+    while (!get_id_by_name_client_->wait_for_service(std::chrono::seconds(1))) {
+        if (!rclcpp::ok()) {
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "Interrupted while waiting for the service. Exiting.");
+            exit(0);
+        }
+        RCLCPP_INFO(
+            this->get_logger(), "Service not available, waiting again...");
+    }
+
+    auto request = std::make_shared<liquidai_msgs::srv::GetIdByName::Request>();
+    request->set__entity_name(name_);
+    auto res = get_id_by_name_client_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(
+            entity_management_client_node, res) ==
+        rclcpp::FutureReturnCode::SUCCESS) {
+        int id = res.get()->id;
+        if (id != 0) {
+            RCLCPP_INFO(
+                this->get_logger(),
+                "Successfully got and set the ID %d from Gazebo!",
+                id);
+            gazebo_id = id;
+            return true;
+        }
+        else {
+            RCLCPP_WARN(this->get_logger(), "The Gazebo Id I got is 0.");
+            return false;
+        }
+    }
+    else {
+        RCLCPP_ERROR(this->get_logger(), "Failed to call service");
+        return false;
+    }
+}
+
+/// @brief Get the pose from Gazebo. It is sent by the Odometry system
+/// plugin.
+/// @param msg
+void AgentEntity::gz_pose_callback(
+    const geometry_msgs::msg::PoseArray::SharedPtr msg)
+{
+    pose_ = msg->poses.back();
+}
 
 // #include "rclcpp_components/register_node_macro.hpp"
 // RCLCPP_COMPONENTS_REGISTER_NODE(AgentEntity)

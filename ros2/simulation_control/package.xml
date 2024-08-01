@@ -8,6 +8,7 @@
     a UI can later be implemented.</description>
   <maintainer email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</maintainer>
   <license>TODO: License declaration</license>
+  <author email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

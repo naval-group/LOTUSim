@@ -4,7 +4,7 @@
         "world_name": "lotusim",
         "verbose": 4,
         "gui-config": "gui/design.config",
-        "automatic_namespace": true,
+        "automatic_namespace": "false",
         "default_namespace": "ns_main"
     },
     "plugins": [],

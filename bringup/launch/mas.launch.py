@@ -1,6 +1,8 @@
 import os
 import sys
 
+from sympy import true
+
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
@@ -43,7 +45,7 @@ def generate_launch_description():
     namespace_nb = 1
 
     for agent_config in json_data['agent_configs']:
-        if json_data['params']['automatic_namespace']:
+        if json_data['params']['automatic_namespace'] == True:
             default_namespace = json_data['params']['default_namespace'] + str(namespace_nb)
         else:
             default_namespace = ""
@@ -63,7 +65,7 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         parameters=[{
-            'config_file': os.path.join(pkg_project_bringup, 'config', 'ros_gz_example_bridge.yaml'),
+            'config_file': os.path.join(pkg_project_bringup, 'config', 'ros_gz_bridge.yaml'),
             'expand_gz_topic_names': True, # Enables the Bridge to apply ROS2 namespace on the Gazebo topics,
             'use_sim_time': True
         }],
@@ -95,7 +97,7 @@ def generate_launch_description():
             package='simulation_control',
             plugin='SimulationControl',
             extra_arguments=[{'use_intra_process_comms': True}],
-            parameters=[{'use_sim_time': True,
+            parameters=[{'use_sim_time': False,
                 }],
         ),
     ])
