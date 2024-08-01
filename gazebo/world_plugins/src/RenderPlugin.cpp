@@ -61,8 +61,7 @@ void RenderPlugin::Update(
                 gzmsg << "[LOTUSim]: Creation detected of vessel named "
                       << name_opt->Data() << std::endl;
 
-                return m_render_interface->CreateVessel(
-                    name_opt->Data(), sdfptr);
+                m_render_interface->CreateVessel(name_opt->Data(), sdfptr);
             }
             return true;
         });
