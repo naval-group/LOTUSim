@@ -1,6 +1,6 @@
 {
     "params": {
-        "world_filename": "xdyn_mas.world",
+        "world_filename": "xdyn_test_cedric.world",
         "world_name": "lotusim",
         "verbose": 4,
         "gui-config": "gui/design.config",
