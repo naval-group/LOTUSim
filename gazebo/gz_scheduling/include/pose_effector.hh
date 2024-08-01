@@ -35,6 +35,8 @@ public:
         WallColorDemo();
     };
 
+    // This function hardcodes the color logic of a scene for 4
+    // lrauv_mas<#>.config. Ignore it if you don't want to reproduce.
     void WallColorDemo()
     {
         auto color = gz::math::Color(1.0, 1.0, 1.0, 1.0);

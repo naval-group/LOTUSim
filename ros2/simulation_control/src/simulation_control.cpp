@@ -111,7 +111,6 @@ bool SimulationControl::ChangeState(
     if (rclcpp::spin_until_future_complete(change_state_client_node, res) ==
         rclcpp::FutureReturnCode::SUCCESS) {
         if (res.get()->success) {
-            sleep(5);
             RCLCPP_INFO(this->get_logger(), "The checks were successful!");
             return true;
         }

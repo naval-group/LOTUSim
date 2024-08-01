@@ -3,9 +3,10 @@
 <package format="3">
   <name>agent_cpp</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Implements de logic of an Agent in the MAS.</description>
   <maintainer email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</maintainer>
   <license>TODO: License declaration</license>
+  <author email="kfiter.exterieur@pacific.naval-group.com">Kerian Fiter</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

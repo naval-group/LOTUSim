@@ -1,39 +1,51 @@
 #include "liquidai_msgs/msg/add_entity.hpp"
 #include "liquidai_msgs/srv/add_entity_srv.hpp"
 #include "liquidai_msgs/srv/add_entity_srv_array.hpp"
+#include "liquidai_msgs/srv/get_id_by_name.hpp"
 #include "liquidai_msgs/srv/remove_entity.hpp"
-#include <chrono>
-#include <cstdio>
-#include <functional>
 #include <geometry_msgs/msg/point.hpp>
-#include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <liquidai_msgs/msg/entity_position.hpp>
-#include <memory>
+#include <std_msgs/msg/int32.hpp>
+
 #include <rclcpp/create_timer.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/int32.hpp>
+
+#include <chrono>
+#include <cstdio>
+#include <functional>
+#include <memory>
 #include <string>
 
 class AgentDemoCpp : public rclcpp::Node {
 public:
     AgentDemoCpp(rclcpp::NodeOptions &options)
         : rclcpp::Node("agent_demo_cpp_node", options)
+        , gazebo_id(0)
     {
-        declare_parameter<int>("gazebo_id");
-        get_parameter<int>("gazebo_id", gazebo_id);
+        // declare_parameter<int>("gazebo_id");
+        // get_parameter<int>("gazebo_id", gazebo_id);
 
+        node_base_interface_ = this->get_node_base_interface();
         name_ = this->get_name();
 
-        RCLCPP_INFO(this->get_logger(), "Faking work on id %s", std::to_string(10e-4).c_str());
+        entity_management_client_node_ = std::make_shared<rclcpp::Node>("entity_management_node_");
+        get_id_by_name_client_ =
+            entity_management_client_node_->create_client<liquidai_msgs::srv::GetIdByName>(
+                "/gz_get_id_by_name");
+
+        while (!get_gazebo_id()) {
+            RCLCPP_INFO(
+                this->get_logger(), "Could not get Gazebo Id, trying again...");
+        }
 
         pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
             "/pose_effector", 10);
         debug_pub_ = this->create_publisher<std_msgs::msg::Int32>(
             "/agent_demo_sched" + std::to_string(gazebo_id), 10);
-
         gz_poses_sub_ =
             this->create_subscription<geometry_msgs::msg::PoseArray>(
                 "/model/" + name_ + "/pose",
@@ -78,8 +90,54 @@ public:
         debug_pub_->publish(dbg_msg);
     }
 
+    bool get_gazebo_id()
+    {
+        while (!get_id_by_name_client_->wait_for_service(
+            std::chrono::seconds(1))) {
+            if (!rclcpp::ok()) {
+                RCLCPP_ERROR(
+                    this->get_logger(),
+                    "Interrupted while waiting for the service. Exiting.");
+                exit(0);
+            }
+            RCLCPP_INFO(
+                this->get_logger(), "Service not available, waiting again...");
+        }
+
+        auto request =
+            std::make_shared<liquidai_msgs::srv::GetIdByName::Request>();
+        request->set__entity_name(name_);
+        auto res = get_id_by_name_client_->async_send_request(request);
+
+        if (rclcpp::spin_until_future_complete(entity_management_client_node_, res) ==
+            rclcpp::FutureReturnCode::SUCCESS) {
+            int id = res.get()->id;
+            if (id != 0) {
+                RCLCPP_INFO(
+                    this->get_logger(),
+                    "Successfully got and set the ID %d from Gazebo!",
+                    id);
+                gazebo_id = id;
+                return true;
+            }
+            else {
+                RCLCPP_WARN(
+                    this->get_logger(), "The Gazebo Id I got is 0.");
+                return false;
+            }
+        }
+        else {
+            RCLCPP_ERROR(this->get_logger(), "Failed to call service");
+            return false;
+        }
+    }
+
     void sensor_callback(const std_msgs::msg::Int32::SharedPtr msg)
     {
+        if (gazebo_id == 0) {
+            return;
+        }
+
         std_msgs::msg::Int32 dbg_msg;
         dbg_msg.data = 0;
         debug_pub_->publish(dbg_msg);
@@ -105,24 +163,25 @@ public:
         debug_pub_->publish(dbg_msg);
     }
 
+    /// @brief Get the pose from Gazebo. It is sent by the Odometry system
+    /// plugin.
+    /// @param msg
     void gz_pose_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg)
     {
         pose_ = msg->poses.back();
-                RCLCPP_INFO(
-            this->get_logger(),
-            "pose_.y is: '%s' on id %d",
-            std::to_string(pose_.position.y).c_str(),
-            gazebo_id);
     }
 
 private:
-    float x = 0;
+    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_interface_;
+    rclcpp::Node::SharedPtr entity_management_client_node_;
     geometry_msgs::msg::Pose pose_;
     std::string name_;
     int gazebo_id;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<liquidai_msgs::msg::EntityPosition>::SharedPtr pose_pub_;
     rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr debug_pub_;
+    rclcpp::Client<liquidai_msgs::srv::GetIdByName>::SharedPtr
+        get_id_by_name_client_;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sensor_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr
         gz_poses_sub_;

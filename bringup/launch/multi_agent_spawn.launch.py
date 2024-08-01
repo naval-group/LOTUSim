@@ -41,7 +41,10 @@ def render_xacro(context: LaunchContext, agent_config, ns_base):
         # Only the further end of the sdf file path is provided because the full path depends on the machine
         sdf_filename  =  os.path.join('models', agent_type, 'model.sdf')
         for agent_data in agent_config_json_data[agent_type]:
-            namespace = ns_base_str + str("{:03d}".format(ns_index)) # Format as <ns>00X
+            if(ns_base_str != ""):
+                namespace = ns_base_str + str("{:03d}".format(ns_index)) # Format as <ns>00X
+            else:
+                namespace = ''
 
             xacro_filepath = os.path.join(pkg_project_description, 'models', agent_type, 'model.xacro')
             sdf_file = ""

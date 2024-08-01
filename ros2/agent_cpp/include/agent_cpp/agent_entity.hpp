@@ -2,6 +2,7 @@
 #define AGENT_ENTITY_HH_
 
 #include "agent.hpp"
+#include "liquidai_msgs/msg/entity_position.hpp"
 #include "liquidai_msgs/srv/get_id_by_name.hpp"
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
@@ -21,6 +22,8 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr
         gz_poses_sub_;
+    geometry_msgs::msg::Pose pose_;
+    rclcpp_lifecycle::LifecyclePublisher<liquidai_msgs::msg::EntityPosition>::SharedPtr pose_pub_;
 
 public:
     AgentEntity(const rclcpp::NodeOptions &options);
@@ -43,6 +46,8 @@ public:
     void timer_callback();
 
     void gz_pose_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg);
+
+    bool get_gazebo_id();
 };
 
 #endif
