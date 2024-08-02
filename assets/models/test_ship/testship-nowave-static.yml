@@ -1,0 +1,103 @@
+rotations convention: [psi, theta', phi'']
+
+environmental constants:
+    g: {value: 9.81, unit: m/s^2}
+    rho: {value: 1025, unit: kg/m^3}
+    nu: {value: 1.18e-6, unit: m^2/s}
+
+environment models:
+  - model: no wind
+  - model: no waves
+    constant sea elevation in NED frame: {value: 0, unit: m}
+
+# Fixed frame: NED
+bodies: # All bodies have NED as parent frame
+
+  - name: TestShip
+    mesh: ../../assets/models/test_ship/test_ship.stl
+
+    position of body frame relative to mesh:
+        frame: mesh
+        x: {value: 9.355, unit: m}
+        y: {value: 0, unit: m}
+        z: {value: -3.21, unit: m}
+        phi: {value: 0, unit: rad}
+        theta: {value: 0, unit: rad}
+        psi: {value: 0, unit: rad}
+
+    initial position of body frame relative to NED:
+        frame: NED
+        x: {value: 0, unit: m}
+        y: {value: 0, unit: m}
+        z: {value: 0, unit: m}
+        phi: {value: 0, unit: rad}
+        theta: {value: 0, unit: rad}
+        psi: {value: 0, unit: rad}
+
+    initial velocity of body frame relative to NED:
+        frame: TestShip
+        u: {value: 0, unit: m/s}
+        v: {value: 0, unit: m/s}
+        w: {value: 0, unit: m/s}
+        p: {value: 0, unit: rad/s}
+        q: {value: 0, unit: rad/s}
+        r: {value: 0, unit: rad/s}
+
+    dynamics:
+
+        # This is taken from the tutorials yml files
+        hydrodynamic forces calculation point in body frame:
+            x: {value: 0.696, unit: m}
+            y: {value: 0, unit: m}
+            z: {value: 1.418, unit: m}
+
+        # This is taken from the tutorials yml files
+        centre of inertia:
+            frame: TestShip
+            x: {value: 0.258, unit: m}
+            y: {value: 0, unit: m}
+            z: {value: 0.432, unit: m}
+
+        # This is taken from the tutorials yml files
+        rigid body inertia matrix at the center of gravity and projected in the body frame:
+            row 1: [253310,0,0,0,0,0]
+            row 2: [0,253310,0,0,0,0]
+            row 3: [0,0,253310,0,0,0]
+            row 4: [0,0,0,1.522e6,0,0]
+            row 5: [0,0,0,0,8.279e6,0]
+            row 6: [0,0,0,0,0,7.676e6]
+            
+        # This is taken from the tutorials yml files
+        added mass matrix at the center of gravity and projected in the body frame:
+            row 1: [3.519e4,0,0,0,0,0]
+            row 2: [0,3.023e5,0,0,0,0]
+            row 3: [0,0,1.980e5,0,0,0]
+            row 4: [0,0,0,3.189e5,0,0]
+            row 5: [0,0,0,0,8.866e6,0]
+            row 6: [0,0,0,0,0,6.676e6]
+
+    external forces:
+
+      # needs inertia matrix
+      - model: gravity
+
+      # needs stl file
+      - model: hydrostatic
+
+      # needs stl file
+      - model: non-linear Froude-Krylov
+
+      # Taken from tutorial_04_damping
+      - model: quadratic damping
+        damping matrix at the center of gravity projected in the body frame:
+            row 1: [ 0, 0,     0,      0,      0, 0]
+            row 2: [ 0, 0,     0,      0,      0, 0]
+            row 3: [ 0, 0, 1.9e5,      0,      0, 0]
+            row 4: [ 0, 0,     0, 1.74e4,      0, 0]
+            row 5: [ 0, 0,     0,      0, 4.67e6, 0]
+            row 6: [ 0, 0,     0,      0,      0, 0]
+
+output:
+- format: csv
+  filename: test_ship.csv
+  data: [x(TestShip), y(TestShip), z(TestShip), psi(TestShip), theta(TestShip), phi(TestShip)]
