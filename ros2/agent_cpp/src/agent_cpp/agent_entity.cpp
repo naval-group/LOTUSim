@@ -3,9 +3,12 @@
 AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     : Agent("agent_entity", options)
 {
+    string sdf_file_;
+    string sdf_filename_;
+    std::string pose_str_;
     get_parameter("sdf_file", sdf_file_);
     get_parameter("sdf_filename", sdf_filename_);
-    get_parameter("pose", pose_str);
+    get_parameter("pose", pose_str_);
     get_parameter<bool>("configure_on_startup", configure_on_startup);
 
     entity_management_client_node =
@@ -24,39 +27,7 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
     pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
         "/pose_effector", 10);
 
-    // Parse the pose string
-    float pose_components[6];
-    int i = 0;
-    stringstream ssin(pose_str);
-    while (ssin.good() && i < 6) {
-        ssin >> pose_components[i];
-        ++i;
-    }
-    geometry_msgs::msg::Point p;
-    p.set__x(pose_components[0]);
-    p.set__y(pose_components[1]);
-    p.set__z(pose_components[2]);
-    geometry_msgs::msg::Vector3 r;
-    r.set__x(pose_components[3]);
-    r.set__y(pose_components[4]);
-    r.set__z(pose_components[5]);
-
-    auto spawn_request = liquidai_msgs::srv::AddEntitySrv::Request();
-
-    spawn_request.data.name = this->get_name();
-    spawn_request.data.model_filepath = this->sdf_filename_;
-    spawn_request.data.model_file = this->sdf_file_;
-    spawn_request.data.location = p;
-    spawn_request.data.rotation = r;
-    auto spawnBehavior = std::make_shared<SpawnOnGazebo>(
-        spawn_request, entity_management_client_node);
-    this->set_spawn(spawnBehavior);
-
-    auto despawn_request = liquidai_msgs::srv::RemoveEntity::Request();
-    despawn_request.name = this->get_name();
-    auto despawnBehavior = std::make_shared<DespawnOnGazebo>(
-        despawn_request, entity_management_client_node);
-    this->set_despawn(despawnBehavior);
+    set_spawn_and_despawn_behaviors(pose_str_, sdf_filename_, sdf_file_);
 
     timer_ = rclcpp::create_timer(
         this,
@@ -66,36 +37,6 @@ AgentEntity::AgentEntity(const rclcpp::NodeOptions &options)
 
     if (configure_on_startup) {
         this->on_configure(this->get_current_state());
-    }
-}
-
-void AgentEntity::timer_callback()
-{
-    if (gazebo_id == 0) {
-        return;
-    }
-
-    // Print the current state for demo purposes
-    if (!pose_pub_->is_activated()) {
-        RCLCPP_DEBUG(
-            get_logger(),
-            "Lifecycle publisher is currently inactive. Messages are not "
-            "published.");
-    }
-    else {
-        RCLCPP_DEBUG(get_logger(), "Lifecycle publisher is active. Publishing...");
-
-        auto message = liquidai_msgs::msg::EntityPosition();
-        message.id = gazebo_id;
-        message.position.set__x(pose_.position.x + 0.1);
-        message.position.set__y(pose_.position.y);
-        message.position.set__z(pose_.position.z);
-        RCLCPP_INFO(
-            this->get_logger(),
-            "Publishing: '%s' on id %d",
-            std::to_string(message.position.x).c_str(),
-            gazebo_id);
-        pose_pub_->publish(message);
     }
 }
 
@@ -177,6 +118,77 @@ AgentEntity::on_shutdown(const rclcpp_lifecycle::State &previous_state)
         CallbackReturn::SUCCESS;
 }
 
+void AgentEntity::set_spawn_and_despawn_behaviors(
+    std::string &pose_str_, std::string &sdf_filename_, std::string &sdf_file_)
+{
+    // Parse the pose string
+    float pose_components[6];
+    int i = 0;
+    stringstream ssin(pose_str_);
+    while (ssin.good() && i < 6) {
+        ssin >> pose_components[i];
+        ++i;
+    }
+    geometry_msgs::msg::Point p;
+    p.set__x(pose_components[0]);
+    p.set__y(pose_components[1]);
+    p.set__z(pose_components[2]);
+    geometry_msgs::msg::Vector3 r;
+    r.set__x(pose_components[3]);
+    r.set__y(pose_components[4]);
+    r.set__z(pose_components[5]);
+
+    auto spawn_request = liquidai_msgs::srv::AddEntitySrv::Request();
+
+    spawn_request.data.name = name_;
+    spawn_request.data.model_filepath = sdf_filename_;
+    spawn_request.data.model_file = sdf_file_;
+    spawn_request.data.location = p;
+    spawn_request.data.rotation = r;
+    auto spawnBehavior = std::make_shared<SpawnOnGazebo>(
+        spawn_request, entity_management_client_node);
+    this->set_spawn(spawnBehavior);
+
+    auto despawn_request = liquidai_msgs::srv::RemoveEntity::Request();
+    despawn_request.name = this->get_name();
+    auto despawnBehavior = std::make_shared<DespawnOnGazebo>(
+        despawn_request, entity_management_client_node);
+    this->set_despawn(despawnBehavior);
+}
+
+void AgentEntity::timer_callback()
+{
+    if (gazebo_id == 0) {
+        return;
+    }
+
+    // Print the current state for demo purposes
+    if (!pose_pub_->is_activated()) {
+        RCLCPP_DEBUG(
+            get_logger(),
+            "Lifecycle publisher is currently inactive. Messages are not "
+            "published.");
+    }
+    else {
+        RCLCPP_DEBUG(
+            get_logger(), "Lifecycle publisher is active. Publishing...");
+
+        auto message = liquidai_msgs::msg::EntityPosition();
+        message.id = gazebo_id;
+        message.position.set__x(pose_.position.x + 0.1);
+        message.position.set__y(pose_.position.y);
+        message.position.set__z(pose_.position.z);
+        RCLCPP_INFO(
+            this->get_logger(),
+            "Publishing: '%s' on id %d",
+            std::to_string(message.position.x).c_str(),
+            gazebo_id);
+        pose_pub_->publish(message);
+    }
+}
+
+/// @brief Asks Gazebo for the Id of the entity that has the node's name
+/// @return true if successfull
 bool AgentEntity::get_gazebo_id()
 {
     while (!get_id_by_name_client_->wait_for_service(std::chrono::seconds(1))) {

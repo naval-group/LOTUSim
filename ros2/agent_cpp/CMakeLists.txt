@@ -92,41 +92,4 @@ install(TARGETS agent_entity
 #         RUNTIME DESTINATION bin
 # )
 
-# Scheduler
-
-add_executable(scheduler src/Scheduler.cpp)
-target_link_libraries(scheduler
-  ${rclcpp_LIBRARIES}
-  ${rclcpp_components_LIBRARIES}
-)
-
-ament_target_dependencies(scheduler
-  rclcpp
-  rclcpp_components
-  composition_interfaces
-)
-
-install(TARGETS
-  scheduler
-  DESTINATION lib/${PROJECT_NAME})
-
-# Agent Factory
-
-add_executable(agent_factory src/AgentFactory.cpp)
-target_link_libraries(agent_factory
-  ${rclcpp_LIBRARIES}
-  ${rclcpp_components_LIBRARIES}
-  nlohmann_json::nlohmann_json
-)
-
-ament_target_dependencies(agent_factory
-  rclcpp
-  rclcpp_components
-  composition_interfaces
-)
-
-install(TARGETS
-  agent_factory
-  DESTINATION lib/${PROJECT_NAME})
-
 ament_package()

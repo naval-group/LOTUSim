@@ -10,10 +10,6 @@ This simulation is built on Gazebo Harmonic and ROS Humble.
 </div>
 
 [[_TOC_]]
-
-## Installing
-
-[[_TOC_]]
 ## Get Started
 ### Installing
 
@@ -46,6 +42,8 @@ source config-lotus.sh;
 ```
 
 ## Tutorial
+
+### Running with the MAS
 
 #### Configuration
 
