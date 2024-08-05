@@ -11,9 +11,6 @@
 // An agent that is an entity in Gazebo
 class AgentEntity : public Agent {
 private:
-    string sdf_file_;
-    string sdf_filename_;
-    string pose_str;
     bool configure_on_startup;
     rclcpp::Node::SharedPtr entity_management_client_node;
     rclcpp::Client<liquidai_msgs::srv::GetIdByName>::SharedPtr
@@ -30,23 +27,18 @@ public:
 
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_configure(const rclcpp_lifecycle::State &previous_state) override;
-
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_activate(const rclcpp_lifecycle::State &previous_state) override;
-
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
-
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_cleanup(const rclcpp_lifecycle::State &previous_state) override;
-
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
     on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
 
+    void set_spawn_and_despawn_behaviors(std::string& pose_str_, std::string& sdf_filename_, std::string& sdf_file_);
     void timer_callback();
-
     void gz_pose_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg);
-
     bool get_gazebo_id();
 };
 

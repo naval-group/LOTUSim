@@ -45,19 +45,15 @@ public:
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
         on_configure(const rclcpp_lifecycle::State &previous_state) = 0;
-
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
         on_activate(const rclcpp_lifecycle::State &previous_state) = 0;
-
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
         on_deactivate(const rclcpp_lifecycle::State &previous_state) = 0;
-
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
         on_cleanup(const rclcpp_lifecycle::State &previous_state) = 0;
-
     virtual rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::
         CallbackReturn
         on_shutdown(const rclcpp_lifecycle::State &previous_state);
@@ -80,7 +76,6 @@ public:
 protected:
     rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr
         param_change_callback_handle_;
-
     std::shared_ptr<SpawnInterface> spawnInterface;
     std::shared_ptr<DespawnInterface> despawnInterface;
     std::string name_;
