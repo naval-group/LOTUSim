@@ -1,13 +1,14 @@
 #ifndef __WAVE_PARAM_H__
 #define __WAVE_PARAM_H__
 
+#include <yaml-cpp/yaml.h>
+
 #include <chrono>
 #include <map>
 
 #include "DataType.h"
 #include "yaml-cpp/node/node.h"
 #include "yaml-cpp/parser.h"
-#include <yaml-cpp/yaml.h>
 
 namespace liquidai {
 
@@ -50,8 +51,7 @@ public:
         int start_time;
         if (config.size() == 0) {
             return;
-        }
-        else {
+        } else {
             start_time = config[0]["time"].as<double>();
         }
         for (auto &&i : config) {
@@ -66,5 +66,5 @@ public:
     };
 };
 
-} // namespace liquidai
-#endif // __WAVE_PARAM_H__
+}  // namespace liquidai
+#endif  // __WAVE_PARAM_H__

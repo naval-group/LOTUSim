@@ -16,61 +16,60 @@
 
 #include <gz/transport/TopicUtils.hh>
 
-namespace ros_gz_bridge
-{
+namespace ros_gz_bridge {
 
 BridgeHandleRosToGz::~BridgeHandleRosToGz() = default;
 
 size_t BridgeHandleRosToGz::NumSubscriptions() const
 {
-  // Return number of gazebo subscriptions
-  // Gazebo publishers can only detect presence of connections, and not
-  // get the actual count.
-  // Gazebo transport also cannot differentiate connections locally and
-  // remotely, so a bidirectional bridge will always subscribe.
-  // \TODO(mjcarroll) Add transport APIs for correctly querying number
-  // of remote subscriptions
-  if (this->gz_publisher_.Valid() && this->gz_publisher_.HasConnections()) {
-    return 1;
-  }
-  return 0;
+    // Return number of gazebo subscriptions
+    // Gazebo publishers can only detect presence of connections, and not
+    // get the actual count.
+    // Gazebo transport also cannot differentiate connections locally and
+    // remotely, so a bidirectional bridge will always subscribe.
+    // \TODO(mjcarroll) Add transport APIs for correctly querying number
+    // of remote subscriptions
+    if (this->gz_publisher_.Valid() && this->gz_publisher_.HasConnections()) {
+        return 1;
+    }
+    return 0;
 }
 
 bool BridgeHandleRosToGz::HasPublisher() const
 {
-  // Return Gazebo publisher status
-  return this->gz_publisher_.Valid();
+    // Return Gazebo publisher status
+    return this->gz_publisher_.Valid();
 }
 
 void BridgeHandleRosToGz::StartPublisher()
 {
-  // Start Gazebo publisher
-  this->gz_publisher_ = this->factory_->create_gz_publisher(
-    this->gz_node_,
-    this->config_.gz_topic_name,
-    this->config_.publisher_queue_size);
+    // Start Gazebo publisher
+    this->gz_publisher_ = this->factory_->create_gz_publisher(
+        this->gz_node_,
+        this->config_.gz_topic_name,
+        this->config_.publisher_queue_size);
 }
 
 bool BridgeHandleRosToGz::HasSubscriber() const
 {
-  // Return ROS subscriber status
-  return this->ros_subscriber_ != nullptr;
+    // Return ROS subscriber status
+    return this->ros_subscriber_ != nullptr;
 }
 
 void BridgeHandleRosToGz::StartSubscriber()
 {
-  // Start ROS subscriber
-  this->ros_subscriber_ = this->factory_->create_ros_subscriber(
-    this->ros_node_,
-    this->config_.ros_topic_name,
-    this->config_.subscriber_queue_size,
-    this->gz_publisher_);
+    // Start ROS subscriber
+    this->ros_subscriber_ = this->factory_->create_ros_subscriber(
+        this->ros_node_,
+        this->config_.ros_topic_name,
+        this->config_.subscriber_queue_size,
+        this->gz_publisher_);
 }
 
 void BridgeHandleRosToGz::StopSubscriber()
 {
-  // Stop ROS subscriber
-  this->ros_subscriber_.reset();
+    // Stop ROS subscriber
+    this->ros_subscriber_.reset();
 }
 
 }  // namespace ros_gz_bridge

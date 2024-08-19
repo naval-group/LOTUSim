@@ -31,21 +31,21 @@ const double RADIANS_PER_DEGREE = M_PI / 180.0;
 const double DEGREES_PER_RADIAN = 180.0 / M_PI;
 
 // WGS84 Parameters
-const double WGS84_A = 6378137.0;        // major axis
-const double WGS84_B = 6356752.31424518; // minor axis
-const double WGS84_F = 0.0033528107;     // ellipsoid flattening
-const double WGS84_E = 0.0818191908;     // first eccentricity
-const double WGS84_EP = 0.0820944379;    // second eccentricity
+const double WGS84_A = 6378137.0;         // major axis
+const double WGS84_B = 6356752.31424518;  // minor axis
+const double WGS84_F = 0.0033528107;      // ellipsoid flattening
+const double WGS84_E = 0.0818191908;      // first eccentricity
+const double WGS84_EP = 0.0820944379;     // second eccentricity
 
 // UTM Parameters
-const double UTM_K0 = 0.9996;              // scale factor
-const double UTM_FE = 500000.0;            // false easting
-const double UTM_FN_N = 0.0;               // false northing on north hemisphere
-const double UTM_FN_S = 10000000.0;        // false northing on south hemisphere
-const double UTM_E2 = (WGS84_E * WGS84_E); // e^2
-const double UTM_E4 = (UTM_E2 * UTM_E2);   // e^4
-const double UTM_E6 = (UTM_E4 * UTM_E2);   // e^6
-const double UTM_EP2 = (UTM_E2 / (1 - UTM_E2)); // e'^2
+const double UTM_K0 = 0.9996;        // scale factor
+const double UTM_FE = 500000.0;      // false easting
+const double UTM_FN_N = 0.0;         // false northing on north hemisphere
+const double UTM_FN_S = 10000000.0;  // false northing on south hemisphere
+const double UTM_E2 = (WGS84_E * WGS84_E);       // e^2
+const double UTM_E4 = (UTM_E2 * UTM_E2);         // e^4
+const double UTM_E6 = (UTM_E4 * UTM_E2);         // e^6
+const double UTM_EP2 = (UTM_E2 / (1 - UTM_E2));  // e'^2
 
 /**
  * Utility function to convert geodetic to UTM position
@@ -243,7 +243,7 @@ static inline void LLtoUTM(
         (double)(k0 * (M + N * tan(LatRad) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * A * A * A * A / 24 + (61 - 58 * T + T * T + 600 * C - 330 * eccPrimeSquared) * A * A * A * A * A * A / 720)));
     if (Lat < 0)
         UTMNorthing +=
-            10000000.0; // 10000000 meter offset for southern hemisphere
+            10000000.0;  // 10000000 meter offset for southern hemisphere
 }
 
 static inline void LLtoUTM(
@@ -288,17 +288,17 @@ static inline void UTMtoLL(
     int ZoneNumber;
     char *ZoneLetter;
 
-    x = UTMEasting - 500000.0; // remove 500,000 meter offset for longitude
+    x = UTMEasting - 500000.0;  // remove 500,000 meter offset for longitude
     y = UTMNorthing;
 
     ZoneNumber = strtoul(UTMZone, &ZoneLetter, 10);
     if ((*ZoneLetter - 'N') < 0) {
-        y -= 10000000.0; // remove 10,000,000 meter offset used for southern
-                         // hemisphere
+        y -= 10000000.0;  // remove 10,000,000 meter offset used for southern
+                          // hemisphere
     }
 
     LongOrigin =
-        (ZoneNumber - 1) * 6 - 180 + 3; //+3 puts origin in middle of zone
+        (ZoneNumber - 1) * 6 - 180 + 3;  //+3 puts origin in middle of zone
 
     eccPrimeSquared = (eccSquared) / (1 - eccSquared);
 
@@ -345,6 +345,6 @@ static inline void UTMtoLL(
     UTMtoLL(UTMNorthing, UTMEasting, UTMZone.c_str(), Lat, Long);
 }
 
-} // namespace gps_tools
+}  // namespace gps_tools
 
-#endif // _UTM_H
+#endif  // _UTM_H

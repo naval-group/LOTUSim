@@ -14,10 +14,15 @@
 
 namespace liquidai {
 
-enum class FileFormat { YAML, UNKNOWN };
+enum class FileFormat
+{
+    YAML,
+    UNKNOWN
+};
 
 std::unordered_map<std::string, FileFormat> file_type_mapping{
-    {"yaml", FileFormat::YAML}, {"unknown", FileFormat::UNKNOWN}};
+    {"yaml", FileFormat::YAML},
+    {"unknown", FileFormat::UNKNOWN}};
 
 /**
  * @brief This is a factory class to load different format
@@ -45,18 +50,18 @@ bool loadFile(
         &output)
 {
     switch (format) {
-    case (FileFormat::YAML): {
-        WaveYamlLoader(file_path, output);
-        if (!output.empty()) {
-            return true;
+        case (FileFormat::YAML): {
+            WaveYamlLoader(file_path, output);
+            if (!output.empty()) {
+                return true;
+            }
         }
-    }
-    default: {
-        return false;
-    }
+        default: {
+            return false;
+        }
     }
 };
 
-} // namespace liquidai
+}  // namespace liquidai
 
-#endif // __DATA_FILE_HELPER_H__
+#endif  // __DATA_FILE_HELPER_H__

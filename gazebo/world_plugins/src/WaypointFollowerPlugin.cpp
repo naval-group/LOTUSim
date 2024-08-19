@@ -15,8 +15,7 @@ bool WaypointFollowerPlugin::Load(
 
     if (!_sdf->HasElement("follower")) {
         return true;
-    }
-    else {
+    } else {
         _sdf = _sdf->GetElement("follower");
     }
 
@@ -32,7 +31,7 @@ bool WaypointFollowerPlugin::Load(
         if (!waypointsElem->HasElement("waypoint")) {
             gzerr << "TrajectoryFollower: Unable to find "
                      "<waypoints><waypoint> "
-                  << "element in SDF." << std::endl;
+                  << "element in SDF.\n";
             return true;
         }
         auto waypointElem = waypointsElem->GetElement("waypoint");
@@ -45,18 +44,18 @@ bool WaypointFollowerPlugin::Load(
 
             // Print some debugging messages
             gzdbg << "Waypoint, Local: X = " << position.X()
-                  << " Y = " << position.Y() << std::endl;
+                  << " Y = " << position.Y() << "\n";
 
             waypointElem = waypointElem->GetNextElement("waypoint");
         }
     }
     // If no waypoints present, check for the <circle> element and parse.
     else if (_sdf->HasElement("circle")) {
-        gzdbg << "Circle element activated" << std::endl;
+        gzdbg << "Circle element activated\n";
         auto circleElem = _sdf->GetElement("circle");
 
         if (!circleElem->HasElement("radius")) {
-            gzerr << "No <circle><radius> specified" << std::endl;
+            gzerr << "No <circle><radius> specified\n";
             return true;
         }
 
@@ -74,7 +73,7 @@ bool WaypointFollowerPlugin::Load(
             waypoint.push_back(position + vec);
             angle += 2 * GZ_PI / 8;
             vec.Set(radius * cos(angle), radius * sin(angle));
-            gzdbg << "Entered circle waypoint " << position + vec << std::endl;
+            gzdbg << "Entered circle waypoint " << position + vec << "\n";
         }
     }
     // If no waypoints or circle, check for the <line> element and parse.
@@ -82,14 +81,14 @@ bool WaypointFollowerPlugin::Load(
         auto lineElem = _sdf->GetElement("line");
         // Parse the required <direction> field.
         if (!lineElem->HasElement("direction")) {
-            gzerr << "No <line><direction> specified" << std::endl;
+            gzerr << "No <line><direction> specified\n";
             return true;
         }
         gz::math::Angle direction = lineElem->Get<gz::math::Angle>("direction");
 
         // Parse the required <length> field.
         if (!lineElem->HasElement("length")) {
-            gzerr << "No <line><length> specified" << std::endl;
+            gzerr << "No <line><length> specified\n";
             return true;
         }
         auto length = lineElem->Get<double>("length");
@@ -107,8 +106,7 @@ bool WaypointFollowerPlugin::Load(
         gz::math::Vector3d p = pose.CoordPositionAdd(lineVec);
         gz::math::Vector2d p2D = {p.X(), p.Y()};
         waypoint.push_back(p2D);
-        gzdbg << "Entered line waypoints " << position << ", " << p2D
-              << std::endl;
+        gzdbg << "Entered line waypoints " << position << ", " << p2D << "\n";
     }
 
     m_waypoints[_entity] = waypoint;
@@ -121,32 +119,28 @@ bool WaypointFollowerPlugin::Load(
     if (_sdf->HasElement("range_tolerance")) {
         double rangeTolerance = _sdf->Get<double>("range_tolerance");
         m_rangeTolerance[_entity] = rangeTolerance;
-    }
-    else {
+    } else {
         m_rangeTolerance[_entity] = 0.5;
     }
 
     if (_sdf->HasElement("linear_accel_limit")) {
         double linear_accel_limit = _sdf->Get<double>("linear_accel_limit");
         m_linear_accel_limit[_entity] = linear_accel_limit;
-    }
-    else {
+    } else {
         m_linear_accel_limit[_entity] = 0.5;
     }
 
     if (_sdf->HasElement("angular_accel_limit")) {
         double angular_accel_limit = _sdf->Get<double>("angular_accel_limit");
         m_angular_accel_limit[_entity] = angular_accel_limit;
-    }
-    else {
+    } else {
         m_angular_accel_limit[_entity] = 0.5;
     }
 
     if (_sdf->HasElement("linear_velocities_limits")) {
         m_linear_velocities_limits[_entity] =
             _sdf->Get<gz::math::Vector2d>("linear_velocities_limits");
-    }
-    else {
+    } else {
         m_linear_velocities_limits[_entity] = gz::math::Vector2d(1, 10);
     }
 
@@ -154,13 +148,12 @@ bool WaypointFollowerPlugin::Load(
         double angular_velocities_limits =
             _sdf->Get<double>("angular_velocities_limits");
         m_angular_velocities_limits[_entity] = angular_velocities_limits;
-    }
-    else {
+    } else {
         m_angular_velocities_limits[_entity] = 0.5;
     }
 
     auto name_opt = _ecm->Component<gz::sim::components::Name>(_entity);
-    gzmsg << "WaypointFollower::Load Loading " << name_opt->Data() << std::endl;
+    gzmsg << "WaypointFollower::Load Loading " << name_opt->Data() << "\n";
 
     m_velocities[_entity] = {0, 0};
 
@@ -177,13 +170,10 @@ void WaypointFollowerPlugin::Configure(
     // TODO: add here to read waypoints off file to move model based on file
 }
 
-void WaypointFollowerPlugin::PreUpdate(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
-{
-}
 //////////////////////////////////////////////////
 void WaypointFollowerPlugin::Update(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo &_info,
+    gz::sim::EntityComponentManager &_ecm)
 {
     _ecm.EachNew<gz::sim::components::ModelSdf>(
         std::bind(&WaypointFollowerPlugin::Load, this, _1, _2, &_ecm));
@@ -207,7 +197,9 @@ void WaypointFollowerPlugin::Update(
             m_waypoint_state[_entity] = 0;
             // angle to goal and changing atan2 convention to gz convention
             gz::math::Vector3d goal = {
-                _waypoints[0].X(), _waypoints[0].Y(), pose.Z()};
+                _waypoints[0].X(),
+                _waypoints[0].Y(),
+                pose.Z()};
             // Direction vector to the goal from the model.
             gz::math::Vector3d direction = goal - pose.Pos();
             gz::math::Vector3d directionLocalFrame =
@@ -218,13 +210,17 @@ void WaypointFollowerPlugin::Update(
 
             // Setting angle
             pose.Rot().SetFromEuler(
-                pose.Roll(), pose.Pitch(), bearing.Radian());
+                pose.Roll(),
+                pose.Pitch(),
+                bearing.Radian());
             _ecm.SetComponentData<gz::sim::components::Pose>(_entity, pose);
         }
 
         gz::math::Vector2d current_goal = _waypoints[m_waypoint_state[_entity]];
         gz::math::Vector3d goal = {
-            current_goal.X(), current_goal.Y(), pose.Z()};
+            current_goal.X(),
+            current_goal.Y(),
+            pose.Z()};
         gz::math::Vector3d direction = goal - pose.Pos();
         gz::math::Vector3d directionLocalFrame =
             pose.Rot().RotateVectorReverse(direction);
@@ -252,58 +248,55 @@ void WaypointFollowerPlugin::Update(
             if (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1 &&
                 !m_loop[_entity]) {
                 linear_veloctiy_flag = 1;
-            }
-            else {
+            } else {
                 linear_veloctiy_flag = 0;
             }
-        }
-        else if (angle_to_goal < 1.57 && angle_to_goal > -1.57) {
+        } else if (angle_to_goal < 1.57 && angle_to_goal > -1.57) {
             linear_veloctiy_flag = 2;
         }
         double accel = m_linear_accel_limit[_entity] * dt / 1000;
         switch (linear_veloctiy_flag) {
-        case 1: {
-            if (m_velocities[_entity][0] < 0) {
-                m_velocities[_entity][0] = 0;
+            case 1: {
+                if (m_velocities[_entity][0] < 0) {
+                    m_velocities[_entity][0] = 0;
+                } else if (m_velocities[_entity][0] > 0) {
+                    m_velocities[_entity][0] -= accel;
+                }
+                break;
             }
-            else if (m_velocities[_entity][0] > 0) {
-                m_velocities[_entity][0] -= accel;
+            case 2: {
+                // match to speed limit
+                if (current_velocity + accel >
+                    m_linear_velocities_limits[_entity][1]) {
+                    m_velocities[_entity][0] =
+                        m_linear_velocities_limits[_entity][1];
+                }
+                // full acceleartion
+                else {
+                    m_velocities[_entity][0] += accel;
+                }
+                break;
             }
-            break;
-        }
-        case 2: {
-            // match to speed limit
-            if (current_velocity + accel >
-                m_linear_velocities_limits[_entity][1]) {
-                m_velocities[_entity][0] =
-                    m_linear_velocities_limits[_entity][1];
-            }
-            // full acceleartion
-            else {
-                m_velocities[_entity][0] += accel;
-            }
-            break;
-        }
-        default: {
-            // Default case 0
-            // If speed is less than min, continue;
+            default: {
+                // Default case 0
+                // If speed is less than min, continue;
 
-            // if speed deduct is less than min, set to min
+                // if speed deduct is less than min, set to min
 
-            // else deduct
+                // else deduct
 
-            // match to speed limit
-            if (current_velocity - accel <
-                m_linear_velocities_limits[_entity][0]) {
-                m_velocities[_entity][0] =
-                    m_linear_velocities_limits[_entity][0];
+                // match to speed limit
+                if (current_velocity - accel <
+                    m_linear_velocities_limits[_entity][0]) {
+                    m_velocities[_entity][0] =
+                        m_linear_velocities_limits[_entity][0];
+                }
+                // full acceleartion
+                else {
+                    m_velocities[_entity][0] -= accel;
+                }
+                break;
             }
-            // full acceleartion
-            else {
-                m_velocities[_entity][0] -= accel;
-            }
-            break;
-        }
         }
 
         /*
@@ -319,62 +312,56 @@ void WaypointFollowerPlugin::Update(
         if ((angle_to_goal < 0.1 && angle_to_goal > -0.1) ||
             stopping_distance >= abs(angle_to_goal)) {
             orientation_accel_flag = 3;
-        }
-        else if (angle_to_goal >= 0.1) {
+        } else if (angle_to_goal >= 0.1) {
             orientation_accel_flag = 1;
-        }
-        else {
+        } else {
             orientation_accel_flag = 2;
         }
 
         accel = m_angular_accel_limit[_entity] * dt / 1000;
         switch (orientation_accel_flag) {
-        case 1: {
-            // Turning left, +ve angle
-            if (m_velocities[_entity][1] + accel >=
-                m_angular_velocities_limits[_entity]) {
-                m_velocities[_entity][1] = m_angular_velocities_limits[_entity];
-            }
-            else {
-                m_velocities[_entity][1] += accel;
-            }
-            break;
-        }
-        case 2: {
-            // Turning right, -ve angle
-            if (m_velocities[_entity][1] - accel <=
-                -1 * m_angular_velocities_limits[_entity]) {
-                m_velocities[_entity][1] =
-                    -1 * m_angular_velocities_limits[_entity];
-            }
-            else {
-                m_velocities[_entity][1] -= accel;
-            }
-            break;
-        }
-        case 3: {
-            // Zeroing
-            if (m_velocities[_entity][1] > 0) {
-                // turning left
-                if (m_velocities[_entity][1] - accel <= 0) {
-                    m_velocities[_entity][1] = 0;
-                }
-                else {
-                    m_velocities[_entity][1] -= accel;
-                }
-            }
-            else {
-                if (m_velocities[_entity][1] + accel >= 0) {
-                    m_velocities[_entity][1] = 0;
-                }
-                else {
+            case 1: {
+                // Turning left, +ve angle
+                if (m_velocities[_entity][1] + accel >=
+                    m_angular_velocities_limits[_entity]) {
+                    m_velocities[_entity][1] =
+                        m_angular_velocities_limits[_entity];
+                } else {
                     m_velocities[_entity][1] += accel;
                 }
+                break;
             }
-        }
-        default: {
-            break;
-        }
+            case 2: {
+                // Turning right, -ve angle
+                if (m_velocities[_entity][1] - accel <=
+                    -1 * m_angular_velocities_limits[_entity]) {
+                    m_velocities[_entity][1] =
+                        -1 * m_angular_velocities_limits[_entity];
+                } else {
+                    m_velocities[_entity][1] -= accel;
+                }
+                break;
+            }
+            case 3: {
+                // Zeroing
+                if (m_velocities[_entity][1] > 0) {
+                    // turning left
+                    if (m_velocities[_entity][1] - accel <= 0) {
+                        m_velocities[_entity][1] = 0;
+                    } else {
+                        m_velocities[_entity][1] -= accel;
+                    }
+                } else {
+                    if (m_velocities[_entity][1] + accel >= 0) {
+                        m_velocities[_entity][1] = 0;
+                    } else {
+                        m_velocities[_entity][1] += accel;
+                    }
+                }
+            }
+            default: {
+                break;
+            }
         }
 
         // Updating pose
@@ -403,20 +390,18 @@ void WaypointFollowerPlugin::Update(
                     m_waypoints.erase(_entity);
                     m_waypoint_state.erase(_entity);
                 }
-            }
-            else {
+            } else {
                 m_waypoint_state[_entity] += 1;
             }
         }
     }
 }
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 
 GZ_ADD_PLUGIN(
     liquidai::gazebo::WaypointFollowerPlugin,
     gz::sim::System,
     liquidai::gazebo::WaypointFollowerPlugin::ISystemConfigure,
-    liquidai::gazebo::WaypointFollowerPlugin::ISystemPreUpdate,
     liquidai::gazebo::WaypointFollowerPlugin::ISystemUpdate)

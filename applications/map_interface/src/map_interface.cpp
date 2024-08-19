@@ -1,8 +1,7 @@
 #include "map_interface/map_interface.hpp"
 
 MapPublisher::MapPublisher()
-    : m_topic_name("ais")
-    , rclcpp::Node("map_publisher", rclcpp::NodeOptions())
+    : m_topic_name("ais"), rclcpp::Node("map_publisher", rclcpp::NodeOptions())
 {
     declare_parameter("ip_address", rclcpp::ParameterValue("localhost"));
     declare_parameter("ais_topic_name", rclcpp::ParameterValue("ais"));

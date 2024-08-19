@@ -3,8 +3,7 @@
 namespace liquidai {
 namespace gazebo {
 
-WaveParamPlugin::WaveParamPlugin()
-    : ParamNode()
+WaveParamPlugin::WaveParamPlugin() : ParamNode()
 {
     m_gz_node = std::make_shared<gz::transport::Node>();
 
@@ -28,7 +27,9 @@ void WaveParamPlugin::Configure(
     m_param_pub = m_gz_node->Advertise<gz_liquidai_msgs::msgs::WaveParam>(
         wave_param_topic_name);
     m_gz_node->Advertise(
-        "get_" + wave_param_topic_name, &WaveParamPlugin::getParamCB, this);
+        "get_" + wave_param_topic_name,
+        &WaveParamPlugin::getParamCB,
+        this);
 
     // Default gazebo Wave Param
     WaveParameters default_param;
@@ -48,9 +49,9 @@ void WaveParamPlugin::Configure(
             c = std::tolower(c);
         }
         switch (file_type_mapping[file_type_name]) {
-        case (FileFormat::YAML): {
-            file_type = FileFormat::YAML;
-        }
+            case (FileFormat::YAML): {
+                file_type = FileFormat::YAML;
+            }
         }
     }
     if (!loadParamFromFile(file_path, file_type, default_param)) {
@@ -59,14 +60,12 @@ void WaveParamPlugin::Configure(
             if (wave_para_ptr->HasElement("amplitude")) {
                 default_param.amplitude =
                     wave_para_ptr->Get<double>("amplitude");
-            }
-            else {
+            } else {
                 logError("wave amplitude not found. Using default 1.0");
             }
             if (wave_para_ptr->HasElement("period")) {
                 default_param.amplitude = wave_para_ptr->Get<double>("period");
-            }
-            else {
+            } else {
                 logError("wave period not found. Using default 1.0");
             }
             if (wave_para_ptr->HasElement("heading")) {
@@ -75,12 +74,10 @@ void WaveParamPlugin::Configure(
                     default_param.direction[0] = heading_ptr->Get<double>("x");
                 if (heading_ptr->HasElement("y"))
                     default_param.direction[1] = heading_ptr->Get<double>("y");
-            }
-            else {
+            } else {
                 logError("wave heading not found. Using default 1.0, 0");
             }
-        }
-        else {
+        } else {
             logError("WaveParamPlugin::Configure: No param file and default "
                      "param found. Setting default param");
         }
@@ -90,7 +87,8 @@ void WaveParamPlugin::Configure(
     rclcpp::QoS qos(1);
     qos.transient_local();
     m_wave_param_pub = m_nh->create_publisher<liquidai_msgs::msg::WaveParam>(
-        "wave_param", qos);
+        "wave_param",
+        qos);
 
     // Setting up ROS dynamic param only if file is not used
     if (!usingFile()) {
@@ -119,7 +117,8 @@ void WaveParamPlugin::Configure(
 }
 
 void WaveParamPlugin::PreUpdate(
-    const gz::sim::UpdateInfo &info, gz::sim::EntityComponentManager &ecm)
+    const gz::sim::UpdateInfo &info,
+    gz::sim::EntityComponentManager &ecm)
 {
     if (step(info.simTime)) {
         auto it = m_param_map.begin();
@@ -130,7 +129,7 @@ void WaveParamPlugin::PreUpdate(
 
 void WaveParamPlugin::logError(std::string err_statement)
 {
-    gzerr << err_statement << std::endl;
+    gzerr << err_statement << "\n";
 }
 
 bool WaveParamPlugin::getParamCB(gz_liquidai_msgs::msgs::WaveParam &msg)
@@ -189,8 +188,7 @@ WaveParamPlugin::dynamicParametersCallback(
                         m_nh->get_logger(),
                         "You've set amplitude less or equal to 0, this isn't "
                         "allowed, changes will be ignored.");
-                }
-                else {
+                } else {
                     new_param.amplitude = new_amplitude;
                 }
             }
@@ -201,8 +199,7 @@ WaveParamPlugin::dynamicParametersCallback(
                         m_nh->get_logger(),
                         "You've set period less or equal to 0, this isn't "
                         "allowed, changes will be ignored.");
-                }
-                else {
+                } else {
                     new_param.period = new_period;
                 }
             }
@@ -217,8 +214,8 @@ WaveParamPlugin::dynamicParametersCallback(
     setParam(new_param), setParamMsg(new_param);
 }
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 
 GZ_ADD_PLUGIN(
     liquidai::gazebo::WaveParamPlugin,

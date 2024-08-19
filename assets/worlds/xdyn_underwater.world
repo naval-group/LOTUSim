@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- World to test model -->
 <sdf version="1.9"
     xmlns:xacro="http://ros.org/wiki/xacro">
@@ -25,9 +25,10 @@
             <debug>true</debug>
         </plugin>
         <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
-            <connection_protocol>udp</connection_protocol>
+            <connection_protocol>TCPUDP</connection_protocol>
             <ip>127.0.0.1</ip>
-            <port>23456</port>
+            <udp_port>23456</udp_port>
+            <tcp_port>23457</tcp_port>
         </plugin>
         <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
         </plugin>

@@ -2,15 +2,15 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
-    <unity_type_name>lrauv</unity_type_name>
+    <renderer_type_name>lrauv</renderer_type_name>
 
     <!-- Body -->
     <link name="base_link">
-      <sensor name="imu_sensor" type="imu">
+      <!-- <sensor name="imu_sensor" type="imu">
         <always_on>1</always_on>
         <update_rate>1</update_rate>
         <visualize>true</visualize>
-      </sensor>
+      </sensor> -->
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
@@ -28,36 +28,34 @@
           <izz>41.980233</izz>
         </inertia>
       </inertial>
-      <visual name="visual">
-        <pose>0 0 0 0 0 0</pose>
+      <sensor name='sensor_contact' type='contact'>
+        <contact>
+          <collision>body_collision</collision>
+          <topic>/collision</topic>
+        </contact>
+        <always_on>1</always_on>
+        <update_rate>100</update_rate>
+      </sensor>
+      <collision name="body_collision">
         <geometry>
           <mesh>
-            <uri>meshes/tethys.dae</uri>
-            <submesh>
-              <name>Body</name>
-              <center>false</center>
-            </submesh>
+            <uri>./tethys.stl</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 1.0 1.0</diffuse>
-          <specular>1.0 1.0 1.0</specular>
-          <pbr>
-            <metal>
-              <albedo_map>materials/textures/Tethys_Albedo.png</albedo_map>
-              <normal_map>materials/textures/Tethys_Normal.png</normal_map>
-              <metalness_map>materials/textures/Tethys_Metalness.png</metalness_map>
-              <roughness_map>materials/textures/Tethys_Roughness.png</roughness_map>
-            </metal>
-          </pbr>
-        </material>
+      </collision>
+      <visual name="body">
+        <geometry>
+          <mesh>
+            <uri>./tethys.stl</uri>
+          </mesh>
+        </geometry>
       </visual>
     </link>
 
     <physics_server_interface>
       <underwater>
         <ConnectionType>XDynWebSocket</ConnectionType>
-        <uri>ws://127.0.0.1:12345</uri>
+        <uri>ws://127.0.0.1:12346</uri>
         <thrusters>
           <thursters1>propeller</thursters1>
         </thrusters>

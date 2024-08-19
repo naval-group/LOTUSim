@@ -48,5 +48,5 @@ public:
     };
 };
 
-} // namespace liquidai
-#endif // __WIND_PARAM_H__
+}  // namespace liquidai
+#endif  // __WIND_PARAM_H__

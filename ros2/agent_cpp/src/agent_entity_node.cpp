@@ -13,9 +13,8 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
 
     rclcpp::NodeOptions options;
-    agent_node =
-        std::make_shared<AgentEntity>(options);
-    
+    agent_node = std::make_shared<AgentEntity>(options);
+
     rclcpp::executors::SingleThreadedExecutor exe;
     exe.add_node(agent_node->get_node_base_interface());
     exe.spin();

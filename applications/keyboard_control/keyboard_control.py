@@ -31,6 +31,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=<name of vessel to control> -p thrusters_name:=[PSPropRudd, SBPropRudd]
+"""
+
 import sys
 import threading
 
@@ -60,11 +64,11 @@ CTRL-C to quit
 """
 
 moveBindings = {
-    'u': (0.5, 1),
-    'i': (1, 1),
-    'o': (1, 0.5),
-    'j': (0, 1),
-    'l': (1, 0),
+    'u': (30.0),
+    'i': (0.0),
+    'o': (-30.0),
+    'j': (-90.0),
+    'l': (90.0),
 }
 
 speedBindings = {
@@ -111,68 +115,58 @@ def main():
     # parameters
     frame_id = node.declare_parameter('frame_id', '').value
     vessel_name = node.declare_parameter('vessel_name', '').value
+    node.declare_parameter('thrusters_name', ['propeller'])
+    thrusters_name = node.get_parameter('thrusters_name').get_parameter_value().string_array_value
 
     pubMsgType = liquidai_msgs.msg.Xdyncmd
     pubMsg = pubMsgType()
     pubMsg.vessel_name = vessel_name
     
-    left_thruster = liquidai_msgs.msg.XdynThrustercmd()
-    left_thruster.name = "PSPropRudd"
-    left_thruster.rpm = 0.01
-    left_thruster.pd = 0.79
-    left_thruster.beta = 0.0
-
-    right_thruster = liquidai_msgs.msg.XdynThrustercmd()
-    right_thruster.name = "SBPropRudd"
-    right_thruster.rpm = 0.01
-    right_thruster.pd = 0.79
-    right_thruster.beta = 0.0
-
-    pubMsg.cmd.append(left_thruster)
-    pubMsg.cmd.append(right_thruster)
-
+    for prop in thrusters_name:
+        thruster = liquidai_msgs.msg.XdynThrustercmd()
+        thruster.name = prop
+        thruster.rpm = 0.01
+        thruster.pd = 0.79
+        thruster.beta = 0.0
+        pubMsg.cmd.append(thruster)
+    
     pub = node.create_publisher(pubMsgType, vessel_name+'/cmd_vel', 10)
 
     spinner = threading.Thread(target=rclpy.spin, args=(node,))
     spinner.start()
 
     rpm = 20.0
-    left = 0.0
-    right = 0.0
     status = 0.0
 
-    print(msg)
     print(vels(rpm))
     
     try:
         while True:
             key = getKey(settings)
             if key in moveBindings.keys():
-                left = moveBindings[key][0]
-                right = moveBindings[key][1]
+                beta = moveBindings[key]
             elif key in speedBindings.keys():
                 rpm = rpm + speedBindings[key]
                 if rpm<0:
-                    rpm =0
+                    rpm =0.0
                 print(vels(rpm))
        
             else:
-                left = 0.0
-                right = 0.0
                 if (key == '\x03'):
                     break
 
-            left_thruster.rpm = left * rpm
-            right_thruster.rpm = right * rpm
+            for msg in pubMsg.cmd:
+                msg.rpm = rpm
+                msg.beta = beta
             pub.publish(pubMsg)
 
     except Exception as e:
         print(e)
 
     finally:
-
-        left_thruster.rpm = 0.0
-        right_thruster.rpm = 0.0
+        for msg in pubMsg.cmd:
+            msg.rpm = 0.0
+            msg.beta = 0.0
         pub.publish(pubMsg)
         rclpy.shutdown()
         spinner.join()

@@ -24,107 +24,134 @@ using ros_subscriber::MyTestClass;
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, Light)
 {
-  MyTestClass<ros_gz_interfaces::msg::Light> client("light");
+    MyTestClass<ros_gz_interfaces::msg::Light> client("light");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, JointWrench)
 {
-  MyTestClass<ros_gz_interfaces::msg::JointWrench> client("joint_wrench");
+    MyTestClass<ros_gz_interfaces::msg::JointWrench> client("joint_wrench");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, Entity)
 {
-  MyTestClass<ros_gz_interfaces::msg::Entity> client("entity");
+    MyTestClass<ros_gz_interfaces::msg::Entity> client("entity");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, Contact)
 {
-  MyTestClass<ros_gz_interfaces::msg::Contact> client("contact");
+    MyTestClass<ros_gz_interfaces::msg::Contact> client("contact");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, Contacts)
 {
-  MyTestClass<ros_gz_interfaces::msg::Contacts> client("contacts");
+    MyTestClass<ros_gz_interfaces::msg::Contacts> client("contacts");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, GuiCamera)
 {
-  MyTestClass<ros_gz_interfaces::msg::GuiCamera> client("gui_camera");
+    MyTestClass<ros_gz_interfaces::msg::GuiCamera> client("gui_camera");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, StringVec)
 {
-  MyTestClass<ros_gz_interfaces::msg::StringVec> client("stringmsg_v");
+    MyTestClass<ros_gz_interfaces::msg::StringVec> client("stringmsg_v");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, TrackVisual)
 {
-  MyTestClass<ros_gz_interfaces::msg::TrackVisual> client("track_visual");
+    MyTestClass<ros_gz_interfaces::msg::TrackVisual> client("track_visual");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }
 
 /////////////////////////////////////////////////
 TEST(ROSSubscriberTest, VideoRecord)
 {
-  MyTestClass<ros_gz_interfaces::msg::VideoRecord> client("video_record");
+    MyTestClass<ros_gz_interfaces::msg::VideoRecord> client("video_record");
 
-  using namespace std::chrono_literals;
-  ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
-    ros_subscriber::TestNode(), client.callbackExecuted, 10ms, 200);
+    using namespace std::chrono_literals;
+    ros_gz_bridge::testing::waitUntilBoolVarAndSpin(
+        ros_subscriber::TestNode(),
+        client.callbackExecuted,
+        10ms,
+        200);
 
-  EXPECT_TRUE(client.callbackExecuted);
+    EXPECT_TRUE(client.callbackExecuted);
 }

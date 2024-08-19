@@ -17,15 +17,18 @@ namespace gazebo {
 class ManualRAO : public WaveRaoInterface {
 public:
     std::optional<nlohmann::json> getNewState(
-        const std::string &name, nlohmann::json previous_state, float time_dif);
+        const std::string &name,
+        nlohmann::json previous_state,
+        float time_dif);
     static std::shared_ptr<WaveRaoInterface> getInstance();
-    bool
-    createConnection(const std::string &name, const std::string &file_path);
+    bool createConnection(
+        const std::string &name,
+        const std::string &file_path);
 
 private:
     static std::weak_ptr<WaveRaoInterface> m_instance;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

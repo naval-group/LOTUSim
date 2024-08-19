@@ -78,13 +78,9 @@ namespace gazebo {
  * </model>
  */
 
-class WaveRaoPlugin :
-    public gz::sim::System,
-    public gz::sim::ISystemConfigure,
-    public gz::sim::ISystemPreUpdate,
-    public gz::sim::ISystemUpdate,
-    public gz::sim::ISystemPostUpdate {
-
+class WaveRaoPlugin : public gz::sim::System,
+                      public gz::sim::ISystemConfigure,
+                      public gz::sim::ISystemUpdate {
 public:
     WaveRaoPlugin();
     ~WaveRaoPlugin();
@@ -95,17 +91,9 @@ public:
         gz::sim::EntityComponentManager &_ecm,
         gz::sim::EventManager &_eventMgr);
 
-    void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) final;
-
     void Update(
         const gz::sim::UpdateInfo &_info,
         gz::sim::EntityComponentManager &_ecm) final;
-
-    void PostUpdate(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) final;
 
 private:
     /**
@@ -133,6 +121,25 @@ private:
      * @return false
      */
     bool vesselTransition(gz::sim::Entity _vessel, DomainType _new_mode);
+
+    /**
+     * @brief Handle vessel creation
+     *
+     */
+    bool LoadVessel(
+        const gz::sim::Entity &_entity,
+        const gz::sim::components::ModelSdf *_model,
+        gz::sim::EntityComponentManager *_ecm);
+
+    /**
+     * @brief Handle vessel deletion
+     *
+     */
+    bool DeleteVessel(
+        const gz::sim::Entity &_entity,
+        const gz::sim::components::ModelSdf *_model,
+        const gz::sim::components::ParentEntity *_parent,
+        gz::sim::EntityComponentManager *_ecm);
 
 private:
     /**
@@ -224,6 +231,6 @@ private:
         m_underwater_interface;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

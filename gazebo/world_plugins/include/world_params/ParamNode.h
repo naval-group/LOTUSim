@@ -14,11 +14,7 @@ namespace gazebo {
 template <typename DataType>
 class ParamNode {
 public:
-    ParamNode()
-        : m_current_index(0)
-        , m_using_file(false)
-    {
-    }
+    ParamNode() : m_current_index(0), m_using_file(false) {}
 
     DataType &getParam()
     {
@@ -90,8 +86,7 @@ protected:
         if (file_path.empty() || !loadFile(file_path, format, m_param_map)) {
             logError({"ParamNode::loadParam: Param loaded is empty. "
                       "Loading default param."});
-        }
-        else {
+        } else {
             m_using_file = true;
             result = true;
         }
@@ -120,7 +115,7 @@ protected:
     size_t m_current_index;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 
 #endif

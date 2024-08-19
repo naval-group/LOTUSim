@@ -3,5 +3,5 @@
 namespace liquidai {
 namespace gazebo {
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai

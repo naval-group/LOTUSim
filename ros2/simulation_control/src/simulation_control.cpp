@@ -120,13 +120,11 @@ bool SimulationControl::ChangeState(
         if (res.get()->success) {
             RCLCPP_INFO(this->get_logger(), "The checks were successful!");
             return true;
-        }
-        else {
+        } else {
             RCLCPP_WARN(this->get_logger(), "The checks were not successful");
             return false;
         }
-    }
-    else {
+    } else {
         RCLCPP_ERROR(this->get_logger(), "Failed to call service 'checks'");
         return false;
     }

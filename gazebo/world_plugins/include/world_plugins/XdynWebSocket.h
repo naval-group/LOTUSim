@@ -1,17 +1,16 @@
 #ifndef __XDYN_WEBSOCKET_HH__
 #define __XDYN_WEBSOCKET_HH__
 
-#include "gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h"
-
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
-
-#include "world_plugins/WaveRaoInterface.h"
 #include <websocketpp/client.hpp>
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
+
+#include "gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h"
+#include "world_plugins/WaveRaoInterface.h"
 
 // #include <xlsxwriter.h>
 
@@ -36,8 +35,9 @@ public:
     void operator=(const XdynWebsocket &) = delete;
     XdynWebsocket(XdynWebsocket &other) = delete;
 
-    static std::shared_ptr<XdynWebsocket>
-    getInstance(const gz::sim::Entity &_entity, const std::string &_name);
+    static std::shared_ptr<XdynWebsocket> getInstance(
+        const gz::sim::Entity &_entity,
+        const std::string &_name);
 
     /**
      * @brief Get the New State object using given vessel state
@@ -85,10 +85,12 @@ private:
     void onMessage(
         websocketpp::connection_hdl hdl,
         websocketpp::config::asio_client::message_type::ptr msg);
-    void
-    onOpen(const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl);
-    void
-    onFail(const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl);
+    void onOpen(
+        const gz::sim::Entity &_entity,
+        websocketpp::connection_hdl hdl);
+    void onFail(
+        const gz::sim::Entity &_entity,
+        websocketpp::connection_hdl hdl);
     void thrustCmd(const gz_liquidai_msgs::msgs::XdynCmd &_msg);
 
 private:
@@ -140,6 +142,6 @@ private:
     // lxw_workbook *workbook;
     // lxw_worksheet *worksheet;
 };
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

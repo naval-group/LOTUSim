@@ -14,11 +14,8 @@
 
 #include "service_factory_interface.hpp"
 
-namespace ros_gz_bridge
-{
+namespace ros_gz_bridge {
 
-ServiceFactoryInterface::~ServiceFactoryInterface()
-{
-}
+ServiceFactoryInterface::~ServiceFactoryInterface() {}
 
 }  // namespace ros_gz_bridge

@@ -58,8 +58,8 @@ XdynWebsocket::~XdynWebsocket()
     m_client.stop_perpetual();
     websocketpp::lib::error_code ec;
     for (auto &&i : m_connection_mapping) {
-        m_client.close(
-            i.second, websocketpp::close::status::going_away, "", ec);
+        m_client
+            .close(i.second, websocketpp::close::status::going_away, "", ec);
     }
     m_client.stop();
     m_thread->join();
@@ -68,7 +68,8 @@ XdynWebsocket::~XdynWebsocket()
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::getInstance(
-    const gz::sim::Entity &_entity, const std::string &_name)
+    const gz::sim::Entity &_entity,
+    const std::string &_name)
 {
     m_name_mapping[_entity] = _name;
     m_entity_mapping[_name] = _entity;
@@ -84,14 +85,12 @@ bool XdynWebsocket::createConnection(
     const std::string &_name,
     const sdf::ElementPtr _sdf)
 {
-
     std::string uri;
     if (_sdf->HasElement("uri")) {
         uri = _sdf->Get<std::string>("uri");
-    }
-    else {
+    } else {
         gzerr << "XdynWebsocket::createConnection: No uri for " << _name
-              << std::endl;
+              << "\n";
         return false;
     }
     m_uri[_entity] = uri;
@@ -106,7 +105,7 @@ bool XdynWebsocket::createConnection(
             thruster_cmd->set_name(sdfPtr_thruster->Get<std::string>());
             //  Needed 0.01 as xdyn give error at rpm 0
             thruster_cmd->set_rpm(0.01);
-            // thruster_cmd->set_rpm(30);
+            // thruster_cmd->set_rpm(100);
             thruster_cmd->set_pd(0.79);
             thruster_cmd->set_beta(0.0);
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
@@ -123,9 +122,9 @@ bool XdynWebsocket::activateConnection(const gz::sim::Entity &_entity)
 
     Client::connection_ptr con = m_client.get_connection(m_uri[_entity], ec);
     if (ec) {
-        std::cout << "XdynWebsocket::activateConnection: Connect "
-                     "initialization error: "
-                  << ec.message() << std::endl;
+        gzmsg << "XdynWebsocket::activateConnection: Connect "
+                 "initialization error: "
+              << ec.message() << "\n";
         return -1;
     }
     m_connection_mapping.insert({_entity, con});
@@ -148,13 +147,14 @@ bool XdynWebsocket::activateConnection(const gz::sim::Entity &_entity)
         websocketpp::lib::placeholders::_2));
 
     while (m_status[_entity] != "opened") {
-        std::cout << "Starting connection: " << m_name_mapping[_entity]
-                  << std::endl;
+        gzmsg << "Starting connection: " << m_name_mapping[_entity] << "\n";
         m_client.connect(con);
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
     m_gz_node.Subscribe(
-        m_name_mapping[_entity] + "/cmd_vel", &XdynWebsocket::thrustCmd, this);
+        m_name_mapping[_entity] + "/cmd_vel",
+        &XdynWebsocket::thrustCmd,
+        this);
     return true;
 }
 
@@ -179,19 +179,21 @@ std::string XdynWebsocket::getURI(const gz::sim::Entity &_entity)
 }
 
 void XdynWebsocket::onOpen(
-    const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl)
+    const gz::sim::Entity &_entity,
+    websocketpp::connection_hdl hdl)
 {
     auto uri = m_client.get_con_from_hdl(hdl)->get_uri()->str();
     m_status[_entity] = "opened";
-    std::cout << "Opened " << uri << std::endl;
+    gzmsg << "Opened " << uri << "\n";
 }
 
 void XdynWebsocket::onFail(
-    const gz::sim::Entity &_entity, websocketpp::connection_hdl hdl)
+    const gz::sim::Entity &_entity,
+    websocketpp::connection_hdl hdl)
 {
     auto uri = m_client.get_con_from_hdl(hdl)->get_uri()->str();
     m_status[_entity] = "failed";
-    std::cout << "Failed " << uri << std::endl;
+    gzmsg << "Failed " << uri << "\n";
 }
 
 void XdynWebsocket::onMessage(
@@ -242,7 +244,9 @@ void XdynWebsocket::onMessage(
 }
 
 std::optional<std::tuple<json, DomainType>> XdynWebsocket::getNewState(
-    const gz::sim::Entity &_entity, const json &previous_state, float time_diff)
+    const gz::sim::Entity &_entity,
+    const json &previous_state,
+    float time_diff)
 {
     json data = json::object();
     data["Dt"] = time_diff / 1000.0;
@@ -359,7 +363,7 @@ bool XdynWebsocket::send(const gz::sim::Entity &_entity, std::string message)
         websocketpp::frame::opcode::text,
         ec);
     if (ec) {
-        std::cout << "> Error sending message: " << ec.message() << std::endl;
+        gzmsg << "> Error sending message: " << ec.message() << "\n";
         return false;
     }
     {
@@ -367,10 +371,9 @@ bool XdynWebsocket::send(const gz::sim::Entity &_entity, std::string message)
         // TODO: To be more stringent on timeout time.
         if (m_msg_cv[_entity].wait_for(lock, std::chrono::seconds(1000)) ==
             std::cv_status::timeout) {
-            std::cout << "websocket timed out." << std::endl;
+            gzmsg << "websocket timed out.\n";
             return false;
-        }
-        else {
+        } else {
             return true;
         }
     }
@@ -378,14 +381,13 @@ bool XdynWebsocket::send(const gz::sim::Entity &_entity, std::string message)
 
 void XdynWebsocket::thrustCmd(const gz_liquidai_msgs::msgs::XdynCmd &_msg)
 {
-    std::cout << "Received: " << _msg.name() << std::endl;
+    gzmsg << "Received: " << _msg.name() << "\n";
     if (m_entity_mapping.find(_msg.name()) != m_entity_mapping.end()) {
         m_xdyn_cmd[m_entity_mapping[_msg.name()]] = std::move(_msg);
-    }
-    else {
-        std::cout << "Received unknown vessel: " << _msg.name() << std::endl;
+    } else {
+        gzmsg << "Received unknown vessel: " << _msg.name() << "\n";
     }
 }
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai

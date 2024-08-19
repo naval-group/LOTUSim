@@ -27,9 +27,10 @@
             <debug>true</debug>
         </plugin>
         <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
-            <connection_protocol>udp</connection_protocol>
-            <ip>127.0.0.1</ip>
-            <port>23456</port>
+            <connection_protocol>TCPUDP</connection_protocol>
+            <ip>192.168.50.178</ip>
+            <udp_port>23456</udp_port>
+            <tcp_port>23457</tcp_port>
         </plugin>
         <!-- <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
         </plugin> -->
