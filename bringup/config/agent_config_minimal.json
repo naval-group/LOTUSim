@@ -1,0 +1,14 @@
+{
+    "lrauv_mas1": [
+        {"name": "Duck1_1", "pose": "0 3 0 0 0 0", "configure_on_startup": "true"}
+    ],
+    "lrauv_mas2": [
+        {"name": "Duck2_1", "pose": "0 -1 0 0 0 0", "configure_on_startup": "true"}
+    ],
+    "lrauv_mas3": [
+        {"name": "Duck3_1", "pose": "0 1 0 0 0 0", "configure_on_startup": "true"}
+    ],
+    "lrauv_mas4": [
+        {"name": "Duck4_1", "pose": "0 -3 0 0 0 0", "configure_on_startup": "true"}
+    ]
+}

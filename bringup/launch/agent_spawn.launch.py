@@ -12,7 +12,6 @@ from launch_ros.descriptions import ComposableNode
 def generate_launch_description():
 
     # Declare the launch arguments
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     configure_on_startup = LaunchConfiguration('configure_on_startup')
     ns = LaunchConfiguration('ns')
     sdf_file  =  LaunchConfiguration('sdf_file')
@@ -20,27 +19,27 @@ def generate_launch_description():
     name  =  LaunchConfiguration('name')
     pose  =  LaunchConfiguration('pose')
     
-    agent_node_component = ComposableNodeContainer(
-    name='AgentContainer',
-    namespace=ns,
-    package='rclcpp_components',
-    executable='component_container',
-    composable_node_descriptions=[
-        ComposableNode(
-            package='agent_cpp',
-            plugin='AgentEntity',
-            name=name,
-            namespace=ns,
-            extra_arguments=[{'use_intra_process_comms': True}],
-            parameters=[{'use_sim_time': use_sim_time,
-                'sdf_file': sdf_file,
-                'sdf_filename': sdf_filename,
-                'pose': pose,
-                'configure_on_startup': configure_on_startup,
-                }],
-        ),
-    ]
-)
+    # agent_node_component = ComposableNodeContainer(
+    # name='AgentContainer',
+    # namespace=ns,
+    # package='rclcpp_components',
+    # executable='component_container',
+    # composable_node_descriptions=[
+    #     ComposableNode(
+    #         package='agent_cpp',
+    #         plugin='AgentEntity',
+    #         name=name,
+    #         namespace=ns,
+    #         extra_arguments=[{'use_intra_process_comms': True}],
+    #         parameters=[{'use_sim_time': use_sim_time,
+    #             'sdf_file': sdf_file,
+    #             'sdf_filename': sdf_filename,
+    #             'pose': pose,
+    #             'configure_on_startup': configure_on_startup,
+    #             }],
+    #     ),
+    # ]
+    # )
     
     agent_node = Node(
         package='agent_cpp',

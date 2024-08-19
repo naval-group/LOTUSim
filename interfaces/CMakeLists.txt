@@ -42,7 +42,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/AddEntitySrvArray.srv"
   "srv/RemoveEntity.srv"
   "srv/EmptySrv.srv"
-  "srv/ActivateSlowdown.srv"
   "srv/GetIdByName.srv"
   DEPENDENCIES 
     builtin_interfaces

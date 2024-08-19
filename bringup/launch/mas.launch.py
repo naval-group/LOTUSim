@@ -1,8 +1,6 @@
 import os
 import sys
 
-from sympy import true
-
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
@@ -71,21 +69,6 @@ def generate_launch_description():
         }],
         output='screen'
     )
-
-    scheduler = Node(
-        package='agent_cpp',
-        executable='scheduler',
-        parameters=[{'use_sim_time': True,
-            }],
-    )
-    
-    agent_factory = Node(
-        package='agent_cpp',
-        executable='agent_factory',
-        arguments=[{json_data['agent_configs'][0]}, {'main'}],
-        parameters=[{'use_sim_time': True,
-            }],
-    )
     
     mas_components = ComposableNodeContainer(
     name='SimulationContainer',
@@ -103,10 +86,7 @@ def generate_launch_description():
     ])
 
     return LaunchDescription([
-        # scheduler,
-        # agent_factory,
         gz_sim,
-        # agent_node_component,
         mas_components,
         agent_launch,
         bridge,

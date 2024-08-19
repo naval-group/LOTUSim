@@ -55,7 +55,10 @@ Configure the `physics_server_interface`, especially the `ip`, for all the model
 
 Set up the `ip` of the machine running the visualization by modifying the `render_plugin` in `assets/worlds/<world_name>.world`.
 
+Add `export ROS_DOMAIN_ID=<your_integer_id>` to the ~/.bashrc.
+
 Build the project by running `./config-lotus.sh`.
+**You have to build it after every modification, even config files.**
 
 #### Launch
 

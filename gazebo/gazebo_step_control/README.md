@@ -1,6 +1,7 @@
 # gazebo_step_control
 
 Gazebo Plugin to allow step control during ROS2 simulation.
+Note: blocking mode has probably no impact due to porting from Gazebo Classic to Gazebo.
 
 ### Services exposed:
 

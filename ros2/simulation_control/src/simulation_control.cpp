@@ -19,6 +19,11 @@ SimulationControl::SimulationControl(const rclcpp::NodeOptions &options)
                 std::placeholders::_1,
                 std::placeholders::_2));
 }
+
+/// @brief Lists all the existing Lifecycle Nodes and tries to change their
+/// state. It also pauses the simulation.
+/// @param request
+/// @param response
 void SimulationControl::ChangeStateOfAll(
     const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
     std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response)
@@ -47,10 +52,11 @@ void SimulationControl::ChangeStateOfAll(
         agent_names.push_back(token);
         res.erase(0, pos + delimiter.length());
     }
+
+    // Change state of all lifecycle nodes agents
     int i = 1;
     int size = agent_names.size();
     int success = 0;
-    // Change state of all lifecycle nodes agents
     for (auto agent_name : agent_names) {
         if (ChangeState(agent_name, request)) {
             success++;
@@ -70,9 +76,14 @@ void SimulationControl::ChangeStateOfAll(
     auto pause_req_res2 =
         SC_step_control_client_->async_send_request(pause_request);
 
+    // It's a success if all ChangeState calls returned true
     response->success = success == size;
 }
 
+/// @brief Change the state of one Lifecycle Node based on its name
+/// @param agent_name
+/// @param request
+/// @return
 bool SimulationControl::ChangeState(
     std::string agent_name,
     const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request)
@@ -88,7 +99,6 @@ bool SimulationControl::ChangeState(
             ->create_client<lifecycle_msgs::srv::ChangeState>(
                 agent_name + "/change_state");
 
-    // Wait for the service to be activated
     while (!client->wait_for_service(std::chrono::seconds(1))) {
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(
@@ -96,15 +106,12 @@ bool SimulationControl::ChangeState(
                 "Interrupted while waiting for the service. Exiting.");
             return false;
         }
-        // Print in the screen some information so the user knows what is
-        // happening
         RCLCPP_INFO(
             this->get_logger(),
             "%s service not available, waiting again...",
             agent_name.c_str());
     }
 
-    // Client sends its asynchronous request
     auto res = client->async_send_request(request);
 
     // Wait for the result
@@ -123,6 +130,29 @@ bool SimulationControl::ChangeState(
         RCLCPP_ERROR(this->get_logger(), "Failed to call service 'checks'");
         return false;
     }
+}
+
+/// @brief Execute a system command and return the output
+/// @param cmd 
+/// @return 
+std::string SimulationControl::exec_command(const char *cmd)
+{
+    char buffer[128];
+    std::string result = "";
+    FILE *pipe = popen(cmd, "r");
+    if (!pipe)
+        throw std::runtime_error("popen() failed!");
+    try {
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            result += buffer;
+        }
+    }
+    catch (...) {
+        pclose(pipe);
+        throw;
+    }
+    pclose(pipe);
+    return result;
 }
 
 #include "rclcpp_components/register_node_macro.hpp"

@@ -18,6 +18,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include <lifecycle_msgs/msg/transition.hpp>
+#include <lifecycle_msgs/srv/change_state.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
@@ -68,6 +69,7 @@ public:
         despawnInterface = despawn;
     }
 
+    bool self_change_state(lifecycle_msgs::msg::Transition transition);
     bool perform_spawn() { return spawnInterface->spawn(); }
     bool perform_despawn() { return despawnInterface->despawn(); }
 
@@ -80,6 +82,7 @@ protected:
     std::shared_ptr<DespawnInterface> despawnInterface;
     std::string name_;
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_interface_;
+    rclcpp::Service<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_;
 };
 
 #endif
