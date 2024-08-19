@@ -18,5 +18,5 @@ struct WindParameters {
     float velocity = 1.0;
 };
 
-} // namespace liquidai
+}  // namespace liquidai
 #endif

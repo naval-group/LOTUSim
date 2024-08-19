@@ -102,7 +102,7 @@ ros2 launch dtmb_description ros_bridge.launch.py
 # Terminal 5 keyboard control
 cd ~/lotusim_ws
 source "$(pwd)/install/setup.bash"
-ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=<name of vessel to control>
+ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=<name of vessel to control> -p thrusters_name:='[<array of prop>]'
 ```
 ## Contributing
 

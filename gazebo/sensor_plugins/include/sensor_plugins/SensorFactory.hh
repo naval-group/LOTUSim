@@ -1,6 +1,6 @@
 
-#ifndef __ODOMETERSYSTEM_HH_
-#define __ODOMETERSYSTEM_HH_
+#ifndef __SENSOR_FACTORY_HH_
+#define __SENSOR_FACTORY_HH_
 
 #include <string>
 #include <unordered_map>
@@ -25,7 +25,6 @@
 #include <gz/sim/components/World.hh>
 
 #include "sensor_plugins/CustomSensor.hh"
-
 #include "sensor_plugins/SubseaPressureSensor.hh"
 
 namespace liquidai {

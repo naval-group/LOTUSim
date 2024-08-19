@@ -15,7 +15,6 @@ UtmOdometryComponent::UtmOdometryComponent(const rclcpp::NodeOptions &options)
     , prev_time_(rclcpp::Clock{}.now())
     , zero_origin_(true)
 {
-
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     declare_parameter("append_zone", false);
@@ -31,9 +30,13 @@ UtmOdometryComponent::UtmOdometryComponent(const rclcpp::NodeOptions &options)
 
     get_parameter_or("rot_covariance", rot_cov_, rot_cov_);
     get_parameter_or(
-        "odom_child_frame_id", odom_child_frame_id_, odom_child_frame_id_);
+        "odom_child_frame_id",
+        odom_child_frame_id_,
+        odom_child_frame_id_);
     get_parameter_or(
-        "odom_parent_frame_id", odom_parent_frame_id_, odom_parent_frame_id_);
+        "odom_parent_frame_id",
+        odom_parent_frame_id_,
+        odom_parent_frame_id_);
     get_parameter_or("append_zone", append_zone_, append_zone_);
     get_parameter_or(
         "tf_child_link_frame_id",
@@ -78,16 +81,13 @@ void UtmOdometryComponent::odomCB(const liquidai_msgs::msg::GPS::SharedPtr fix)
         if (odom_parent_frame_id_.empty()) {
             if (append_zone_) {
                 odom.header.frame_id = fix->header.frame_id + "/utm_" + zone;
-            }
-            else {
+            } else {
                 odom.header.frame_id = fix->header.frame_id;
             }
-        }
-        else {
+        } else {
             if (append_zone_) {
                 odom.header.frame_id = odom_parent_frame_id_ + "/utm_" + zone;
-            }
-            else {
+            } else {
                 odom.header.frame_id = odom_parent_frame_id_;
             }
         }
@@ -156,7 +156,6 @@ void UtmOdometryComponent::odomCB(const liquidai_msgs::msg::GPS::SharedPtr fix)
         // Preferably from ekf of sensors and stuff
         if (!tf_child_link_frame_id_.empty() &&
             !tf_parent_link_frame_id_.empty()) {
-
             tf2::Vector3 vel_tf(
                 fix->linear_velocity.x,
                 fix->linear_velocity.y,
@@ -223,8 +222,7 @@ void UtmOdometryComponent::odomCB(const liquidai_msgs::msg::GPS::SharedPtr fix)
                     new_vec.getX(),
                     new_vec.getY(),
                     new_vec.getZ());
-            }
-            catch (tf2::TransformException &ex) {
+            } catch (tf2::TransformException &ex) {
                 RCLCPP_WARN(
                     this->get_logger(),
                     "Could not transform %s->%s",
@@ -236,6 +234,6 @@ void UtmOdometryComponent::odomCB(const liquidai_msgs::msg::GPS::SharedPtr fix)
     }
 }
 
-} // namespace gps_tools
+}  // namespace gps_tools
 #include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(gps_tools::UtmOdometryComponent)

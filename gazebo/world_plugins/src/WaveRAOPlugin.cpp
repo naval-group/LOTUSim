@@ -2,9 +2,18 @@
 
 namespace liquidai {
 namespace gazebo {
+using namespace std::placeholders;
 
-WaveRaoPlugin::WaveRaoPlugin()
-    : m_debug(false)
+bool pose3Eql(const gz::math::Pose3d &_a, const gz::math::Pose3d &_b)
+{
+    return _a.Pos().Equal(_b.Pos(), 1e-6) &&
+           gz::math::equal(_a.Rot().X(), _b.Rot().X(), 1e-6) &&
+           gz::math::equal(_a.Rot().Y(), _b.Rot().Y(), 1e-6) &&
+           gz::math::equal(_a.Rot().Z(), _b.Rot().Z(), 1e-6) &&
+           gz::math::equal(_a.Rot().W(), _b.Rot().W(), 1e-6);
+}
+
+WaveRaoPlugin::WaveRaoPlugin() : m_debug(false)
 {
     m_gz_node = std::make_shared<gz::transport::Node>();
 }
@@ -17,7 +26,7 @@ void WaveRaoPlugin::Configure(
     gz::sim::EventManager &_eventMgr)
 {
     m_entity = _entity;
-    gzdbg << "WaveRaoPlugin initiated" << std::endl;
+    gzdbg << "WaveRaoPlugin initiated\n";
     auto sdfPtr = const_cast<sdf::Element *>(_sdf.get());
 
     this->world_ = _ecm.EntityByComponents(gz::sim::components::World());
@@ -29,204 +38,17 @@ void WaveRaoPlugin::Configure(
     }
 }
 
-void WaveRaoPlugin::PreUpdate(
-    const gz::sim::UpdateInfo &, gz::sim::EntityComponentManager &_ecm)
-{
-}
-
 void WaveRaoPlugin::Update(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo &_info,
+    gz::sim::EntityComponentManager &_ecm)
 {
     _ecm.EachNew<gz::sim::components::ModelSdf>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::ModelSdf *_model) -> bool {
-            gz::sim::Entity base_link;
-            sdf::Model data = _model->Data();
-            sdf::ElementPtr sdfptr = data.Element();
-            auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
-            std::string vessel_name;
-            if (name_opt) {
-                vessel_name = name_opt->Data();
-            }
-            else {
-                gzwarn << "WaveRaoPlugin::PreUpdate: No vessel name found. "
-                          "Ignoring model."
-                       << std::endl;
-                return true;
-            }
+        std::bind(&WaveRaoPlugin::LoadVessel, this, _1, _2, &_ecm));
 
-            if (sdfptr->HasElement("physics_server_interface")) {
-                gzdbg << sdfptr->ToString("") << std::endl;
-                m_vessels_entities.push_back(_entity);
-                // Get Base Link. Currently a fix as only base_link can get
-                // model speed
-                m_vessels_model_map[vessel_name] = _entity;
-                m_vessels_name_map[_entity] = vessel_name;
-
-                auto child_link = _ecm.ChildrenByComponents(
-                    _entity, gz::sim::components::Link());
-                for (auto &&link : child_link) {
-                    auto name_opt =
-                        _ecm.Component<gz::sim::components::Name>(link);
-                    if (name_opt && name_opt->Data().find("base_link") !=
-                                        std::string::npos) {
-                        base_link = link;
-                        m_vessels_base_link_map[vessel_name] = base_link;
-                        gz::sim::Link _link(base_link);
-                        _link.EnableVelocityChecks(_ecm);
-                    }
-                }
-
-                // Init Interface
-                sdf::ElementPtr physics_sdf_ptr =
-                    sdfptr->GetElement("physics_server_interface");
-                gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                      << " physics update request detected." << "\n";
-
-                // If vessel has aerial component
-                if (physics_sdf_ptr->HasElement("aerial")) {
-                    sdf::ElementPtr aerial_sdf =
-                        physics_sdf_ptr->GetElement("aerial");
-
-                    ConnectionType aerial_connection_type;
-
-                    if (!aerial_sdf->HasElement("ConnectionType") ||
-                        !aerial_sdf->HasElement("uri")) {
-                        gzwarn << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                               << "missing aerial connectionType or uri. "
-                                  "removing aerial calculation. \n";
-                    }
-                    aerial_connection_type =
-                        ConnectionTypeMap[aerial_sdf->Get<std::string>(
-                            "ConnectionType")];
-                    m_aerial_interface[_entity] = createConnection(
-                        _entity,
-                        vessel_name,
-                        aerial_connection_type,
-                        aerial_sdf);
-                }
-
-                // If vessel has surface component
-                if (physics_sdf_ptr->HasElement("surface")) {
-                    sdf::ElementPtr surface_sdf =
-                        physics_sdf_ptr->GetElement("surface");
-
-                    ConnectionType surface_connection_type;
-                    if (!surface_sdf->HasElement("ConnectionType") ||
-                        !surface_sdf->HasElement("uri")) {
-                        gzwarn << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                               << "missing surface connectionType or uri. "
-                                  "removing surface calculation. \n";
-                    }
-                    surface_connection_type =
-                        ConnectionTypeMap[surface_sdf->Get<std::string>(
-                            "ConnectionType")];
-                    m_surface_interface[_entity] = createConnection(
-                        _entity,
-                        vessel_name,
-                        surface_connection_type,
-                        surface_sdf);
-                }
-
-                // If vessel has underwater component
-                if (physics_sdf_ptr->HasElement("underwater")) {
-                    sdf::ElementPtr underwater_sdf =
-                        physics_sdf_ptr->GetElement("underwater");
-
-                    ConnectionType underwater_connection_type;
-
-                    if (!underwater_sdf->HasElement("ConnectionType") ||
-                        !underwater_sdf->HasElement("uri")) {
-                        gzwarn << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                               << "missing underwater connectionType or uri. "
-                                  "removing underwater calculation. \n";
-                    }
-                    underwater_connection_type =
-                        ConnectionTypeMap[underwater_sdf->Get<std::string>(
-                            "ConnectionType")];
-                    m_underwater_interface[_entity] = createConnection(
-                        _entity,
-                        vessel_name,
-                        underwater_connection_type,
-                        underwater_sdf);
-                }
-                // Add warning that the init is not found and find the
-                // possible state
-                if (physics_sdf_ptr->HasElement("init_state")) {
-                    DomainType init_domain =
-                        DomainTypeMap[physics_sdf_ptr->Get<std::string>(
-                            "init_state")];
-
-                    switch (init_domain) {
-                    case (DomainType::Aerial): {
-                        if (m_aerial_interface.find(_entity) !=
-                            m_aerial_interface.end()) {
-                            m_current_vessel_interface[_entity] =
-                                m_aerial_interface[_entity];
-                            m_vehicle_current_mode[_entity] =
-                                DomainType::Aerial;
-                        }
-                        else {
-                            gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                                  << "init state aerial. No aerial set. "
-                                     "Failed "
-                                     "\n";
-                        }
-                        break;
-                    }
-                    case (DomainType::Surface): {
-                        if (m_surface_interface.find(_entity) !=
-                            m_surface_interface.end()) {
-                            m_current_vessel_interface[_entity] =
-                                m_surface_interface[_entity];
-                            m_vehicle_current_mode[_entity] =
-                                DomainType::Surface;
-                        }
-                        else {
-                            gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                                  << "init state surface. No surface set. "
-                                     "Failed "
-                                     "\n";
-                        }
-                        break;
-                    }
-                    case (DomainType::Underwater): {
-                        if (m_underwater_interface.find(_entity) !=
-                            m_underwater_interface.end()) {
-                            m_current_vessel_interface[_entity] =
-                                m_underwater_interface[_entity];
-                            m_vehicle_current_mode[_entity] =
-                                DomainType::Underwater;
-                        }
-                        else {
-                            gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                                  << "init state underwater. No underwater "
-                                     "set. Failed "
-                                     "\n";
-                        }
-                        break;
-                    }
-                    default: {
-                        gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                              << "init state no state found. Failed "
-                                 "\n";
-                        return true;
-                    }
-                    }
-                    m_current_vessel_interface[_entity]->activateConnection(
-                        _entity);
-                }
-            }
-            else {
-                gzmsg << "WaveRaoPlugin::PreUpdate: Not calculating phyics for "
-                      << vessel_name << "\n";
-            }
-
-            // Add the uri and domain info
-            gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
-                  << " physics successfully created." << "\n";
-            return true;
-        });
+    _ecm.EachRemoved<
+        gz::sim::components::ModelSdf,
+        gz::sim::components::ParentEntity>(
+        std::bind(&WaveRaoPlugin::DeleteVessel, this, _1, _2, _3, &_ecm));
 
     if (_info.dt.count() == 0) {
         return;
@@ -259,11 +81,11 @@ void WaveRaoPlugin::Update(
             m_log_pub.Publish(msg);
         }
 
-        std::chrono::_V2::system_clock::time_point time_now;
-        time_now = std::chrono::system_clock::now();
+        // TODO: Move timing printout to debug
+        // std::chrono::_V2::system_clock::time_point start_time =
+        //     std::chrono::system_clock::now();
         gz::math::Pose3d pose =
             _ecm.Component<gz::sim::components::Pose>(vessel_entity)->Data();
-
         gz::sim::Link _link(m_vessels_base_link_map[vessel_name]);
         auto lin_vel = _link.WorldLinearVelocity(_ecm).value();
         auto ang_vel = _link.WorldAngularVelocity(_ecm).value();
@@ -289,13 +111,20 @@ void WaveRaoPlugin::Update(
 
         std::optional<std::tuple<nlohmann::json, DomainType>> update_opt =
             m_current_vessel_interface[vessel_entity]->getNewState(
-                vessel_entity, vessel_info, target_time);
+                vessel_entity,
+                vessel_info,
+                target_time);
+        // std::cout << "AHOY update time: "
+        //           << std::chrono::duration_cast<std::chrono::milliseconds>(
+        //                  std::chrono::system_clock::now() - start_time)
+        //                  .count()
+        //           << "\n";
 
         if (update_opt) {
             // if (!vesselTransition(
             //         vessel_entity, std::get<1>(update_opt.value()))) {
             //     gzerr << "WaveRaoPlugin::Update vessel " << vessel_name
-            //           << "transition failed" << std::endl;
+            //           << "transition failed\n";
             // }
 
             json update = std::move(std::get<0>(update_opt.value()));
@@ -307,54 +136,48 @@ void WaveRaoPlugin::Update(
                 update["qi"].back(),
                 update["qj"].back(),
                 update["qk"].back());
-
             auto lin_vel = gz::math::Vector3d{
-                update["u"].back(), update["v"].back(), update["w"].back()};
+                update["u"].back(),
+                update["v"].back(),
+                update["w"].back()};
 
             auto ang_vel = gz::math::Vector3d{
-                update["p"].back(), update["q"].back(), update["r"].back()};
+                update["p"].back(),
+                update["q"].back(),
+                update["r"].back()};
 
-            gz::msgs::Pose req = gz::msgs::Pose();
+            auto poseCmdComp =
+                _ecm.Component<gz::sim::components::WorldPoseCmd>(
+                    vessel_entity);
 
-            req.set_id(vessel_entity);
+            if (!poseCmdComp) {
+                _ecm.CreateComponent(
+                    vessel_entity,
+                    gz::sim::components::WorldPoseCmd(pose));
+            } else {
+                auto state = poseCmdComp->SetData(pose, pose3Eql)
+                                 ? gz::sim::ComponentState::OneTimeChange
+                                 : gz::sim::ComponentState::NoChange;
+                _ecm.SetChanged(
+                    vessel_entity,
+                    gz::sim::components::WorldPoseCmd::typeId,
+                    state);
+            }
 
-            gz::msgs::Set(req.mutable_position(),
-            gz::math::Vector3d(update["x"].back(), update["y"].back(),
-            update["z"].back())); gz::msgs::Set(req.mutable_orientation(),
-            gz::math::Quaterniond(update["qr"].back(), update["qi"].back(),
-            update["qj"].back(), update["qk"].back()));
+            _ecm.SetChanged(
+                vessel_entity,
+                gz::sim::components::Pose::typeId,
+                gz::sim::ComponentState::OneTimeChange);
 
-            gz::msgs::Boolean rep;
-            bool result;
-            unsigned int timeout = 5000;
-
-            std::string service = "/world/" + this->worldName + "/set_pose";
-
-            bool executed =
-                m_gz_node->Request(service, req, timeout, rep, result);
-
-            // bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
-            //     vessel_entity, pose);
-            // if (!res)
-            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
-            //            << " Change Position failed." << std::endl;
-            // res =
-            //     _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-            //         m_vessels_base_link_map[vessel_name], lin_vel);
-            // if (!res)
-            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
-            //            << " Change linear velocity failed." << std::endl;
-            // const auto angularVel =
-            //     _ecm.Component<gz::sim::components::WorldAngularVelocity>(
-            //         m_vessels_base_link_map[vessel_name]);
-            // *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
-            // if (!res) {
-            //     gzwarn << "WaveRaoPlugin::Update " << vessel_name
-            //            << " Change position failed." << std::endl;
-            // }
-        }
-        else {
-            gzwarn << vessel_entity << " update failed." << std::endl;
+            _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
+                m_vessels_base_link_map[vessel_name],
+                lin_vel);
+            const auto angularVel =
+                _ecm.Component<gz::sim::components::WorldAngularVelocity>(
+                    m_vessels_base_link_map[vessel_name]);
+            *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
+        } else {
+            gzwarn << vessel_entity << " update failed.\n";
         }
 
         if (m_debug) {
@@ -371,59 +194,6 @@ void WaveRaoPlugin::Update(
     }
 }
 
-void WaveRaoPlugin::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
-{
-    _ecm.EachRemoved<
-        gz::sim::components::ModelSdf,
-        gz::sim::components::ParentEntity>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::ModelSdf *_model,
-            const gz::sim::components::ParentEntity *_parent) -> bool {
-            gz::sim::Entity base_link;
-            sdf::Model data = _model->Data();
-            sdf::ElementPtr sdfptr = data.Element();
-            auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
-            std::string vessel_name;
-            if (name_opt) {
-                vessel_name = name_opt->Data();
-            }
-            else {
-                gzwarn << "WaveRaoPlugin::PreUpdate: No vessel name found. "
-                          "Ignoring model."
-                       << std::endl;
-                return true;
-            }
-
-            if (sdfptr->HasElement("physics_server_interface")) {
-                gzdbg << sdfptr->ToString("") << std::endl;
-                gzdbg << "[LOTUSim]: Removing the entity from the xdyn "
-                         "connection..."
-                      << std::endl;
-
-                gzdbg << "[LOTUSim]: Entity count before: "
-                      << m_vessels_entities.size() << std::endl;
-
-                m_vessels_entities.erase(
-                    std::remove(
-                        m_vessels_entities.begin(),
-                        m_vessels_entities.end(),
-                        _entity),
-                    m_vessels_entities.end());
-
-                gzdbg << "[LOTUSim]: Entity count after: "
-                      << m_vessels_entities.size() << std::endl;
-
-                // Remove from other vectors ?
-                // m_vessels_model_map[vessel_name] = _entity;
-                // m_vessels_name_map[_entity] = vessel_name;
-            }
-
-            return true;
-        });
-}
-
 std::shared_ptr<WaveRaoInterface> WaveRaoPlugin::createConnection(
     const gz::sim::Entity &entity,
     const std::string &name,
@@ -433,43 +203,42 @@ std::shared_ptr<WaveRaoInterface> WaveRaoPlugin::createConnection(
     std::shared_ptr<WaveRaoInterface> client;
 
     switch (protocol_type) {
-    case (ConnectionType::XDynWebSocket): {
-        client = XdynWebsocket::getInstance(entity, name);
-        break;
-    }
-    // case (ConnectionType::XDynGRPC): {
-    //     client = XdynGrpc();
-    // break;
-    // }
-    // case (ConnectionType::Manual): {
-    //     client = ManualRAO();
-    // break;
+        case (ConnectionType::XDynWebSocket): {
+            client = XdynWebsocket::getInstance(entity, name);
+            break;
+        }
+        // case (ConnectionType::XDynGRPC): {
+        //     client = XdynGrpc();
+        // break;
+        // }
+        // case (ConnectionType::Manual): {
+        //     client = ManualRAO();
+        // break;
 
-    // }
-    default: {
-        gzwarn << "WaveRaoPlugin::createConnection " << name
-               << " failed to create connection." << std::endl;
-        return nullptr;
-    }
+        // }
+        default: {
+            gzwarn << "WaveRaoPlugin::createConnection " << name
+                   << " failed to create connection.\n";
+            return nullptr;
+        }
     }
     client->createConnection(entity, name, sdf);
     return client;
 }
 
 bool WaveRaoPlugin::vesselTransition(
-    gz::sim::Entity _vessel, DomainType _new_mode)
+    gz::sim::Entity _vessel,
+    DomainType _new_mode)
 {
     if (m_vehicle_current_mode[_vessel] == _new_mode) {
         return true;
-    }
-    else if (_new_mode == DomainType::Aerial) {
+    } else if (_new_mode == DomainType::Aerial) {
         if (m_aerial_interface.find(_vessel) != m_aerial_interface.end()) {
             m_vehicle_current_mode[_vessel] = _new_mode;
             m_current_vessel_interface[_vessel]->deactivateConnection(_vessel);
             m_current_vessel_interface[_vessel] = m_aerial_interface[_vessel];
             m_current_vessel_interface[_vessel]->activateConnection(_vessel);
-        }
-        else {
+        } else {
             gzwarn << m_vessels_name_map[_vessel]
                    << "requrested to switch domain to "
                       "aerial but no "
@@ -477,15 +246,13 @@ bool WaveRaoPlugin::vesselTransition(
                       "is set. Ignoring transition.\n";
             return false;
         }
-    }
-    else if (_new_mode == DomainType::Surface) {
+    } else if (_new_mode == DomainType::Surface) {
         if (m_surface_interface.find(_vessel) != m_surface_interface.end()) {
             m_vehicle_current_mode[_vessel] = _new_mode;
             m_current_vessel_interface[_vessel]->deactivateConnection(_vessel);
             m_current_vessel_interface[_vessel] = m_surface_interface[_vessel];
             m_current_vessel_interface[_vessel]->activateConnection(_vessel);
-        }
-        else {
+        } else {
             gzwarn << m_vessels_name_map[_vessel]
                    << "requrested to switch domain to "
                       "surface but no "
@@ -493,8 +260,7 @@ bool WaveRaoPlugin::vesselTransition(
                       "is set. Ignoring transition.\n";
             return false;
         }
-    }
-    else if (_new_mode == DomainType::Underwater) {
+    } else if (_new_mode == DomainType::Underwater) {
         if (m_underwater_interface.find(_vessel) !=
             m_underwater_interface.end()) {
             m_vehicle_current_mode[_vessel] = _new_mode;
@@ -502,8 +268,7 @@ bool WaveRaoPlugin::vesselTransition(
             m_current_vessel_interface[_vessel] =
                 m_underwater_interface[_vessel];
             m_current_vessel_interface[_vessel]->activateConnection(_vessel);
-        }
-        else {
+        } else {
             gzwarn << m_vessels_name_map[_vessel]
                    << "requrested to switch domain to "
                       "surface but no "
@@ -514,12 +279,234 @@ bool WaveRaoPlugin::vesselTransition(
     }
     return true;
 }
-} // namespace gazebo
-} // namespace liquidai
+
+bool WaveRaoPlugin::LoadVessel(
+    const gz::sim::Entity &_entity,
+    const gz::sim::components::ModelSdf *_model,
+    gz::sim::EntityComponentManager *_ecm)
+{
+    gz::sim::Entity base_link;
+    sdf::Model data = _model->Data();
+    sdf::ElementPtr sdfptr = data.Element();
+    auto name_opt = _ecm->Component<gz::sim::components::Name>(_entity);
+    std::string vessel_name;
+    if (name_opt) {
+        vessel_name = name_opt->Data();
+    } else {
+        gzwarn << "WaveRaoPlugin::PreUpdate: No vessel name found. "
+                  "Ignoring model.\n";
+        return true;
+    }
+
+    if (sdfptr->HasElement("physics_server_interface")) {
+        gzdbg << sdfptr->ToString("") << "\n";
+        m_vessels_entities.push_back(_entity);
+        // Get Base Link. Currently a fix as only base_link can get
+        // model speed
+        m_vessels_model_map[vessel_name] = _entity;
+        m_vessels_name_map[_entity] = vessel_name;
+
+        auto child_link =
+            _ecm->ChildrenByComponents(_entity, gz::sim::components::Link());
+        for (auto &&link : child_link) {
+            auto name_opt = _ecm->Component<gz::sim::components::Name>(link);
+            if (name_opt &&
+                name_opt->Data().find("base_link") != std::string::npos) {
+                base_link = link;
+                m_vessels_base_link_map[vessel_name] = base_link;
+                gz::sim::Link _link(base_link);
+                _link.EnableVelocityChecks(*_ecm);
+            }
+        }
+
+        // Init Interface
+        sdf::ElementPtr physics_sdf_ptr =
+            sdfptr->GetElement("physics_server_interface");
+        gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
+              << " physics update request detected."
+              << "\n";
+
+        // If vessel has aerial component
+        if (physics_sdf_ptr->HasElement("aerial")) {
+            sdf::ElementPtr aerial_sdf = physics_sdf_ptr->GetElement("aerial");
+
+            ConnectionType aerial_connection_type;
+
+            if (!aerial_sdf->HasElement("ConnectionType") ||
+                !aerial_sdf->HasElement("uri")) {
+                gzwarn << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                       << "missing aerial connectionType or uri. "
+                          "removing aerial calculation. \n";
+            }
+            aerial_connection_type =
+                ConnectionTypeMap[aerial_sdf->Get<std::string>(
+                    "ConnectionType")];
+            m_aerial_interface[_entity] = createConnection(
+                _entity,
+                vessel_name,
+                aerial_connection_type,
+                aerial_sdf);
+        }
+
+        // If vessel has surface component
+        if (physics_sdf_ptr->HasElement("surface")) {
+            sdf::ElementPtr surface_sdf =
+                physics_sdf_ptr->GetElement("surface");
+
+            ConnectionType surface_connection_type;
+            if (!surface_sdf->HasElement("ConnectionType") ||
+                !surface_sdf->HasElement("uri")) {
+                gzwarn << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                       << "missing surface connectionType or uri. "
+                          "removing surface calculation. \n";
+            }
+            surface_connection_type =
+                ConnectionTypeMap[surface_sdf->Get<std::string>(
+                    "ConnectionType")];
+            m_surface_interface[_entity] = createConnection(
+                _entity,
+                vessel_name,
+                surface_connection_type,
+                surface_sdf);
+        }
+
+        // If vessel has underwater component
+        if (physics_sdf_ptr->HasElement("underwater")) {
+            sdf::ElementPtr underwater_sdf =
+                physics_sdf_ptr->GetElement("underwater");
+
+            ConnectionType underwater_connection_type;
+
+            if (!underwater_sdf->HasElement("ConnectionType") ||
+                !underwater_sdf->HasElement("uri")) {
+                gzwarn << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                       << "missing underwater connectionType or uri. "
+                          "removing underwater calculation. \n";
+            }
+            underwater_connection_type =
+                ConnectionTypeMap[underwater_sdf->Get<std::string>(
+                    "ConnectionType")];
+            m_underwater_interface[_entity] = createConnection(
+                _entity,
+                vessel_name,
+                underwater_connection_type,
+                underwater_sdf);
+        }
+        // Add warning that the init is not found and find the
+        // possible state
+        if (physics_sdf_ptr->HasElement("init_state")) {
+            DomainType init_domain =
+                DomainTypeMap[physics_sdf_ptr->Get<std::string>("init_state")];
+
+            switch (init_domain) {
+                case (DomainType::Aerial): {
+                    if (m_aerial_interface.find(_entity) !=
+                        m_aerial_interface.end()) {
+                        m_current_vessel_interface[_entity] =
+                            m_aerial_interface[_entity];
+                        m_vehicle_current_mode[_entity] = DomainType::Aerial;
+                    } else {
+                        gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                              << "init state aerial. No aerial set. "
+                                 "Failed.\n";
+                    }
+                    break;
+                }
+                case (DomainType::Surface): {
+                    if (m_surface_interface.find(_entity) !=
+                        m_surface_interface.end()) {
+                        m_current_vessel_interface[_entity] =
+                            m_surface_interface[_entity];
+                        m_vehicle_current_mode[_entity] = DomainType::Surface;
+                    } else {
+                        gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                              << "init state surface. No surface set. "
+                                 "Failed.\n";
+                    }
+                    break;
+                }
+                case (DomainType::Underwater): {
+                    if (m_underwater_interface.find(_entity) !=
+                        m_underwater_interface.end()) {
+                        m_current_vessel_interface[_entity] =
+                            m_underwater_interface[_entity];
+                        m_vehicle_current_mode[_entity] =
+                            DomainType::Underwater;
+                    } else {
+                        gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                              << "init state underwater. No underwater "
+                                 "set. Failed.\n";
+                    }
+                    break;
+                }
+                default: {
+                    gzerr << "WaveRaoPlugin::PreUpdate: " << vessel_name
+                          << "init state no state found. Failed.\n";
+                    return true;
+                }
+            }
+            m_current_vessel_interface[_entity]->activateConnection(_entity);
+        }
+    } else {
+        gzmsg << "WaveRaoPlugin::PreUpdate: Not calculating phyics for "
+              << vessel_name << "\n";
+    }
+
+    // Add the uri and domain info
+    gzmsg << "WaveRaoPlugin::PreUpdate: " << vessel_name
+          << " physics successfully created.\n";
+    return true;
+}
+
+bool WaveRaoPlugin::DeleteVessel(
+    const gz::sim::Entity &_entity,
+    const gz::sim::components::ModelSdf *_model,
+    const gz::sim::components::ParentEntity *_parent,
+    gz::sim::EntityComponentManager *_ecm)
+{
+    gz::sim::Entity base_link;
+    sdf::Model data = _model->Data();
+    sdf::ElementPtr sdfptr = data.Element();
+    auto name_opt = _ecm->Component<gz::sim::components::Name>(_entity);
+    std::string vessel_name;
+    if (name_opt) {
+        vessel_name = name_opt->Data();
+    } else {
+        gzwarn << "WaveRaoPlugin::PreUpdate: No vessel name found. "
+                  "Ignoring model.\n";
+        return true;
+    }
+
+    if (sdfptr->HasElement("physics_server_interface")) {
+        gzdbg << sdfptr->ToString("") << "\n";
+        gzdbg << "[LOTUSim]: Removing the entity from the xdyn "
+                 "connection...\n";
+
+        gzdbg << "[LOTUSim]: Entity count before: " << m_vessels_entities.size()
+              << "\n";
+
+        m_vessels_entities.erase(
+            std::remove(
+                m_vessels_entities.begin(),
+                m_vessels_entities.end(),
+                _entity),
+            m_vessels_entities.end());
+
+        gzdbg << "[LOTUSim]: Entity count after: " << m_vessels_entities.size()
+              << "\n";
+
+        // TODO Remove from other vectors?
+        // m_vessels_model_map[vessel_name] = _entity;
+        // m_vessels_name_map[_entity] = vessel_name;
+    }
+
+    return true;
+}
+
+}  // namespace gazebo
+}  // namespace liquidai
 GZ_ADD_PLUGIN(
     liquidai::gazebo::WaveRaoPlugin,
     gz::sim::System,
     liquidai::gazebo::WaveRaoPlugin::ISystemConfigure,
-    liquidai::gazebo::WaveRaoPlugin::ISystemPreUpdate,
-    liquidai::gazebo::WaveRaoPlugin::ISystemUpdate,
-    liquidai::gazebo::WaveRaoPlugin::ISystemPostUpdate)
+    liquidai::gazebo::WaveRaoPlugin::ISystemUpdate)

@@ -5,6 +5,7 @@
  */
 
 #include <gps_tools/conversions.h>
+
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
@@ -44,13 +45,13 @@ public:
                 // utm zone was supplied as a ROS parameter
                 zone = zone_;
                 fix.header.frame_id = odom->header.frame_id;
-            }
-            else {
+            } else {
                 // look for the utm zone in the frame_id
                 std::size_t pos = odom->header.frame_id.find("/utm_");
                 if (pos == std::string::npos) {
                     RCLCPP_WARN(
-                        this->get_logger(), "UTM zone not found in frame_id");
+                        this->get_logger(),
+                        "UTM zone not found in frame_id");
                     return;
                 }
                 zone = odom->header.frame_id.substr(pos + 5, 3);
@@ -92,7 +93,7 @@ private:
     std::string frame_id_;
     std::string zone_;
 };
-} // namespace gps_tools
+}  // namespace gps_tools
 
 /*using namespace gps_tools;
 

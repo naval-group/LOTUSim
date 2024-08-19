@@ -1,9 +1,10 @@
 #ifndef __COORDINATE_SYSTEM_UTIL_HH__
 #define __COORDINATE_SYSTEM_UTIL_HH__
 
-#include "gz/sim/components/SphericalCoordinates.hh"
 #include <gz/math/SphericalCoordinates.hh>
 #include <gz/sim/System.hh>
+
+#include "gz/sim/components/SphericalCoordinates.hh"
 
 bool TransformCartesianToSpherical(
     const gz::sim::EntityComponentManager &_ecm,
@@ -18,8 +19,7 @@ bool TransformCartesianToSpherical(
             cart_input,
             gz::math::SphericalCoordinates::LOCAL2,
             gz::math::SphericalCoordinates::SPHERICAL);
-    }
-    catch (...) {
+    } catch (...) {
         return false;
     }
     return true;
@@ -38,8 +38,7 @@ bool TransformSphericalToCartesian(
             sc_input,
             gz::math::SphericalCoordinates::SPHERICAL,
             gz::math::SphericalCoordinates::LOCAL2);
-    }
-    catch (...) {
+    } catch (...) {
         return false;
     }
     return true;

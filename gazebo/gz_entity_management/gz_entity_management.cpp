@@ -55,12 +55,14 @@ void EntityManagement::Configure(
 }
 
 void EntityManagement::PreUpdate(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo &_info,
+    gz::sim::EntityComponentManager &_ecm)
 {
 }
 
 void EntityManagement::Update(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo &_info,
+    gz::sim::EntityComponentManager &_ecm)
 {
     rclcpp::spin_some(ros_node_);
     rclcpp::spin_some(step_control_client_node_);
@@ -102,15 +104,13 @@ void EntityManagement::OnAddEntity_V(
     gz::msgs::EntityFactory_V reqs;
 
     for (liquidai_msgs::msg::AddEntity msg : request->data) {
-
         ::gz::msgs::EntityFactory *req = reqs.add_data();
         req->set_name(msg.name.c_str());
         // If a sdf file is provided, use it. Else, get the sdf provided by the
         // path.
         if (!msg.model_file.empty()) {
             req->set_sdf(msg.model_file.c_str());
-        }
-        else if (!msg.model_filepath.empty()) {
+        } else if (!msg.model_filepath.empty()) {
             std::string full_model_filepath =
                 ament_index_cpp::get_package_share_directory("assets") + "/" +
                 msg.model_filepath;
@@ -126,7 +126,9 @@ void EntityManagement::OnAddEntity_V(
         pose->set_allocated_position(location);
 
         gz::math::Quaterniond rotation(
-            msg.rotation.x, msg.rotation.y, msg.rotation.z);
+            msg.rotation.x,
+            msg.rotation.y,
+            msg.rotation.z);
         auto orientation = new gz::msgs::Quaternion();
         orientation->set_x(rotation.X());
         orientation->set_y(rotation.Y());
@@ -154,13 +156,11 @@ void EntityManagement::OnAddEntity_V(
         if (result) {
             std::cout << "Response: [" << rep.data() << "]" << std::endl;
             response->result = rep.data();
-        }
-        else {
+        } else {
             std::cout << "Service call failed" << std::endl;
             response->result = false;
         }
-    }
-    else {
+    } else {
         std::cerr << "Service call timed out" << std::endl;
         response->result = false;
     }
@@ -190,13 +190,11 @@ void EntityManagement::OnRemoveEntity(
         if (result) {
             std::cout << "Response: [" << rep.data() << "]" << std::endl;
             response->result = rep.data();
-        }
-        else {
+        } else {
             std::cout << "Service call failed" << std::endl;
             response->result = false;
         }
-    }
-    else {
+    } else {
         std::cerr << "Service call timed out" << std::endl;
         response->result = false;
     }
@@ -223,7 +221,7 @@ void EntityManagement::CreateBridge(
                    << "@" << ros_type_name << direction << gz_type_name;
     std::string command = command_stream.str();
     std::thread cmdThread([this, command]() { system(command.data()); });
-    cmdThread.detach(); // Detach the thread to run it independently
+    cmdThread.detach();  // Detach the thread to run it independently
 }
 
 GZ_ADD_PLUGIN(

@@ -1,11 +1,9 @@
 #ifndef __AIS_PLUGIN_HH__
 #define __AIS_PLUGIN_HH__
 
-#include "gz_liquidai_msgs/msgs/aismsg.pb.h"
-#include "world_plugins/CoordinateSystemUtil.h"
+#include <string.h>
 
-#include "gz/sim/Util.hh"
-#include "gz/sim/components/LinearVelocity.hh"
+#include <chrono>
 #include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/EntityComponentManager.hh>
@@ -16,8 +14,10 @@
 #include <gz/sim/components/World.hh>
 #include <gz/transport/Node.hh>
 
-#include <chrono>
-#include <string.h>
+#include "gz/sim/Util.hh"
+#include "gz/sim/components/LinearVelocity.hh"
+#include "gz_liquidai_msgs/msgs/aismsg.pb.h"
+#include "world_plugins/CoordinateSystemUtil.h"
 
 namespace liquidai {
 namespace gazebo {
@@ -30,12 +30,9 @@ namespace gazebo {
  *      <period> 1 </period>
  * </plugin>
  */
-class AISPlugin :
-    public gz::sim::System,
-    public gz::sim::ISystemConfigure,
-    public gz::sim::ISystemPreUpdate,
-    public gz::sim::ISystemPostUpdate {
-
+class AISPlugin : public gz::sim::System,
+                  public gz::sim::ISystemConfigure,
+                  public gz::sim::ISystemPostUpdate {
 public:
     AISPlugin();
 
@@ -44,10 +41,6 @@ public:
         const std::shared_ptr<const sdf::Element> &_sdf,
         gz::sim::EntityComponentManager &_ecm,
         gz::sim::EventManager &_eventMgr) final;
-
-    void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) final;
 
     void PostUpdate(
         const gz::sim::UpdateInfo &_info,
@@ -64,6 +57,6 @@ private:
     std::vector<std::pair<std::string, gz::math::Pose3d>> m_pose;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

@@ -1,4 +1,6 @@
 
+#include "ros_gz_bridge/convert/liquidai_msgs.hpp"
+
 #include <limits>
 
 #include "convert/utils.hpp"
@@ -6,12 +8,11 @@
 #include "gz/msgs/pose.pb.h"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 
-#include "ros_gz_bridge/convert/liquidai_msgs.hpp"
-
 namespace ros_gz_bridge {
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::GPS &ros_msg, gz::msgs::NavSat &gz_msg)
+    const liquidai_msgs::msg::GPS &ros_msg,
+    gz::msgs::NavSat &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     gz_msg.set_latitude_deg(ros_msg.latitude);
@@ -27,7 +28,8 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const gz::msgs::NavSat &gz_msg, liquidai_msgs::msg::GPS &ros_msg)
+    const gz::msgs::NavSat &gz_msg,
+    liquidai_msgs::msg::GPS &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     ros_msg.header.frame_id = frame_id_gz_to_ros(gz_msg.frame_id());
@@ -94,7 +96,8 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::FloatStamped &ros_msg, gz::msgs::Double &gz_msg)
+    const liquidai_msgs::msg::FloatStamped &ros_msg,
+    gz::msgs::Double &gz_msg)
 {
     convert_ros_to_gz(ros_msg.header, (*gz_msg.mutable_header()));
     gz_msg.set_data(ros_msg.data);
@@ -102,7 +105,8 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const gz::msgs::Double &gz_msg, liquidai_msgs::msg::FloatStamped &ros_msg)
+    const gz::msgs::Double &gz_msg,
+    liquidai_msgs::msg::FloatStamped &ros_msg)
 {
     convert_gz_to_ros(gz_msg.header(), ros_msg.header);
     ros_msg.data = gz_msg.data();
@@ -141,7 +145,8 @@ void convert_gz_to_ros(
 
 template <>
 void convert_ros_to_gz(
-    const liquidai_msgs::msg::EntityPosition &ros_msg, gz::msgs::Pose &gz_msg)
+    const liquidai_msgs::msg::EntityPosition &ros_msg,
+    gz::msgs::Pose &gz_msg)
 {
     gz_msg.set_id(ros_msg.id);
     convert_ros_to_gz(ros_msg.position, *gz_msg.mutable_position());
@@ -150,10 +155,11 @@ void convert_ros_to_gz(
 
 template <>
 void convert_gz_to_ros(
-    const gz::msgs::Pose &gz_msg, liquidai_msgs::msg::EntityPosition &ros_msg)
+    const gz::msgs::Pose &gz_msg,
+    liquidai_msgs::msg::EntityPosition &ros_msg)
 {
     ros_msg.set__id(gz_msg.id());
     convert_gz_to_ros(gz_msg.position(), ros_msg.position);
     convert_gz_to_ros(gz_msg.orientation(), ros_msg.rotation);
 }
-} // namespace ros_gz_bridge
+}  // namespace ros_gz_bridge

@@ -1,26 +1,21 @@
 #ifndef WAYPOINT_FOLLOWER_PLUGIN_HH
 #define WAYPOINT_FOLLOWER_PLUGIN_HH
 
+#include <functional>
 #include <gz/common/Console.hh>
-
-#include <gz/plugin/Register.hh>
-
-#include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/components/Link.hh>
-#include <gz/sim/components/Model.hh>
-#include <gz/sim/components/Name.hh>
-#include <gz/sim/components/Pose.hh>
-
 #include <gz/math/Pose3.hh>
 #include <gz/math/Vector2.hh>
 #include <gz/math/Vector3.hh>
-
+#include <gz/plugin/Register.hh>
+#include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Model.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/Util.hh>
-
-#include <functional>
+#include <gz/sim/components/Link.hh>
+#include <gz/sim/components/Model.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Pose.hh>
 #include <mutex>
 #include <sdf/sdf.hh>
 #include <string>
@@ -114,21 +109,15 @@ namespace gazebo {
 /// </follower>
 /// ```
 
-class WaypointFollowerPlugin :
-    public gz::sim::System,
-    public gz::sim::ISystemConfigure,
-    public gz::sim::ISystemPreUpdate,
-    public gz::sim::ISystemUpdate {
+class WaypointFollowerPlugin : public gz::sim::System,
+                               public gz::sim::ISystemConfigure,
+                               public gz::sim::ISystemUpdate {
 public:
     void Configure(
         const gz::sim::Entity &_entity,
         const std::shared_ptr<const sdf::Element> &_sdf,
         gz::sim::EntityComponentManager &_ecm,
         gz::sim::EventManager &_eventMgr) override;
-
-    void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) override;
 
     void Update(
         const gz::sim::UpdateInfo &_info,
@@ -199,6 +188,6 @@ private:
     std::unordered_map<gz::sim::Entity, uint> m_waypoint_state;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

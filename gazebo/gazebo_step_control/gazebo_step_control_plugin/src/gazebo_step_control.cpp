@@ -61,7 +61,8 @@ void GazeboStepControl::Configure(
     // is infrequent (e.g. the simulation is paused), late subscribers can
     // receive the previously published message(s).
     step_complete_pub_ = ros_node_->create_publisher<std_msgs::msg::Empty>(
-        "/step_completed", rclcpp::QoS(rclcpp::KeepLast(10)).transient_local());
+        "/step_completed",
+        rclcpp::QoS(rclcpp::KeepLast(10)).transient_local());
 
     // Step control flag in plugin sdf
     bool control_status_sdf = _sdf->Get<bool>("enable_control", false).first;
@@ -70,12 +71,12 @@ void GazeboStepControl::Configure(
 }
 
 void GazeboStepControl::PreUpdate(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo &_info,
+    gz::sim::EntityComponentManager &_ecm)
 {
     if (step_control_status_) {
         UpdateEnd();
-    }
-    else if (paused_) {
+    } else if (paused_) {
         SetPaused(false);
     }
 
@@ -83,7 +84,8 @@ void GazeboStepControl::PreUpdate(
 }
 
 void GazeboStepControl::Update(
-    const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo &_info,
+    gz::sim::EntityComponentManager &_ecm)
 {
 }
 
@@ -155,11 +157,9 @@ void GazeboStepControl::SetPaused(bool pause)
         if (result) {
             std::cout << "Response: [" << rep.data() << "]" << std::endl;
             paused_ = pause;
-        }
-        else
+        } else
             std::cout << "Service call failed" << std::endl;
-    }
-    else
+    } else
         std::cerr << "Service call timed out" << std::endl;
 }
 

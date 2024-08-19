@@ -29,16 +29,17 @@
 // - be more consistent with other sensor plugins within uuv_simulator,
 // - adhere to Gazebo's coding standards.
 
-#include "rclcpp/rclcpp.hpp"
+#include <tf2/LinearMath/Transform.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
+
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 
-#include <tf2/LinearMath/Transform.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_broadcaster.h>
+#include "rclcpp/rclcpp.hpp"
 
 std::string g_odometry_topic;
 std::string g_pose_topic;
@@ -55,7 +56,7 @@ bool g_publish_roll_pitch;
 std::string g_tf_prefix;
 
 tf2_ros::TransformBroadcaster
-    *g_transform_broadcaster; // revert to not static version
+    *g_transform_broadcaster;  // revert to not static version
 rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr g_pose_publisher;
 rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr
     g_euler_publisher;
@@ -196,7 +197,9 @@ void sendTransform(
 void odomCallback(nav_msgs::msg::Odometry::SharedPtr odometry)
 {
     sendTransform(
-        odometry->pose.pose, odometry->header, odometry->child_frame_id);
+        odometry->pose.pose,
+        odometry->header,
+        odometry->child_frame_id);
 }
 
 void poseCallback(geometry_msgs::msg::PoseStamped::SharedPtr pose)
@@ -294,7 +297,7 @@ int main(int argc, char **argv)
     node->get_parameter("publish_roll_pitch", g_publish_roll_pitch);
 
     g_transform_broadcaster =
-        new tf2_ros::TransformBroadcaster(node); // TODO Check
+        new tf2_ros::TransformBroadcaster(node);  // TODO Check
 
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub1;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub2;
@@ -303,17 +306,23 @@ int main(int argc, char **argv)
     int subscribers = 0;
     if (!g_odometry_topic.empty()) {
         sub1 = node->create_subscription<nav_msgs::msg::Odometry>(
-            g_odometry_topic, 10, &odomCallback);
+            g_odometry_topic,
+            10,
+            &odomCallback);
         subscribers++;
     }
     if (!g_pose_topic.empty()) {
         sub2 = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-            g_pose_topic, 10, &poseCallback);
+            g_pose_topic,
+            10,
+            &poseCallback);
         subscribers++;
     }
     if (!g_imu_topic.empty()) {
         sub3 = node->create_subscription<sensor_msgs::msg::Imu>(
-            g_imu_topic, 10, &imuCallback);
+            g_imu_topic,
+            10,
+            &imuCallback);
         subscribers++;
     }
     if (!g_topic.empty()) {
@@ -330,8 +339,7 @@ int main(int argc, char **argv)
             node->get_logger(),
             "Usage: rosrun message_to_tf message_to_tf <topic>");
         return 1;
-    }
-    else if (subscribers > 1) {
+    } else if (subscribers > 1) {
         RCLCPP_FATAL(
             node->get_logger(),
             "More than one of the parameters odometry_topic, pose_topic, "
@@ -350,11 +358,13 @@ int main(int argc, char **argv)
         if (!publish_pose_topic.empty())
             g_pose_publisher =
                 node->create_publisher<geometry_msgs::msg::PoseStamped>(
-                    publish_pose_topic, 10);
+                    publish_pose_topic,
+                    10);
         else
             g_pose_publisher =
                 node->create_publisher<geometry_msgs::msg::PoseStamped>(
-                    "~/pose", 10);
+                    "~/pose",
+                    10);
     }
 
     bool publish_euler = true;
@@ -366,11 +376,13 @@ int main(int argc, char **argv)
         if (!publish_euler_topic.empty())
             g_euler_publisher =
                 node->create_publisher<geometry_msgs::msg::Vector3Stamped>(
-                    publish_euler_topic, 10);
+                    publish_euler_topic,
+                    10);
         else
             g_euler_publisher =
                 node->create_publisher<geometry_msgs::msg::Vector3Stamped>(
-                    "~/euler", 10);
+                    "~/euler",
+                    10);
     }
 
     rclcpp::spin(node);

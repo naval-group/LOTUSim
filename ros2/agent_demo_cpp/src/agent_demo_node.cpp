@@ -1,30 +1,28 @@
-#include "liquidai_msgs/msg/add_entity.hpp"
-#include "liquidai_msgs/srv/add_entity_srv.hpp"
-#include "liquidai_msgs/srv/add_entity_srv_array.hpp"
-#include "liquidai_msgs/srv/get_id_by_name.hpp"
-#include "liquidai_msgs/srv/remove_entity.hpp"
+#include <chrono>
+#include <cstdio>
+#include <functional>
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <liquidai_msgs/msg/entity_position.hpp>
-#include <std_msgs/msg/int32.hpp>
-
+#include <memory>
 #include <rclcpp/create_timer.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
-
-#include <chrono>
-#include <cstdio>
-#include <functional>
-#include <memory>
+#include <std_msgs/msg/int32.hpp>
 #include <string>
+
+#include "liquidai_msgs/msg/add_entity.hpp"
+#include "liquidai_msgs/srv/add_entity_srv.hpp"
+#include "liquidai_msgs/srv/add_entity_srv_array.hpp"
+#include "liquidai_msgs/srv/get_id_by_name.hpp"
+#include "liquidai_msgs/srv/remove_entity.hpp"
 
 class AgentDemoCpp : public rclcpp::Node {
 public:
     AgentDemoCpp(rclcpp::NodeOptions &options)
-        : rclcpp::Node("agent_demo_cpp_node", options)
-        , gazebo_id(0)
+        : rclcpp::Node("agent_demo_cpp_node", options), gazebo_id(0)
     {
         // declare_parameter<int>("gazebo_id");
         // get_parameter<int>("gazebo_id", gazebo_id);
@@ -32,20 +30,25 @@ public:
         node_base_interface_ = this->get_node_base_interface();
         name_ = this->get_name();
 
-        entity_management_client_node_ = std::make_shared<rclcpp::Node>("entity_management_node_");
+        entity_management_client_node_ =
+            std::make_shared<rclcpp::Node>("entity_management_node_");
         get_id_by_name_client_ =
-            entity_management_client_node_->create_client<liquidai_msgs::srv::GetIdByName>(
-                "/gz_get_id_by_name");
+            entity_management_client_node_
+                ->create_client<liquidai_msgs::srv::GetIdByName>(
+                    "/gz_get_id_by_name");
 
         while (!get_gazebo_id()) {
             RCLCPP_INFO(
-                this->get_logger(), "Could not get Gazebo Id, trying again...");
+                this->get_logger(),
+                "Could not get Gazebo Id, trying again...");
         }
 
         pose_pub_ = this->create_publisher<liquidai_msgs::msg::EntityPosition>(
-            "/pose_effector", 10);
+            "/pose_effector",
+            10);
         debug_pub_ = this->create_publisher<std_msgs::msg::Int32>(
-            "/agent_demo_sched" + std::to_string(gazebo_id), 10);
+            "/agent_demo_sched" + std::to_string(gazebo_id),
+            10);
         gz_poses_sub_ =
             this->create_subscription<geometry_msgs::msg::PoseArray>(
                 "/model/" + name_ + "/pose",
@@ -58,7 +61,9 @@ public:
             "/pose_sensor",
             10,
             std::bind(
-                &AgentDemoCpp::sensor_callback, this, std::placeholders::_1));
+                &AgentDemoCpp::sensor_callback,
+                this,
+                std::placeholders::_1));
 
         // timer_ = timer_ = rclcpp::create_timer(
         //     this,
@@ -101,7 +106,8 @@ public:
                 exit(0);
             }
             RCLCPP_INFO(
-                this->get_logger(), "Service not available, waiting again...");
+                this->get_logger(),
+                "Service not available, waiting again...");
         }
 
         auto request =
@@ -109,8 +115,9 @@ public:
         request->set__entity_name(name_);
         auto res = get_id_by_name_client_->async_send_request(request);
 
-        if (rclcpp::spin_until_future_complete(entity_management_client_node_, res) ==
-            rclcpp::FutureReturnCode::SUCCESS) {
+        if (rclcpp::spin_until_future_complete(
+                entity_management_client_node_,
+                res) == rclcpp::FutureReturnCode::SUCCESS) {
             int id = res.get()->id;
             if (id != 0) {
                 RCLCPP_INFO(
@@ -119,14 +126,11 @@ public:
                     id);
                 gazebo_id = id;
                 return true;
-            }
-            else {
-                RCLCPP_WARN(
-                    this->get_logger(), "The Gazebo Id I got is 0.");
+            } else {
+                RCLCPP_WARN(this->get_logger(), "The Gazebo Id I got is 0.");
                 return false;
             }
-        }
-        else {
+        } else {
             RCLCPP_ERROR(this->get_logger(), "Failed to call service");
             return false;
         }

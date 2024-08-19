@@ -50,18 +50,19 @@ bool SpawnOnGazebo::spawn()
         // Get the response's success field to see if all checks passed
         if (res.get()->result) {
             RCLCPP_INFO(
-                this->node_->get_logger(), "The checks were successful!");
+                this->node_->get_logger(),
+                "The checks were successful!");
             return true;
-        }
-        else {
+        } else {
             RCLCPP_WARN(
-                this->node_->get_logger(), "The checks were not successful");
+                this->node_->get_logger(),
+                "The checks were not successful");
             return false;
         }
-    }
-    else {
+    } else {
         RCLCPP_ERROR(
-            this->node_->get_logger(), "Failed to call service 'checks'");
+            this->node_->get_logger(),
+            "Failed to call service 'checks'");
         return false;
     }
 }

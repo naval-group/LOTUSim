@@ -7,7 +7,9 @@ std::weak_ptr<WaveRaoInterface> XdynGrpc::m_instance =
     std::shared_ptr<XdynGrpc>(nullptr);
 
 std::optional<json> XdynGrpc::getNewState(
-    const std::string &name, json previous_state, float time_dif)
+    const std::string &name,
+    json previous_state,
+    float time_dif)
 {
     return std::nullopt;
 }
@@ -25,11 +27,10 @@ std::shared_ptr<WaveRaoInterface> XdynGrpc::getInstance()
         auto instance = std::make_shared<XdynGrpc>();
         m_instance = instance;
         return instance;
-    }
-    else {
+    } else {
         return m_instance.lock();
     }
 }
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai

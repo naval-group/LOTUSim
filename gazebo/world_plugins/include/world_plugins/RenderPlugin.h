@@ -1,10 +1,8 @@
 #ifndef __RENDER_PLUGIN_HH__
 #define __RENDER_PLUGIN_HH__
 
-#include "world_plugins/RenderInterface.h"
-#include "world_plugins/UDPRenderInterface.h"
-
 #include <gz/common/Console.hh>
+#include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/components/CustomSensor.hh>
@@ -13,35 +11,35 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Sensor.hh>
+#include <gz/transport/Node.hh>
 
 #include "gz/sim/Util.hh"
-#include <gz/common/Util.hh>
-#include <gz/transport/Node.hh>
+#include "world_plugins/RenderInterface.h"
+#include "world_plugins/TcpUdpInterface.h"
 
 namespace liquidai {
 namespace gazebo {
 
-std::shared_ptr<RenderInterfaceBase>
-CreateRenderInterface(const std::string &protocol)
+std::shared_ptr<RenderInterfaceBase> CreateRenderInterface(
+    const std::string &protocol)
 {
-    if (protocol == "udp") {
-        return std::make_shared<UDPRenderInterface>();
+    if (protocol == "TCPUDP") {
+        return std::make_shared<TcpUdpInterface>();
     }
     return nullptr;
 };
 
-class RenderPlugin :
-    public gz::sim::System,
-    public gz::sim::ISystemConfigure,
-    public gz::sim::ISystemPreUpdate,
-    public gz::sim::ISystemUpdate,
-    public gz::sim::ISystemPostUpdate {
+/**
+ * @brief RenderPlugin is for basic rendering functions.
+ * For more specific functions, please create your own user interface function
+ *
+ */
+class RenderPlugin : public gz::sim::System,
+                     public gz::sim::ISystemConfigure,
+                     public gz::sim::ISystemPreUpdate,
+                     public gz::sim::ISystemPostUpdate {
 public:
     RenderPlugin();
-
-    void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) final;
 
     void Configure(
         const gz::sim::Entity &_entity,
@@ -49,9 +47,9 @@ public:
         gz::sim::EntityComponentManager &_ecm,
         gz::sim::EventManager &_eventMgr) final;
 
-    void Update(
+    void PreUpdate(
         const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) final;
+        gz::sim::EntityComponentManager &_ecm) override;
 
     void PostUpdate(
         const gz::sim::UpdateInfo &_info,
@@ -69,6 +67,6 @@ private:
     std::shared_ptr<RenderInterfaceBase> m_render_interface;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

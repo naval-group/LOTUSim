@@ -26,6 +26,6 @@ private:
     static std::weak_ptr<WaveRaoInterface> m_instance;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

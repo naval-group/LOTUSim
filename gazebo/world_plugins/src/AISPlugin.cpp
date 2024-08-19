@@ -24,8 +24,9 @@ void AISPlugin::Configure(
     }
 }
 
-void AISPlugin::PreUpdate(
-    const gz::sim::UpdateInfo &, gz::sim::EntityComponentManager &_ecm)
+void AISPlugin::PostUpdate(
+    const gz::sim::UpdateInfo &_info,
+    const gz::sim::EntityComponentManager &_ecm)
 {
     _ecm.EachNew<gz::sim::components::ModelSdf>(
         [&](const gz::sim::Entity &_entity,
@@ -43,13 +44,6 @@ void AISPlugin::PreUpdate(
             }
             return true;
         });
-}
-
-void AISPlugin::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
-{
-    // Bring bol for update out, and merge the 2 for loops
 
     m_pose.clear();
     for (auto &&entity : m_vessel_entities) {
@@ -95,12 +89,11 @@ void AISPlugin::PostUpdate(
     }
 }
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 
 GZ_ADD_PLUGIN(
     liquidai::gazebo::AISPlugin,
     gz::sim::System,
     liquidai::gazebo::AISPlugin::ISystemConfigure,
-    liquidai::gazebo::AISPlugin::ISystemPreUpdate,
     liquidai::gazebo::AISPlugin::ISystemPostUpdate)

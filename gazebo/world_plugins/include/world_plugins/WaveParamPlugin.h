@@ -1,20 +1,19 @@
 #ifndef __WAVE_PARAM_NODE_H__
 #define __WAVE_PARAM_NODE_H__
 
-#include "gz/sim/Util.hh"
-#include "gz_liquidai_msgs/msgs/wavemsg.pb.h"
-#include "world_params/ParamNode.h"
-
-#include <liquidai_msgs/msg/wave_param.hpp>
-#include <rclcpp/rclcpp.hpp>
-
+#include <ctype.h>
 #include <gz/msgs/vector2d.pb.h>
+
 #include <gz/plugin/Register.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/World.hh>
 #include <gz/transport/Node.hh>
+#include <liquidai_msgs/msg/wave_param.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-#include <ctype.h>
+#include "gz/sim/Util.hh"
+#include "gz_liquidai_msgs/msgs/wavemsg.pb.h"
+#include "world_params/ParamNode.h"
 
 namespace liquidai {
 namespace gazebo {
@@ -36,11 +35,10 @@ namespace gazebo {
     </WaveNodeParam>
  *
  */
-class WaveParamPlugin :
-    public ParamNode<WaveParameters>,
-    public gz::sim::System,
-    public gz::sim::ISystemConfigure,
-    public gz::sim::ISystemPreUpdate {
+class WaveParamPlugin : public ParamNode<WaveParameters>,
+                        public gz::sim::System,
+                        public gz::sim::ISystemConfigure,
+                        public gz::sim::ISystemPreUpdate {
 public:
     WaveParamPlugin();
 
@@ -67,8 +65,8 @@ private:
         const std::string &description = "",
         bool read_only = false);
 
-    rcl_interfaces::msg::SetParametersResult
-    dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
+    rcl_interfaces::msg::SetParametersResult dynamicParametersCallback(
+        std::vector<rclcpp::Parameter> parameters);
 
 private:
     /**
@@ -86,6 +84,6 @@ private:
         m_dyn_params_handler;
 };
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

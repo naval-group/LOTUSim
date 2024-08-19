@@ -13,14 +13,25 @@ namespace gazebo {
 
 using json = nlohmann::json;
 
-enum class ConnectionType { XDynWebSocket, XDynGRPC, Manual, Unknown };
+enum class ConnectionType
+{
+    XDynWebSocket,
+    XDynGRPC,
+    Manual,
+    Unknown
+};
 static std::unordered_map<std::string, ConnectionType> ConnectionTypeMap{
     {"XDynWebSocket", ConnectionType::XDynWebSocket},
     {"XDynGRPC", ConnectionType::XDynGRPC},
     {"Manual", ConnectionType::Manual},
     {"Unknown", ConnectionType::Unknown}};
 
-enum class DomainType { Aerial, Surface, Underwater };
+enum class DomainType
+{
+    Aerial,
+    Surface,
+    Underwater
+};
 static std::unordered_map<std::string, DomainType> DomainTypeMap{
     {"Aerial", DomainType::Aerial},
     {"Surface", DomainType::Surface},
@@ -97,6 +108,6 @@ protected:
 
 // typedef std::shared_ptr<WaveRaoInterface> ClientPtr;
 
-} // namespace gazebo
-} // namespace liquidai
+}  // namespace gazebo
+}  // namespace liquidai
 #endif

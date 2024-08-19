@@ -43,20 +43,20 @@ bool DespawnOnGazebo::despawn()
         rclcpp::FutureReturnCode::SUCCESS) {
         if (res.get()->result) {
             RCLCPP_INFO(
-                this->node_->get_logger(), "The checks were successful!");
+                this->node_->get_logger(),
+                "The checks were successful!");
             return true;
-        }
-        else {
+        } else {
             RCLCPP_WARN(
                 this->node_->get_logger(),
                 "The checks were not successful: %s",
                 "bruh");
             return false;
         }
-    }
-    else {
+    } else {
         RCLCPP_ERROR(
-            this->node_->get_logger(), "Failed to call service 'checks'");
+            this->node_->get_logger(),
+            "Failed to call service 'checks'");
         return false;
     }
 }
