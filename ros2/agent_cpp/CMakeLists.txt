@@ -16,7 +16,7 @@ find_package(sdformat14 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(composition_interfaces REQUIRED)
-find_package(nlohmann_json 3.2.0 REQUIRED)
+# find_package(nlohmann_json 3.2.0 REQUIRED)
 
 include_directories(include/${PROJECT_NAME})
 

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="lrauv_mas1">
-    <!-- <publish_render>true</publish_render>
+    <publish_render>true</publish_render>
     <unity_type_name>lrauv</unity_type_name>
 
     <physics_server_interface>
@@ -13,7 +13,7 @@
         </thrusters>
       </underwater>
       <init_state>Underwater</init_state>
-    </physics_server_interface> -->
+    </physics_server_interface>
 
     <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
 

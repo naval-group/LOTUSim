@@ -6,7 +6,6 @@ NC='\033[0m' # No Color
 
 export ROS_DISTRO=humble
 export GZ_VERSION=harmonic
-export ROS_DOMAIN_ID=42
 
 # Définition des chemins
 ROS_SETUP_PATH="/opt/ros/humble/setup.bash"

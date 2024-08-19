@@ -1,11 +1,6 @@
 #include "gz_entity_management.hpp"
 
-using namespace gz;
-using namespace sim;
-using namespace systems;
 using namespace entity_management;
-
-// TODO: Add bridge
 
 void EntityManagement::Configure(
     const gz::sim::Entity &_entity,
@@ -14,7 +9,7 @@ void EntityManagement::Configure(
     gz::sim::EventManager &_eventMgr)
 {
     ecm_ = &_ecm;
-    world_ = _ecm.EntityByComponents(components::World());
+    world_ = _ecm.EntityByComponents(gz::sim::components::World());
     this->worldName = _ecm.Component<gz::sim::components::Name>(world_)->Data();
 
     ros_node_ = rclcpp::Node::make_shared("gz_entity_management_node");
@@ -211,7 +206,7 @@ void EntityManagement::OnGetIdByName(
     const std::shared_ptr<liquidai_msgs::srv::GetIdByName::Request> request,
     std::shared_ptr<liquidai_msgs::srv::GetIdByName::Response> response)
 {
-    int id = ecm_->EntityByComponents(components::Name(request->entity_name));
+    int id = ecm_->EntityByComponents(gz::sim::components::Name(request->entity_name));
     response->id = id;
     gzmsg << "The id of " << request->entity_name << " is " << id;
 }
