@@ -19,7 +19,7 @@ This simulation is built on Gazebo Harmonic and ROS Humble.
 
 ```bash
 # ROS libraries
-sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzgarden ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
+sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzharmonic ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions  ros-humble-nav2-common ros-humble-navigation2
 
 # Other libraries
 sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
@@ -53,12 +53,12 @@ Using xdyn-for-cs websocket
 # Terminal 1 launching surface xdyn
 cd ~/lotusim_ws/src/lotusim/physics/xdynSurface
 export LD_LIBRARY_PATH="$(pwd)"
-clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
+clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2
 
 # Terminal 2 launching underwater xdyn
 cd ~/lotusim_ws/src/lotusim/physics/xdynUnderwater
 export LD_LIBRARY_PATH="$(pwd)"
-clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2
+clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 3 Launch gz sim
 cd ~/lotusim_ws
