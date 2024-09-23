@@ -57,7 +57,7 @@
         <physics_server_interface>
             <surface>
                 <ConnectionType>XDynWebSocket</ConnectionType>
-                <uri>ws://127.0.0.1:12346</uri>
+                <uri>ws://127.0.0.1:12345</uri>
                 <thrusters>
                     <thursters1>PSPropRudd</thursters1>
                     <thursters2>SBPropRudd</thursters2>
