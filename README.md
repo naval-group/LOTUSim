@@ -53,12 +53,12 @@ Using xdyn-for-cs websocket
 # Terminal 1 launching surface xdyn
 cd ~/lotusim_ws/src/lotusim/physics/xdynSurface
 export LD_LIBRARY_PATH="$(pwd)"
-clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2
+clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
 
 # Terminal 2 launching underwater xdyn
 cd ~/lotusim_ws/src/lotusim/physics/xdynUnderwater
 export LD_LIBRARY_PATH="$(pwd)"
-clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
+clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2
 
 # Terminal 3 Launch gz sim
 cd ~/lotusim_ws
