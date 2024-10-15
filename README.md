@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # Lotusim
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn).
@@ -10,74 +9,66 @@ This simulation is built on Gazebo Harmonic and ROS Humble.
 </div>
 
 [[_TOC_]]
+
 ## Get Started
+
 ### Installing
 
-1. Install [gazebo Harmonic](https://gazebosim.org/docs/harmonic/install_ubuntu) and [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html)
-
-2. Libraries needed
-
-```bash
-# ROS libraries
-sudo apt install -y libogre-next-2.3-dev libcgal-dev libfftw3-dev ros-humble-robot-localization ros-humble-gps-tools ros-humble-ros-gzharmonic ros-humble-xacro libignition-transport11-dev python3-colcon-common-extensions ros-humble-nav2-common ros-humble-navigation2
-
-# Other libraries
-sudo apt install -y libwebsocketpp-dev nlohmann-json3-dev libxlsxwriter-dev
-```
-
-3. Creating workspace
+1. Creating workspace
 
 ```bash
 cd;
-mkdir -p lotusim_ws/src;
-cd lotusim_ws/src;
-git clone --recurse-submodules https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git;
+git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git lotusim_ws/src/lotusim;
 ```
 
-4. Building
+2. Adding environment variable
 
 ```bash
-cd lotusim;
-source config-lotus.sh;
+cat <<EOF >> ~/.bashrc
+export PATH=\$HOME/lotusim_ws/src/lotusim/physics/:\$HOME/lotusim_ws/src/lotusim/launch:\$PATH
+export LD_LIBRARY_PATH=\$HOME/lotusim_ws/src/lotusim/physics:\$LD_LIBRARY_PATH
+export LOTUSIM_WS=\$HOME/lotusim_ws/
+export LOTUSIM_PATH=\$LOTUSIM_WS/src/lotusim
+export XDYN_PATH=\$LOTUSIM_PATH/assets/models/
+source \$LOTUSIM_PATH/launch/bash_completion.sh
+EOF
+chmod -R +x $HOME/lotusim_ws/src/lotusim/launch/*
+source ~/.bashrc
+```
+
+3. Install [gazebo Harmonic](https://gazebosim.org/docs/harmonic/install_ubuntu), [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html), and libraries needed
+```bash
+lotusim install
+```
+
+4. Read help for Lotusim and xdyn
+```bash
+lotusim --help
+xdyn --help
+xdyn-for-cs --help
 ```
 
 ## Tutorial
 
+### Running example
+1. Run Surface and Underwater xdyn
+``` bash
 
+xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/dtmb_hull/dtmb-wave-propeller-PID-xdyn.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12345
+xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv_xdyn/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
 
-This is an example launch for a surface and underwater vessel
+```
 
-and
+6. Run lotusim
+``` bash
+lotusim run <world>
+```
 
-Using xdyn-for-cs websocket
+```
 
-```bash
-# Terminal 1 launching surface xdyn
-cd ~/lotusim_ws/src/lotusim/physics/xdynSurface
-export LD_LIBRARY_PATH="$(pwd)"
-clear;./xdyn-for-cs ../../assets/models/dtmb_hull/dtmb-wave-propeller-PID.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2
-
-# Terminal 2 launching underwater xdyn
-cd ~/lotusim_ws/src/lotusim/physics/xdynUnderwater
-export LD_LIBRARY_PATH="$(pwd)"
-clear;./xdyn-for-cs ../../assets/models/lrauv_xdyn/lrauv.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2
-
-# Terminal 3 Launch gz sim
-cd ~/lotusim_ws
-source "$(pwd)/install/setup.bash"
-export GZ_SIM_SYSTEM_PLUGIN_PATH="$(pwd)/install/lib"
-export GZ_SIM_RESOURCE_PATH="$(pwd)/src/lotusim/assets/models"
-clear; gz sim -v4 -s -r src/lotusim/assets/worlds/xdyn_underwater.world
-
-# Terminal 4 bridge ROS2 and gz stuff
-cd ~/lotusim_ws
-source "$(pwd)/install/setup.bash"
-ros2 launch dtmb_description ros_bridge.launch.py
-
-# Terminal 5 keyboard control
-cd ~/lotusim_ws
-source "$(pwd)/install/setup.bash"
-ros2 run keyboard_control keyboard_control --ros-args -p vessel_name:=<name of vessel to control> -p thrusters_name:='[<array of prop>]'
+### Building lotusim in debug mode for debug logs
+```
+lotusim --debug clean_build
 ```
 
 ### Running with the MAS
@@ -106,9 +97,11 @@ Launch Gazebo and the main ROS2 MAS by running `./launch-lotus.sh`.
 Open `Plugins/Services/Service Caller` in the newly opened `rqt` window. Call the `/SC_change_state_of_all` with an `id` of 1 to configure and spawn all the agents.
 
 
+
 ## Contributing
 
 ### Workflow
+
 We use the Gitflow collaborating workflow. You can find the explanation of this workflow [here](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 
 We are using the default Gitflow branch naming like [here](https://www.gitkraken.com/blog/gitflow).
@@ -120,5 +113,3 @@ When you open an issue, you need to put the correct label corresponding to the c
 **IMPORTANT** You have to put ~"project::development" or ~"project::management" label on each issue as they are used for filtering in the different issue boards
 
 You can find the description of the labels [here](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotusim/-/labels).
-
-

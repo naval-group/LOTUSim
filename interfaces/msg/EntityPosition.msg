@@ -1,3 +1,0 @@
-uint64 id
-geometry_msgs/Vector3 position
-geometry_msgs/Quaternion rotation

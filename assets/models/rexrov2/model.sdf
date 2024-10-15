@@ -1,12 +1,8 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="rexrov2">
-      <plugin
-      filename="LoggingSystem"
-      name="logging_system::LoggingSystem">
-    </plugin>
-    <publish_render>true</publish_render>
-
+    <publish_render>false</publish_render>
+    <renderer_type_name></renderer_type_name>
     <!-- Base Link -->
     <link name="base_link">
       <visual name="base_link_visual">
@@ -173,14 +169,14 @@
       </hydrodynamic_model>
     </link>
 
-      <link name='front_camera'>
+    <link name='front_camera'>
       <pose>1 0 1 0 0 0</pose>
-       <inertial>
+      <inertial>
         <pose>0 0 0 0 0 0</pose>
         <mass>0.001</mass>
       </inertial>
       <sensor name="front_camera" type="camera">
-        <camera>  
+        <camera>
           <horizontal_fov>1.047</horizontal_fov>
           <image>
             <width>320</width>
@@ -202,8 +198,8 @@
       <child>front_camera</child>
 
     </joint>
-    
-    
+
+
 
 
     <!-- Propeller0 -->

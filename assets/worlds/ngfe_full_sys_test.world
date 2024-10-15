@@ -29,8 +29,13 @@
             <real_time_update_rate>1</real_time_update_rate>
         </physics>
 
-        <!-- World plugins -->
+        <!-- Builtin World plugins -->
         <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin>
+        <!-- Running contact system. To be replaced -->
+        <plugin
+            filename="gz-sim-contact-system"
+            name="gz::sim::systems::Contact">
         </plugin>
         <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
             <render_engine>ogre2</render_engine>
@@ -47,55 +52,49 @@
         </plugin>
 
         <!-- Hydrophysics -->
-        <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
 
         <!-- Rendering system -->
-        <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
+        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>TCPUDP</connection_protocol>
-            <ip>192.168.50.178</ip>
+            <ip>127.0.0.1</ip>
             <udp_port>23456</udp_port>
             <tcp_port>23457</tcp_port>
         </plugin>
 
         <!-- Waypoint following -->
-        <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin">
         </plugin>
 
         <!-- AIS pub -->
-        <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
+        <plugin filename="ais_plugin" name="lotusim::gazebo::AISPlugin">
             <period> 1 </period>
         </plugin>
 
         <!-- Models -->
-
         <include>
-            <uri>model://duck</uri>
-            <name>duck1</name>
-            <pose>300 300 0 0 0 0</pose>
-            <publish_ais>false</publish_ais>
-        </include>
-
-        <include>
-            <uri>model://duck</uri>
-            <name>duck2</name>
-            <pose>0 0 0 0 0 0</pose>
-            <publish_ais>false</publish_ais>
-        </include>
-
-        <include>
-            <uri>model://test_ship</uri>
+            <uri>model://dtmb_hull</uri>
             <name>frigate</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
         </include>
 
+        <!-- 
         <include>
             <uri>model://lrauv_xdyn</uri>
             <name>lrauv</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
         </include>
+
+        <include>
+            <uri>model://mine</uri>
+            <name>mine</name>
+            <pose>91.5 0 -100 0 0 0</pose>
+            <publish_ais>false</publish_ais>
+        </include> 
+        -->
 
         <!-- Needed for all the gazebo tf frames -->
         <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">

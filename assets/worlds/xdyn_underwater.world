@@ -21,16 +21,15 @@
         </plugin>
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
         </plugin>
-        <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
-            <debug>true</debug>
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
-        <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
+        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>TCPUDP</connection_protocol>
             <ip>127.0.0.1</ip>
             <udp_port>23456</udp_port>
             <tcp_port>23457</tcp_port>
         </plugin>
-        <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin">
         </plugin>
 
         <!-- <include>
@@ -48,7 +47,7 @@
         </include> -->
 
         <include>
-            <uri>model://test_ship</uri>
+            <uri>model://dtmb_hull</uri>
             <name>frigate</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>

@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
     <model name='dtmb'>
+        <publish_render>false</publish_render>
+        <renderer_type_name></renderer_type_name>
+
         <link name="base_link">
             <visual name="visual">
                 <geometry>
@@ -9,6 +12,33 @@
                     </mesh>
                 </geometry>
             </visual>
+            <collision name="body_collision">
+                <geometry>
+                    <mesh>
+                        <uri>model://dtmb_hull/dtmb.stl</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+            <sensor name='sensor_contact' type='contact'>
+                <contact>
+                    <collision>body_collision</collision>
+                    <topic>/collision</topic>
+                </contact>
+                <always_on>1</always_on>
+                <update_rate>100</update_rate>
+            </sensor>
         </link>
+        <physics_server_interface>
+            <surface>
+                <ConnectionType>XDynWebSocket</ConnectionType>
+                <uri>ws://127.0.0.1:12345</uri>
+                <thrusters>
+                    <thursters1>PSPropRudd</thursters1>
+                    <thursters2>SBPropRudd</thursters2>
+                </thrusters>
+            </surface>
+            <init_state>Surface</init_state>
+        </physics_server_interface>
     </model>
 </sdf>

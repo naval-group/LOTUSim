@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="tethys">
-    <plugin
-      filename="LoggingSystem"
-      name="logging_system::LoggingSystem">
-    </plugin>
+    <publish_render>false</publish_render>
+    <renderer_type_name></renderer_type_name>
     <!-- Body -->
     <link name="base_link">
       <inertial>
@@ -56,12 +54,12 @@
         </material>
       </visual>
       <sensor name="imu_sensor" type="imu">
-	<always_on>1</always_on>
-	<update_rate>1</update_rate>
-	<visualize>true</visualize>
-	<topic>imu</topic>
-      </sensor>	  
-	  
+        <always_on>1</always_on>
+        <update_rate>1</update_rate>
+        <visualize>true</visualize>
+        <topic>imu</topic>
+      </sensor>
+
     </link>
 
     <!-- Horizontal fins -->
@@ -86,7 +84,7 @@
             <size>0.1 0.1 0.02</size>
           </box>
         </geometry>
-      </collision> 
+      </collision>
 
       <visual name= "visual">
         <pose>-1.05 0 0 0 0 0</pose>
@@ -135,7 +133,7 @@
       </inertial>
 
       <collision name="collision">
-         <geometry>
+        <geometry>
           <box>
             <size>0.1 0.1 0.02</size>
           </box>
