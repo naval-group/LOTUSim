@@ -64,7 +64,6 @@ xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv_xdyn/lrauv.yml --ve
 lotusim run <world>
 ```
 
-```
 
 ### Building lotusim in debug mode for debug logs
 ```
