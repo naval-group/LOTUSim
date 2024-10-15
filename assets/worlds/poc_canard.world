@@ -57,7 +57,7 @@
 
 
     <!-- <include>
-            <uri>model://test_ship</uri>
+            <uri>model://dtmb_hull</uri>
             <name>test_ship_vessel</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>

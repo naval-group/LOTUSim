@@ -1,0 +1,221 @@
+#!/bin/bash
+# Color definitions
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Default configurations
+LOTUS_WS="$HOME/lotusim_ws"
+DEFAULT_WORLD="ngfe_full_sys_test.world"
+
+# Flags for simulation options
+DEBUG=""
+GUI="-s"
+
+# Check if script is running as root
+SUDO_CMD=""
+if [ "$EUID" -ne 0 ]; then
+    SUDO_CMD="sudo"
+fi
+
+###########
+# Functions
+###########
+print_help() {
+    echo -e "${GREEN}Usage:${NC} ./script.sh [OPTIONS] <command> [world_name]"
+    echo -e "${GREEN}Options:${NC}"
+    echo -e "  --ws-path PATH          Path to the lotusim workspace (default: $LOTUS_WS)"
+    echo -e "  --assets-path PATH      Path to the assets directory (default: $ASSETS_PATH)"
+    echo -e "  --debug                 Enable debug mode"
+    echo -e "  --gui                   Run gz sim GUI"
+    echo -e "  --help                  Display this help message"
+    echo ""
+    echo -e "${GREEN}Commands:${NC}"
+    echo -e "  install                 Install the dependencies"
+    echo -e "  clean                   Clean the project"
+    echo -e "  build                   Build the project"
+    echo -e "  clean_build             Clean and build the project"
+    echo -e "  doc                     Generate project documentation"
+    echo -e "  run                     Run the simulation [optional: world_name]"
+    echo ""
+    echo -e "${GREEN}Example:${NC}"
+    echo -e "  lotusim --ws-path /new/path/to/ws --debug --gui run my_world_name"
+}
+
+build() {
+    source "/opt/ros/humble/setup.bash"
+    cd ${LOTUS_WS}
+    if [ "$DEBUG" == "-v4" ]; then
+        echo "Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
+        colcon build --cmake-args -DLOTUSIM_TIDY=ON -DDEBUG=ON --symlink-install --merge-install || {
+            echo -e "${RED}Error:${NC} Build failed."
+            exit 1
+        }
+    else
+        colcon build --symlink-install --merge-install || {
+            echo -e "${RED}Error:${NC} Build failed."
+            exit 1
+        }
+    fi
+}
+
+validate_setup() {
+    if [ ! -f "/opt/ros/humble/setup.bash" ]; then
+        echo -e "${RED}Error:${NC} ROS2 Humble is not installed or the setup.bash is not found at /opt/ros/humble/setup.bash."
+        exit 1
+    fi
+    if [ ! -d "${LOTUS_WS}" ]; then
+        echo -e "${RED}Error:${NC} The lotusim workspace does not exist at $LOTUS_WS."
+        exit 1
+    fi
+    if [ ! -d "${LOTUSIM_PATH}" ]; then
+        echo -e "${RED}Error:${NC} The lotusim repo does not exist at $LOTUSIM_PATH."
+        exit 1
+    fi
+}
+
+#######
+# Main
+#######
+export GZ_VERSION=harmonic
+
+# Check if no command is provided
+if [ $# -eq 0 ]; then
+    echo -e "${RED}Error:${NC} No command provided."
+    print_help
+    exit 1
+fi
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+    --ws-path)
+        LOTUS_WS="$2"
+        shift
+        ;;
+    --assets-path)
+        ASSETS_PATH="$2"
+        shift
+        ;;
+    --debug)
+        DEBUG="-v4"
+        ;;
+    --gui)
+        GUI=""
+        ;;
+    --help)
+        print_help
+        exit 0
+        ;;
+    -*)
+        echo -e "${RED}Invalid option:${NC} $1"
+        print_help
+        exit 1
+        ;;
+    *)
+        COMMAND=$1
+        shift
+        break
+        ;;
+    esac
+    shift
+done
+
+# Set paths based on arguments
+LOTUSIM_PATH="${LOTUS_WS}/src/lotusim"
+ASSETS_PATH="${LOTUSIM_PATH}/assets/"
+MODEL_PATH="${ASSETS_PATH}/models"
+WORLD_PATH="${ASSETS_PATH}/worlds"
+
+# Execute the command
+case $COMMAND in
+install)
+    echo "Installing dependencies..."
+    $SUDO_CMD "$LOTUSIM_PATH/launch/install_dep.sh"
+    echo "Building the project..."
+    build
+    ;;
+clean)
+    rm -rf "${LOTUS_WS}/log" "${LOTUS_WS}/install" "${LOTUS_WS}/build"
+    ;;
+build)
+    clear
+    validate_setup
+    echo "Building the project..."
+    build
+    ;;
+clean_build)
+    clear
+    echo "Cleaning and building the project..."
+    rm -rf "${LOTUS_WS}/log" "${LOTUS_WS}/install" "${LOTUS_WS}/build"
+    build
+    ;;
+doc)
+    echo "Generating documentation..."
+    cd "${LOTUSIM_PATH}/docs" || {
+        echo -e "${RED}Error:${NC} Failed to change directory to docs."
+        exit 1
+    }
+    doxygen Doxyfile || {
+        echo -e "${RED}Error:${NC} Documentation generation failed."
+        exit 1
+    }
+    echo "Docs generated at ${LOTUSIM_PATH}/docs"
+    ;;
+run)
+    clear
+    validate_setup
+    
+    echo "Running the simulation."
+    source "/opt/ros/humble/setup.bash"
+    source "${LOTUS_WS}/install/setup.bash"
+
+    export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUS_WS}/install/lib"
+    export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
+
+    echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH: ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
+    echo -e "GZ_SIM_RESOURCE_PATH: ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
+
+    WORLD=${1:-$DEFAULT_WORLD}
+
+    gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${WORLD}"
+    ;;
+
+    # TODO: Common bridge is not done yet. Change all GZ transport to ROS2 transport and have common launch script to bridge world gz msg
+    # run-w-bridge)
+    #     echo "Running the simulation."
+    #     source "/opt/ros/humble/setup.bash"
+    #     source "${LOTUS_WS}/install/setup.bash"
+
+    #     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUS_WS}/install/lib"
+    #     export GZ_SIM_RESOURCE_PATH="${ASSETS_PATH}"
+
+    #     echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH: ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
+    #     echo -e "GZ_SIM_RESOURCE_PATH: ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
+
+    #     ros2 launch assets common_ros_bridge.launch.py &
+    #     pidBridge=$!
+
+    #     WORLD=${1:-$DEFAULT_WORLD}
+    #     gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${WORLD}"
+
+    #     killBridge() {
+    #         echo "Killing Lotus."
+    #         kill $pidBridge
+    #         wait $pidBridge
+    #         echo "Bridge killed."
+    #         exit 0
+    #     }
+    #     trap killBridge SIGINT
+    #     wait $pidBridge
+    #     ;;
+
+    # TODO: A dream for now. Someone who actually bother to read this, please help me to do it. Or you can ignore it totally.
+    # mas)
+    # ;;
+*)
+    echo -e "${RED}Invalid command: $COMMAND${NC}"
+    print_help
+    exit 1
+    ;;
+esac

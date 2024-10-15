@@ -1,5 +1,0 @@
-# Request to send param file to gazebo system (used in remote system running scenario)
-string filename                  # 
-string contents                  #  
----
-bool success                       # return true if successful

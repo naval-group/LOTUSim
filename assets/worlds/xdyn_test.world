@@ -23,40 +23,23 @@
         </plugin>
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
         </plugin>
-        <plugin filename="wave_rao_plugin" name="liquidai::gazebo::WaveRaoPlugin">
-            <debug>true</debug>
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
-        <plugin filename="render_plugin" name="liquidai::gazebo::RenderPlugin">
+        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>TCPUDP</connection_protocol>
-            <ip>192.168.50.178</ip>
+            <ip>127.0.0.1</ip>
             <udp_port>23456</udp_port>
             <tcp_port>23457</tcp_port>
         </plugin>
-        <!-- <plugin filename="waypoint_plugin" name="liquidai::gazebo::WaypointFollowerPlugin">
-        </plugin> -->
-
-        <plugin filename="gazebo_step_control" name="step_control::GazeboStepControl">
-            <enable_control>false</enable_control>
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin">
         </plugin>
 
-        <plugin filename="gz_entity_management" name="entity_management::EntityManagement">
-        </plugin>
-
-        <plugin
-            filename="gz_scheduling"
-            name="scheduling_plugin::gz_scheduling">
-            <debug>true</debug>
-        </plugin>
-
-        <plugin filename="gz-sim-imu-system"
-            name="gz::sim::systems::Imu">
-        </plugin>
-
-        <!-- <include>
-            <uri>model://test_ship</uri>
-            <name>Cruiser_test</name>
+        <include>
+            <uri>model://dtmb_hull</uri>
+            <name>frigate</name>
             <pose>0 0 0 0 0 0</pose>
             <publish_ais>false</publish_ais>
-        </include> -->
+        </include>
+
     </world>
 </sdf>

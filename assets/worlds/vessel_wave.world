@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- World to test model interaction with wave -->
 <sdf version="1.6"
     xmlns:xacro="http://ros.org/wiki/xacro">
@@ -37,10 +37,10 @@
 
         <!-- Models -->
         <model name="wave_world">
-            <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
+            <plugin filename="ais_plugin" name="lotusim::gazebo::AISPlugin">
                 <period> 1 </period>
             </plugin>
-            <!-- <plugin filename="wave_param_plugin" name="liquidai::gazebo::WaveParamPlugin">
+            <!-- <plugin filename="wave_param_plugin" name="lotusim::gazebo::WaveParamPlugin">
             </plugin> -->
 
             <include>
@@ -53,25 +53,26 @@
                 <name>ducky</name>
                 <pose>10 0 0 0 0 0</pose>
             </include>
-            
-              <include>
+
+            <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv</name>
                 <pose>10 0 0 0 0 0</pose>
             </include>
-            
+
             <include>
-            <uri>model://sand_heightmap</uri>
-            <!-- The name affect the cmd namespace -->
-            <name>sand</name>
-            <pose>0 0 -50 0 0 0</pose>
-           </include>
-           
+                <uri>model://sand_heightmap</uri>
+                <!-- The name affect the cmd namespace -->
+                <name>sand</name>
+                <pose>0 0 -50 0 0 0</pose>
+            </include>
+
             <include>
                 <uri>model://wamv</uri>
                 <name>wamv_vessel</name>
                 <pose>0 0 0 0 0 0</pose>
-                <plugin filename="gz-waves1-hydrodynamics-system" name="gz::sim::systems::Hydrodynamics">
+                <plugin filename="gz-waves1-hydrodynamics-system"
+                    name="gz::sim::systems::Hydrodynamics">
                     <enable>wave_world::wamv_vessel::base_link</enable>
 
                     <hydrodynamics>

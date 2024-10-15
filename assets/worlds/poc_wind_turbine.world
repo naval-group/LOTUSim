@@ -59,10 +59,10 @@
         </plugin>
         <!-- Models -->
         <model name="wave_world">
-            <plugin filename="ais_plugin" name="liquidai::gazebo::AISPlugin">
+            <plugin filename="ais_plugin" name="lotusim::gazebo::AISPlugin">
                 <period> 1 </period>
             </plugin>
-            <!-- <plugin filename="wave_param_plugin" name="liquidai::gazebo::WaveParamPlugin">
+            <!-- <plugin filename="wave_param_plugin" name="lotusim::gazebo::WaveParamPlugin">
             </plugin> -->
 
             <include>
@@ -73,56 +73,56 @@
                 <uri>model://lrauv</uri>
                 <name>lrauv</name>
                 <pose>-300 -270 -5 0 0 1.5711865989140406</pose>
-</include>
+            </include>
 
             <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv2</name>
                 <pose>-300 -270 -10 0 0 -1.5711865989140406</pose>
-        
-        
+
+
             </include>
-            
-               <include>
+
+            <include>
                 <uri>model://lrauv_float</uri>
                 <name>lrauv_float</name>
                 <pose>-310 -290 0.5 0 0 0</pose>
-                </include>
+            </include>
 
-               <include>
+            <include>
                 <uri>model://lrauv_float</uri>
                 <name>lrauv_float2</name>
                 <pose>-306 -294 0.5 0 0 0</pose>
-                </include>
+            </include>
 
-                <include>
+            <include>
                 <uri>model://lrauv_float</uri>
                 <name>lrauv_float3</name>
                 <pose>-309 -286 0.5 0 0 0</pose>
-                </include>
+            </include>
 
 
-                <include>
+            <include>
                 <uri>model://lrauv_float</uri>
                 <name>lrauv_float4</name>
                 <pose>-340 -277 0.5 0 0 0</pose>
-        
+
             </include>
 
 
-              <include>
+            <include>
                 <uri>model://rexrov2</uri>
                 <name>rexrov</name>
                 <pose>-200 -315 -12 0 0 0</pose>
-        
+
             </include>
 
 
-             <include>
+            <include>
                 <uri>model://rexrov2</uri>
                 <name>rexrov2</name>
                 <pose>-360 -280 -7 0 0 0</pose>
-        
+
             </include>
 
 
