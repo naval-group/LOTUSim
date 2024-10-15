@@ -37,11 +37,13 @@ source ~/.bashrc
 ```
 
 3. Install [gazebo Harmonic](https://gazebosim.org/docs/harmonic/install_ubuntu), [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html), and libraries needed
+
 ```bash
 lotusim install
 ```
 
 4. Read help for Lotusim and xdyn
+
 ```bash
 lotusim --help
 xdyn --help
@@ -51,21 +53,24 @@ xdyn-for-cs --help
 ## Tutorial
 
 ### Running example
-1. Run Surface and Underwater xdyn
-``` bash
 
-xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/dtmb_hull/dtmb-wave-propeller-PID-xdyn.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12345
+1. Run Surface and Underwater xdyn
+
+```bash
+
+xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/dtmb_hull/dtmb-xdyn.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12345
 xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv_xdyn/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
 
 ```
 
 6. Run lotusim
-``` bash
+
+```bash
 lotusim run <world>
 ```
 
-
 ### Building lotusim in debug mode for debug logs
+
 ```
 lotusim --debug clean_build
 ```
@@ -94,8 +99,6 @@ Launch xdyn underwater or surface by using either `./launch-xdynSurface.sh` or `
 Launch Gazebo and the main ROS2 MAS by running `./launch-lotus.sh`.
 
 Open `Plugins/Services/Service Caller` in the newly opened `rqt` window. Call the `/SC_change_state_of_all` with an `id` of 1 to configure and spawn all the agents.
-
-
 
 ## Contributing
 
