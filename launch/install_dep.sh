@@ -16,5 +16,6 @@ apt-get -y install gz-harmonic \
     ros-dev-tools \
     clang \
     libwebsocketpp-dev \
-    nlohmann-json3-dev
+    nlohmann-json3-dev \
+    ros-humble-backward-ros
 update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
