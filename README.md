@@ -52,7 +52,17 @@ xdyn-for-cs --help
 
 ## Tutorial
 
-### Running example
+
+
+### Running example without xdyn
+
+
+```bash
+lotusim --gui run no_xdyn_test.world
+```
+
+
+### Running example with xdyn
 
 1. Run Surface and Underwater xdyn
 
