@@ -1,12 +1,10 @@
-# <p style="text-align:center;">LOTUSim</p>
-
+# <div align="center">  LOTUSim </div>
 
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn).
 
 This simulation is built on Gazebo Harmonic and ROS Humble.
 
-</div>
 
 [[_TOC_]]
 
