@@ -81,7 +81,7 @@ lotusim --debug clean_build
 
 ### By TCP/UDP 
 
-Inside asset/models/model.sdf
+Inside asset/models/model.sdf. The name of your model need to be exactly the same inside Unity
 
 ```xml
 <render_interface>
