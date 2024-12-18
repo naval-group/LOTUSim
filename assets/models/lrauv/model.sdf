@@ -2,22 +2,23 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
-    <renderer_type_name>lrauv</renderer_type_name>
 
-    <plugin filename="LoggingSystem" name="logging_system::LoggingSystem">
+    <plugin
+      filename="LoggingSystem"
+      name="logging_system::LoggingSystem">
       <colors>
         <r>0.0</r>
         <g>0.0</g>
         <b>1.0</b>
         <a>1.0</a>
-      </colors>
+    </colors>
     </plugin>
 
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
-        <pose>0 0 0 0 0 0</pose>
+         <pose>0 0 0 0 0 0</pose>
         <!-- 146.5671 subtracted by battery mass -->
         <mass>147.8671</mass>
         <!--<mass>146.5671</mass>-->
@@ -26,7 +27,7 @@
           <ixx>3.000000</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-
+         
           <iyy>41.980233</iyy>
           <iyz>0</iyz>
           <izz>41.980233</izz>
@@ -351,12 +352,12 @@
       <joint_name>propeller_joint</joint_name>
       <thrust_coefficient>0.004422</thrust_coefficient>
       <fluid_density>1000</fluid_density>
-      <velocity_control>true</velocity_control>
+       <velocity_control>true</velocity_control>
       <propeller_diameter>0.2</propeller_diameter>
     </plugin>
 
     <!-- The Lift acting on the controlled surfaces -->
-
+    
 
     <!-- The movement of the controlled surfaces -->
     <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
@@ -367,31 +368,5 @@
       <joint_name>vertical_fins_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
-
-    <!-- To be moved to main world -->
-    <!-- Follower plugin
-    <follower>
-      <loop>true</loop>
-      <circle>
-        <radius>300</radius>
-      </circle>
-      <linear_accel_limit>0.1</linear_accel_limit>
-      <angular_accel_limit>0.00001</angular_accel_limit>
-      <linear_velocities_limits>5 40</linear_velocities_limits>
-      <angular_velocities_limits>0.0001</angular_velocities_limits>
-      <range_tolerance>30.0</range_tolerance>
-    </follower> -->
-
-    <physics_server_interface>
-      <underwater>
-        <ConnectionType>XDynWebSocket</ConnectionType>
-        <uri>ws://127.0.0.1:12346</uri>
-        <thrusters>
-          <thursters1>propeller</thursters1>
-        </thrusters>
-      </underwater>
-      <init_state>Underwater</init_state>
-    </physics_server_interface>
   </model>
-</model>
 </sdf>
