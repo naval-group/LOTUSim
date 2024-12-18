@@ -1,6 +1,4 @@
-<div align="center">
-
-# Lotusim
+# LOTUSim
 
 This is an opensource simulator for EDB's project and is created based on opensource [Plankton](https://github.com/Liquid-ai/Plankton), [uuv](https://github.com/uuvsimulator/uuv_simulator) , [xdyn](https://github.com/sirehna/xdyn).
 
@@ -52,28 +50,22 @@ xdyn-for-cs --help
 
 ## Tutorial
 
-
-
 ### Running example without xdyn
-
 
 ```bash
 lotusim --gui run no_xdyn_test.world
 ```
 
-
 ### Running example with xdyn
 
-1. Run Surface and Underwater xdyn
+1. Run surface and underwater xdyn
 
 ```bash
-
 xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/dtmb_hull/dtmb-xdyn.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12345
 xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv_xdyn/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
-
 ```
 
-6. Run lotusim
+2. Run lotusim
 
 ```bash
 lotusim run <world>
@@ -83,6 +75,30 @@ lotusim run <world>
 
 ```
 lotusim --debug clean_build
+```
+
+## Unity interface 
+
+### By TCP/UDP 
+
+Inside asset/models/model.sdf
+
+```xml
+<render_interface>
+    <publish_render>true</publish_render>
+    <renderer_type_name>lrauv</renderer_type_name>
+</render_interface>
+```
+
+Inside world.sdf
+
+```xml
+<plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
+    <connection_protocol>TCPUDP</connection_protocol>
+    <ip>127.0.0.1</ip>
+    <udp_port>23456</udp_port>
+    <tcp_port>23457</tcp_port>
+</plugin>
 ```
 
 ## Contributing
@@ -97,6 +113,6 @@ We are using the default Gitflow branch naming like [here](https://www.gitkraken
 
 When you open an issue, you need to put the correct label corresponding to the category of the issue e.g. ~bug or ~suggestion. It needs to be written in english.
 
-**IMPORTANT** You have to put ~"project::development" or ~"project::management" label on each issue as they are used for filtering in the different issue boards
+ **IMPORTANT** You have to put ~"project::development" or ~"project::management" label on each issue as they are used for filtering in the different issue boards
 
 You can find the description of the labels [here](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotusim/-/labels).
