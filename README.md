@@ -113,7 +113,7 @@ The name of your model need to be exactly the same inside Unity.
 </plugin>
 ```
 
-1. Open scene in [Unity](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/unity/unity-modules/-/tree/features/ros-node?ref_type=heads)
+3. Open scene in [Unity](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/unity/unity-modules/-/tree/features/ros-node?ref_type=heads)
 
 Make sure world script "Gazebo model interface" is activated.
 
