@@ -67,9 +67,19 @@ xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv_xdyn/lrauv.yml --ve
 
 2. Run lotusim
 
+To run with xdyn, your world should contain:
+
+```xml
+<plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin"></plugin>
+```
+
+Then:
+
 ```bash
 lotusim run <world>
 ```
+
+
 
 ### Building lotusim in debug mode for debug logs
 
