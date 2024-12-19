@@ -81,7 +81,7 @@ lotusim --debug clean_build
 
 ### By TCP/UDP 
 
-Inside asset/models/model.sdf. The name of your model need to be exactly the same inside Unity
+1. Inside asset/models/model.sdf. The name of your model need to be exactly the same inside Unity.
 
 ```xml
 <render_interface>
@@ -90,7 +90,7 @@ Inside asset/models/model.sdf. The name of your model need to be exactly the sam
 </render_interface>
 ```
 
-Inside world.sdf
+2. Inside world.sdf
 
 ```xml
 <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
@@ -100,6 +100,10 @@ Inside world.sdf
     <tcp_port>23457</tcp_port>
 </plugin>
 ```
+
+3. Open scene in [Unity](https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/unity/unity-modules/-/tree/features/ros-node?ref_type=heads)
+
+Make sure world script "Gazebo model interface" is activated.
 
 ## Contributing
 
