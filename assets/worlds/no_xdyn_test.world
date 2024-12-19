@@ -75,13 +75,13 @@
             <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv</name>
-                <pose>-300 -270 -5 0 0 1.5711865989140406</pose>
+                <pose>0 0 -5 0 0 1.5711865989140406</pose>
             </include>
 
             <include>
                 <uri>model://lrauv</uri>
                 <name>lrauv2</name>
-                <pose>-300 -270 -10 0 0 -1.5711865989140406</pose>
+                <pose>2 0 -10 0 0 -1.5711865989140406</pose>
 
 
             </include>
