@@ -3,17 +3,6 @@
   <model name="lrauv">
     <publish_render>true</publish_render>
 
-    <plugin
-      filename="LoggingSystem"
-      name="logging_system::LoggingSystem">
-      <colors>
-        <r>0.0</r>
-        <g>0.0</g>
-        <b>1.0</b>
-        <a>1.0</a>
-    </colors>
-    </plugin>
-
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
