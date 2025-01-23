@@ -16,7 +16,9 @@ This simulation is built on Gazebo Harmonic and ROS Humble.
 
 ```bash
 cd;
-git clone https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git lotusim_ws/src/lotusim;
+mkdir -p lotusim_ws/src;
+cd lotusim_ws/src;
+git clone -b develop https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim.git 
 ```
 
 2. Adding environment variable
