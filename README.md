@@ -64,7 +64,7 @@ lotusim --gui run no_xdyn_test.world
 
 ```bash
 xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/dtmb_hull/dtmb-xdyn.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12345
-xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv_xdyn/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
+xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
 ```
 
 2. Run lotusim
