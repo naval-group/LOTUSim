@@ -37,7 +37,7 @@ environment models:
 
 bodies:
   - name: LRAUV
-    mesh: ../assets/models/lrauv_xdyn/tethys.stl
+    mesh: lrauv/tethys.stl
 
     position of body frame relative to mesh:
       frame: mesh(LRAUV)
