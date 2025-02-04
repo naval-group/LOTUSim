@@ -26,10 +26,10 @@ git clone -b develop https://developers.naval-group.com/gitlab/naval-group/naval
 ```bash
 cat <<EOF >> ~/.bashrc
 export PATH=\$HOME/lotusim_ws/src/lotusim/physics/:\$HOME/lotusim_ws/src/lotusim/launch:\$PATH
-export LD_LIBRARY_PATH=\$HOME/lotusim_ws/src/lotusim/physics:\$LD_LIBRARY_PATH
-export LOTUSIM_WS=\$HOME/lotusim_ws/
-export LOTUSIM_PATH=\$LOTUSIM_WS/src/lotusim
-export XDYN_PATH=\$LOTUSIM_PATH/assets/models/
+export LOTUSIM_WS=$HOME/lotusim_ws
+export LOTUSIM_PATH=$LOTUSIM_WS/src/lotusim
+export LD_LIBRARY_PATH=$LOTUSIM_PATH/physics
+export MODELS_PATH=$LOTUSIM_PATH/assets/models/
 source \$LOTUSIM_PATH/launch/bash_completion.sh
 EOF
 chmod -R +x $HOME/lotusim_ws/src/lotusim/launch/*
