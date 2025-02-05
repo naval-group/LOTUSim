@@ -5,8 +5,10 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Default configurations
-LOTUS_WS="$HOME/lotusim_ws"
 DEFAULT_WORLD="ngfe_full_sys_test.world"
+ASSETS_PATH="${LOTUSIM_PATH}/assets"
+MODEL_PATH="${ASSETS_PATH}/models"
+WORLD_PATH="${ASSETS_PATH}/worlds"
 
 # Flags for simulation options
 DEBUG=""
@@ -121,17 +123,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Set paths based on arguments
-LOTUSIM_PATH="${LOTUS_WS}/src/lotusim"
-ASSETS_PATH="${LOTUSIM_PATH}/assets/"
-MODEL_PATH="${ASSETS_PATH}/models"
-WORLD_PATH="${ASSETS_PATH}/worlds"
-
 # Execute the command
 case $COMMAND in
 install)
     echo "Installing dependencies..."
-    $SUDO_CMD "$LOTUSIM_PATH/launch/install_dep.sh"
+    $SUDO_CMD -E "$LOTUSIM_PATH/launch/install_dep.sh"
     echo "Building the project..."
     build
     ;;
