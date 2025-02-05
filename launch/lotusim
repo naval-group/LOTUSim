@@ -17,7 +17,7 @@ GUI="-s"
 # Check if script is running as root
 SUDO_CMD=""
 if [ "$EUID" -ne 0 ]; then
-    SUDO_CMD="sudo"
+    SUDO_CMD="sudo -E"
 fi
 
 ###########
