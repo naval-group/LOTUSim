@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+<!-- World to test model interaction with wave -->
+<sdf version="1.6"
+    xmlns:xacro="http://ros.org/wiki/xacro">
+    <world name="vessel_wave">
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+        <scene>
+            <ambient>1.0 1.0 1.0</ambient>
+            <background>0.8 0.8 0.8</background>
+            <grid>0</grid>
+        </scene>
+        <spherical_coordinates>
+            <surface_model>EARTH_WGS84</surface_model>
+            <world_frame_orientation>ENU</world_frame_orientation>
+            <latitude_deg>22.9</latitude_deg>
+            <longitude_deg>43.2</longitude_deg>
+            <elevation>0</elevation>
+            <heading_deg>0</heading_deg>
+        </spherical_coordinates>
+
+
+        <!-- World plugins -->
+        <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin>
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+        </plugin>
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+        <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat">
+        </plugin>
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu">
+        </plugin>
+        <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
+        </plugin>
+
+        <plugin name="gz::sim::systems::Contact" filename="gz-sim-contact-system"/>
+
+        <plugin name="gz::sim::systems::AirPressure" filename="gz-sim-air-pressure-system"/>
+        <plugin name="gz::sim::systems::ApplyLinkWrench" filename="gz-sim-apply-link-wrench-system"/>
+
+
+        <physics type="ode">
+            <max_step_size>0.004</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+            <real_time_update_rate>250</real_time_update_rate>
+        </physics>
+
+        <include>
+            <uri>model://wind_turbine</uri>
+            <pose>470 -300 23 0 0 -1.5708</pose>
+            <name>OnshoreWindTurbine</name>
+        </include>
+
+         <include>
+            <uri>model://wind_turbine</uri>
+            <pose>480 -350 23 0 0 -1.5708</pose>
+            <name>OnshoreWindTurbine_2</name>
+        </include>
+
+        <include>
+            <uri>model://wind_turbine</uri>
+            <pose>490 -400 23 0 0 -1.5708</pose>
+            <name>OnshoreWindTurbine_3</name>
+        </include>
+
+        <model name='ground_plane2'>
+            <static>true</static>
+            <link name='link'>
+                <collision name='collision'>
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>80 80</size> <!-- Reduced size -->
+                        </plane>
+                    </geometry>
+                </collision>
+                <visual name='visual'>
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>80 80</size> <!-- Reduced size -->
+                        </plane>
+                    </geometry>
+                    <material>
+                        <ambient>0.3 0.3 0.3 1</ambient>
+                        <diffuse>0.3 0.3 0.3 1</diffuse>
+                    </material>
+                </visual>
+                <pose>0 0 0 0 0 0</pose> <!-- Simplified pose -->
+            </link>
+            <pose>0 0 0 0 0 0</pose> <!-- Simplified pose -->
+            <self_collide>false</self_collide> <!-- Disabled unnecessary self-collision -->
+        </model>
+
+
+        <wind>
+            <linear_velocity>1 1 1</linear_velocity> <!-- Default wind velocity -->
+        </wind>
+
+        <!-- Load the wind effects plugin -->
+           <!-- Load the plugin for the wind -->
+        <plugin
+            filename="gz-sim-wind-effects-system"
+            name="gz::sim::systems::WindEffects">
+            <force_approximation_scaling_factor>1</force_approximation_scaling_factor>
+
+           <horizontal>
+                <magnitude>
+                <time_for_rise>3</time_for_rise>
+                <sin>
+                    <amplitude_percent>10</amplitude_percent>
+                    <period>1.5</period>
+                </sin>
+                <noise>
+                    <mean>0</mean>
+                    <stddev>1.0</stddev>
+                </noise>
+                </magnitude>
+
+                <!-- Horizontal Direction -->
+                <direction>
+                    <time_for_rise>5</time_for_rise>
+                    <sin>
+                        <amplitude>15</amplitude>
+                        <period>1.5</period>
+                    </sin>
+                    <noise>
+                        <mean>0</mean>
+                        <stddev>5</stddev>
+                    </noise>
+                </direction>
+            </horizontal>
+
+            <!-- Vertical Amplitude -->
+            <vertical>
+                <time_for_rise>2</time_for_rise>
+                <noise>
+                <mean>0</mean>
+                <stddev>0.5</stddev>
+                </noise>
+            </vertical>
+        </plugin>
+
+
+
+        <include>
+            <uri>model://landscape</uri>
+            <pose>0 0 -2 0 0 0</pose>
+        </include>
+
+
+
+    </world>
+</sdf>

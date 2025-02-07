@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
+  <name>linear_battery_plugin</name>
+  <version>0.0.1</version>
+  <description>Gazebo linear battery plugin updated with dynamic power given propeller thrust</description>
+
+  <maintainer email="malcom.neo@fe.naval-group.com">malcom neo</maintainer>
+
+  <author email="hlechene.exterieur@pacific.naval-group.com">helene lechene</author>
+  <author email="qarzel.exterieur@pacific.naval-group.com">quentin arzel</author> 
+  <author email="malcom.neo@fe.naval-group.com">malcom neo</author>
+
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>gz-cmake3</depend>
+  <depend>logger_system</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -2,12 +2,11 @@
 <sdf version="1.6">
   <model name="lrauv">
     <publish_render>true</publish_render>
-
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
       <inertial>
-         <pose>0 0 0 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <!-- 146.5671 subtracted by battery mass -->
         <mass>147.8671</mass>
         <!--<mass>146.5671</mass>-->
@@ -16,7 +15,6 @@
           <ixx>3.000000</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-         
           <iyy>41.980233</iyy>
           <iyz>0</iyz>
           <izz>41.980233</izz>
@@ -53,7 +51,6 @@
           </pbr>
         </material>
       </visual>
-
       <sensor name="imu_wamv_link" type="imu">
         <always_on>1</always_on>
         <update_rate>60</update_rate>
@@ -334,20 +331,16 @@
         </limit>
       </axis>
     </joint>
-
     <!-- Start of plugin -->
     <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
       <use_angvel_cmd>0</use_angvel_cmd>
       <joint_name>propeller_joint</joint_name>
       <thrust_coefficient>0.004422</thrust_coefficient>
       <fluid_density>1000</fluid_density>
-       <velocity_control>true</velocity_control>
+      <velocity_control>true</velocity_control>
       <propeller_diameter>0.2</propeller_diameter>
     </plugin>
-
     <!-- The Lift acting on the controlled surfaces -->
-    
-
     <!-- The movement of the controlled surfaces -->
     <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
       <joint_name>horizontal_fins_joint</joint_name>
@@ -357,5 +350,36 @@
       <joint_name>vertical_fins_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
+    <plugin filename="linear_battery_plugin"
+        name="lotusim::gazebo::LinearBatteryPlugin">
+      <battery_name>linear_battery</battery_name>
+      <voltage>14.4</voltage>
+      <open_circuit_voltage_constant_coef>14.4</open_circuit_voltage_constant_coef>
+      <fix_issue_225>true</fix_issue_225>
+      <!-- Initial charge in Ah -->
+      <initial_charge>400</initial_charge>
+      <capacity>400</capacity>
+      <!-- 190mOhm / 62 -->
+      <resistance>0.003064</resistance>
+      <!-- Power consumption in Watts: 14.4V * 2 A -->
+      <power_load>28.8</power_load>
+      <!-- Recharging the battery -->
+      <!-- Avg discharge current = (max + min) / 2 -->
+      <!--  = (15 + 4) / 2 = 9.5 A -->
+      <!-- Charging time: 400 Ah/( 9.5 A ) = 42.1 h -->
+      <enable_recharge>true</enable_recharge>
+      <recharge_by_topic>true</recharge_by_topic>
+      <charging_time>42.1</charging_time>
+    </plugin>
+    <physics_server_interface>
+      <underwater>
+        <ConnectionType>XDynWebSocket</ConnectionType>
+        <uri>ws://127.0.0.1:12346</uri>
+        <thrusters>
+          <thursters1>propeller</thursters1>
+        </thrusters>
+      </underwater>
+      <init_state>Underwater</init_state>
+    </physics_server_interface>
   </model>
 </sdf>
