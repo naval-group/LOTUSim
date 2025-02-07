@@ -27,7 +27,7 @@ fi
 print_help() {
     echo -e "${GREEN}Usage:${NC} ./script.sh [OPTIONS] <command> [world_name]"
     echo -e "${GREEN}Options:${NC}"
-    echo -e "  --ws-path PATH          Path to the lotusim workspace (default: $LOTUS_WS)"
+    echo -e "  --ws-path PATH          Path to the lotusim workspace (default: $LOTUSIM_WS)"
     echo -e "  --assets-path PATH      Path to the assets directory (default: $ASSETS_PATH)"
     echo -e "  --debug                 Enable debug mode"
     echo -e "  --gui                   Run gz sim GUI"
@@ -47,7 +47,7 @@ print_help() {
 
 build() {
     source "/opt/ros/humble/setup.bash"
-    cd ${LOTUS_WS}
+    cd ${LOTUSIM_WS}
     if [ "$DEBUG" == "-v4" ]; then
         echo "Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
         colcon build --cmake-args -DLOTUSIM_TIDY=ON -DDEBUG=ON --symlink-install --merge-install || {
@@ -68,7 +68,7 @@ validate_setup() {
         exit 1
     fi
     if [ ! -d "${LOTUSIM_WS}" ]; then
-        echo -e "${RED}Error:${NC} The lotusim workspace does not exist at $LOTUS_WS."
+        echo -e "${RED}Error:${NC} The lotusim workspace does not exist at $LOTUSIM_WS."
         exit 1
     fi
     if [ ! -d "${LOTUSIM_PATH}" ]; then
@@ -93,7 +93,7 @@ fi
 while [[ "$#" -gt 0 ]]; do
     case $1 in
     --ws-path)
-        LOTUS_WS="$2"
+        LOTUSIM_WS="$2"
         shift
         ;;
     --assets-path)
@@ -133,7 +133,7 @@ install)
     build
     ;;
 clean)
-    rm -rf "${LOTUS_WS}/log" "${LOTUS_WS}/install" "${LOTUS_WS}/build"
+    rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
     ;;
 build)
     clear
@@ -144,7 +144,7 @@ build)
 clean_build)
     clear
     echo "Cleaning and building the project..."
-    rm -rf "${LOTUS_WS}/log" "${LOTUS_WS}/install" "${LOTUS_WS}/build"
+    rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
     build
     ;;
 doc)
@@ -165,10 +165,10 @@ run)
 
     echo "Running the simulation."
     source "/opt/ros/humble/setup.bash"
-    source "${LOTUS_WS}/install/setup.bash"
+    source "${LOTUSIM_WS}/install/setup.bash"
 
-    export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUS_WS}/install/lib"
-    export GZ_GUI_PLUGIN_PATH="${LOTUS_WS}/install/lib"
+    export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
+    export GZ_GUI_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
     export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
 
     echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH: ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
@@ -183,9 +183,9 @@ run)
     # run-w-bridge)
     #     echo "Running the simulation."
     #     source "/opt/ros/humble/setup.bash"
-    #     source "${LOTUS_WS}/install/setup.bash"
+    #     source "${LOTUSIM_WS}/install/setup.bash"
 
-    #     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUS_WS}/install/lib"
+    #     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
     #     export GZ_SIM_RESOURCE_PATH="${ASSETS_PATH}"
 
     #     echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH: ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
