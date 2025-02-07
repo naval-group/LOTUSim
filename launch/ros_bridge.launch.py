@@ -28,9 +28,33 @@ def generate_launch_description():
             # '/gps@liquidai_msgs/msg/GPS@ignition.msgs.NavSat',
             # 'lidar@sensor_msgs/msg/LaserScan@ignition.msgs.LaserScan',
             # '/model/wave_world/pose@tf2_msgs/msg/TFMessage@ignition.msgs.Pose_V',
+                 '/model/bluerov2_heavy/joint/thruster1_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster2_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster3_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster4_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster5_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster6_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster7_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/joint/thruster8_joint/cmd_thrust@std_msgs/msg/Float64@gz.msgs.Double',
+            '/model/bluerov2_heavy/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry'
         ],
         remappings=[
             ('/model/wave_world/pose', '/tf'),
+                ( '/model/bluerov2_heavy/joint/thruster1_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster1/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster2_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster2/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster3_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster3/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster4_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster4/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster5_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster5/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster6_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster6/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster7_joint/cmd_thrust',
+             "/bluerov2_heavy/thruster7/cmd_thrust"),
+            ( '/model/bluerov2_heavy/joint/thruster8_joint/cmd_thrust', "/bluerov2_heavy/thruster8/cmd_thrust")
         ],
         output='screen'
     )

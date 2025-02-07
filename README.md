@@ -55,19 +55,24 @@ xdyn-for-cs --help
 ### Running example without xdyn
 
 ```bash
-lotusim --gui run no_xdyn_test.world
+lotusim --gui run drl/poc_drl.world
 ```
 
 ### Running example with xdyn
 
-1. Run surface and underwater xdyn
+1. Run surface xdyn
 
 ```bash
 xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/dtmb_hull/dtmb-xdyn.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12345
+```
+
+2. Run xdyn underwater
+
+```bash
 xdyn-for-cs $HOME/lotusim_ws/src/lotusim/assets/models/lrauv/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
 ```
 
-2. Run lotusim
+3. Run lotusim
 
 To run with xdyn, your world should contain:
 
@@ -78,10 +83,12 @@ To run with xdyn, your world should contain:
 Then:
 
 ```bash
-lotusim run <world>
+lotusim --gui run xdyn_test.world
 ```
 
+4. Closing
 
+Close terminals using ctrl+c 
 
 ### Building lotusim in debug mode for debug logs
 

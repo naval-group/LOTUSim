@@ -6,6 +6,7 @@ NC='\033[0m' # No Color
 
 # Default configurations
 DEFAULT_WORLD="ngfe_full_sys_test.world"
+
 ASSETS_PATH="${LOTUSIM_PATH}/assets"
 MODEL_PATH="${ASSETS_PATH}/models"
 WORLD_PATH="${ASSETS_PATH}/worlds"
@@ -66,7 +67,7 @@ validate_setup() {
         echo -e "${RED}Error:${NC} ROS2 Humble is not installed or the setup.bash is not found at /opt/ros/humble/setup.bash."
         exit 1
     fi
-    if [ ! -d "${LOTUS_WS}" ]; then
+    if [ ! -d "${LOTUSIM_WS}" ]; then
         echo -e "${RED}Error:${NC} The lotusim workspace does not exist at $LOTUS_WS."
         exit 1
     fi
@@ -161,12 +162,13 @@ doc)
 run)
     clear
     validate_setup
-    
+
     echo "Running the simulation."
     source "/opt/ros/humble/setup.bash"
     source "${LOTUS_WS}/install/setup.bash"
 
     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUS_WS}/install/lib"
+    export GZ_GUI_PLUGIN_PATH="${LOTUS_WS}/install/lib"
     export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
 
     echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH: ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
