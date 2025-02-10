@@ -105,7 +105,7 @@ bodies: # All bodies have NED as parent frame
     external forces:
       - model: gravity
 
-      - model: hydrostatic
+      - model: non-linear hydrostatic (fast)
 
       - model: non-linear Froude-Krylov
 

@@ -98,7 +98,7 @@ bodies:
 
       external forces:
         - model: gravity
-        - model: hydrostatic # Looks like this is the best choice with precison and speed
+        - model: non-linear hydrostatic (fast) # Looks like this is the best choice with precison and speed
         #- model: non-linear hydrostatic (exact) # If precision prevails
         #- model: non-linear hydrostatic (fast) # If computation speed prevails
         - model: non-linear Froude-Krylov
