@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.world": "xml",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -78,6 +79,7 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "*.ipp": "cpp"
     }
 }

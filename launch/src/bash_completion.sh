@@ -4,19 +4,15 @@ lotusim_script_completion() {
     prev="${COMP_WORDS[COMP_CWORD - 1]}"
 
     # Define the options and commands
-    opts="--ws-path --assets-path --debug --gui --help"
-    commands="install clean build clean_build doc run run-w-bridge"
+    opts=" --help"
+    commands="run"
 
     case "${prev}" in
     lotusim)
         COMPREPLY=($(compgen -W "${opts} ${commands}" -- ${cur}))
         return 0
         ;;
-    --ws-path | --assets-path)
-        _filedir
-        return 0
-        ;;
-    run | run-w-bridge)
+    run)
         local worlds=$(ls ${LOTUSIM_PATH}/assets/worlds | grep '\.world$')
         COMPREPLY=($(compgen -W "${worlds}" -- ${cur}))
         return 0

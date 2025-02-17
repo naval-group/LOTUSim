@@ -22,27 +22,11 @@ git clone -b develop https://developers.naval-group.com/gitlab/naval-group/naval
 ```
 
 2. Adding environment variable
-
-```bash
-cat <<EOF >> ~/.bashrc
-export PATH=\$HOME/lotusim_ws/src/lotusim/physics/:\$HOME/lotusim_ws/src/lotusim/launch:\$PATH
-export LOTUSIM_WS=\$HOME/lotusim_ws
-export LOTUSIM_PATH=\$LOTUSIM_WS/src/lotusim
-export LD_LIBRARY_PATH=\$LOTUSIM_PATH/physics
-export LOTUSIM_MODELS_PATH=\$LOTUSIM_PATH/assets/models/
-source \$LOTUSIM_PATH/launch/bash_completion.sh
-EOF
-chmod -R +x $HOME/lotusim_ws/src/lotusim/launch/*
-source ~/.bashrc
+```
+bash lotusim_ws/src/lotusim/launch/lotusim_first_run.sh
 ```
 
-3. Install [gazebo Harmonic](https://gazebosim.org/docs/harmonic/install_ubuntu), [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html), and libraries needed
-
-```bash
-lotusim install
-```
-
-4. Read help for Lotusim and xdyn
+3. Read help for Lotusim and xdyn
 
 ```bash
 lotusim --help

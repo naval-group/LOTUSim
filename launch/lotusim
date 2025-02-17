@@ -55,7 +55,7 @@ build() {
             exit 1
         }
     else
-        colcon build --symlink-install --merge-install || {
+        colcon build --merge-install || {
             echo -e "${RED}Error:${NC} Build failed."
             exit 1
         }
