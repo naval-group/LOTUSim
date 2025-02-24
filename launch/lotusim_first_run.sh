@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cat <<EOF >>~/.bashrc
-export PATH=\$HOME/lotusim_ws/install/share/lotusim/physics/:\$HOME/lotusim_ws/install/share/lotusim/launch:\$PATH
+export PATH=\$HOME/lotusim_ws/src/lotusim/physics/:\$HOME/lotusim_ws/src/lotusim/launch:\$PATH
 export LOTUSIM_WS=\$HOME/lotusim_ws
 export LOTUSIM_PATH=\$LOTUSIM_WS/src/lotusim
 export LD_LIBRARY_PATH=\$LOTUSIM_PATH/physics
