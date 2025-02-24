@@ -17,7 +17,7 @@ lotusim_script_completion() {
         return 0
         ;;
     run | run-w-bridge)
-        local worlds=$(ls ${LOTUSIM_PATH}/assets/worlds | grep '\.world$')
+        local worlds=$(find ${LOTUSIM_PATH}/assets/worlds -type f -name '*.world' | sed "s|${LOTUSIM_PATH}/assets/worlds/||")
         COMPREPLY=($(compgen -W "${worlds}" -- ${cur}))
         return 0
         ;;
