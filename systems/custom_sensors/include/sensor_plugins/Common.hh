@@ -30,7 +30,6 @@
 #define SENSOR_PLUGINS_COMMON_H_
 
 #include <Eigen/Dense>
-#include <gz/common/Console.hh>
 #include <string>
 
 namespace lotusim::gazebo {

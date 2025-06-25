@@ -16,7 +16,7 @@
 #include <string>
 
 #include "gz/sensors/Sensor.hh"
-#include "logging_system/logger.hpp"
+#include "lotusim_common/logger.hpp"
 
 namespace lotusim::gazebo {
 

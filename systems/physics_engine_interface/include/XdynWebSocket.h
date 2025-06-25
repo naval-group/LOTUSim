@@ -1,6 +1,7 @@
 #ifndef __XDYN_WEBSOCKET_HH__
 #define __XDYN_WEBSOCKET_HH__
 
+#include <future>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
@@ -10,9 +11,6 @@
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
 #include "PhysicsInterfaceBase.h"
-#include "gz_liquidai_msgs/msgs/xdyncmdmsg.pb.h"
-
-// #include <xlsxwriter.h>
 
 namespace lotusim::gazebo {
 
@@ -25,9 +23,20 @@ constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 1000;
 
 /**
  * @brief A Singleton class to connect to xdyn through websocket.
+ *
  * A singleton class to reuse the client class
  * On sending req to xdyn and receiving msg, there is a frame conversion
  * Xdyn having a ned convention and right-hand axis convention
+ *
+ * m_vessels_cmd_map_ptr String is:
+ * {
+    "PSPropRudd(P/D)": 0.79,
+    "PSPropRudd(beta)": 0.0,
+    "PSPropRudd(rpm)": 0.0,
+    "SBPropRudd(P/D)": 0.79,
+    "SBPropRudd(beta)": 0.0,
+    "SBPropRudd(rpm)": 0.0
+    }
  *
  */
 class XdynWebsocket : public PhysicsInterfaceBase {
@@ -97,12 +106,14 @@ private:
         const gz::sim::Entity &_entity,
         websocketpp::connection_hdl hdl);
 
-    void thrustCmd(const gz_liquidai_msgs::msgs::XdynCmd &_msg);
-
 private:
     // Websocket stuff
     Client m_client;
 
+    /**
+     * @brief Thread to run client.
+     *
+     */
     Weblib::shared_ptr<Weblib::thread> m_thread;
 
     /**
@@ -111,6 +122,10 @@ private:
      */
     static std::unordered_map<gz::sim::Entity, std::string> m_name_mapping;
 
+    /**
+     * @brief Entity mapping
+     *
+     */
     static std::unordered_map<std::string, gz::sim::Entity> m_entity_mapping;
 
     /**
@@ -126,6 +141,10 @@ private:
     static std::unordered_map<gz::sim::Entity, Client::connection_ptr>
         m_connection_mapping;
 
+    /**
+     * @brief Connection mapping
+     *
+     */
     static std::unordered_map<Client::connection_ptr, gz::sim::Entity>
         m_connection_entity_mapping;
 
@@ -141,13 +160,18 @@ private:
      */
     static std::unordered_map<gz::sim::Entity, std::mutex> m_msg_mutex;
 
+    /**
+     * @brief Thread locks
+     *
+     */
     static std::unordered_map<gz::sim::Entity, std::condition_variable>
         m_msg_cv;
 
+    /**
+     * @brief Save state of vessel
+     *
+     */
     static std::unordered_map<gz::sim::Entity, json> m_saved_state;
-
-    std::unordered_map<gz::sim::Entity, gz_liquidai_msgs::msgs::XdynCmd>
-        m_xdyn_cmd;
 };
 }  // namespace lotusim::gazebo
 #endif

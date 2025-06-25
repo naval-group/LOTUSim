@@ -43,8 +43,6 @@ XdynWebsocket::~XdynWebsocket()
     }
     m_client.stop();
     m_thread->join();
-
-    // workbook_close(workbook);
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::getInstance(
@@ -76,24 +74,19 @@ bool XdynWebsocket::createConnection(
     }
     m_uri[_entity] = uri;
 
-    if (_sdf->HasElement("thrusters")) {
-        gz_liquidai_msgs::msgs::XdynCmd xdyn_cmd;
-        xdyn_cmd.set_name(_name);
+    // Need to create json file and add to the command
+    if (_sdf->HasElement("thrusters") && m_vessels_cmd_map_ptr) {
         auto sdfPtr_thruster = _sdf->GetElement("thrusters")->GetFirstElement();
+        auto thrusters_cmd = json::object();
         do {
-            gz_liquidai_msgs::msgs::XdynCmd_ThrusterCmd *thruster_cmd =
-                xdyn_cmd.add_cmd();
-            thruster_cmd->set_name(sdfPtr_thruster->Get<std::string>());
-            //  Needed 0.01 as xdyn give error at rpm 0
-            thruster_cmd->set_rpm(0.01);
-            // thruster_cmd->set_rpm(100);
-            thruster_cmd->set_pd(0.79);
-            thruster_cmd->set_beta(0.0);
+            std::string thruster_name = sdfPtr_thruster->Get<std::string>();
+            thrusters_cmd[thruster_name + "(rpm)"] = 0.01;
+            thrusters_cmd[thruster_name + "(P/D)"] = 0.79;
+            thrusters_cmd[thruster_name + "(beta)"] = 0.0;
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
         } while (sdfPtr_thruster != sdf::ElementPtr(nullptr));
-        m_xdyn_cmd[_entity] = std::move(xdyn_cmd);
+        (*m_vessels_cmd_map_ptr)[_entity] = thrusters_cmd.dump();
     }
-
     return true;
 }
 
@@ -127,23 +120,25 @@ bool XdynWebsocket::activateConnection(const gz::sim::Entity &_entity)
         websocketpp::lib::placeholders::_1,
         websocketpp::lib::placeholders::_2));
 
-    while (m_status[_entity] != "opened") {
+    int retry = 0;
+    while (m_status[_entity] != "opened" && retry < 3) {
         m_logger->info(
             "XdynWebsocket::activateConnection: Starting connection: {}",
             m_name_mapping[_entity]);
         m_client.connect(con);
+        // TBD: Damn dumb implementation. You are killing the thread.
         std::this_thread::sleep_for(std::chrono::seconds(3));
+        retry += 1;
     }
-    m_gz_node.Subscribe(
-        m_name_mapping[_entity] + "/cmd_vel",
-        &XdynWebsocket::thrustCmd,
-        this);
+    if (retry > 2) {
+        throw std::runtime_error(
+            "XdynWebsocket::activateConnection: Failed to activate websocket");
+    }
     return true;
 }
 
 bool XdynWebsocket::deactivateConnection(const gz::sim::Entity &_entity)
 {
-    m_gz_node.Unsubscribe(m_name_mapping[_entity] + "/cmd_vel");
     websocketpp::lib::error_code ec;
     m_client.close(
         m_connection_mapping[_entity]->get_handle(),
@@ -183,7 +178,6 @@ void XdynWebsocket::onMessage(
     websocketpp::connection_hdl hdl,
     websocketpp::config::asio_client::message_type::ptr msg)
 {
-    // Lacking info to tell us which ship this is for. to map to hdl to know
     gz::sim::Entity entity =
         m_connection_entity_mapping[m_client.get_con_from_hdl(hdl)];
     std::unique_lock<std::mutex> lock(m_msg_mutex[entity]);
@@ -290,15 +284,13 @@ std::optional<std::tuple<json, DomainType>> XdynWebsocket::getNewState(
         data["states"].back()["p"].get<double>(),
         data["states"].back()["q"].get<double>(),
         data["states"].back()["r"].get<double>());
-    m_engine_logger->debug(excelRow);
+    // To be changed back into debug for release
+    m_engine_logger->info(excelRow);
 
-    auto cmd = json::object();
-    for (auto &&cmd_msg : m_xdyn_cmd[_entity].cmd()) {
-        cmd[cmd_msg.name() + "(rpm)"] = cmd_msg.rpm();
-        cmd[cmd_msg.name() + "(P/D)"] = cmd_msg.pd();
-        cmd[cmd_msg.name() + "(beta)"] = cmd_msg.beta();
+    if (m_vessels_cmd_map_ptr->find(_entity) != m_vessels_cmd_map_ptr->end()) {
+        data["commands"] = json::parse((*m_vessels_cmd_map_ptr)[_entity]);
     }
-    data["commands"] = cmd;
+
     data["requested_output"] = json::array();
     std::string msg_string = data.dump();
     if (send(_entity, msg_string)) {
@@ -337,17 +329,4 @@ bool XdynWebsocket::send(
         }
     }
 }
-
-void XdynWebsocket::thrustCmd(const gz_liquidai_msgs::msgs::XdynCmd &_msg)
-{
-    m_logger->debug("XdynWebsocket::thrustCmd: Received: {}", _msg.name());
-    if (m_entity_mapping.find(_msg.name()) != m_entity_mapping.end()) {
-        m_xdyn_cmd[m_entity_mapping[_msg.name()]] = _msg;
-    } else {
-        m_logger->warn(
-            "XdynWebsocket::thrustCmd: Received unknown vessel: {}",
-            _msg.name());
-    }
-}
-
 }  // namespace lotusim::gazebo

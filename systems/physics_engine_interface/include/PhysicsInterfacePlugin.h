@@ -1,8 +1,6 @@
 #ifndef __PHYSICS_INTERFACE_HH__
 #define __PHYSICS_INTERFACE_HH__
 
-#include <algorithm>
-#include <gz/common/Console.hh>
 #include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/EntityComponentManager.hh>
@@ -18,27 +16,21 @@
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/PoseCmd.hh>
 #include <gz/sim/components/World.hh>
-#include <random>
 #include <vector>
+
+#include "lotusim_common/common.hpp"
+#include "lotusim_msgs/msg/vessel_cmd.hpp"
+#include "lotusim_msgs/msg/vessel_cmd_array.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 // #include "ManualRAO.h"
 // #include "XdynGrpc.h"
-
 #include "PhysicsInterfaceBase.h"
 #include "XdynWebSocket.h"
-#include "logging_system/logger.hpp"
+#include "lotusim_common/logger.hpp"
+#include "std_msgs/msg/string.hpp"
 
 namespace lotusim::gazebo {
-
-enum class RandomisedType
-{
-    NONE,
-    RANDOM
-};
-
-bool pose3Eql(const gz::math::Pose3d &_a, const gz::math::Pose3d &_b);
-
-void shuffleOrder(std::vector<uint64_t> &_entities, RandomisedType _type);
 
 /**
  * @brief This is a plugin for interfacing with external physics library
@@ -55,10 +47,10 @@ void shuffleOrder(std::vector<uint64_t> &_entities, RandomisedType _type);
  * All mapping is stored as model entity. The only non-model entity stored is
  * base link entity
  *
- * Models that requires update should include <physics_server_interface> tag.
+ * Models that requires update should include <physics_engine_interface> tag.
  * Those without the tag are assumed to be static object.
  *
- * In the <physics_server_interface> tag, user is suppose to define all the
+ * In the <physics_engine_interface> tag, user is suppose to define all the
  * server used by vessel in different domain if needed.
  * E.g if the vessel is a submarine, only the underwater and surface definition
  * is needed.
@@ -71,7 +63,7 @@ void shuffleOrder(std::vector<uint64_t> &_entities, RandomisedType _type);
  *  </plugin>
  *
  * <model name="drone">
- *  <physics_server_interface>
+ *  <physics_engine_interface>
  *   <aerial>
  *     <ConnectionType>XDynWebSocket</ConnectionType>
  *     <uri>127.0.0.1:1234</uri>
@@ -88,7 +80,7 @@ void shuffleOrder(std::vector<uint64_t> &_entities, RandomisedType _type);
  *     <uri>127.0.0.1:1236</uri>
  *   </underwater>
  *   <init_state>surface</init_state>
- *  </physics_server_interface>
+ *  </physics_engine_interface>
  * </model>
  */
 
@@ -161,17 +153,24 @@ private:
      */
     std::shared_ptr<spdlog::logger> m_logger;
 
+    std::string m_world_name;
+
+    /**
+     * @brief ROS node
+     *
+     */
+    rclcpp::Node::SharedPtr m_ros_node;
+
+    /**
+     * @brief Executor for ROS node
+     *
+     */
+
     /**
      * @brief Stores the PhysicsInterfacePlugin entity
      *
      */
     gz::sim::Entity m_entity;
-
-    /**
-     * @brief GZ Node
-     *
-     */
-    std::shared_ptr<gz::transport::Node> m_gz_node;
 
     /**
      * @brief List of the vessel entities
@@ -196,6 +195,20 @@ private:
      *
      */
     std::unordered_map<gz::sim::Entity, std::string> m_vessels_name_map;
+
+    /**
+     * @brief sub for cmd array
+     *
+     */
+    rclcpp::Subscription<lotusim_msgs::msg::VesselCmdArray>::SharedPtr
+        m_cmd_array_sub;
+
+    /**
+     * @brief Current vessel interface connected
+     *
+     */
+    std::shared_ptr<std::unordered_map<gz::sim::Entity, std::string>>
+        m_vessels_cmd_map_ptr;
 
     /**
      * @brief Current vessel interface connected

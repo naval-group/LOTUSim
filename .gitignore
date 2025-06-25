@@ -1,3 +1,4 @@
 .vscode
 docs/doxygen
 lotus_logs/*
+.ipynb_checkpoints

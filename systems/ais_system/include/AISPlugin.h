@@ -16,8 +16,8 @@
 
 #include "gz/sim/Util.hh"
 #include "gz/sim/components/LinearVelocity.hh"
-#include "gz_liquidai_msgs/msgs/aismsg.pb.h"
-#include "logging_system/logger.hpp"
+#include "lotusim_common/common.hpp"
+#include "lotusim_common/logger.hpp"
 
 namespace lotusim::gazebo {
 
@@ -53,6 +53,7 @@ private:
      *
      */
     std::shared_ptr<spdlog::logger> m_logger;
+    std::string m_world_name;
 
     std::chrono::steady_clock::duration m_update_period;
     std::chrono::steady_clock::duration m_last_pub;

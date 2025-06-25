@@ -62,12 +62,6 @@ set(SDF_VER ${sdformat14_VERSION_MAJOR})
 find_package(gz-sim8 REQUIRED)
 set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
 
-gz_find_package(gz-msgs10 REQUIRED)
-set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
-
-gz_find_package(gz-transport13 REQUIRED COMPONENTS log)
-set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
-
 gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
 set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
 
@@ -84,9 +78,8 @@ find_package(yaml-cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Boost REQUIRED system)
 find_package(websocketpp REQUIRED)
-find_package(fmt REQUIRED)
-find_package(gz_liquidai_msgs REQUIRED)
-find_package(logger_system REQUIRED)
+find_package(lotusim_common REQUIRED)
+find_package(lotusim_msgs REQUIRED)
 
 include_directories(
   include
@@ -112,17 +105,16 @@ target_include_directories(physics_interface_plugin PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(physics_interface_plugin
-  ${Boost_SYSTEM_LIBRARY}
   gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
   websocketpp::websocketpp
   fmt::fmt
-  gz_liquidai_msgs-msgs
-  logger_system
+  lotusim_common
 )
 ament_target_dependencies(physics_interface_plugin 
   ament_cmake
   rclcpp
+  lotusim_msgs
 )
 install(
   TARGETS physics_interface_plugin
@@ -152,6 +144,8 @@ ament_export_targets(
 ament_export_dependencies(
   rclcpp
   ament_cmake
+  lotusim_common
+  lotusim_msgs
 )
 ament_export_include_directories(include)
 ament_export_libraries(

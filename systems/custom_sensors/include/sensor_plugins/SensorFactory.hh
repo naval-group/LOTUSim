@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "logging_system/logger.hpp"
+#include "lotusim_common/logger.hpp"
 #include "sensor_plugins/CustomSensor.hh"
 #include "sensor_plugins/SubseaPressureSensor.hh"
 

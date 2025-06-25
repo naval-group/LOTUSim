@@ -79,7 +79,7 @@ gz_find_package(gz-common5
 )
 
 find_package(ament_cmake REQUIRED)
-find_package(logger_system REQUIRED)
+find_package(lotusim_common REQUIRED)
 
 include_directories(
   include
@@ -106,7 +106,7 @@ target_link_libraries(linear_battery_plugin
   ${Boost_SYSTEM_LIBRARY}
   gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  logger_system
+  lotusim_common
 )
 install(
   TARGETS linear_battery_plugin

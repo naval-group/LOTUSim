@@ -82,9 +82,9 @@ find_package(ament_cmake REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Boost REQUIRED system)
-find_package(gz_liquidai_msgs REQUIRED)
-find_package(logger_system REQUIRED)
+find_package(lotusim_common REQUIRED)
 find_package(fmt REQUIRED)
+find_package(lotusim_msgs REQUIRED)
 
 include_directories(
   include
@@ -102,6 +102,7 @@ add_library(render_plugin
   SHARED   
   src/TcpUdpInterface.cpp
   src/RenderPlugin.cpp
+  src/RosInterface.cpp
 )
 
 target_include_directories(render_plugin
@@ -114,9 +115,14 @@ target_link_libraries(render_plugin
   ${Boost_SYSTEM_LIBRARY}
   gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  gz_liquidai_msgs-msgs
-  logger_system
+  lotusim_common
   fmt::fmt
+)
+
+ament_target_dependencies(render_plugin 
+  ament_cmake
+  rclcpp
+  lotusim_msgs
 )
 
 install(
@@ -147,6 +153,8 @@ ament_export_targets(
 ament_export_dependencies(
   rclcpp
   ament_cmake
+  lotusim_common
+  lotusim_msgs
 )
 ament_export_include_directories(include)
 ament_export_libraries(

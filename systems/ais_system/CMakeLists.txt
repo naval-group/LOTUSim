@@ -81,8 +81,7 @@ find_package(ament_cmake REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(gz_liquidai_msgs REQUIRED)
-find_package(logger_system REQUIRED)
+find_package(lotusim_common REQUIRED)
 
 include_directories(
   include
@@ -108,8 +107,7 @@ target_link_libraries(ais_plugin
   ${Boost_SYSTEM_LIBRARY}
   gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  gz_liquidai_msgs-msgs
-  logger_system
+  lotusim_common
 )
 install(
   TARGETS ais_plugin

@@ -16,7 +16,6 @@
 #ifndef __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
 #define __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
 
-#include <gz/common/Console.hh>
 #include <gz/math/Vector3.hh>
 
 #include "gz_liquidai_msgs/msgs/SensorPressure.pb.h"

@@ -12,8 +12,8 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>gz-cmake3</depend>
-  <depend>gz_liquidai_msgs</depend>
-  <depend>logger_system</depend>
+  <depend>lotusim_msgs</depend>
+  <depend>lotusim_common</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

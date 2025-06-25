@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="lrauv">
-    <publish_render>true</publish_render>
     <!-- Body -->
     <link name="base_link">
       <pose>0 0 0 0 0 3.1415</pose>
@@ -340,18 +339,20 @@
       <velocity_control>true</velocity_control>
       <propeller_diameter>0.2</propeller_diameter>
     </plugin>
-    <!-- The Lift acting on the controlled surfaces -->
+
     <!-- The movement of the controlled surfaces -->
-    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+    <plugin filename="gz-sim-joint-position-controller-system"
+      name="gz::sim::systems::JointPositionController">
       <joint_name>horizontal_fins_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
-    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+    <plugin filename="gz-sim-joint-position-controller-system"
+      name="gz::sim::systems::JointPositionController">
       <joint_name>vertical_fins_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
     <plugin filename="linear_battery_plugin"
-        name="lotusim::gazebo::LinearBatteryPlugin">
+      name="lotusim::gazebo::LinearBatteryPlugin">
       <battery_name>linear_battery</battery_name>
       <voltage>14.4</voltage>
       <open_circuit_voltage_constant_coef>14.4</open_circuit_voltage_constant_coef>

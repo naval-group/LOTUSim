@@ -18,6 +18,7 @@ void AISPlugin::Configure(
     gz::sim::EntityComponentManager &_ecm,
     gz::sim::EventManager &_eventMgr)
 {
+    m_world_name = lotusim::common::getWorldName(_ecm);
     const sdf::Element *sdfPtr = _sdf.get();
     if (sdfPtr && sdfPtr->HasElement("period")) {
         m_update_period = std::chrono::seconds(sdfPtr->Get<int>("period"));
@@ -36,6 +37,18 @@ void AISPlugin::PostUpdate(
             const sdf::Model &data = _model->Data();
             bool publish_ais{false};
             sdf::ElementPtr sdfptr = data.Element();
+
+            if (sdfptr->GetIncludeElement()) {
+                sdfptr = sdfptr->GetIncludeElement();
+            }
+            if (sdfptr->HasElement("lotus_param") &&
+                sdfptr->GetElement("lotus_param")->HasElement("sensor")) {
+                sdfptr =
+                    sdfptr->GetElement("lotus_param")->GetElement("sensor");
+            } else {
+                return true;
+            }
+
             if (sdfptr->HasElement("publish_ais")) {
                 publish_ais = sdfptr->Get<bool>("publish_ais");
             }

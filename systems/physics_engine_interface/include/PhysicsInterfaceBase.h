@@ -8,7 +8,8 @@
 #include <optional>
 #include <tuple>
 
-#include "logging_system/logger.hpp"
+#include "lotusim_common/logger.hpp"
+#include "std_msgs/msg/string.hpp"
 
 namespace lotusim::gazebo {
 
@@ -43,7 +44,7 @@ static std::unordered_map<std::string, DomainType> DomainTypeMap{
  * It is reponsible for interfacing with the physics engine of your choice. It
  * is also responsible for subscribing to the thruster commands your engine
  * takes
- *
+ * The model must have a link named base_link
  */
 class PhysicsInterfaceBase {
 public:
@@ -118,16 +119,33 @@ public:
         m_logger = logger;
     }
 
+    void setSharedCmd(
+        std::shared_ptr<std::unordered_map<gz::sim::Entity, std::string>> _cmd)
+    {
+        m_vessels_cmd_map_ptr = _cmd;
+    }
+
 protected:
+    /**
+     * @brief Runtime logger of the physics plugin
+     *
+     */
     std::shared_ptr<spdlog::logger> m_logger;
 
     /**
-     * @brief Physics engine logger in excel format
+     * @brief Ptr to hold cmd. Passed from main plugin
+     * Mapping of vessel entity to cmd string
+     *
+     */
+    std::shared_ptr<std::unordered_map<gz::sim::Entity, std::string>>
+        m_vessels_cmd_map_ptr;
+
+    /**
+     * @brief Physics engine logger in excel format to log the 9 D.O.F of the
+     * object
      *
      */
     std::shared_ptr<spdlog::logger> m_engine_logger;
-
-    gz::transport::Node m_gz_node;
 };
 
 // typedef std::shared_ptr<PhysicsInterfaceBase> ClientPtr;

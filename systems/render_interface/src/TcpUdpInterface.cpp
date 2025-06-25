@@ -1,12 +1,14 @@
-#include "TcpUdpInterface.h"
+#include "TcpUdpInterface.hpp"
 
 namespace lotusim::gazebo {
 
 // TODO: create explosion pipeline. Create default function update for special
 // commands
 
-TcpUdpInterface::TcpUdpInterface(std::shared_ptr<spdlog::logger> logger)
-    : RenderInterfaceBase(std::move(logger))
+TcpUdpInterface::TcpUdpInterface(
+    const std::string &world_name,
+    std::shared_ptr<spdlog::logger> logger)
+    : RenderInterfaceBase(world_name, std::move(logger))
 {
     m_gz_node.Subscribe("/collision", &TcpUdpInterface::CollisionCB, this);
 }
@@ -135,24 +137,7 @@ bool TcpUdpInterface::SendPosition(
             pose.Rot().Z(),
             pose.Rot().W());
 
-        // Construct thruster information
-        std::string thruster_str;
-        for (auto &&cmd_msg : m_xdyn_cmd[vessel_name].cmd()) {
-            thruster_str += fmt::format(
-                R"({{ "name": "{}", "rpm": {} }},
-                )",
-                cmd_msg.name(),
-                cmd_msg.rpm());
-        }
-
-        // Remove the trailing comma and format the final message
-        if (!thruster_str.empty()) {
-            thruster_str = thruster_str.erase(
-                thruster_str.size() - 18);  // Remove last newline and comma
-        }
-
-        // Finalize the vessel message
-        msg += thruster_str + R"(]},)";
+        msg += R"(]},)";
         msgs += msg;
     }
 
@@ -169,17 +154,6 @@ bool TcpUdpInterface::SendPosition(
 
     m_io_context.run_one();
     return true;
-}
-
-void TcpUdpInterface::ThrustCmdCB(const gz_liquidai_msgs::msgs::XdynCmd &_msg)
-{
-    std::lock_guard<std::mutex> lock(m_xdyn_mutex);
-    m_logger->info("TcpUdpInterface::ThrustCmdCB: Received: {}", _msg.name());
-    if (m_xdyn_cmd.find(_msg.name()) != m_xdyn_cmd.end()) {
-        m_xdyn_cmd[_msg.name()] = _msg;
-    } else {
-        m_logger->info("Received unknown vessel: {}", _msg.name());
-    }
 }
 
 void TcpUdpInterface::CollisionCB(const gz::msgs::Contacts &_msg)
@@ -225,37 +199,6 @@ bool TcpUdpInterface::CreateVessel(
     }
     m_logger->info("RenderPlugin checking model: {}", vessel_name);
 
-    if (m_xdyn_cmd.find(vessel_name) == m_xdyn_cmd.end() &&
-        sdfptr->HasElement("physics_server_interface")) {
-        // Create thruster subscriber to render thrusters update
-        gz_liquidai_msgs::msgs::XdynCmd xdyn_cmd;
-        xdyn_cmd.set_name(vessel_name);
-        auto sdfPtr_physics =
-            sdfptr->GetElement("physics_server_interface")->GetFirstElement();
-        do {
-            if (sdfPtr_physics->HasElement("thrusters")) {
-                auto sdfPtr_thrusters =
-                    sdfPtr_physics->GetElement("thrusters")->GetFirstElement();
-                do {
-                    gz_liquidai_msgs::msgs::XdynCmd_ThrusterCmd *thruster_cmd =
-                        xdyn_cmd.add_cmd();
-                    thruster_cmd->set_name(
-                        sdfPtr_thrusters->Get<std::string>());
-                    thruster_cmd->set_rpm(DEFAULT_RPM);
-                    thruster_cmd->set_pd(0.79);
-                    thruster_cmd->set_beta(0.0);
-                    sdfPtr_thrusters = sdfPtr_thrusters->GetNextElement();
-                } while (sdfPtr_thrusters != sdf::ElementPtr(nullptr));
-            }
-            sdfPtr_physics = sdfPtr_physics->GetNextElement();
-        } while (sdfPtr_physics != sdf::ElementPtr(nullptr));
-        std::lock_guard<std::mutex> lock(m_xdyn_mutex);
-        m_xdyn_cmd[vessel_name] = std::move(xdyn_cmd);
-        m_gz_node.Subscribe(
-            vessel_name + "/cmd_vel",
-            &TcpUdpInterface::ThrustCmdCB,
-            this);
-    }
     // If renderer fails to spawn vessel, no point adding model to list to
     // update
     return SendCreateMessage(vessel_name, pose, renderer_type_name);
@@ -263,10 +206,6 @@ bool TcpUdpInterface::CreateVessel(
 
 bool TcpUdpInterface::DestroyVessel(const std::string &vessel_name)
 {
-    if (m_xdyn_cmd.find(vessel_name) != m_xdyn_cmd.end()) {
-        m_xdyn_cmd.erase(vessel_name);
-        m_gz_node.Unsubscribe(vessel_name + "/cmd_vel");
-    }
     SendDestroyMessage(vessel_name);
     // Always true as we will still remove models from updating list
     return true;

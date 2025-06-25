@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="eca_a9">
-    <publish_render>false</publish_render>
-    <renderer_type_name></renderer_type_name>
     <!-- Body -->
     <link name="base_link">
       <inertial>
@@ -388,19 +386,23 @@
     </plugin>
 
     <!-- The movement of the controlled surfaces -->
-    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+    <plugin filename="gz-sim-joint-position-controller-system"
+      name="gz::sim::systems::JointPositionController">
       <joint_name>fin0_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
-    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+    <plugin filename="gz-sim-joint-position-controller-system"
+      name="gz::sim::systems::JointPositionController">
       <joint_name>fin1_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
-    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+    <plugin filename="gz-sim-joint-position-controller-system"
+      name="gz::sim::systems::JointPositionController">
       <joint_name>fin2_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>
-    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+    <plugin filename="gz-sim-joint-position-controller-system"
+      name="gz::sim::systems::JointPositionController">
       <joint_name>fin3_joint</joint_name>
       <p_gain>0.1</p_gain>
     </plugin>

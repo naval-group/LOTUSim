@@ -27,8 +27,8 @@
         <spherical_coordinates>
             <surface_model>EARTH_WGS84</surface_model>
             <world_frame_orientation>ENU</world_frame_orientation>
-            <latitude_deg>22.9</latitude_deg>
-            <longitude_deg>43.2</longitude_deg>
+            <latitude_deg>1.2421</latitude_deg>
+            <longitude_deg>103.7198</longitude_deg>
             <elevation>0</elevation>
             <heading_deg>0</heading_deg>
         </spherical_coordinates>
@@ -65,6 +65,56 @@
         </plugin>
         <!-- Models -->
         <include>
+            <
+            <
+            <
+            <
+            <
+            <
+            < HEAD:assets/ worlds/ ngfe_full_sys_test.world
+            <uri>model://dtmb_hull</uri>
+            <name>frigate</name>
+            <pose>0 0 0 0 0 0</pose>
+            <lotus_param>
+                <sensor>
+                    <publish_ais>false</publish_ais>
+                </sensor>
+                <render_interface>
+                    <publish_render>true</publish_render>
+                    <renderer_type_name></renderer_type_name>
+                </render_interface>
+                <physics_engine_interface>
+                    <surface>
+                        <ConnectionType>XDynWebSocket</ConnectionType>
+                        <uri>ws://127.0.0.1:12345</uri>
+                        <thrusters>
+                            <thursters1>PSPropRudd</thursters1>
+                            <thursters2>SBPropRudd</thursters2>
+                        </thrusters>
+                    </surface>
+                    <init_state>Surface</init_state>
+                </physics_engine_interface>
+                <waypoint_follower>
+                    <follower>true</follower>
+                    <waypoints>
+                        <waypoint>0 0</waypoint>
+                    </waypoints>
+                    <circle>
+                        <radius>10</radius>
+                    </circle>
+                    <line>
+                        <length>10</length>
+                        <direction>10</direction>
+                    </line>
+                    <loop>true</loop>
+                    <range_tolerance>1.0</range_tolerance>
+                    <linear_accel_limit>1.0</linear_accel_limit>
+                    <angular_accel_limit>1.0</angular_accel_limit>
+                    <linear_velocities_limits>1.0</linear_velocities_limits>
+                    <angular_velocities_limits>1.0</angular_velocities_limits>
+                </waypoint_follower>
+            </lotus_param>
+            =======
             <uri>model://bluerov2_heavy</uri>
             <name>bluerov2_heavy</name>
             <pose>0 0 -0.5 0 0 0</pose>
@@ -75,6 +125,7 @@
                 <robot_base_frame>bluerov2_heavy</robot_base_frame>
                 <dimensions>3</dimensions>
             </plugin>
+            >>>>>>> develop:assets/worlds/drl/poc_drl.world
         </include>
         <!-- Needed for all the gazebo tf frames -->
         <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
