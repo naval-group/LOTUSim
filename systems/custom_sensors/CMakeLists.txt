@@ -80,8 +80,7 @@ gz_find_package(gz-common5
 
 find_package(ament_cmake REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(gz_liquidai_msgs REQUIRED)
-find_package(logger_system REQUIRED)
+find_package(lotusim_common REQUIRED)
 
 include_directories(
   include
@@ -110,8 +109,7 @@ target_link_libraries(gazebo_sensor_system_plugin
   gz-sim8::gz-sim8
   gz-sensors8::gz-sensors8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  gz_liquidai_msgs-msgs
-  logger_system
+  lotusim_common
 )
 ament_target_dependencies(gazebo_sensor_system_plugin 
   ament_cmake

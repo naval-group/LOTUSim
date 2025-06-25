@@ -2,7 +2,6 @@
 #define WAYPOINT_FOLLOWER_PLUGIN_HH
 
 #include <functional>
-#include <gz/common/Console.hh>
 #include <gz/math/Pose3.hh>
 #include <gz/math/Vector2.hh>
 #include <gz/math/Vector3.hh>
@@ -22,7 +21,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "logging_system/logger.hpp"
+#include "lotusim_common/logger.hpp"
 
 namespace lotusim::gazebo {
 
@@ -41,9 +40,7 @@ namespace lotusim::gazebo {
 ///
 /// Required parameters:
 ///
-/// - `<link_name>`: The name of the link within the model where the
-///   force/torque will be applied when moving the vehicle. Heading has to be
-///   the heading of the ship
+/// - `<follower>`: Bool to enable waypoint following
 ///
 /// Optional parameters:
 ///

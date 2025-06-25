@@ -1,12 +1,13 @@
-#include "RenderPlugin.h"
+#include "RenderPlugin.hpp"
 
 namespace lotusim::gazebo {
 
-RenderPlugin::RenderPlugin()
+RenderPlugin::RenderPlugin() {}
+
+RenderPlugin::~RenderPlugin()
 {
-    m_logger = logger::createConsoleAndFileLogger(
-        "render_plugin",
-        "render_plugin.txt");
+    m_logger->info(
+        "RenderPlugin::~RenderPlugin: RenderPlugin successfully shutdown.");
 }
 
 void RenderPlugin::Configure(
@@ -15,6 +16,11 @@ void RenderPlugin::Configure(
     gz::sim::EntityComponentManager &_ecm,
     gz::sim::EventManager &_eventMgr)
 {
+    m_world_name = lotusim::common::getWorldName(_ecm);
+    m_logger = logger::createConsoleAndFileLogger(
+        "render_plugin",
+        m_world_name + "_render_plugin.txt");
+
     auto sdfPtr = const_cast<sdf::Element *>(_sdf.get());
 
     std::string connection_protocol;
@@ -29,8 +35,11 @@ void RenderPlugin::Configure(
         return;
     }
 
-    m_render_interface = CreateRenderInterface(connection_protocol, m_logger);
+    m_render_interface =
+        CreateRenderInterface(connection_protocol, m_world_name, m_logger);
     m_render_interface->ConfigureInterface(_sdf);
+
+    m_logger->info("RenderPlugin::Configure: RenderPlugin started.");
 }
 
 void RenderPlugin::PreUpdate(
@@ -38,16 +47,6 @@ void RenderPlugin::PreUpdate(
     gz::sim::EntityComponentManager &_ecm)
 {
     m_render_interface->CustomPreUpdates(_info, _ecm);
-}
-
-void RenderPlugin::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
-{
-    if (!m_render_interface) {
-        m_logger->info("RenderPlugin::PostUpdate: No render update");
-        return;
-    }
 
     // Note: Once the callback return false, the callback is never called again.
     _ecm.EachNew<
@@ -58,13 +57,27 @@ void RenderPlugin::PostUpdate(
             const gz::sim::components::ParentEntity *_parent) -> bool {
             sdf::Model data = _model->Data();
             sdf::ElementPtr sdfptr = data.Element();
-            if (sdfptr->HasElement("publish_render") &&
-                sdfptr->Get<bool>("publish_render")) {
+
+            auto includeptr = sdfptr->GetIncludeElement();
+            // The lotus param will either be include statement or part of the
+            // model
+            if (!includeptr) {
+                includeptr = sdfptr;
+            }
+            if (includeptr->HasElement("lotus_param") &&
+                includeptr->GetElement("lotus_param")
+                    ->HasElement("render_interface") &&
+                includeptr->GetElement("lotus_param")
+                    ->GetElement("render_interface")
+                    ->HasElement("publish_render") &&
+                includeptr->GetElement("lotus_param")
+                    ->GetElement("render_interface")
+                    ->Get<bool>("publish_render")) {
                 auto name_opt =
                     _ecm.Component<gz::sim::components::Name>(_entity);
                 m_vessel_entity[name_opt->Data()] = _entity;
                 m_logger->info(
-                    "RenderPlugin::PostUpdate: Creation detected of vessel named {}",
+                    "RenderPlugin::PreUpdate: Creation detected of vessel named {}",
                     name_opt->Data());
                 // Todo:: check that if unable to get pose, what to do
                 gz::math::Pose3d pose =
@@ -72,7 +85,8 @@ void RenderPlugin::PostUpdate(
                 return m_render_interface->CreateVessel(
                     name_opt->Data(),
                     pose,
-                    sdfptr);
+                    includeptr->GetElement("lotus_param")
+                        ->GetElement("render_interface"));
             }
             return true;
         });
@@ -85,11 +99,24 @@ void RenderPlugin::PostUpdate(
             auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
             if (m_vessel_entity.find(name_opt->Data()) !=
                 m_vessel_entity.end()) {
+                m_logger->info(
+                    "RenderPlugin::PreUpdate: Destruction detected of vessel named {}",
+                    name_opt->Data());
                 m_vessel_entity.erase(name_opt->Data());
                 return m_render_interface->DestroyVessel(name_opt->Data());
             }
             return true;
         });
+}
+
+void RenderPlugin::PostUpdate(
+    const gz::sim::UpdateInfo &_info,
+    const gz::sim::EntityComponentManager &_ecm)
+{
+    if (!m_render_interface) {
+        m_logger->info("RenderPlugin::PostUpdate: No render update");
+        return;
+    }
 
     // get a vector of vessel name, pose
     std::vector<std::pair<std::string, gz::math::Pose3d>> vessel_pose;

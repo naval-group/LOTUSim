@@ -19,6 +19,15 @@ bool WaypointFollowerPlugin::Load(
     gz::sim::EntityComponentManager *_ecm)
 {
     sdf::ElementPtr _sdf = _model->Data().Element();
+    if (_sdf->GetIncludeElement()) {
+        _sdf = _sdf->GetIncludeElement();
+    }
+    if (_sdf->HasElement("lotus_param") &&
+        _sdf->GetElement("lotus_param")->HasElement("waypoint_follower")) {
+        _sdf = _sdf->GetElement("lotus_param")->GetElement("waypoint_follower");
+    } else {
+        return true;
+    }
 
     if (!_sdf->HasElement("follower")) {
         return true;

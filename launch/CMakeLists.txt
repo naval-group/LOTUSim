@@ -36,7 +36,6 @@ install(
 
 install(
   DIRECTORY 
-    ../ci 
     ../assets 
     ../physics
   DESTINATION share/${PROJECT_NAME}
