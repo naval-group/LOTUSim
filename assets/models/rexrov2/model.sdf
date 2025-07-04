@@ -9,7 +9,7 @@
         <pose>0 0 0 0 0 0 </pose>
         <geometry>
           <mesh>
-            <uri> model://rexrov2/meshes/RexROV2_no_props.dae </uri>
+            <uri>model://rexrov2/ model://rexrov2/meshes/RexROV2_no_props.dae </uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -36,10 +36,6 @@
           <izz>691.23</izz>
         </inertia>
       </inertial>
-
-
-
-
 
       <sensor name="imu_wamv_link" type="imu">
         <always_on>1</always_on>
@@ -196,11 +192,7 @@
       <pose relative_to='base_link'>0 0 0 0 0 0</pose>
       <parent>base_link</parent>
       <child>front_camera</child>
-
     </joint>
-
-
-
 
     <!-- Propeller0 -->
     <link name="propeller0">
@@ -221,7 +213,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/Propeller.dae</uri>
+            <uri>model://rexrov2/meshes/Propeller.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -268,7 +260,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/Propeller.dae</uri>
+            <uri>model://rexrov2/meshes/Propeller.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -315,7 +307,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/Propeller.dae</uri>
+            <uri>model://rexrov2/meshes/Propeller.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -362,7 +354,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/Propeller.dae</uri>
+            <uri>model://rexrov2/meshes/Propeller.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -409,7 +401,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/Propeller.dae</uri>
+            <uri>model://rexrov2/meshes/Propeller.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -456,7 +448,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/Propeller.dae</uri>
+            <uri>model://rexrov2/meshes/Propeller.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
