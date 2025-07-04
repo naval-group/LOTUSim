@@ -1,6 +1,7 @@
 #ifndef __GZ_ENTITY_MANAGEMENT_PLUGIN_HH__
 #define __GZ_ENTITY_MANAGEMENT_PLUGIN_HH__
 
+#include <cstdlib>
 #include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/EntityComponentManager.hh>

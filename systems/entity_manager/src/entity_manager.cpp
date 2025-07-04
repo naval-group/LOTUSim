@@ -352,9 +352,77 @@ void EntityManager::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd &msg)
 std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
     const lotusim_msgs::msg::MASCmd &msg)
 {
-    // Only allow the spawning of entity
     sdf::Root root;
-    sdf::Errors errors = root.LoadSdfString(msg.sdf_string);
+    sdf::Errors errors;
+    tinyxml2::XMLDocument lotus_param_doc;
+
+    // If model name is given, we will load the asset based on the name and the
+    // lotus param is expected in the sdf string Else we will expect the whole
+    // model sdf to be in sdf string
+    if (msg.model_name.empty()) {
+        errors = root.LoadSdfString(msg.sdf_string);
+    } else {
+        // Combining the lotus param into the sdf
+        const char *asset_path = std::getenv("LOTUSIM_MODELS_PATH");
+        if (!asset_path) {
+            m_logger->error(
+                "EntityManager::addEntity: Environment variable LOTUSIM_MODELS_PATH is not set. Please set and restart lotusim.");
+            return std::nullopt;
+        }
+
+        std::string file_path = std::string(asset_path) + "/" + msg.model_name;
+
+        if (!msg.sdf_string.empty()) {
+            tinyxml2::XMLDocument sdfDoc;
+            tinyxml2::XMLError loadResult =
+                sdfDoc.LoadFile((file_path + "/model.sdf").c_str());
+            if (loadResult != tinyxml2::XML_SUCCESS) {
+                m_logger->error("Failed to load SDF XML file.");
+            }
+
+            tinyxml2::XMLElement *sdfElem = sdfDoc.FirstChildElement("sdf");
+            if (!sdfElem) {
+                m_logger->error(
+                    "EntityManager::addEntity: No <sdf> element found.");
+            }
+
+            tinyxml2::XMLElement *modelElem =
+                sdfElem->FirstChildElement("model");
+            if (!modelElem) {
+                m_logger->error(
+                    "EntityManager::addEntity: No <model> element found.");
+            }
+            tinyxml2::XMLDocument lotusDoc;
+            lotusDoc.Parse(msg.sdf_string.c_str());
+
+            tinyxml2::XMLElement *lotusElem =
+                lotusDoc.FirstChildElement("lotus_param");
+            if (!lotusElem) {
+                m_logger->error(
+                    "EntityManager::addEntity: Could not parse lotus_param.");
+            }
+
+            tinyxml2::XMLElement *lotusClone =
+                static_cast<tinyxml2::XMLElement *>(
+                    lotusElem->DeepClone(&sdfDoc));
+            modelElem->InsertEndChild(lotusClone);
+
+            tinyxml2::XMLPrinter printer;
+            sdfDoc.Print(&printer);
+            std::string modifiedSDF = printer.CStr();
+            m_logger->debug(
+                "EntityManager::addEntity: modified loaded sdf.\n{}",
+                modifiedSDF);
+
+            sdf::Errors errors = root.LoadSdfString(modifiedSDF);
+            if (!errors.empty()) {
+                m_logger->error(
+                    "EntityManager::addEntity: Errors when loading modified SDF into sdf::Root:");
+                for (const auto &err : errors)
+                    m_logger->error(err.Message());
+            }
+        }
+    }
 
     if (!errors.empty()) {
         for (auto &&err : errors) {
@@ -362,10 +430,12 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
         }
         return std::nullopt;
     }
+
     if (!root.Model()) {
         m_logger->error("EntityManager::addEntity: sdf loaded but no model");
         return std::nullopt;
     }
+
     sdf::Model model = *root.Model();
     std::string desiredName = model.Name();
     if (!msg.vessel_name.empty()) {

@@ -30,7 +30,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/tethys.dae</uri>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
             <submesh>
               <name>Body</name>
               <center>false</center>
@@ -42,10 +42,10 @@
           <specular>1.0 1.0 1.0</specular>
           <pbr>
             <metal>
-              <albedo_map>materials/textures/Tethys_Albedo.png</albedo_map>
-              <normal_map>materials/textures/Tethys_Normal.png</normal_map>
-              <metalness_map>materials/textures/Tethys_Metalness.png</metalness_map>
-              <roughness_map>materials/textures/Tethys_Roughness.png</roughness_map>
+              <albedo_map>model://lrauv/materials/textures/Tethys_Albedo.png</albedo_map>
+              <normal_map>model://lrauv/materials/textures/Tethys_Normal.png</normal_map>
+              <metalness_map>model://lrauv/materials/textures/Tethys_Metalness.png</metalness_map>
+              <roughness_map>model://lrauv/materials/textures/Tethys_Roughness.png</roughness_map>
             </metal>
           </pbr>
         </material>
@@ -173,7 +173,7 @@
         <pose>-1.05 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/tethys.dae</uri>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
             <submesh>
               <name>Fins_Horizontal</name>
               <center>false</center>
@@ -185,10 +185,10 @@
           <specular>1.0 1.0 1.0</specular>
           <pbr>
             <metal>
-              <albedo_map>materials/textures/Tethys_Albedo.png</albedo_map>
-              <normal_map>materials/textures/Tethys_Normal.png</normal_map>
-              <metalness_map>materials/textures/Tethys_Metalness.png</metalness_map>
-              <roughness_map>materials/textures/Tethys_Roughness.png</roughness_map>
+              <albedo_map>model://lrauv/materials/textures/Tethys_Albedo.png</albedo_map>
+              <normal_map>model://lrauv/materials/textures/Tethys_Normal.png</normal_map>
+              <metalness_map>model://lrauv/materials/textures/Tethys_Metalness.png</metalness_map>
+              <roughness_map>model://lrauv/materials/textures/Tethys_Roughness.png</roughness_map>
             </metal>
           </pbr>
         </material>
@@ -219,7 +219,7 @@
         <pose>-1.05 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/tethys.dae</uri>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
             <submesh>
               <name>Fins_vertical</name>
               <center>false</center>
@@ -231,10 +231,10 @@
           <specular>1.0 1.0 1.0</specular>
           <pbr>
             <metal>
-              <albedo_map>materials/textures/Tethys_Albedo.png</albedo_map>
-              <normal_map>materials/textures/Tethys_Normal.png</normal_map>
-              <metalness_map>materials/textures/Tethys_Metalness.png</metalness_map>
-              <roughness_map>materials/textures/Tethys_Roughness.png</roughness_map>
+              <albedo_map>model://lrauv/materials/textures/Tethys_Albedo.png</albedo_map>
+              <normal_map>model://lrauv/materials/textures/Tethys_Normal.png</normal_map>
+              <metalness_map>model://lrauv/materials/textures/Tethys_Metalness.png</metalness_map>
+              <roughness_map>model://lrauv/materials/textures/Tethys_Roughness.png</roughness_map>
             </metal>
           </pbr>
         </material>
@@ -266,7 +266,7 @@
         <pose>-1.43162 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>meshes/tethys.dae</uri>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
             <submesh>
               <name>Prop</name>
               <center>false</center>
@@ -278,10 +278,10 @@
           <specular>1.0 1.0 1.0</specular>
           <pbr>
             <metal>
-              <albedo_map>materials/textures/Tethys_Albedo.png</albedo_map>
-              <normal_map>materials/textures/Tethys_Normal.png</normal_map>
-              <metalness_map>materials/textures/Tethys_Metalness.png</metalness_map>
-              <roughness_map>materials/textures/Tethys_Roughness.png</roughness_map>
+              <albedo_map>model://lrauv/materials/textures/Tethys_Albedo.png</albedo_map>
+              <normal_map>model://lrauv/materials/textures/Tethys_Normal.png</normal_map>
+              <metalness_map>model://lrauv/materials/textures/Tethys_Metalness.png</metalness_map>
+              <roughness_map>model://lrauv/materials/textures/Tethys_Roughness.png</roughness_map>
             </metal>
           </pbr>
         </material>

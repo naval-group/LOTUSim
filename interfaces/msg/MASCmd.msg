@@ -7,6 +7,10 @@ uint8 cmd_type
 # sdf definition in string if creation type
 string sdf_string
 
+# If model has been created with folder in `assets/models` directory, sdf will be retrieved. 
+# Lotusim param will be retrieved from sdf_string
+string model_name
+
 # Name of vessel in gazebo
 string vessel_name
 
