@@ -1,5 +1,7 @@
 FROM ubuntu:22.04
 
+COPY df-ca.crt /usr/local/share/ca-certificates/df-ca.crt
+
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 
@@ -11,23 +13,22 @@ ENV LOTUSIM_WS=/home/lotusim_ws \
     LD_LIBRARY_PATH=/home/lotusim_ws/src/lotusim/physics:$LD_LIBRARY_PATH \
     FASTDDS_BUILTIN_TRANSPORTS=UDPv4 
 
-ENV http_proxy=${HTTP_PROXY}
-ENV https_proxy=${HTTPS_PROXY}
+ENV http_proxy=$HTTP_PROXY \
+    https_proxy=$HTTPS_PROXY
 
 # Set the working directory
 WORKDIR /home/lotusim_ws
 
 # Copy local files to the container
-COPY . ./src/lotusim 
+COPY launch/install_dep.sh ./install_dep.sh
 
 # Use bash shell
 SHELL ["/bin/bash", "-c"]
 
 RUN echo "HTTP_PROXY=$http_proxy" && \
-    echo "HTTPS_PROXY=$https_proxy" 
-
-# Run installation command
-RUN lotusim install_lotus
+    echo "HTTPS_PROXY=$https_proxy" && \
+    chmod +x ./install_dep.sh && \
+    ./install_dep.sh
 
 ENTRYPOINT ["/bin/bash"]
 
