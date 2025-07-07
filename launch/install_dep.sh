@@ -8,13 +8,14 @@ apt install -y software-properties-common
 add-apt-repository -y universe
 
 # Install base tools
-apt-get -y install locales tzdata lsb-release curl gnupg2
+apt-get -y install locales tzdata lsb-release curl gnupg2 ca-certificates
+update-ca-certificates
 
 # Fetch latest ROS apt source release
-ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
+ROS_APT_SOURCE_VERSION=$(curl -v -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
 if [[ -z "$ROS_APT_SOURCE_VERSION" ]]; then
   echo "Error: Could not fetch ROS_APT_SOURCE_VERSION" >&2
-  exit 1
+  ROS_APT_SOURCE_VERSION=1.1.0
 else
   echo "ROS_APT_SOURCE_VERSION = $ROS_APT_SOURCE_VERSION"
 fi
@@ -49,14 +50,14 @@ http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" 
 apt-get update
 apt-get -y install gz-harmonic \
   libstdc++-12-dev \
-  ros-humble-desktop \
-  python3-rosdep \
-  ros-dev-tools \
-  clang \
-  libwebsocketpp-dev \
-  nlohmann-json3-dev \
+  ros-humble-ros-core \
   ros-humble-backward-ros \
   ros-humble-geographic-msgs \
+  python3-colcon-common-extensions \
+  clang \
+  libyaml-cpp-dev \
+  libwebsocketpp-dev \
+  nlohmann-json3-dev \
   libreadline-dev \
   libcli11-dev
 
