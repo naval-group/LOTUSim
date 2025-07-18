@@ -53,6 +53,8 @@ apt-get -y install gz-harmonic \
   ros-humble-ros-core \
   ros-humble-backward-ros \
   ros-humble-geographic-msgs \
+  ros-humble-ros-gz-bridge \
+  ros-humble-ros-gzharmonic \
   python3-colcon-common-extensions \
   clang \
   libyaml-cpp-dev \
