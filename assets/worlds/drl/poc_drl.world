@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<!-- World to test model interaction with wave -->
+<sdf version="1.6"
+    xmlns:xacro="http://ros.org/wiki/xacro">
+    <world name="vessel_wave">
+        <physics type="dart">
+            <real_time_factor>1.0</real_time_factor>
+        </physics>
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+        <scene>
+            <ambient>1.0 1.0 1.0</ambient>
+            <background>0.8 0.8 0.8</background>
+            <grid>0</grid>
+        </scene>
+        <spherical_coordinates>
+            <surface_model>EARTH_WGS84</surface_model>
+            <world_frame_orientation>ENU</world_frame_orientation>
+            <latitude_deg>1.2421</latitude_deg>
+            <longitude_deg>103.7198</longitude_deg>
+            <elevation>0</elevation>
+            <heading_deg>0</heading_deg>
+        </spherical_coordinates>
+        <!-- World plugins -->
+        <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin>
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+        </plugin>
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+        <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat">
+        </plugin>
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu">
+        </plugin>
+        <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
+        </plugin>
+        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
+            <connection_protocol>TCPUDP</connection_protocol>
+            <ip>127.0.0.1</ip>
+            <udp_port>23456</udp_port>
+            <tcp_port>23457</tcp_port>
+        </plugin>
+        <plugin filename="gz-sim-buoyancy-system" name="gz::sim::systems::Buoyancy">
+            <graded_buoyancy>
+                <default_density>1000</default_density>
+                <density_change>
+                    <above_depth>0</above_depth>
+                    <density>1</density>
+                </density_change>
+            </graded_buoyancy>
+        </plugin>
+        <!-- Models -->
+        <include>
+            <
+            <
+            <
+            <
+            <
+            <
+            < HEAD:assets/ worlds/ ngfe_full_sys_test.world
+            <uri>model://dtmb_hull</uri>
+            <name>frigate</name>
+            <pose>0 0 0 0 0 0</pose>
+            <lotus_param>
+                <sensor>
+                    <publish_ais>false</publish_ais>
+                </sensor>
+                <render_interface>
+                    <publish_render>true</publish_render>
+                    <renderer_type_name></renderer_type_name>
+                </render_interface>
+                <physics_engine_interface>
+                    <surface>
+                        <ConnectionType>XDynWebSocket</ConnectionType>
+                        <uri>ws://127.0.0.1:12345</uri>
+                        <thrusters>
+                            <thursters1>PSPropRudd</thursters1>
+                            <thursters2>SBPropRudd</thursters2>
+                        </thrusters>
+                    </surface>
+                    <init_state>Surface</init_state>
+                </physics_engine_interface>
+                <waypoint_follower>
+                    <follower>true</follower>
+                    <waypoints>
+                        <waypoint>0 0</waypoint>
+                    </waypoints>
+                    <circle>
+                        <radius>10</radius>
+                    </circle>
+                    <line>
+                        <length>10</length>
+                        <direction>10</direction>
+                    </line>
+                    <loop>true</loop>
+                    <range_tolerance>1.0</range_tolerance>
+                    <linear_accel_limit>1.0</linear_accel_limit>
+                    <angular_accel_limit>1.0</angular_accel_limit>
+                    <linear_velocities_limits>1.0</linear_velocities_limits>
+                    <angular_velocities_limits>1.0</angular_velocities_limits>
+                </waypoint_follower>
+            </lotus_param>
+            =======
+            <uri>model://bluerov2_heavy</uri>
+            <name>bluerov2_heavy</name>
+            <pose>0 0 -0.5 0 0 0</pose>
+            <plugin
+                filename="gz-sim-odometry-publisher-system"
+                name="gz::sim::systems::OdometryPublisher">
+                <odom_frame>map</odom_frame>
+                <robot_base_frame>bluerov2_heavy</robot_base_frame>
+                <dimensions>3</dimensions>
+            </plugin>
+            >>>>>>> develop:assets/worlds/drl/poc_drl.world
+        </include>
+        <!-- Needed for all the gazebo tf frames -->
+        <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
+            <publish_link_pose>true</publish_link_pose>
+            <use_pose_vector_msg>true</use_pose_vector_msg>
+            <publish_sensor_pose>false</publish_sensor_pose>
+            <publish_collision_pose>false</publish_collision_pose>
+            <publish_visual_pose>false</publish_visual_pose>
+            <publish_nested_model_pose>true</publish_nested_model_pose>
+            <static_publisher>false</static_publisher>
+            <publish_model_pose>true</publish_model_pose>
+        </plugin>
+    </world>
+</sdf>

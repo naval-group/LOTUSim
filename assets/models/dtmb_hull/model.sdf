@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<sdf version="1.7">
+<sdf version="1.7"
+    xmlns:experimental="http://sdformat.org/schemas/experimental">
     <model name='dtmb'>
         <link name="base_link">
             <visual name="visual">
@@ -9,6 +10,22 @@
                     </mesh>
                 </geometry>
             </visual>
+            <collision name="body_collision">
+                <geometry>
+                    <mesh>
+                        <uri>model://dtmb_hull/dtmb.stl</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+            <sensor name='sensor_contact' type='contact'>
+                <contact>
+                    <collision>body_collision</collision>
+                    <topic>/collision</topic>
+                </contact>
+                <always_on>1</always_on>
+                <update_rate>100</update_rate>
+            </sensor>
         </link>
     </model>
 </sdf>

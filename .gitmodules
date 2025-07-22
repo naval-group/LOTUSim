@@ -1,7 +1,0 @@
-[submodule "assets/models/lotusim-models"]
-	path = assets/models/lotusim-models
-	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/lotusim-models.git
-[submodule "explosivemine"]
-	path = gazebo/explosivemine
-	url = https://developers.naval-group.com/gitlab/naval-group/naval-group-pacific/lotus/explosivemine.git
-	branch = harmonic

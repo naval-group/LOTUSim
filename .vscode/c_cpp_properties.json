@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "~/LOTUSim_ws/install/**",
+                "~/lotusim_ws/install/**",
                 "/usr/include/gz/**",
                 "/opt/ros/humble/**",
                 "/opt/ros/humble/include/geometry_msgs"

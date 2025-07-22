@@ -13,33 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef GZ_GUI_QT_H_
 #define GZ_GUI_QT_H_
 
 #ifndef _MSC_VER
-#pragma GCC system_header
+    #pragma GCC system_header
 #endif
 
-#include <QtCore>
-
-#include <QGuiApplication>
 #include <QApplication>
-
+#include <QGuiApplication>
 #include <QOffscreenSurface>
 #include <QOpenGLFunctions>
-
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
-
 #include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
-
 #include <QSGSimpleTextureNode>
 #include <QStandardItemModel>
+#include <QtCore>
 
 #endif  // GZ_GUI_QT_H_

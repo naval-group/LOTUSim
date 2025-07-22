@@ -1,48 +1,30 @@
 cmake_minimum_required(VERSION 3.5)
-project(liquidai_msgs)
+project(lotusim_msgs)
 
 find_package(geometry_msgs REQUIRED)
+find_package(geographic_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AIS.msg"
-  "msg/AISArray.msg"  
+  "msg/AISArray.msg"
   "msg/GPS.msg"
-  "msg/UnderwaterObjectModel.msg" 
-  "msg/ThrusterConversionFcn.msg"
-  "msg/FloatStamped.msg"
-  "msg/WaveParam.msg"
-  "msg/Xdyncmd.msg"
-  "msg/XdynThrustercmd.msg"
-  "srv/SetCurrentModel.srv"
-  "srv/GetCurrentModel.srv" 
-  "srv/SetCurrentVelocity.srv"
-  "srv/SetCurrentDirection.srv" 
-  "srv/SetOriginSphericalCoord.srv"
-  "srv/GetOriginSphericalCoord.srv" 
-  "srv/TransformToSphericalCoord.srv"
-  "srv/TransformFromSphericalCoord.srv"
-  "srv/SetModelSphericalCoord.srv"
-  "srv/GetModelSphericalCoord.srv" 
-  "srv/SetThrusterEfficiency.srv" 
-  "srv/SetThrusterState.srv"
-  "srv/GetThrusterEfficiency.srv" 
-  "srv/GetThrusterState.srv"
-  "srv/SetUseGlobalCurrentVel.srv" 
-  "srv/GetModelProperties.srv" 
-  "srv/SetFloat.srv"
-  "srv/GetFloat.srv" 
-  "srv/GetListParam.srv" 
-  "srv/GetThrusterConversionFcn.srv"
-  "srv/AddEntity.srv"
-  "srv/RemoveEntity.srv"
-  "srv/EmptySrv.srv"
-  "srv/ActivateSlowdown.srv"
+  "msg/MASCmd.msg"
+  "msg/VesselCmd.msg"
+  "msg/VesselCmdArray.msg"
+  "msg/VesselPosition.msg"
+  "msg/VesselPositionArray.msg"
+  "msg/Event.msg"
+  "msg/RendererCmd.msg"
+  "action/MASCmdArray.action"
+  "action/MASCmd.action"
+  
   DEPENDENCIES 
     builtin_interfaces
     geometry_msgs 
+    geographic_msgs
     sensor_msgs
     std_msgs
 )
