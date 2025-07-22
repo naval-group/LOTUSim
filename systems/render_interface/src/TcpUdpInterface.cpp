@@ -47,39 +47,37 @@ bool TcpUdpInterface::ConfigureInterface(
     m_udp_socket_ptr = std::make_shared<ip::udp::socket>(m_io_context);
     m_tcp_socket_ptr = std::make_shared<ip::tcp::socket>(m_io_context);
     std::string ip = "127.0.0.1";
-    unsigned short udp_port = DEFAULT_UDP_PORT;
-    unsigned short tcp_port = DEFAULT_TCP_PORT;
+    unsigned short tcpip_port = 23457;
     if (_sdf->HasElement("ip")) {
         ip = _sdf->Get<std::string>("ip");
     }
-    if (_sdf->HasElement("udp_port")) {
-        udp_port = _sdf->Get<float>("udp_port");
-    }
-    if (_sdf->HasElement("tcp_port")) {
-        tcp_port = _sdf->Get<float>("tcp_port");
+    if (_sdf->HasElement("tcpip_port")) {
+        tcpip_port = _sdf->Get<float>("tcpip_port");
     }
 
     // creating udp socket, no handling required
     m_logger->info(
         "TcpUdpInterface::ConfigureInterface : Creating UDP connection at ip: {} port: {}",
         ip,
-        udp_port);
-    m_udp_endpoint = ip::udp::endpoint(ip::address::from_string(ip), udp_port);
+        tcpip_port);
+    m_udp_endpoint =
+        ip::udp::endpoint(ip::address::from_string(ip), tcpip_port);
     m_udp_socket_ptr->open(ip::udp::v4());
 
     // creating tcp socket
     m_logger->info(
         "TcpUdpInterface::ConfigureInterface : Creating TCP connection at ip: {}  tcp_port: {}",
         ip,
-        tcp_port);
-    m_tcp_endpoint = ip::tcp::endpoint(ip::address::from_string(ip), tcp_port);
+        tcpip_port);
+    m_tcp_endpoint =
+        ip::tcp::endpoint(ip::address::from_string(ip), tcpip_port);
     boost::system::error_code ec;
     m_tcp_socket_ptr->connect(m_tcp_endpoint, ec);
     if (ec) {
         m_logger->warn(
             "TcpUdpInterface::ConfigureInterface : TCP Failed to connect to {} on port {}. Error: {}",
             ip,
-            tcp_port,
+            tcpip_port,
             ec.message());
 
         // Todo: figure out whether to retry
@@ -87,7 +85,7 @@ bool TcpUdpInterface::ConfigureInterface(
         m_logger->info(
             "TcpUdpInterface::ConfigureInterface : TCP Successfully connected to {}  on port {}",
             ip,
-            tcp_port);
+            tcpip_port);
     }
     return true;
 }
@@ -96,14 +94,12 @@ bool TcpUdpInterface::SendPosition(
     const std::chrono::steady_clock::duration &runTime,
     const std::vector<std::pair<std::string, gz::math::Pose3d>> &poses)
 {
-    if (poses.empty()) {
-        return true;
-    }
     float secs =
         std::chrono::duration_cast<std::chrono::duration<float>>(runTime)
             .count();
     boost::system::error_code err;
-    std::string msgs = R"({"VesselsInfo": [)";
+    std::string msgs =
+        R"({"time": )" + std::to_string(secs) + R"(, "VesselsInfo": [)";
     for (auto &&temp : poses) {
         std::string vessel_name = temp.first;
         gz::math::Pose3d pose = temp.second;
@@ -113,7 +109,6 @@ bool TcpUdpInterface::SendPosition(
             R"(
         {{
             "name": "{}",
-            "time": "{}",
             "position": {{
                 "x": {},
                 "y": {},
@@ -128,7 +123,6 @@ bool TcpUdpInterface::SendPosition(
             "thrusters": [
                     )",
             vessel_name,
-            secs,
             pose.X(),
             pose.Y(),
             pose.Z(),

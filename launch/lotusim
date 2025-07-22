@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Default configurations
-DEFAULT_WORLD="mas_test.world"
+DEFAULT_WORLD="lotusim.world"
 
 ASSETS_PATH="${LOTUSIM_PATH}/assets"
 MODEL_PATH="${ASSETS_PATH}/models"
@@ -215,7 +215,6 @@ run)
     clear
     validate_setup
 
-    echo "Running the simulation."
     source "/opt/ros/humble/setup.bash"
     source "${LOTUSIM_WS}/install/setup.bash"
 
@@ -228,6 +227,7 @@ run)
 
     WORLD=${1:-$DEFAULT_WORLD}
 
+    echo -e "${GREEN}Running the simulation world ${NC}: ${WORLD_PATH}/${WORLD}"
     gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${WORLD}"
     ;;
 
