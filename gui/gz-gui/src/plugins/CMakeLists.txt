@@ -94,7 +94,7 @@ function(gz_gui_add_plugin plugin_name)
         ${PROJECT_SOURCE_DIR}
         # Used to make test_config.h visible to the unit tests
         ${PROJECT_BINARY_DIR}
-      ENVIRONMENT 
+      ENVIRONMENT
         GZ_GUI_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
   endif()
 

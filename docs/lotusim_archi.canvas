@@ -1,0 +1,29 @@
+{
+	"nodes":[
+		{"id":"fd3ebae0239f8051","type":"group","x":-760,"y":-380,"width":620,"height":162,"color":"3","label":"Interface : user communication system to ROS 2 DDS"},
+		{"id":"b6c4a4a0c67fc9cd","type":"group","x":-760,"y":-160,"width":620,"height":90,"color":"6","label":"External"},
+		{"id":"5ff1c3d0f946a51d","type":"group","x":-580,"y":-700,"width":260,"height":200,"color":"2","label":"Core"},
+		{"id":"2467ba7aa021b3b1","type":"group","x":-1120,"y":-675,"width":305,"height":150,"color":"4","label":"Physics server"},
+		{"id":"b78cabb3c061f1f8","type":"group","x":-100,"y":-647,"width":300,"height":95,"color":"5","label":"Renderer"},
+		{"id":"81a256b10a8f37b8","type":"text","text":"Gazebo\nAsset manager","x":-548,"y":-680,"width":193,"height":60,"color":"2"},
+		{"id":"1bd1d183a45fb0f4","type":"text","text":"Sensor Module","x":-548,"y":-580,"width":195,"height":50,"color":"2"},
+		{"id":"33ccb5745d61396b","type":"text","text":"- Vessel Command\n- Vessel Position\n- Sensor Data\n","x":-740,"y":-355,"width":270,"height":117,"color":"3"},
+		{"id":"5aa3cfd8001a04e2","type":"text","text":"- Weather parameters\n- Simulation cmd \n  (Create & Destroy)","x":-450,"y":-355,"width":290,"height":117,"color":"3"},
+		{"id":"1fd1913d766f6f50","type":"text","text":"User UI","x":-540,"y":-140,"width":140,"height":50,"color":"6"},
+		{"id":"55b9b16af8f7e8fd","type":"text","text":"Custom database","x":-379,"y":-140,"width":219,"height":50,"color":"6"},
+		{"id":"3cc4fa8034a2b6dc","type":"text","text":"Fleet manager","x":-740,"y":-140,"width":180,"height":50,"color":"6"},
+		{"id":"af98f60ab43be181","type":"text","text":"LOTUSIM default: Unity","x":-80,"y":-622,"width":260,"height":50,"color":"5"},
+		{"id":"54a70b8393fabd98","type":"text","text":"External Renderer","x":-55,"y":-120,"width":210,"height":50,"color":"6"},
+		{"id":"49240ea97f12dd3e","type":"text","text":"LOTUSIM default: Xdyn (for surface ship and underwater drones)","x":-1100,"y":-655,"width":260,"height":105,"color":"4"},
+		{"id":"cfeff73333d32b48","type":"text","text":"External Physics server","x":-1100,"y":-121,"width":260,"height":50,"color":"6"}
+	],
+	"edges":[
+		{"id":"409fe475a1be6fe5","fromNode":"81a256b10a8f37b8","fromSide":"bottom","toNode":"1bd1d183a45fb0f4","toSide":"top","fromEnd":"arrow","color":"2"},
+		{"id":"d694d83ce9565ea6","fromNode":"fd3ebae0239f8051","fromSide":"top","toNode":"5ff1c3d0f946a51d","toSide":"bottom","fromEnd":"arrow","color":"3","label":"ROS 2 DDS"},
+		{"id":"1f0061718f36791d","fromNode":"5ff1c3d0f946a51d","fromSide":"right","toNode":"b78cabb3c061f1f8","toSide":"left","fromEnd":"arrow","color":"5","label":"ROS 2"},
+		{"id":"3b1ca82a3d7123fb","fromNode":"5ff1c3d0f946a51d","fromSide":"left","toNode":"2467ba7aa021b3b1","toSide":"right","fromEnd":"arrow","color":"4","label":"custom \nserver msg \ntype"},
+		{"id":"0d57a8931fa7ac70","fromNode":"b6c4a4a0c67fc9cd","fromSide":"top","toNode":"fd3ebae0239f8051","toSide":"bottom","fromEnd":"arrow","color":"6"},
+		{"id":"001c07c552a3b90f","fromNode":"b78cabb3c061f1f8","fromSide":"bottom","toNode":"54a70b8393fabd98","toSide":"top","fromEnd":"arrow","color":"6","label":"possibility to connect to\ncustom renderer"},
+		{"id":"2a2a118c6d798e10","fromNode":"2467ba7aa021b3b1","fromSide":"bottom","toNode":"cfeff73333d32b48","toSide":"top","fromEnd":"arrow","color":"6","label":"possibility to connect to\ncustom external\nphysics server"}
+	]
+}
