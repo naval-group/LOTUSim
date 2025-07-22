@@ -1,3 +1,6 @@
+// This script is to binarize the launch script. We will use normal bashscript
+// during development
+
 #include <unistd.h>
 
 #include <CLI/CLI.hpp>

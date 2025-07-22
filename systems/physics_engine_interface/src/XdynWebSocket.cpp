@@ -284,8 +284,7 @@ std::optional<std::tuple<json, DomainType>> XdynWebsocket::getNewState(
         data["states"].back()["p"].get<double>(),
         data["states"].back()["q"].get<double>(),
         data["states"].back()["r"].get<double>());
-    // To be changed back into debug for release
-    m_engine_logger->info(excelRow);
+    m_engine_logger->debug(excelRow);
 
     if (m_vessels_cmd_map_ptr->find(_entity) != m_vessels_cmd_map_ptr->end()) {
         data["commands"] = json::parse((*m_vessels_cmd_map_ptr)[_entity]);

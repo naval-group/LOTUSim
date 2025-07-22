@@ -377,13 +377,17 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
             tinyxml2::XMLError loadResult =
                 sdfDoc.LoadFile((file_path + "/model.sdf").c_str());
             if (loadResult != tinyxml2::XML_SUCCESS) {
-                m_logger->error("Failed to load SDF XML file.");
+                m_logger->error(
+                    "Failed to load SDF XML file.{}",
+                    file_path + "/model.sdf");
+                return std::nullopt;
             }
 
             tinyxml2::XMLElement *sdfElem = sdfDoc.FirstChildElement("sdf");
             if (!sdfElem) {
                 m_logger->error(
                     "EntityManager::addEntity: No <sdf> element found.");
+                return std::nullopt;
             }
 
             tinyxml2::XMLElement *modelElem =
@@ -391,6 +395,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
             if (!modelElem) {
                 m_logger->error(
                     "EntityManager::addEntity: No <model> element found.");
+                return std::nullopt;
             }
             tinyxml2::XMLDocument lotusDoc;
             lotusDoc.Parse(msg.sdf_string.c_str());
@@ -400,6 +405,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
             if (!lotusElem) {
                 m_logger->error(
                     "EntityManager::addEntity: Could not parse lotus_param.");
+                return std::nullopt;
             }
 
             tinyxml2::XMLElement *lotusClone =
@@ -420,6 +426,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
                     "EntityManager::addEntity: Errors when loading modified SDF into sdf::Root:");
                 for (const auto &err : errors)
                     m_logger->error(err.Message());
+                return std::nullopt;
             }
         }
     }
