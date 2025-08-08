@@ -18,7 +18,7 @@ std::unordered_map<gz::sim::Entity, std::condition_variable>
     XdynWebsocket::m_msg_cv;
 std::unordered_map<gz::sim::Entity, json> XdynWebsocket::m_saved_state;
 
-XdynWebsocket::XdynWebsocket()
+XdynWebsocket::XdynWebsocket() : PhysicsInterfaceBase("XdynWebsocket")
 {
     m_client.clear_access_channels(websocketpp::log::alevel::all);
     m_client.clear_error_channels(websocketpp::log::elevel::all);

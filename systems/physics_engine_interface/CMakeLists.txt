@@ -78,6 +78,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Boost REQUIRED system)
 find_package(websocketpp REQUIRED)
+find_package(fmt REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
 

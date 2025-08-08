@@ -7,6 +7,14 @@ auto createConsoleAndFileLogger(
     const std::string &file_name) -> std::shared_ptr<spdlog::logger>
 {
     try {
+        std::shared_ptr<spdlog::logger> logger;
+
+        // Check that there is no logger name conflict
+        logger = getLogger(logger_name);
+        if (logger) {
+            return logger;
+        }
+
         auto console_sink =
             std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
@@ -22,7 +30,7 @@ auto createConsoleAndFileLogger(
                 std::filesystem::perms::group_all);
 
         // creating logger manually
-        auto logger = std::make_shared<spdlog::logger>(
+        logger = std::make_shared<spdlog::logger>(
             logger_name,
             spdlog::sinks_init_list{file_sink, console_sink});
 

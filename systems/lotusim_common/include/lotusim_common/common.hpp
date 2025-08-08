@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <gz/math/Pose3.hh>
 #include <gz/sim/System.hh>
+#include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
+#include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/World.hh>
 #include <memory>
 #include <optional>
@@ -42,6 +44,9 @@ bool pose3Eql(const gz::math::Pose3d &_a, const gz::math::Pose3d &_b);
 
 std::string getWorldName(const gz::sim::EntityComponentManager &_ecm);
 
+std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
+    const gz::sim::EntityComponentManager &_ecm,
+    const gz::sim::Entity &_entity);
 }  // namespace lotusim::common
 
 #endif  // COMMON_HPP

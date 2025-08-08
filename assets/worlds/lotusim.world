@@ -45,11 +45,13 @@
             <tcp_port>23457</tcp_port>
         </plugin> -->
 
+        <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
+        </plugin>
+
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
-        <!-- 
         <include>
             <uri>model://dtmb_hull</uri>
             <name>frigate</name>
@@ -63,19 +65,8 @@
                     <publish_render>true</publish_render>
                     <renderer_type_name>frigate</renderer_type_name>
                 </render_interface>
-                <physics_engine_interface>
-                    <surface>
-                        <ConnectionType>XDynWebSocket</ConnectionType>
-                        <uri>ws://127.0.0.1:12345</uri>
-                        <thrusters>
-                            <thursters1>PSPropRudd</thursters1>
-                            <thursters2>SBPropRudd</thursters2>
-                        </thrusters>
-                    </surface>
-                    <init_state>Surface</init_state>
-                </physics_engine_interface>
             </lotus_param>
-        </include> -->
+        </include>
 
     </world>
 </sdf>
