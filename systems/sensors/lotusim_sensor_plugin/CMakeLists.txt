@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 
-project(entity_manager VERSION 0.0.1 LANGUAGES CXX)
+project(lotusim_sensor_plugin VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
 #============================================================================
-# Add support for C++17
 include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -18,7 +17,6 @@ endif()
 if(LOTUS_TIDY)
   set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=-*,-header-filter=.*, clang-analyzer-*,modernize-*,performance-*,hicpp-*,concurrency-*,bugprone-*,portability-*,cppcoreguidelines-*")
 endif()
-
 
 #============================================================================
 # Set project-specific options
@@ -41,7 +39,7 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
   option(BUILD_SHARED_LIBS "Build dynamically-linked binaries" ON)
 endif()
 
-# # Code coverage
+# Code coverage
 # if(BUILD_TESTING)
 #     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
 # endif()
@@ -49,95 +47,52 @@ endif()
 #============================================================================
 # Search for project-specific dependencies
 #============================================================================
-find_package(gz-cmake3 REQUIRED)
-set(GZ_CMAKE_VER ${gz-cmake3_VERSION_MAJOR})
-
-set(GZ_CMAKE_VER ${gz-cmake3_VERSION_MAJOR})
-
-gz_configure_project(VERSION_SUFFIX)
-
-set(protobuf_MODULE_COMPATIBLE TRUE)
-
-gz_find_package(sdformat14 REQUIRED VERSION)
-set(SDF_VER ${sdformat14_VERSION_MAJOR})
-
-find_package(gz-sim8 REQUIRED)
-set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
-
-gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
-set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
-
-gz_find_package(gz-common5
-  COMPONENTS
-    profiler
-    events
-    av
-  REQUIRED
-)
-
-find_package(rclcpp REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(ament_index_cpp REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(lotusim_common REQUIRED)
-find_package(lotusim_msgs REQUIRED)
+find_package(lotusim_sensor_base REQUIRED)
+find_package(subsea_pressure_sensor REQUIRED)
+find_package(ais_sensor REQUIRED)
 
 include_directories(
   include
   ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-) 
-
-# link_directories(
-#   ${CMAKE_INSTALL_FULL_LIBDIR}
-# )
+)
 
 #============================================================================
 # Create and install project files
 #============================================================================
-# Add sources for each plugin to be registered.
-add_library(entity_manager_plugin 
-  SHARED 
-  src/entity_manager.cpp
+
+add_library(lotusim_sensor_plugin
+SHARED
+src/lotusim_sensor_plugin.cpp
 )
-target_include_directories(entity_manager_plugin PUBLIC
+target_include_directories(lotusim_sensor_plugin
+  PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
   $<INSTALL_INTERFACE:include>
+  ${EIGEN3_INCLUDE_DIRS}
 )
-target_link_libraries(entity_manager_plugin
-  gz-sim8::gz-sim8
-  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+target_link_libraries(lotusim_sensor_plugin
   lotusim_common::lotusim_common
+  lotusim_sensor_base::lotusim_sensor_base
+  subsea_pressure_sensor::subsea_pressure_sensor
+  ais_sensor::ais_sensor
 )
-ament_target_dependencies(entity_manager_plugin 
-  rclcpp
-  rclcpp_action
+ament_target_dependencies(lotusim_sensor_plugin 
   ament_cmake
-  lotusim_msgs
-)
-
-ament_export_targets(
-  export_entity_manager_plugin
-)
-
-ament_export_dependencies(
-  rclcpp
-  ament_cmake
-  lotusim_msgs
-  lotusim_common
-)
-ament_export_include_directories(include)
-ament_export_libraries(
-  entity_manager_plugin
+  lotusim_sensor_base
+  subsea_pressure_sensor
+  ais_sensor
 )
 
 #============================================================================
 # Install the files for this package
 #============================================================================
-
 install(
-  TARGETS entity_manager_plugin
-  EXPORT  export_entity_manager_plugin
-  ARCHIVE DESTINATION lib 
+  TARGETS lotusim_sensor_plugin
+  EXPORT  export_lotusim_sensor_plugin
+  ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
@@ -148,11 +103,21 @@ install(
   FILES_MATCHING
   PATTERN "*.hpp"
   PATTERN "*.h"
-  PATTERN ".~"
-  EXCLUDE
 )
-
-
+ament_export_include_directories(include)
+ament_export_dependencies(
+  ament_cmake
+  lotusim_sensor_base
+  subsea_pressure_sensor
+  ais_sensor
+  Eigen3
+)
+ament_export_targets(
+  export_lotusim_sensor_plugin
+)
+ament_export_libraries(
+  lotusim_sensor_plugin
+)
 ament_package()
-
 gz_create_packages()
+ 
