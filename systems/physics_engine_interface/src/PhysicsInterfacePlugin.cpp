@@ -357,6 +357,7 @@ bool PhysicsInterfacePlugin::LoadVessel(
                     m_vessels_base_link_map[vessel_name] = base_link;
                     gz::sim::Link _link(base_link);
                     _link.EnableVelocityChecks(*_ecm);
+                    break;
                 }
             }
 

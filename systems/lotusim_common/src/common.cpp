@@ -24,4 +24,32 @@ std::string getWorldName(const gz::sim::EntityComponentManager &_ecm)
     return world_name;
 }
 
+std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
+    const gz::sim::EntityComponentManager &_ecm,
+    const gz::sim::Entity &_entity)
+{
+    gz::sim::Entity entity = _entity;
+
+    while (true) {
+        if (_ecm.EntityHasComponentType(
+                entity,
+                gz::sim::components::Model::typeId)) {
+            auto nameComp = _ecm.Component<gz::sim::components::Name>(entity);
+            if (nameComp) {
+                return std::make_pair(entity, nameComp->Data());
+            } else {
+                return std::nullopt;
+            }
+        }
+
+        auto parentComp =
+            _ecm.Component<gz::sim::components::ParentEntity>(entity);
+        if (!parentComp) {
+            return std::nullopt;
+        }
+
+        entity = parentComp->Data();
+    }
+    return std::nullopt;
+}
 }  // namespace lotusim::common
