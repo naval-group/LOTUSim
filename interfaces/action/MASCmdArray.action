@@ -1,8 +1,0 @@
-std_msgs/Header header
-MASCmd[] cmd
----
-bool[] result
-string[] name
-uint16[] entity
----
-bool fb

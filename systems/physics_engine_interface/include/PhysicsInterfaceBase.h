@@ -48,11 +48,12 @@ static std::unordered_map<std::string, DomainType> DomainTypeMap{
  */
 class PhysicsInterfaceBase {
 public:
-    PhysicsInterfaceBase()
+    PhysicsInterfaceBase(const std::string &interface_name = "")
     {
+        std::string logger_name = interface_name + "_physics_engine_output";
         m_engine_logger = logger::createConsoleAndFileLogger(
-            "physics_engine_output",
-            "physics_engine_output.txt");
+            logger_name,
+            logger_name + ".txt");
     };
 
     /**

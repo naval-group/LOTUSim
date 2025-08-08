@@ -87,9 +87,9 @@ include_directories(
   ${CMAKE_INSTALL_FULL_INCLUDEDIR}
 ) 
 
-link_directories(
-  ${CMAKE_INSTALL_FULL_LIBDIR}
-)
+# link_directories(
+#   ${CMAKE_INSTALL_FULL_LIBDIR}
+# )
 
 #============================================================================
 # Create and install project files
@@ -106,14 +106,13 @@ target_include_directories(entity_manager_plugin PUBLIC
 target_link_libraries(entity_manager_plugin
   gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  lotusim_common
+  lotusim_common::lotusim_common
 )
 ament_target_dependencies(entity_manager_plugin 
   rclcpp
   rclcpp_action
   ament_cmake
   lotusim_msgs
-  lotusim_common
 )
 
 ament_export_targets(
