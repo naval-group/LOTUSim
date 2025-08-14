@@ -34,6 +34,8 @@ else
   echo -e "\n✅ Ubuntu codename: $VERSION_CODENAME"
 fi
 
+ROS_APT_SOURCE_VERSION=$(echo "$ROS_APT_SOURCE_VERSION" | tr -d '\n' | xargs)
+VERSION_CODENAME=$(echo "$VERSION_CODENAME" | tr -d '\n' | xargs)
 ROS2_PKG_NAME="ros2-apt-source"
 ROS2_PKG_VERSION="${ROS_APT_SOURCE_VERSION}.${VERSION_CODENAME}"
 DOWNLOAD_ROS2_DEB=0
