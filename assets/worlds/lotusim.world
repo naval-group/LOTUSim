@@ -52,7 +52,7 @@
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
-        <include>
+        <!-- <include>
             <uri>model://dtmb_hull</uri>
             <name>frigate</name>
             <pose>0 0 0 0 0 0</pose>
@@ -66,7 +66,7 @@
                     <renderer_type_name>frigate</renderer_type_name>
                 </render_interface>
             </lotus_param>
-        </include>
+        </include> -->
 
     </world>
 </sdf>
