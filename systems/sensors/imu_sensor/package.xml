@@ -1,11 +1,8 @@
-<?xml version="1.0"?>
-<package format="2">
-  <name>lotusim_sensor_plugin</name>
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
+  <name>imu_sensor</name>
   <version>0.0.1</version>
-  <description>
-    The custom lotus_sensor_system package for Lotusim.
-    Custom sensors have been added and gazebo sensors have been altered to pub in ros
-  </description>
+  <description>AIS system to pub imu msg in the simulation</description>
 
   <maintainer email="malcom.neo@fe.naval-group.com">malcom</maintainer>
 
@@ -15,10 +12,9 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>lotusim_sensor_base</depend>
+  <depend>lotusim_sensor_msgs</depend>
   <depend>lotusim_common</depend>
-  <depend>subsea_pressure_sensor</depend>
-  <depend>ais_sensor</depend>
-  <depend>imu_sensor</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

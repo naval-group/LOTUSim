@@ -35,7 +35,7 @@ bool SubseaPressureSensor::CustomSensorLoad(const sdf::Sensor &_sdf)
     m_sensor_pub =
         m_ros_node->create_publisher<lotusim_sensor_msgs::msg::PressureDepth>(
             m_vessel_name + "/" + m_sensor_name + "/pressure_sensor",
-            rclcpp::QoS(10));
+            rclcpp::QoS(1));
     return true;
 }
 
@@ -44,7 +44,7 @@ bool SubseaPressureSensor::Update(
     const gz::sim::EntityComponentManager &_ecm)
 {
     // Need to rewrite
-    if (!EnableMeasurement(_info.realTime))
+    if (!EnableMeasurement(_info.simTime))
         return false;
 
     double depth = std::abs(m_position.Z());
@@ -65,15 +65,11 @@ bool SubseaPressureSensor::Update(
     msg.depth = inferredDepth;
     msg.pressure = pressure;
     msg.stddev = m_noise_sigma;
-    auto simTimeNs =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(_info.realTime)
-            .count();
-    msg.header.stamp.sec = static_cast<int32_t>(simTimeNs / 1000000000);
-    msg.header.stamp.nanosec = static_cast<uint32_t>(simTimeNs % 1000000000);
-    msg.header.frame_id = "world";
+
+    msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
 
     m_sensor_pub->publish(msg);
-    m_last_measurement_time = _info.realTime;
+    m_last_measurement_time = _info.simTime;
     return true;
 }
 

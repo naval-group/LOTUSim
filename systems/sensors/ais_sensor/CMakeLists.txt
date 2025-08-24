@@ -40,14 +40,9 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
 endif()
 
 # Code coverage
-if(BUILD_TESTING)
-    add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
-endif()
-
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-)
+# if(BUILD_TESTING)
+#     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
+# endif()
 
 #============================================================================
 # Search for project-specific dependencies
@@ -70,11 +65,6 @@ target_include_directories(ais_sensor
   $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
     ${EIGEN3_INCLUDE_DIRS}
 )
-target_link_libraries(ais_sensor
-  PUBLIC
-  lotusim_sensor_base::lotusim_sensor_base
-  lotusim_common::lotusim_common
-)
 ament_target_dependencies(ais_sensor 
   PUBLIC  
   ament_cmake
@@ -82,6 +72,20 @@ ament_target_dependencies(ais_sensor
   lotusim_sensor_base
   lotusim_msgs
   lotusim_sensor_msgs
+)
+ament_export_targets(
+  export_ais_sensor
+)
+ament_export_dependencies(
+  rclcpp
+  ament_cmake
+  lotusim_sensor_base
+  lotusim_msgs
+  lotusim_sensor_msgs
+)
+ament_export_include_directories(include)
+ament_export_libraries(
+  ais_sensor
 )
 
 #============================================================================
@@ -105,17 +109,6 @@ install(
   EXCLUDE
 )
 
-ament_export_targets(
-  export_ais_sensor
-)
-ament_export_dependencies(
-  rclcpp
-  ament_cmake
-)
-ament_export_include_directories(include)
-ament_export_libraries(
-  ais_sensor
-)
 ament_package()
 gz_create_packages()
 

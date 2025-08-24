@@ -1,21 +1,17 @@
-#ifndef __AIS_SENSOR_HPP__
-#define __AIS_SENSOR_HPP__
+#ifndef __IMU_SENSOR_HPP__
+#define __IMU_SENSOR_HPP__
 
-#include <cmath>
-#include <gz/sim/Link.hh>
-#include <gz/sim/components/LinearVelocity.hh>
-#include <gz/sim/components/Link.hh>
-#include <gz/sim/components/Name.hh>
-
+#include "gz/sim/components/AngularVelocity.hh"
+#include "gz/sim/components/LinearAcceleration.hh"
 #include "lotusim_common/common.hpp"
 #include "lotusim_sensor_base/custom_sensor.hpp"
-#include "lotusim_sensor_msgs/msg/ais.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 
 namespace lotusim::sensor {
 
-class AISSensor : public CustomSensor {
+class IMUSensor : public CustomSensor {
 public:
-    AISSensor(
+    IMUSensor(
         std::shared_ptr<spdlog::logger> logger,
         rclcpp::Node::SharedPtr node,
         const gz::sim::Entity &vessel_entity,
@@ -23,7 +19,7 @@ public:
         const std::string &parent_name,
         const std::string &sensor_name);
 
-    ~AISSensor();
+    ~IMUSensor();
 
     virtual bool Update(
         const gz::sim::UpdateInfo &_info,
@@ -36,9 +32,8 @@ private:
     // Sensor params
     std::chrono::steady_clock::duration m_update_period;
     std::chrono::steady_clock::duration m_last_pub;
-    gz::sim::Entity m_base_link;
-    rclcpp::Publisher<lotusim_sensor_msgs::msg::AIS>::SharedPtr m_sensor_pub;
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr m_sensor_pub;
 };
-
 }  // namespace lotusim::sensor
+
 #endif

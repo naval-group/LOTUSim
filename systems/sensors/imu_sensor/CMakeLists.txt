@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 
-project(gauss_markov_current_plugin VERSION 0.0.1 LANGUAGES CXX)
+project(imu_sensor VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
@@ -47,79 +47,58 @@ endif()
 #============================================================================
 # Search for project-specific dependencies
 #============================================================================
-find_package(gz-cmake3 REQUIRED)
-
-set(GZ_CMAKE_VER ${gz-cmake3_VERSION_MAJOR})
-
-gz_configure_project(VERSION_SUFFIX)
-
-set(protobuf_MODULE_COMPATIBLE TRUE)
-
-gz_find_package(sdformat14 REQUIRED VERSION)
-set(SDF_VER ${sdformat14_VERSION_MAJOR})
-
-find_package(gz-sim8 REQUIRED)
-set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
-
-gz_find_package(gz-msgs10 REQUIRED)
-set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
-
-gz_find_package(gz-transport13 REQUIRED COMPONENTS log)
-set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
-
-gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
-set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
-
-gz_find_package(gz-common5
-  COMPONENTS
-    profiler
-    events
-    av
-  REQUIRED
-)
-
+find_package(lotusim_sensor_base REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(lotusim_common REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-)
-  
-link_directories(
-  ${CMAKE_INSTALL_FULL_LIBDIR}
-)
-    
 #============================================================================
 # Create and install project files
 #============================================================================
-add_library(gauss_markov_current_plugin 
+add_library(imu_sensor 
   SHARED   
-  src/UnderwaterCurrentPlugin.cc
-  src/GaussMarkovProcess.cc
+  src/imu_sensor.cpp
 )
-target_include_directories(gauss_markov_current_plugin
+target_include_directories(imu_sensor
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
-  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+    ${EIGEN3_INCLUDE_DIRS}
 )
-target_link_libraries(gauss_markov_current_plugin
-  ${Boost_SYSTEM_LIBRARY}
-  gz-sim8::gz-sim8
-  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+ament_target_dependencies(imu_sensor 
+  PUBLIC  
+  ament_cmake
   lotusim_common
+  lotusim_sensor_base
+  lotusim_msgs
+  sensor_msgs
+  lotusim_sensor_msgs
 )
+ament_export_targets(
+  export_imu_sensor
+)
+ament_export_dependencies(
+  rclcpp
+  ament_cmake
+  lotusim_common
+  lotusim_sensor_base
+)
+ament_export_include_directories(include)
+ament_export_libraries(
+  imu_sensor
+)
+#============================================================================
+# Install the files for this package
+#============================================================================
 install(
-  TARGETS gauss_markov_current_plugin
-  EXPORT  export_gauss_markov_current_plugin
+  TARGETS imu_sensor
+  EXPORT  export_imu_sensor
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
-#============================================================================
-# Install the files for this package
-#============================================================================
 install(
   DIRECTORY include/
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -129,23 +108,7 @@ install(
   PATTERN ".~"
   EXCLUDE
 )
-
-ament_export_targets(
-  export_gauss_markov_current_plugin
-)
-
-ament_export_dependencies(
-  ament_cmake
-)
-
-ament_export_include_directories(include)
-
-ament_export_libraries(
-  gauss_markov_current_plugin
-)
-
 ament_package()
-
 gz_create_packages()
 
 

@@ -39,11 +39,6 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
   option(BUILD_SHARED_LIBS "Build dynamically-linked binaries" ON)
 endif()
 
-# Code coverage
-# if(BUILD_TESTING)
-#     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
-# endif()
-
 #============================================================================
 # Search for project-specific dependencies
 #============================================================================
@@ -53,11 +48,9 @@ find_package(lotusim_common REQUIRED)
 find_package(lotusim_sensor_base REQUIRED)
 find_package(subsea_pressure_sensor REQUIRED)
 find_package(ais_sensor REQUIRED)
-
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-)
+find_package(imu_sensor REQUIRED)
+find_package(gz-rendering8 REQUIRED)
+find_package(gz-sensors8 REQUIRED)
 
 #============================================================================
 # Create and install project files
@@ -74,18 +67,34 @@ target_include_directories(lotusim_sensor_plugin
   ${EIGEN3_INCLUDE_DIRS}
 )
 target_link_libraries(lotusim_sensor_plugin
-  lotusim_common::lotusim_common
-  lotusim_sensor_base::lotusim_sensor_base
-  subsea_pressure_sensor::subsea_pressure_sensor
-  ais_sensor::ais_sensor
+  gz-rendering8::gz-rendering8
+  gz-sensors8::lidar
+  gz-sensors8::gpu_lidar
+  gz-sensors8::rendering   
 )
 ament_target_dependencies(lotusim_sensor_plugin 
   ament_cmake
+  lotusim_common
   lotusim_sensor_base
   subsea_pressure_sensor
   ais_sensor
+  imu_sensor
 )
-
+ament_export_include_directories(include)
+ament_export_dependencies(
+  ament_cmake
+  lotusim_common
+  lotusim_sensor_base
+  subsea_pressure_sensor
+  ais_sensor
+  imu_sensor
+)
+ament_export_targets(
+  export_lotusim_sensor_plugin
+)
+ament_export_libraries(
+  lotusim_sensor_plugin
+)
 #============================================================================
 # Install the files for this package
 #============================================================================
@@ -103,20 +112,6 @@ install(
   FILES_MATCHING
   PATTERN "*.hpp"
   PATTERN "*.h"
-)
-ament_export_include_directories(include)
-ament_export_dependencies(
-  ament_cmake
-  lotusim_sensor_base
-  subsea_pressure_sensor
-  ais_sensor
-  Eigen3
-)
-ament_export_targets(
-  export_lotusim_sensor_plugin
-)
-ament_export_libraries(
-  lotusim_sensor_plugin
 )
 ament_package()
 gz_create_packages()
