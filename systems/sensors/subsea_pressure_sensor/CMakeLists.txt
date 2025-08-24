@@ -40,18 +40,9 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
 endif()
 
 # Code coverage
-if(BUILD_TESTING)
-    add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
-endif()
-
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-)
-
-# link_directories(
-#   ${CMAKE_INSTALL_FULL_LIBDIR}
-# )
+# if(BUILD_TESTING)
+#     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
+# endif()
 
 #============================================================================
 # Search for project-specific dependencies
@@ -69,14 +60,8 @@ src/subsea_pressure_sensor.cc
 )
 target_include_directories(subsea_pressure_sensor
   PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-  ${EIGEN3_INCLUDE_DIRS}
-)
-target_link_libraries(subsea_pressure_sensor
-  PUBLIC
-  lotusim_sensor_base::lotusim_sensor_base
-  lotusim_common::lotusim_common
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 ament_target_dependencies(subsea_pressure_sensor 
   PUBLIC  
@@ -86,7 +71,20 @@ ament_target_dependencies(subsea_pressure_sensor
   lotusim_msgs
   lotusim_sensor_msgs
 )
-
+ament_export_targets(
+  export_subsea_pressure_sensor
+)
+ament_export_dependencies(
+  rclcpp
+  ament_cmake
+  lotusim_msgs
+  lotusim_common
+  lotusim_sensor_base
+)
+ament_export_include_directories(include)
+ament_export_libraries(
+  subsea_pressure_sensor
+)
 #============================================================================
 # Install the files for this package
 #============================================================================
@@ -109,11 +107,5 @@ install(
   EXCLUDE
 )
 
-ament_export_targets(
-  export_subsea_pressure_sensor
-)
-ament_export_libraries(
-  subsea_pressure_sensor
-)
 ament_package()
 gz_create_packages()

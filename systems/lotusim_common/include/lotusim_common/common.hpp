@@ -7,12 +7,15 @@
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
+#include <gz/sim/components/SphericalCoordinates.hh>
 #include <gz/sim/components/World.hh>
 #include <memory>
 #include <optional>
 #include <random>
 #include <string>
 #include <vector>
+
+#include "std_msgs/msg/header.hpp"
 
 namespace lotusim::common {
 
@@ -47,6 +50,14 @@ std::string getWorldName(const gz::sim::EntityComponentManager &_ecm);
 std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
     const gz::sim::EntityComponentManager &_ecm,
     const gz::sim::Entity &_entity);
-}  // namespace lotusim::common
 
+std_msgs::msg::Header generateHeaderMessage(
+    const std::chrono::steady_clock::duration &_time);
+
+std::optional<std::tuple<double, double>> getXYFromLatLong(
+    const gz::sim::EntityComponentManager &_ecm,
+    double lat,
+    double longi);
+
+}  // namespace lotusim::common
 #endif  // COMMON_HPP

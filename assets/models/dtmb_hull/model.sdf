@@ -36,6 +36,33 @@
                 <noise_sigma>0.01</noise_sigma>
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>
+            <sensor name='gpu_lidar' type='gpu_lidar'>
+                <topic>lidar</topic>
+                <update_rate>10</update_rate>
+                <lidar>
+                    <scan>
+                        <horizontal>
+                            <samples>640</samples>
+                            <resolution>1</resolution>
+                            <min_angle>-1.396263</min_angle>
+                            <max_angle>1.396263</max_angle>
+                        </horizontal>
+                        <vertical>
+                            <samples>16</samples>
+                            <resolution>1</resolution>
+                            <min_angle>-0.261799</min_angle>
+                            <max_angle>0.261799</max_angle>
+                        </vertical>
+                    </scan>
+                    <range>
+                        <min>0.08</min>
+                        <max>10.0</max>
+                        <resolution>0.01</resolution>
+                    </range>
+                </lidar>
+                <alwaysOn>1</alwaysOn>
+                <visualize>true</visualize>
+            </sensor>
         </link>
     </model>
 </sdf>

@@ -40,9 +40,9 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
 endif()
 
 # Code coverage
-if(BUILD_TESTING)
-    add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
-endif()
+# if(BUILD_TESTING)
+#     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
+# endif()
 
 #============================================================================
 # Search for project-specific dependencies
@@ -85,14 +85,6 @@ find_package(lotusim_msgs REQUIRED)
 find_package(lotusim_sensor_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
 
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-)
-# link_directories(
-#   ${CMAKE_INSTALL_FULL_LIBDIR}
-# )
-
 #============================================================================
 # Create and install project files
 #============================================================================
@@ -102,16 +94,14 @@ src/custom_sensor.cpp
 )
 target_include_directories(lotusim_sensor_base
   PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-  ${EIGEN3_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(lotusim_sensor_base
   PUBLIC
   gz-sim8::gz-sim8
   gz-sensors8::gz-sensors8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  lotusim_common::lotusim_common
 )
 ament_target_dependencies(lotusim_sensor_base 
   PUBLIC
@@ -119,6 +109,7 @@ ament_target_dependencies(lotusim_sensor_base
   rclcpp
   lotusim_msgs
   lotusim_sensor_msgs
+  lotusim_common
 )
 
 #============================================================================

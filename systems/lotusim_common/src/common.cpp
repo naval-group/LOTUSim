@@ -52,4 +52,47 @@ std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
     }
     return std::nullopt;
 }
+
+std_msgs::msg::Header generateHeaderMessage(
+    const std::chrono::steady_clock::duration &_time)
+{
+    std_msgs::msg::Header msg;
+    auto simTimeNs =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(_time).count();
+    msg.stamp.sec = static_cast<int32_t>(simTimeNs / 1000000000);
+    msg.stamp.nanosec = static_cast<uint32_t>(simTimeNs % 1000000000);
+    msg.frame_id = "world";
+    return msg;
+}
+
+std::optional<std::tuple<double, double>> getXYFromLatLong(
+    const gz::sim::EntityComponentManager &_ecm,
+    double lat,
+    double longi)
+{
+    gz::math::Angle lat0, lon0;
+    gz::sim::Entity worldEntity;
+    gz::math::SphericalCoordinates sphCoords;
+    _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
+        [&](const gz::sim::Entity &_entity,
+            const gz::sim::components::Name *_name,
+            const gz::sim::components::World *) -> bool {
+            worldEntity = _entity;
+            return true;
+        });
+    if (auto sphComp =
+            _ecm.Component<gz::sim::components::SphericalCoordinates>(
+                worldEntity)) {
+        lat0 = sphComp->Data().LatitudeReference();
+        lon0 = sphComp->Data().LongitudeReference();
+    }
+    sphCoords.SetLatitudeReference(lat0);
+    sphCoords.SetLongitudeReference(lon0);
+    sphCoords.SetElevationReference(0);
+
+    gz::math::Vector3d xyz =
+        sphCoords.LocalFromSphericalPosition(gz::math::Vector3d{lat, longi, 0});
+
+    return std::make_tuple(xyz.X(), xyz.Y());
+}
 }  // namespace lotusim::common
