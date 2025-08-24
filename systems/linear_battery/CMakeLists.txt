@@ -40,9 +40,9 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
 endif()
 
 # Code coverage
-if(BUILD_TESTING)
-    add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
-endif()
+# if(BUILD_TESTING)
+#     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
+# endif()
 
 #============================================================================
 # Search for project-specific dependencies

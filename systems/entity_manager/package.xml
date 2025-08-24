@@ -17,6 +17,7 @@
   <depend>rclcpp_action</depend>
   <depend>lotusim_msgs</depend>
   <depend>lotusim_common</depend>
+  <depend>geographic_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

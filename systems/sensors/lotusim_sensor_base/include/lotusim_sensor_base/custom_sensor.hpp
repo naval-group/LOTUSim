@@ -65,9 +65,11 @@ public:
 
     bool Update(const std::chrono::steady_clock::duration &_now);
 
-    void NewPosition(const gz::math::Vector3d &_pos);
+    void Position(const gz::math::Vector3d &_pos);
 
-    void NewLatLong(const gz::math::Vector3d &_pos);
+    void LatLong(const gz::math::Vector3d &_pos);
+
+    void Orientation(const gz::math::Quaterniond &_quad);
 
 protected:
     virtual bool CustomSensorLoad(const sdf::Sensor &_sdf) = 0;
@@ -129,6 +131,8 @@ protected:
     gz::math::Vector3d m_position{std::nan(""), std::nan(""), std::nan("")};
 
     gz::math::Vector3d m_lat_long{std::nan(""), std::nan(""), std::nan("")};
+
+    gz::math::Quaterniond m_quad{0.0, 0.0, 0.0, 1.0};
 };
 
 }  // namespace lotusim::sensor

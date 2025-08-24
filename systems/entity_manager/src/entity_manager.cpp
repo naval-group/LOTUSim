@@ -377,9 +377,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
             tinyxml2::XMLError loadResult =
                 sdfDoc.LoadFile((file_path + "/model.sdf").c_str());
             if (loadResult != tinyxml2::XML_SUCCESS) {
-                m_logger->error(
-                    "Failed to load SDF XML file.{}",
-                    file_path + "/model.sdf");
+                m_logger->error("    file.{}", file_path + "/model.sdf");
                 return std::nullopt;
             }
 
@@ -509,7 +507,7 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd &msg)
         return false;
     }
     try {
-        auto pose = gz::math::Pose3<double>(
+        gz::math::Pose3 pose = gz::math::Pose3<double>(
             msg.vessel_position.position.x,
             msg.vessel_position.position.y,
             msg.vessel_position.position.z,
@@ -517,6 +515,18 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd &msg)
             msg.vessel_position.orientation.x,
             msg.vessel_position.orientation.y,
             msg.vessel_position.orientation.z);
+
+        if (msg.geo_point.latitude != 0 || msg.geo_point.longitude != 0) {
+            auto xy_opt = lotusim::common::getXYFromLatLong(
+                *m_ecm,
+                msg.geo_point.latitude,
+                msg.geo_point.longitude);
+
+            if (xy_opt) {
+                pose.Pos().X() = std::get<0>(xy_opt.value());
+                pose.Pos().Y() = std::get<1>(xy_opt.value());
+            }
+        }
 
         bool res = m_ecm->SetComponentData<gz::sim::components::Pose>(
             vessel_entity,
