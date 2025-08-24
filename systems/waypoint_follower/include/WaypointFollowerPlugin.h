@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <gz/math/Pose3.hh>
+#include <gz/math/SphericalCoordinates.hh>
 #include <gz/math/Vector2.hh>
 #include <gz/math/Vector3.hh>
 #include <gz/plugin/Register.hh>
@@ -15,12 +16,18 @@
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Pose.hh>
+#include <gz/sim/components/SphericalCoordinates.hh>
+#include <gz/sim/components/World.hh>
 #include <mutex>
+#include <rclcpp/rclcpp.hpp>
 #include <sdf/sdf.hh>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
+#include "geographic_msgs/msg/geo_point.hpp"
+#include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
 
 namespace lotusim::gazebo {
@@ -85,26 +92,31 @@ namespace lotusim::gazebo {
 /// name="lotusim::gazebo::WaypointFollowerPlugin">
 /// </ plugin>
 ///
-/// <follower>
-///   <loop>true</loop>
-///   <waypoints>
-///     <waypoint>25 0</waypoint>
-///     <waypoint>15 0</waypoint>
-///   </waypoints>
-/// </follower>
-/// <follower>
-///   <loop>true</loop>
-///   <line>
-///     <direction>0</direction>
-///     <length>5</length>
-///   </line>
-/// </follower>
-/// <follower>
-///   <loop>true</loop>
-///   <circle>
-///     <radius>2</radius>
-///   </circle>
-/// </follower>
+///< waypoint_follower>
+///  <follower>
+///    <loop>true</loop>
+///    <linear_acceleration_limit>0.1</linear_acceleration_limit>
+///    <angular_acceleration_limit>0.005</angular_acceleration_limit>
+///    <angular_velocity_limit>0.01</angular_velocity_limit>
+///    <waypoints>
+///      <waypoint>25 0</waypoint>
+///      <waypoint>15 0</waypoint>
+///    </waypoints>
+///  </follower>
+///  <follower>
+///    <loop>true</loop>
+///    <line>
+///      <direction>0</direction>
+///      <length>5</length>
+///    </line>
+///  </follower>
+///  <follower>
+///    <loop>true</loop>
+///    <circle>
+///      <radius>2</radius>
+///    </circle>
+///  </follower>
+///</waypoint_follower>
 /// ```
 
 class WaypointFollowerPlugin : public gz::sim::System,
@@ -112,6 +124,8 @@ class WaypointFollowerPlugin : public gz::sim::System,
                                public gz::sim::ISystemUpdate {
 public:
     WaypointFollowerPlugin();
+
+    ~WaypointFollowerPlugin();
 
     void Configure(
         const gz::sim::Entity &_entity,
@@ -127,8 +141,8 @@ private:
     // TODO changing the returns to handle error
     bool Load(
         const gz::sim::Entity &_entity,
-        const gz::sim::components::ModelSdf *_model,
-        gz::sim::EntityComponentManager *_ecm);
+        sdf::ElementPtr _lotus_param,
+        gz::sim::EntityComponentManager &_ecm);
 
 private:
     /**
@@ -180,6 +194,8 @@ private:
      */
     std::unordered_map<gz::sim::Entity, double> m_rangeTolerance;
 
+    std::unordered_map<gz::sim::Entity, sdf::ElementPtr> m_model_load_queue;
+
     /**
      * @brief Vectors of waypoint for the vessel
      *
@@ -192,6 +208,34 @@ private:
      *
      */
     std::unordered_map<gz::sim::Entity, uint> m_waypoint_state;
+
+    // Implementing pid for heading control
+    std::unordered_map<gz::sim::Entity, double> m_headingIntegral;
+    std::unordered_map<gz::sim::Entity, double> m_prevHeadingError;
+
+    /**
+     * @brief GZ world entity
+     *
+     */
+    gz::sim::Entity m_world_entity;
+
+    std::string m_world_name;
+
+    /**
+     * @brief ROS node
+     *
+     */
+    rclcpp::Node::SharedPtr m_ros_node;
+
+    std::shared_ptr<std::thread> m_ros_node_thread;
+
+    std::vector<rclcpp::Subscription<geographic_msgs::msg::GeoPoint>::SharedPtr>
+        m_subscription;
+    gz::math::SphericalCoordinates m_sphCoords;
+
+    std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
+
+    std::vector<rclcpp::CallbackGroup::SharedPtr> m_callback_group;
 };
 
 }  // namespace lotusim::gazebo

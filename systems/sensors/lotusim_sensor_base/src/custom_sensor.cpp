@@ -102,14 +102,21 @@ bool CustomSensor::IsOn()
 
 bool CustomSensor::Update(const std::chrono::steady_clock::duration &_now) {}
 
-void CustomSensor::NewPosition(const gz::math::Vector3d &_pos)
+void CustomSensor::Position(const gz::math::Vector3d &_pos)
 {
+    // TODO: to update lat long
     m_position = _pos;
 }
 
-void CustomSensor::NewLatLong(const gz::math::Vector3d &_pos)
+void CustomSensor::LatLong(const gz::math::Vector3d &_pos)
 {
+    // TODO: to update position
     m_lat_long = _pos;
+}
+
+void CustomSensor::Orientation(const gz::math::Quaterniond &_quad)
+{
+    m_quad = _quad;
 }
 
 bool CustomSensor::EnableMeasurement(

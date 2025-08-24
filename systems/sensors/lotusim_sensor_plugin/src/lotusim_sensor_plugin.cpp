@@ -11,6 +11,7 @@ void LotusimSensorPlugin::Configure(
     gz::sim::EntityComponentManager &_ecm,
     gz::sim::EventManager &_eventMgr)
 {
+    m_ecm = &_ecm;
     m_world_name = lotusim::common::getWorldName(_ecm);
 
     std::string logger_name = m_world_name + "_lotusim_sensors";
@@ -21,7 +22,6 @@ void LotusimSensorPlugin::Configure(
     m_ros_node = rclcpp::Node::make_shared(
         m_world_name + "_sensor_system",
         m_world_name);
-
     m_logger->info(
         "LotusimSensorPlugin::Configure: LotusimSensorPlugin successfully startup.");
 }
@@ -30,12 +30,143 @@ void LotusimSensorPlugin::PreUpdate(
     const gz::sim::UpdateInfo &,
     gz::sim::EntityComponentManager &_ecm)
 {
+    // {
+    // if (!m_scene) {
+    //     m_scene = gz::rendering::sceneFromFirstRenderEngine();
+    //     return;
+    // }
+
+    // auto lidar_iter = m_lidar_tbc.begin();
+    // while (lidar_iter != m_lidar_tbc.end()) {
+    //     std::string sensor_name = "frigate::base_link::gpu_lidar";
+    //     m_logger->info(
+    //         "LotusimSensorPlugin::PreUpdate: Lidar Sensor entity [{}]
+    //         [{}] detected", *lidar_iter, sensor_name);
+
+    //     auto sensor = m_scene->SensorByName(sensor_name);
+    //     if (!sensor) {
+    //         m_logger->error(
+    //             "Lidar Sensor entity [{}] [{}] could not be found in
+    //             scene", *lidar_iter, sensor_name);
+    //         lidar_iter++;
+    //         continue;
+    //     } else {
+    //         m_logger->info("Sensor type: {}", typeid(*sensor).name());
+    //     }
+
+    //     gpuLidar =
+    //         std::dynamic_pointer_cast<gz::rendering::GpuRays>(sensor);
+    //     if (!gpuLidar) {
+    //         m_logger->warn(
+    //             "LotusimSensorPlugin::PreUpdate: Lidar Sensor entity [{}]
+    //             [{}] unable to be linked", *lidar_iter, sensor_name);
+    //         lidar_iter++;
+    //         continue;
+    //     }
+
+    //     std::string vessel_name;
+    //     auto vessel_name_opt =
+    //         lotusim::common::getModelName(*m_ecm, *lidar_iter);
+    //     if (vessel_name_opt) {
+    //         vessel_name = vessel_name_opt->second;
+    //     }
+
+    //     auto sensor_pub =
+    //         m_ros_node->create_publisher<sensor_msgs::msg::PointCloud2>(
+    //             vessel_name + "/" + "gpu_lidar" + "/" + "lidar",
+    //             rclcpp::QoS(1));
+
+    //     m_lidar_name[*lidar_iter] = sensor_name;
+    //     m_lidar_pub_mapping[*lidar_iter] = sensor_pub;
+
+    //     auto connection = gpuLidar->ConnectNewGpuRaysFrame(
+    //         std::bind(
+    //             &LotusimSensorPlugin::OnNewLidarFrame,
+    //             this,
+    //             *lidar_iter,
+    //             std::placeholders::_1,
+    //             std::placeholders::_2,
+    //             std::placeholders::_3,
+    //             std::placeholders::_4,
+    //             std::placeholders::_5));
+    //     m_gpu_rays_connection.push_back(connection);
+
+    //     m_logger->info(
+    //         "LotusimSensorPlugin::PreUpdate: Lidar Sensor entity [{}]
+    //         [{}] ROS2 created", *lidar_iter, sensor_name);
+
+    //     lidar_iter = m_lidar_tbc.erase(lidar_iter);
+    // }
+    return;
+}
+
+void LotusimSensorPlugin::OnNewLidarFrame(
+    const gz::sim::Entity &_entity,
+    const float *_scan,
+    unsigned int _width,
+    unsigned int _height,
+    unsigned int _channels,
+    const std::string & /*_format*/)
+{
+    sensor_msgs::msg::PointCloud2 msg;
+    msg.header = common::generateHeaderMessage(m_current_time);
+    msg.header.frame_id = m_lidar_name[_entity];  // or proper TF frame
+
+    msg.height = _height;
+    msg.width = _width;
+
+    msg.fields.resize(3);
+    msg.fields[0].name = "x";
+    msg.fields[0].offset = 0;
+    msg.fields[0].datatype = sensor_msgs::msg::PointField::FLOAT32;
+    msg.fields[0].count = 1;
+
+    msg.fields[1].name = "y";
+    msg.fields[1].offset = 4;
+    msg.fields[1].datatype = sensor_msgs::msg::PointField::FLOAT32;
+    msg.fields[1].count = 1;
+
+    msg.fields[2].name = "z";
+    msg.fields[2].offset = 8;
+    msg.fields[2].datatype = sensor_msgs::msg::PointField::FLOAT32;
+    msg.fields[2].count = 1;
+
+    msg.is_bigendian = false;
+
+    msg.point_step = _channels * sizeof(float);
+    msg.row_step = msg.point_step * _width;
+
+    msg.is_dense = true;
+
+    size_t total_bytes = _width * _height * _channels * sizeof(float);
+    msg.data.resize(total_bytes);
+    memcpy(msg.data.data(), _scan, total_bytes);
+
+    m_lidar_pub_mapping[_entity]->publish(msg);
+}
+
+void LotusimSensorPlugin::PostUpdate(
+    const gz::sim::UpdateInfo &_info,
+    const gz::sim::EntityComponentManager &_ecm)
+{
+    // TODO
+    // Temporary measure to handle the lidar publish ros2 pointcloud
+    // Need to optimised too.
+    // The m_ecm held is shit
+    // _ecm.EachNew<gz::sim::components::Sensor, gz::sim::components::GpuLidar>(
+    //     [this](
+    //         const gz::sim::Entity &_entity,
+    //         const gz::sim::components::Sensor *_sensor,
+    //         const gz::sim::components::GpuLidar *_gpuLidar) -> bool {
+    //         m_lidar_tbc.push_back(_entity);
+    //         return true;
+    //     });
+
     _ecm.EachNew<
         gz::sim::components::CustomSensor,
         gz::sim::components::ParentEntity>(std::bind(
         &LotusimSensorPlugin::EachNew,
         this,
-        &_ecm,
         std::placeholders::_1,
         std::placeholders::_2));
 
@@ -49,21 +180,18 @@ void LotusimSensorPlugin::PreUpdate(
             }
             return true;
         });
-}
 
-void LotusimSensorPlugin::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
-{
     // Only update and publish if not paused.
     if (!_info.paused) {
+        m_current_time = _info.simTime;
         for (auto &[entity, sensor] : m_entity_sensor_map) {
             auto world_pos = gz::sim::worldPose(entity, _ecm);
-            sensor->NewPosition(world_pos.Pos());
+            sensor->Position(world_pos.Pos());
+            sensor->Orientation(world_pos.Rot());
 
             auto lat_long = gz::sim::sphericalCoordinates(entity, _ecm);
             if (lat_long) {
-                sensor->NewLatLong(lat_long.value());
+                sensor->LatLong(lat_long.value());
             }
 
             sensor->Update(_info, _ecm);
@@ -72,7 +200,6 @@ void LotusimSensorPlugin::PostUpdate(
 }
 
 bool LotusimSensorPlugin::EachNew(
-    gz::sim::EntityComponentManager *_ecm,
     const gz::sim::Entity &_entity,
     const gz::sim::components::CustomSensor *_custom)
 {
@@ -80,14 +207,14 @@ bool LotusimSensorPlugin::EachNew(
         std::string model_name;
         gz::sim::Entity model_entity;
 
-        auto model_name_opt = lotusim::common::getModelName(*_ecm, _entity);
+        auto model_name_opt = lotusim::common::getModelName(*m_ecm, _entity);
         if (model_name_opt) {
             model_entity = model_name_opt->first;
             model_name = model_name_opt->second;
         }
 
         auto sensor_name =
-            _ecm->Component<gz::sim::components::Name>(_entity)->Data();
+            m_ecm->Component<gz::sim::components::Name>(_entity)->Data();
 
         sdf::Sensor data = _custom->Data();
         auto type = gz::sensors::customType(data);
@@ -106,7 +233,7 @@ bool LotusimSensorPlugin::EachNew(
                 sensor_name);
         } else if (type == "ais") {
             m_logger->info(
-                "LotusimSensorPlugin::ais: Creating sensor [{}/{}]",
+                "LotusimSensorPlugin::AIS: Creating sensor [{}/{}]",
                 model_name,
                 sensor_name);
             sensor = CreateSensor<AISSensor>(
@@ -115,18 +242,30 @@ bool LotusimSensorPlugin::EachNew(
                 _entity,
                 model_name,
                 sensor_name);
+        } else if (type == "imu") {
+            m_logger->info(
+                "LotusimSensorPlugin::IMU: Creating sensor [{}/{}]",
+                model_name,
+                sensor_name);
+            sensor = CreateSensor<IMUSensor>(
+                data,
+                model_entity,
+                _entity,
+                model_name,
+                sensor_name);
+
         } else {
             return true;
         }
-        auto child_link = _ecm->ChildrenByComponents(
+        auto child_link = m_ecm->ChildrenByComponents(
             model_entity,
             gz::sim::components::Link());
         for (auto &&link : child_link) {
-            auto name_opt = _ecm->Component<gz::sim::components::Name>(link);
+            auto name_opt = m_ecm->Component<gz::sim::components::Name>(link);
             if (name_opt &&
                 name_opt->Data().find("base_link") != std::string::npos) {
                 gz::sim::Link _link(link);
-                _link.EnableVelocityChecks(*_ecm);
+                _link.EnableVelocityChecks(*m_ecm);
                 break;
             }
         }

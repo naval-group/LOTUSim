@@ -81,15 +81,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
-
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-) 
-
-# link_directories(
-#   ${CMAKE_INSTALL_FULL_LIBDIR}
-# )
+find_package(geographic_msgs REQUIRED)
 
 #============================================================================
 # Create and install project files
@@ -100,25 +92,24 @@ add_library(entity_manager_plugin
   src/entity_manager.cpp
 )
 target_include_directories(entity_manager_plugin PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(entity_manager_plugin
   gz-sim8::gz-sim8
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  lotusim_common::lotusim_common
 )
 ament_target_dependencies(entity_manager_plugin 
   rclcpp
   rclcpp_action
   ament_cmake
   lotusim_msgs
+  lotusim_common
+  geographic_msgs
 )
-
 ament_export_targets(
   export_entity_manager_plugin
 )
-
 ament_export_dependencies(
   rclcpp
   ament_cmake
@@ -151,7 +142,6 @@ install(
   PATTERN ".~"
   EXCLUDE
 )
-
 
 ament_package()
 
