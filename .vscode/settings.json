@@ -83,6 +83,5 @@
         "*.ipp": "cpp",
         "hash_map": "cpp",
         "hash_set": "cpp"
-    },
-    "cmake.sourceDirectory": "/home/malcom/lotusim_ws/src/lotusim/systems/sensors/lotusim_sensor_base"
+    }
 }
