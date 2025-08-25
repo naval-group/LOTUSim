@@ -285,6 +285,8 @@ rclcpp_action::GoalResponse EntityManager::handleMASCmdArrayGoal(
     const rclcpp_action::GoalUUID &uuid,
     std::shared_ptr<const lotusim_msgs::action::MASCmdArray::Goal> goal)
 {
+    m_logger->info(
+        "EntityManager::handleMASCmdArrayGoal: Received MASCmdArray.");
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
@@ -306,6 +308,7 @@ rclcpp_action::GoalResponse EntityManager::handleMASCmdGoal(
     const rclcpp_action::GoalUUID &uuid,
     std::shared_ptr<const lotusim_msgs::action::MASCmd::Goal> goal)
 {
+    m_logger->info("EntityManager::handleMASCmdGoal: Received MASCmd.");
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 

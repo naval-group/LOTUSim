@@ -71,8 +71,6 @@ public:
 
     void Orientation(const gz::math::Quaterniond &_quad);
 
-    void NewLatLong(const gz::math::Vector3d &_pos);
-
 protected:
     virtual bool CustomSensorLoad(const sdf::Sensor &_sdf) = 0;
 
