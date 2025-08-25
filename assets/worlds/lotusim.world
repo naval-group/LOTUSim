@@ -40,11 +40,19 @@
 
         <plugin filename="physics_interface_plugin"
             name="lotusim::gazebo::PhysicsInterfacePlugin">
-</plugin>
+        </plugin>
 
         <plugin filename="entity_manager_plugin"
             name="lotusim::gazebo::EntityManager">
-</plugin>
+        </plugin>
+
+        <plugin filename="physics_interface_plugin"
+            name="lotusim::gazebo::PhysicsInterfacePlugin">
+        </plugin>
+
+        <plugin filename="entity_manager_plugin"
+            name="lotusim::gazebo::EntityManager">
+        </plugin>
 
         <!-- The rendering application interface, default to ROS2 connection -->
         <!-- <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
@@ -52,10 +60,10 @@
             <ip>127.0.0.1</ip>
             <udp_port>23457</udp_port>
             <tcp_port>23457</tcp_port>
-        </plugin> -->
+            </plugin> -->
 
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
-</plugin>
+        </plugin>
 
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>ROS2</connection_protocol>
