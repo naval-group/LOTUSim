@@ -1,5 +1,5 @@
-#ifndef __IMU_SENSOR_HPP__
-#define __IMU_SENSOR_HPP__
+#ifndef IMU_SENSOR_HPP
+#define IMU_SENSOR_HPP
 
 #include "gz/sim/components/AngularVelocity.hh"
 #include "gz/sim/components/LinearAcceleration.hh"

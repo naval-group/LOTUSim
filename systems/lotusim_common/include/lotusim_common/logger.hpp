@@ -1,5 +1,5 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
+#ifndef LOTUSIM_LOGGER_HPP_
+#define LOTUSIM_LOGGER_HPP_
 
 #include <spdlog/common.h>
 
@@ -20,10 +20,18 @@ namespace lotusim::logger {
 
 // If lotusim is compiled in debug mode, all debug logs will be triggered.
 #if defined(DEBUG)
-const spdlog::level::level_enum LOG_LEVEL = spdlog::level::trace;
+const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::trace;
 #else
-const spdlog::level::level_enum LOG_LEVEL = spdlog::level::info;
+const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::info;
 #endif
+
+/**
+ * @brief Get log level from environment variable or return default
+ * Supports: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL, OFF
+ * Set via: export LOTUSIM_LOG_LEVEL=DEBUG
+ * @return spdlog::level::level_enum
+ */
+spdlog::level::level_enum getLogLevelFromEnv();
 
 /**
  * @brief Creates both console and file logger object
@@ -59,6 +67,11 @@ std::shared_ptr<spdlog::logger> createBasicFileLogger(
  */
 std::shared_ptr<spdlog::logger> getLogger(const std::string &logger_name);
 
+/**
+ * @brief Create a Or Get Log Folder Path object
+ *
+ * @return std::string
+ */
 std::string createOrGetLogFolderPath();
 
 }  // namespace lotusim::logger
