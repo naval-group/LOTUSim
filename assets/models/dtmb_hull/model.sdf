@@ -3,17 +3,11 @@
     xmlns:experimental="http://sdformat.org/schemas/experimental">
     <model name='dtmb'>
         <link name="base_link">
-            <visual name="visual">
-                <geometry>
-                    <mesh>
-                        <uri>model://dtmb_hull/dtmb.stl</uri>
-                    </mesh>
-                </geometry>
-            </visual>
+
             <collision name="body_collision">
                 <geometry>
                     <mesh>
-                        <uri>model://dtmb_hull/dtmb.stl</uri>
+                        <uri>model://dtmb_hull/meshes/dtmb.stl</uri>
                         <scale>1 1 1</scale>
                     </mesh>
                 </geometry>
@@ -26,42 +20,10 @@
                 <always_on>1</always_on>
                 <update_rate>100</update_rate>
             </sensor>
-            <sensor name="pressure_alt" type="custom" gz:type="subsea_pressure">
-                <update_rate>1</update_rate>
-                <noise_sigma>0.01</noise_sigma>
-                <noise_amplitude>0.01</noise_amplitude>
-            </sensor>
             <sensor name="ais" type="custom" gz:type="ais">
                 <update_rate>1</update_rate>
                 <noise_sigma>0.01</noise_sigma>
                 <noise_amplitude>0.01</noise_amplitude>
-            </sensor>
-            <sensor name='gpu_lidar' type='gpu_lidar'>
-                <topic>lidar</topic>
-                <update_rate>10</update_rate>
-                <lidar>
-                    <scan>
-                        <horizontal>
-                            <samples>640</samples>
-                            <resolution>1</resolution>
-                            <min_angle>-1.396263</min_angle>
-                            <max_angle>1.396263</max_angle>
-                        </horizontal>
-                        <vertical>
-                            <samples>16</samples>
-                            <resolution>1</resolution>
-                            <min_angle>-0.261799</min_angle>
-                            <max_angle>0.261799</max_angle>
-                        </vertical>
-                    </scan>
-                    <range>
-                        <min>0.08</min>
-                        <max>10.0</max>
-                        <resolution>0.01</resolution>
-                    </range>
-                </lidar>
-                <alwaysOn>1</alwaysOn>
-                <visualize>true</visualize>
             </sensor>
         </link>
     </model>

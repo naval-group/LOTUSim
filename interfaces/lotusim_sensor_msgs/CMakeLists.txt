@@ -11,6 +11,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AIS.msg"
   "msg/GPS.msg"
   "msg/PressureDepth.msg"
+  "msg/Collision.msg"
+  "msg/Collisions.msg"
   "srv/ActivateSensor.srv"
   
   DEPENDENCIES 

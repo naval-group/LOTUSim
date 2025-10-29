@@ -1,5 +1,4 @@
 #include "lotusim_common/common.hpp"
-
 namespace lotusim::common {
 
 bool pose3Eql(const gz::math::Pose3d &_a, const gz::math::Pose3d &_b)
@@ -65,10 +64,10 @@ std_msgs::msg::Header generateHeaderMessage(
     return msg;
 }
 
-std::optional<std::tuple<double, double>> getXYFromLatLong(
+std::optional<std::tuple<double, double>> XYFromLatLong(
     const gz::sim::EntityComponentManager &_ecm,
     double lat,
-    double longi)
+    double lon)
 {
     gz::math::Angle lat0, lon0;
     gz::sim::Entity worldEntity;
@@ -91,8 +90,33 @@ std::optional<std::tuple<double, double>> getXYFromLatLong(
     sphCoords.SetElevationReference(0);
 
     gz::math::Vector3d xyz =
-        sphCoords.LocalFromSphericalPosition(gz::math::Vector3d{lat, longi, 0});
+        sphCoords.LocalFromSphericalPosition(gz::math::Vector3d{lat, lon, 0});
 
     return std::make_tuple(xyz.X(), xyz.Y());
 }
+
+sdf::ElementPtr getElementCaseInsensitive(
+    sdf::ElementPtr parent,
+    const std::string &name)
+{
+    std::string capitalized = toUpper(name);
+    auto element = parent->GetFirstElement();
+    while (element) {
+        auto element_name = toUpper(element->GetName());
+        if (element_name == capitalized) {
+            return element;
+        }
+        element = element->GetNextElement();
+    }
+    return nullptr;
+}
+
+std::string toUpper(std::string str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+        return std::toupper(c);
+    });
+    return str;
+}
+
 }  // namespace lotusim::common

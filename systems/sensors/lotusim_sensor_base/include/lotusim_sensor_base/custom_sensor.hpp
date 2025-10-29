@@ -1,5 +1,5 @@
-#ifndef __LOTUSIM_CUSTOM_SENSOR_HPP__
-#define __LOTUSIM_CUSTOM_SENSOR_HPP__
+#ifndef LOTUSIM_CUSTOM_SENSOR_HPP
+#define LOTUSIM_CUSTOM_SENSOR_HPP
 
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -37,10 +37,10 @@ public:
     CustomSensor(
         std::shared_ptr<spdlog::logger> logger,
         rclcpp::Node::SharedPtr node,
-        const gz::sim::Entity &vessel_entity,
-        const gz::sim::Entity &sensor_entity,
-        const std::string &parent_name,
-        const std::string &sensor_name);
+        const gz::sim::Entity& vessel_entity,
+        const gz::sim::Entity& sensor_entity,
+        const std::string& parent_name,
+        const std::string& sensor_name);
 
     /// \brief Class destructor
     virtual ~CustomSensor();
@@ -57,25 +57,32 @@ public:
     bool IsOn();
 
     /// \brief Inherited function. Loading the sensor
-    virtual bool Load(const sdf::Sensor &_sdf) override;
+    virtual bool Load(const sdf::Sensor& _sdf) override;
 
     virtual bool Update(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) = 0;
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) = 0;
 
-    bool Update(const std::chrono::steady_clock::duration &_now);
+    bool Update(const std::chrono::steady_clock::duration& _now);
 
-    void Position(const gz::math::Vector3d &_pos);
+    void Position(const gz::math::Vector3d& _pos);
 
-    void LatLong(const gz::math::Vector3d &_pos);
+    void LatLong(const gz::math::Vector3d& _pos);
 
-    void Orientation(const gz::math::Quaterniond &_quad);
+    void Orientation(const gz::math::Quaterniond& _quad);
 
 protected:
-    virtual bool CustomSensorLoad(const sdf::Sensor &_sdf) = 0;
+    virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) = 0;
 
+    /**
+     * @brief Check if it's time to enable measurement or sensor is off
+     *
+     * @param _now
+     * @return true
+     * @return false
+     */
     bool EnableMeasurement(
-        const std::chrono::steady_clock::duration &_now) const;
+        const std::chrono::steady_clock::duration& _now) const;
 
 private:
     bool ChangeSensorState(
@@ -137,4 +144,4 @@ protected:
 
 }  // namespace lotusim::sensor
 
-#endif  // __ROS_BASE_PLUGIN_HH__
+#endif  // ROS_BASE_PLUGIN_HH

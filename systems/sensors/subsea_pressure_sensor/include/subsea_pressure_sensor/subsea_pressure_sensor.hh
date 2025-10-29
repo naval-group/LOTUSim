@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
-#define __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
+#ifndef SUBSEA_PRESSURE_ROS_PLUGIN_HH__
+    #define __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
 
-#include "lotusim_common/common.hpp"
-#include "lotusim_sensor_base/custom_sensor.hpp"
-#include "lotusim_sensor_msgs/msg/pressure_depth.hpp"
+    #include "lotusim_common/common.hpp"
+    #include "lotusim_sensor_base/custom_sensor.hpp"
+    #include "lotusim_sensor_msgs/msg/pressure_depth.hpp"
 
 namespace lotusim::sensor {
 class SubseaPressureSensor : public CustomSensor {

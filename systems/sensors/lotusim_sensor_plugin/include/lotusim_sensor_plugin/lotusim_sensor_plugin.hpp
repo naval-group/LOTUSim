@@ -1,6 +1,8 @@
 
-#ifndef __LOTUSIM_SENSOR_PLUGIN_HH_
-#define __LOTUSIM_SENSOR_PLUGIN_HH_
+#ifndef LOTUSIM_SENSOR_PLUGIN_HH_
+#define LOTUSIM_SENSOR_PLUGIN_HH_
+
+#include <gz/msgs/contacts.pb.h>
 
 #include <gz/plugin/Register.hh>
 #include <gz/rendering/RenderEngine.hh>
@@ -27,8 +29,10 @@
 #include "ais_sensor/ais_sensor.hpp"
 #include "imu_sensor/imu_sensor.hpp"
 #include "lotusim_common/common.hpp"
+#include "lotusim_common/entity_group.hpp"
 #include "lotusim_common/logger.hpp"
 #include "lotusim_sensor_base/custom_sensor.hpp"
+#include "lotusim_sensor_msgs/msg/collisions.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
@@ -49,27 +53,31 @@ public:
     LotusimSensorPlugin();
 
     void Configure(
-        const gz::sim::Entity &_entity,
-        const std::shared_ptr<const sdf::Element> &_sdf,
-        gz::sim::EntityComponentManager &_ecm,
-        gz::sim::EventManager &_eventMgr) override;
+        const gz::sim::Entity& _entity,
+        const std::shared_ptr<const sdf::Element>& _sdf,
+        gz::sim::EntityComponentManager& _ecm,
+        gz::sim::EventManager& _eventMgr) override;
 
     void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) final;
+        const gz::sim::UpdateInfo& _info,
+        gz::sim::EntityComponentManager& _ecm) final;
+
+    void Update(
+        const gz::sim::UpdateInfo&,
+        gz::sim::EntityComponentManager& _ecm);
 
     void PostUpdate(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) final;
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) final;
 
 private:
     template <typename SensorType>
     std::unique_ptr<SensorType> CreateSensor(
-        const sdf::Sensor &_sdf,
-        const gz::sim::Entity &vessel_entity,
-        const gz::sim::Entity &sensor_entity,
-        const std::string &parent_name,
-        const std::string &sensor_name)
+        const sdf::Sensor& _sdf,
+        const gz::sim::Entity& vessel_entity,
+        const gz::sim::Entity& sensor_entity,
+        const std::string& parent_name,
+        const std::string& sensor_name)
     {
         auto sensor = std::make_unique<SensorType>(
             m_logger,
@@ -101,22 +109,29 @@ private:
     }
 
     bool EachNew(
-        const gz::sim::Entity &_entity,
-        const gz::sim::components::CustomSensor *_custom);
+        const gz::sim::Entity& _entity,
+        const gz::sim::components::CustomSensor* _custom);
 
     void OnNewLidarFrame(
-        const gz::sim::Entity &_entity,
-        const float *_scan,
+        const gz::sim::Entity& _entity,
+        const float* _scan,
         unsigned int _width,
         unsigned int _height,
         unsigned int _channels,
-        const std::string & /*_format*/);
+        const std::string& /*_format*/);
+
+    /**
+     * @brief Collision callback from Gazebo transport
+     *
+     * @param _msg Contacts message
+     */
+    void collisionCB(const gz::msgs::Contacts& _msg);
 
 private:
     std::string m_world_name;
-    gz::rendering::RenderEngine *m_engine;
+    gz::rendering::RenderEngine* m_engine;
     gz::rendering::ScenePtr m_scene;
-    gz::sim::EntityComponentManager *m_ecm;
+    gz::sim::EntityComponentManager* m_ecm;
 
     /**
      * @brief Spdlogger
@@ -142,6 +157,13 @@ private:
     std::list<gz::sim::Entity> m_lidar_tbc;
     std::shared_ptr<gz::rendering::GpuRays> gpuLidar;
     std::unordered_map<gz::sim::Entity, std::string> m_lidar_name;
+
+    /// Temporary measure for collision handling
+    std::mutex m_collision_mutex;
+    gz::transport::Node m_gz_node;
+    lotusim::common::EntityGraph m_collision_graph;
+    rclcpp::Publisher<lotusim_sensor_msgs::msg::Collisions>::SharedPtr
+        m_collision_pub;
 };
 
 }  // namespace lotusim::sensor

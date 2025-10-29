@@ -1,5 +1,5 @@
-#ifndef __AIS_SENSOR_HPP__
-#define __AIS_SENSOR_HPP__
+#ifndef AIS_SENSOR_HPP
+#define AIS_SENSOR_HPP
 
 #include <cmath>
 #include <gz/sim/Link.hh>

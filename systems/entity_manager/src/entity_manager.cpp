@@ -1,4 +1,4 @@
-#include "entity_manager.hpp"
+#include "entity_manager/entity_manager.hpp"
 
 namespace lotusim::gazebo {
 
@@ -18,10 +18,10 @@ EntityManager::~EntityManager()
 }
 
 void EntityManager::Configure(
-    const gz::sim::Entity &_entity,
-    const std::shared_ptr<const sdf::Element> &_sdf,
-    gz::sim::EntityComponentManager &_ecm,
-    gz::sim::EventManager &_eventMgr)
+    const gz::sim::Entity& _entity,
+    const std::shared_ptr<const sdf::Element>& _sdf,
+    gz::sim::EntityComponentManager& _ecm,
+    gz::sim::EventManager& _eventMgr)
 {
     m_world_entity = _entity;
     m_world_name = lotusim::common::getWorldName(_ecm);
@@ -33,6 +33,10 @@ void EntityManager::Configure(
         m_world_name + "_entity_managerment_plugin.txt");
     m_ros_node =
         rclcpp::Node::make_shared("gz_entity_management_node", m_world_name);
+
+    m_callback_group.push_back(m_ros_node->create_callback_group(
+        rclcpp::CallbackGroupType::MutuallyExclusive));
+
     m_pose_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
             "poses",
@@ -61,10 +65,10 @@ void EntityManager::Configure(
             rcl_action_server_get_default_options(),
             m_callback_group.back());
 
-    // Custom QOS for individual MAS cmd. Queue store up to 100.
+    // Custom QOS for individual MAS cmd. Queue store up to 20.
     const rmw_qos_profile_t custom_profile = {
         RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-        100,
+        20,
         RMW_QOS_POLICY_RELIABILITY_RELIABLE,
         RMW_QOS_POLICY_DURABILITY_VOLATILE,
         RMW_QOS_DEADLINE_DEFAULT,
@@ -114,20 +118,24 @@ void EntityManager::Configure(
 }
 
 void EntityManager::PreUpdate(
-    const gz::sim::UpdateInfo &_info,
-    gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo& _info,
+    gz::sim::EntityComponentManager& _ecm)
 {
     // Handle MAS Array cmd
     {
-        std::lock_guard<std::mutex> lock(m_cmds_array_mutex);
+        std::vector<std::shared_ptr<GoalHandleMASCmdArray>> tmp_vec;
+        {
+            std::lock_guard<std::mutex> lock(m_cmds_array_mutex);
+            tmp_vec = m_mas_cmds_array;
+            m_mas_cmds_array.clear();
+        }
         lotusim::common::shuffleOrder<std::shared_ptr<GoalHandleMASCmdArray>>(
-            m_mas_cmds_array,
+            tmp_vec,
             lotusim::common::RandomisedType::RANDOM);
-        while (!m_mas_cmds_array.empty()) {
-            auto action_handle = m_mas_cmds_array.back();
+        for (auto&& action_handle : tmp_vec) {
             auto result =
                 std::make_shared<lotusim_msgs::action::MASCmdArray::Result>();
-            for (auto &&cmd : action_handle->get_goal()->cmd) {
+            for (auto&& cmd : action_handle->get_goal()->cmd) {
                 auto res = handleMASCmd(cmd);
                 result->result.push_back(res->result);
                 result->name.push_back(res->name);
@@ -143,18 +151,23 @@ void EntityManager::PreUpdate(
                 m_logger->error(
                     "EntityManager::PreUpdate:ERROR Unknown error. Unable to reply action. Action dropped");
             }
-            m_mas_cmds_array.pop_back();
         }
     }
 
     // Handle mas cmds
     {
-        std::lock_guard<std::mutex> lock(m_cmds_mutex);
-        lotusim::common::shuffleOrder<std::shared_ptr<GoalHandleMASCmd>>(
-            m_mas_cmds,
+        std::vector<std::shared_ptr<GoalHandleMASCmd>> tmp_vec;
+        {
+            std::lock_guard<std::mutex> lock(m_cmds_mutex);
+            tmp_vec = m_mas_cmds;
+            m_mas_cmds.clear();
+        }
+
+        lotusim::common::shuffleOrder(
+            tmp_vec,
             lotusim::common::RandomisedType::RANDOM);
-        while (!m_mas_cmds.empty()) {
-            auto action_handle = m_mas_cmds.back();
+
+        for (auto&& action_handle : tmp_vec) {
             auto res = handleMASCmd(action_handle->get_goal()->cmd);
             try {
                 action_handle->succeed(res);
@@ -166,14 +179,13 @@ void EntityManager::PreUpdate(
                 m_logger->error(
                     "EntityManager::PreUpdate:ERROR Unknown error. Unable to reply action. Action dropped");
             }
-            m_mas_cmds.pop_back();
         }
     }
     customUserPreUpdate();
 }
 
 std::shared_ptr<lotusim_msgs::action::MASCmd::Result>
-EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd &cmd)
+EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
 {
     auto result = std::make_shared<lotusim_msgs::action::MASCmd::Result>();
     try {
@@ -234,16 +246,16 @@ EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd &cmd)
     return result;
 }
 
-void EntityManager::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+void EntityManager::Update(
+    const gz::sim::UpdateInfo& _info,
+    gz::sim::EntityComponentManager& _ecm)
 {
     // Seperating MAS cmd handle and other plugins as MAS cmd may fail to run
     _ecm.EachNew<
         gz::sim::components::ModelSdf>([this](
-                                           const gz::sim::Entity &_entity,
-                                           const gz::sim::components::ModelSdf
-                                               *_model) {
+                                           const gz::sim::Entity& _entity,
+                                           const gz::sim::components::ModelSdf*
+                                               _model) {
         auto name_opt = m_ecm->Component<gz::sim::components::Name>(_entity);
         std::string vessel_name;
         if (name_opt) {
@@ -259,13 +271,26 @@ void EntityManager::PostUpdate(
         m_vessels_entities[vessel_name] = _entity;
         m_vessels_names[_entity] = vessel_name;
 
+        // Making the base_link in the model report velocity
+        auto child_link =
+            m_ecm->ChildrenByComponents(_entity, gz::sim::components::Link());
+        for (auto&& link : child_link) {
+            auto name_opt = m_ecm->Component<gz::sim::components::Name>(link);
+            if (name_opt &&
+                name_opt->Data().find("base_link") != std::string::npos) {
+                auto base_link = link;
+                gz::sim::Link _link(base_link);
+                _link.EnableVelocityChecks(*m_ecm);
+                break;
+            }
+        }
         return true;
     });
 
     _ecm.EachRemoved<gz::sim::components::ModelSdf>(
         [this](
-            const gz::sim::Entity &_entity,
-            const gz::sim::components::ModelSdf *_model) {
+            const gz::sim::Entity& _entity,
+            const gz::sim::components::ModelSdf* _model) {
             auto name_opt =
                 m_ecm->Component<gz::sim::components::Name>(_entity);
             std::string vessel_name;
@@ -276,13 +301,17 @@ void EntityManager::PostUpdate(
             m_vessels_names.erase(_entity);
             return true;
         });
-
+}
+void EntityManager::PostUpdate(
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager& _ecm)
+{
     publishPose(_info, _ecm);
     customUserPostUpdate();
 }
 
 rclcpp_action::GoalResponse EntityManager::handleMASCmdArrayGoal(
-    const rclcpp_action::GoalUUID &uuid,
+    const rclcpp_action::GoalUUID& uuid,
     std::shared_ptr<const lotusim_msgs::action::MASCmdArray::Goal> goal)
 {
     m_logger->info(
@@ -293,7 +322,7 @@ rclcpp_action::GoalResponse EntityManager::handleMASCmdArrayGoal(
 rclcpp_action::CancelResponse EntityManager::handleMASCmdArrayCancel(
     const std::shared_ptr<GoalHandleMASCmdArray> goal_handle)
 {
-    // Dont allow cancel
+    // Not allowed to cancel for now
     return rclcpp_action::CancelResponse::REJECT;
 }
 
@@ -305,7 +334,7 @@ void EntityManager::handleMASCmdArrayAccepted(
 }
 
 rclcpp_action::GoalResponse EntityManager::handleMASCmdGoal(
-    const rclcpp_action::GoalUUID &uuid,
+    const rclcpp_action::GoalUUID& uuid,
     std::shared_ptr<const lotusim_msgs::action::MASCmd::Goal> goal)
 {
     m_logger->info("EntityManager::handleMASCmdGoal: Received MASCmd.");
@@ -315,7 +344,7 @@ rclcpp_action::GoalResponse EntityManager::handleMASCmdGoal(
 rclcpp_action::CancelResponse EntityManager::handleMASCmdCancel(
     const std::shared_ptr<GoalHandleMASCmd> goal_handle)
 {
-    // Dont allow cancel
+    // Not allowed to cancel for now
     return rclcpp_action::CancelResponse::REJECT;
 }
 
@@ -327,7 +356,7 @@ void EntityManager::handleMASCmdAccepted(
 }
 
 void EntityManager::customUserConfiguration(
-    const std::shared_ptr<const sdf::Element> &_sdf)
+    const std::shared_ptr<const sdf::Element>& _sdf)
 {
     return;
 }
@@ -342,18 +371,18 @@ void EntityManager::customUserPostUpdate()
     return;
 }
 
-void EntityManager::customUserAddEntity(const lotusim_msgs::msg::MASCmd &msg)
+void EntityManager::customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
     return;
 }
 
-void EntityManager::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd &msg)
+void EntityManager::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
     return;
 }
 
 std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
-    const lotusim_msgs::msg::MASCmd &msg)
+    const lotusim_msgs::msg::MASCmd& msg)
 {
     sdf::Root root;
     sdf::Errors errors;
@@ -366,7 +395,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
         errors = root.LoadSdfString(msg.sdf_string);
     } else {
         // Combining the lotus param into the sdf
-        const char *asset_path = std::getenv("LOTUSIM_MODELS_PATH");
+        const char* asset_path = std::getenv("LOTUSIM_MODELS_PATH");
         if (!asset_path) {
             m_logger->error(
                 "EntityManager::addEntity: Environment variable LOTUSIM_MODELS_PATH is not set. Please set and restart lotusim.");
@@ -384,14 +413,14 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
                 return std::nullopt;
             }
 
-            tinyxml2::XMLElement *sdfElem = sdfDoc.FirstChildElement("sdf");
+            tinyxml2::XMLElement* sdfElem = sdfDoc.FirstChildElement("sdf");
             if (!sdfElem) {
                 m_logger->error(
                     "EntityManager::addEntity: No <sdf> element found.");
                 return std::nullopt;
             }
 
-            tinyxml2::XMLElement *modelElem =
+            tinyxml2::XMLElement* modelElem =
                 sdfElem->FirstChildElement("model");
             if (!modelElem) {
                 m_logger->error(
@@ -401,7 +430,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
             tinyxml2::XMLDocument lotusDoc;
             lotusDoc.Parse(msg.sdf_string.c_str());
 
-            tinyxml2::XMLElement *lotusElem =
+            tinyxml2::XMLElement* lotusElem =
                 lotusDoc.FirstChildElement("lotus_param");
             if (!lotusElem) {
                 m_logger->error(
@@ -409,8 +438,8 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
                 return std::nullopt;
             }
 
-            tinyxml2::XMLElement *lotusClone =
-                static_cast<tinyxml2::XMLElement *>(
+            tinyxml2::XMLElement* lotusClone =
+                static_cast<tinyxml2::XMLElement*>(
                     lotusElem->DeepClone(&sdfDoc));
             modelElem->InsertEndChild(lotusClone);
 
@@ -425,7 +454,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
             if (!errors.empty()) {
                 m_logger->error(
                     "EntityManager::addEntity: Errors when loading modified SDF into sdf::Root:");
-                for (const auto &err : errors)
+                for (const auto& err : errors)
                     m_logger->error(err.Message());
                 return std::nullopt;
             }
@@ -433,7 +462,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
     }
 
     if (!errors.empty()) {
-        for (auto &&err : errors) {
+        for (auto&& err : errors) {
             m_logger->error("EntityManager::addEntity: {}", err.Message());
         }
         return std::nullopt;
@@ -480,7 +509,6 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
     }
     // Set parent
     m_creator->SetParent(entity, m_world_entity);
-
     m_logger->info(
         "EntityManager::addEntity: Created entity [{}] named [{}]",
         entity,
@@ -491,11 +519,10 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
     new_msg.entity = entity;
     new_msg.cmd_type = lotusim_msgs::msg::MASCmd::MOVE_CMD;
     moveEntity(new_msg);
-
     return std::make_tuple(entity, desiredName);
 }
 
-bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd &msg)
+bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
     gz::sim::Entity vessel_entity;
     if (msg.entity) {
@@ -520,7 +547,7 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd &msg)
             msg.vessel_position.orientation.z);
 
         if (msg.geo_point.latitude != 0 || msg.geo_point.longitude != 0) {
-            auto xy_opt = lotusim::common::getXYFromLatLong(
+            auto xy_opt = lotusim::common::XYFromLatLong(
                 *m_ecm,
                 msg.geo_point.latitude,
                 msg.geo_point.longitude);
@@ -550,7 +577,7 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd &msg)
     return true;
 }
 
-bool EntityManager::deleteEntity(const lotusim_msgs::msg::MASCmd &msg)
+bool EntityManager::deleteEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
     gz::sim::Entity vessel_entity;
     try {
@@ -573,14 +600,13 @@ bool EntityManager::deleteEntity(const lotusim_msgs::msg::MASCmd &msg)
             msg.entity);
         return false;
     }
-
     m_creator->RequestRemoveEntity(vessel_entity);
     return true;
 }
 
 void EntityManager::publishPose(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager& _ecm)
 {
     lotusim_msgs::msg::VesselPositionArray array_msg;
     auto simTimeNs =
@@ -591,7 +617,7 @@ void EntityManager::publishPose(
         static_cast<uint32_t>(simTimeNs % 1000000000);
     array_msg.header.frame_id = "world";
 
-    for (auto &&vessel_map : m_vessels_names) {
+    for (auto&& vessel_map : m_vessels_names) {
         auto entity = vessel_map.first;
         auto latLonEle = sphericalCoordinates(entity, _ecm);
         auto pose = worldPose(entity, _ecm);
@@ -627,4 +653,5 @@ GZ_ADD_PLUGIN(
     gz::sim::System,
     lotusim::gazebo::EntityManager::ISystemConfigure,
     lotusim::gazebo::EntityManager::ISystemPreUpdate,
+    lotusim::gazebo::EntityManager::ISystemUpdate,
     lotusim::gazebo::EntityManager::ISystemPostUpdate)

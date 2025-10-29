@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="{name}">
+    <!-- Base -->
+    <link name="base_link">
+      <collision name="base_collision">
+        <geometry>
+          <mesh>
+            <uri>model://wamv/meshes/WAM-V-Base.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <sensor name="gpu_lidar" type="gpu_lidar">
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>1800</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.1459</min_angle>
+              <max_angle>3.1459</max_angle>
+            </horizontal>
+            <vertical>
+              <samples>16</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.261799</min_angle>
+              <max_angle>0.261799</max_angle>
+            </vertical>
+          </scan>
+          <range>
+            <min>0.05</min>
+            <max>100</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </lidar>
+        <visualize>true</visualize>
+        <update_rate>10</update_rate>
+        <topic>/{world_name}/{name}/lidar</topic>
+      </sensor>
+      <sensor name="forward_sonar" type="gpu_ray">
+        <pose>0 0 0 0 0 0</pose>
+        <always_on>true</always_on>
+        <update_rate>10</update_rate>
+        <visualize>true</visualize>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>10</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.5</min_angle>
+              <max_angle>0.5</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.1</min>
+            <max>50</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+        <topic>/{world_name}/{name}/sonar/scan</topic>
+      </sensor>
+    </link>
+  </model>
+</sdf>

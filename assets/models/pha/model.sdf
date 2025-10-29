@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+    <model name="{name}">
+        <link name="base_link">
+            <collision name="collision">
+                <geometry>
+                    <mesh>
+                        <uri>model://pha/meshes/pha.dae</uri>
+                        <scale>10 10 10</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+        </link>
+    </model>
+</sdf>

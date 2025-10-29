@@ -85,7 +85,7 @@
                 </render_interface>
                 <physics_engine_interface>
                     <surface>
-                        <ConnectionType>XDynWebSocket</ConnectionType>
+                        <connection_type>XDynWebSocket</connection_type>
                         <uri>ws://127.0.0.1:12345</uri>
                         <thrusters>
                             <thursters1>PSPropRudd</thursters1>

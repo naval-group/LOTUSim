@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+    <model name="{name}">
+        <link name="base_link">
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://fremm/meshes/fremm.dae</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+    </model>
+</sdf>

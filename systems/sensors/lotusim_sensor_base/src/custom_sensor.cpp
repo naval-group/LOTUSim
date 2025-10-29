@@ -5,10 +5,10 @@ namespace lotusim::sensor {
 CustomSensor::CustomSensor(
     std::shared_ptr<spdlog::logger> logger,
     rclcpp::Node::SharedPtr node,
-    const gz::sim::Entity &vessel_entity,
-    const gz::sim::Entity &sensor_entity,
-    const std::string &parent_name,
-    const std::string &sensor_name)
+    const gz::sim::Entity& vessel_entity,
+    const gz::sim::Entity& sensor_entity,
+    const std::string& parent_name,
+    const std::string& sensor_name)
     : m_logger(logger)
     , m_ros_node(node)
     , m_vessel_entity(vessel_entity)
@@ -24,7 +24,7 @@ CustomSensor::CustomSensor(
 
 CustomSensor::~CustomSensor() {}
 
-bool CustomSensor::Load(const sdf::Sensor &_sdf)
+bool CustomSensor::Load(const sdf::Sensor& _sdf)
 {
     gz::sensors::Sensor::Load(_sdf);
 
@@ -100,27 +100,27 @@ bool CustomSensor::IsOn()
     return m_is_on;
 }
 
-bool CustomSensor::Update(const std::chrono::steady_clock::duration &_now) {}
+bool CustomSensor::Update(const std::chrono::steady_clock::duration& _now) {}
 
-void CustomSensor::Position(const gz::math::Vector3d &_pos)
+void CustomSensor::Position(const gz::math::Vector3d& _pos)
 {
     // TODO: to update lat long
     m_position = _pos;
 }
 
-void CustomSensor::LatLong(const gz::math::Vector3d &_pos)
+void CustomSensor::LatLong(const gz::math::Vector3d& _pos)
 {
     // TODO: to update position
     m_lat_long = _pos;
 }
 
-void CustomSensor::Orientation(const gz::math::Quaterniond &_quad)
+void CustomSensor::Orientation(const gz::math::Quaterniond& _quad)
 {
     m_quad = _quad;
 }
 
 bool CustomSensor::EnableMeasurement(
-    const std::chrono::steady_clock::duration &_now) const
+    const std::chrono::steady_clock::duration& _now) const
 {
     double dt = std::chrono::duration_cast<std::chrono::seconds>(
                     _now - m_last_measurement_time)
