@@ -279,8 +279,19 @@ XdynWebsocket::getNewState(
 
     data["requested_output"] = json::array();
     std::string msg_string = data.dump();
+
     if (send(_entity, msg_string)) {
-        return std::make_tuple(m_saved_state[_entity], DomainType::Surface);
+        double z = data["states"].back()["z"].get<double>() * (-1);
+        // Currently, xdyn assumes hydrodynamics as layers
+        if (z >= 10.0) {
+            return std::make_tuple(m_saved_state[_entity], DomainType::Aerial);
+        } else if (z <= -10.0) {
+            return std::make_tuple(
+                m_saved_state[_entity],
+                DomainType::Underwater);
+        } else {
+            return std::make_tuple(m_saved_state[_entity], DomainType::Surface);
+        }
     }
     return std::nullopt;
 }
