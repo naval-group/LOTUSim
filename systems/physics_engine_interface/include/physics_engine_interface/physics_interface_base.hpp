@@ -145,7 +145,8 @@ public:
     {
         if (m_engine_logger) {
             std::string excelRow = fmt::format(
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                DomainTypeToStringMap[domain],
                 state.time,
                 state.entity,
                 vessel_name,

@@ -23,10 +23,9 @@ void PhysicsInterfacePlugin::Configure(
     const gz::sim::Entity& _entity,
     const std::shared_ptr<const sdf::Element>& _sdf,
     gz::sim::EntityComponentManager& _ecm,
-    gz::sim::EventManager& _eventMgr)
+    gz::sim::EventManager&)
 {
     m_entity = _entity;
-    auto sdfPtr = const_cast<sdf::Element*>(_sdf.get());
 
     m_world_name = lotusim::common::getWorldName(_ecm);
     m_logger = logger::createConsoleAndFileLogger(
@@ -52,6 +51,7 @@ void PhysicsInterfacePlugin::Configure(
                         "PhysicsInterfacePlugin::Topic lotusim_vessel_cmd callback failed. No known entity: {}, {}",
                         msg.entity,
                         msg.vessel_name);
+                    continue;
                 }
                 (*m_vessels_cmd_map_ptr)[entity] = std::move(msg.cmd_string);
             }
@@ -206,7 +206,7 @@ void PhysicsInterfacePlugin::updateVesselState(
             lin_vel = new_state.lin_vel;
             ang_vel = new_state.ang_vel;
 
-            bool res = _ecm.SetComponentData<gz::sim::components::Pose>(
+            _ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel_entity,
                 pose);
             _ecm.SetChanged(
@@ -527,14 +527,14 @@ bool PhysicsInterfacePlugin::loadVessel(
         m_logger->error(
             "PhysicsInterfacePlugin::loadVessel: Unknown error. Failed.");
     }
-    deleteVessel(_entity, _model, _ecm);  // cleanup
+    deleteVessel(_entity, _model, _ecm);
     return false;
 }
 
 bool PhysicsInterfacePlugin::deleteVessel(
     const gz::sim::Entity& _entity,
-    const gz::sim::components::ModelSdf* _model,
-    gz::sim::EntityComponentManager* _ecm)
+    const gz::sim::components::ModelSdf*,
+    gz::sim::EntityComponentManager*)
 {
     try {  // Deactivate connection
         if (m_vessels_name_map.find(_entity) != m_vessels_name_map.end()) {
@@ -587,6 +587,7 @@ bool PhysicsInterfacePlugin::deleteVessel(
             "PhysicsInterfacePlugin::deleteVessel: Failed for vessel {} for unknown reason.",
             _entity);
     }
+    return false;
 }
 
 }  // namespace lotusim::gazebo

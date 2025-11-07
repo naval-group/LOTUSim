@@ -47,7 +47,7 @@ ROS2Interface::ROS2Interface(std::shared_ptr<const sdf::Element> _sdf)
 bool ROS2Interface::createConnection(
     const gz::sim::Entity& _entity,
     const std::string& _name,
-    const sdf::ElementPtr _sdf)
+    const sdf::ElementPtr)
 {
     m_entity_name_map[_entity] = _name;
     return true;
@@ -103,17 +103,17 @@ ROS2Interface::getNewState(
     return std::make_optional(std::make_tuple(vessel_info, DomainType::Aerial));
 }
 
-bool ROS2Interface::activateConnection(const gz::sim::Entity& _entity)
+bool ROS2Interface::activateConnection(const gz::sim::Entity&)
 {
     return true;
 }
 
-bool ROS2Interface::deactivateConnection(const gz::sim::Entity& _entity)
+bool ROS2Interface::deactivateConnection(const gz::sim::Entity&)
 {
     return true;
 }
 
-std::string ROS2Interface::getURI(const gz::sim::Entity& _entity)
+std::string ROS2Interface::getURI(const gz::sim::Entity&)
 {
     return "ros2";
 }

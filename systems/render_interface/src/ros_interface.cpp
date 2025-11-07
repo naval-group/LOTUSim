@@ -6,17 +6,20 @@ namespace lotusim::gazebo {
 // commands
 
 ROSInterface::ROSInterface(
-    const std::string &world_name,
+    const std::string& world_name,
     std::shared_ptr<spdlog::logger> logger)
     : RenderInterfaceBase(world_name, std::move(logger))
 {
     m_ros_node = rclcpp::Node::make_shared("render_interface", m_world_name);
+    m_logger = logger::createConsoleAndFileLogger(
+        "ros2_render_interface",
+        "ros2_render_interface.txt");
 }
 
 ROSInterface::~ROSInterface() {}
 
 bool ROSInterface::configureInterface(
-    const std::shared_ptr<const sdf::Element> &_sdf)
+    const std::shared_ptr<const sdf::Element>&)
 {
     m_logger->info(
         "ROSInterface::configureInterface : ROS renderer interface created");
@@ -32,8 +35,8 @@ bool ROSInterface::configureInterface(
 }
 
 bool ROSInterface::sendPosition(
-    const std::chrono::steady_clock::duration &runTime,
-    const std::vector<std::pair<std::string, gz::math::Pose3d>> &poses)
+    const std::chrono::steady_clock::duration& runTime,
+    const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
 {
     lotusim_msgs::msg::VesselPositionArray array_msg;
     auto simTimeNs =
@@ -43,11 +46,11 @@ bool ROSInterface::sendPosition(
         static_cast<uint32_t>(simTimeNs % 1000000000);
     array_msg.header.frame_id = "world";
 
-    for (const auto &pair : poses) {
+    for (const auto& pair : poses) {
         lotusim_msgs::msg::VesselPosition msg;
         msg.vessel_name = pair.first;
 
-        const gz::math::Pose3d &pose = pair.second;
+        const gz::math::Pose3d& pose = pair.second;
         msg.pose.position.x = pose.X();
         msg.pose.position.y = pose.Y();
         msg.pose.position.z = pose.Z();
@@ -72,8 +75,8 @@ bool ROSInterface::sendPosition(
  * @return false
  */
 bool ROSInterface::createVessel(
-    const std::string &vessel_name,
-    const gz::math::Pose3d &pose,
+    const std::string& vessel_name,
+    const gz::math::Pose3d& pose,
     sdf::ElementPtr sdfptr)
 {
     std::string renderer_type_name = "";
@@ -88,30 +91,30 @@ bool ROSInterface::createVessel(
     return true;
 }
 
-bool ROSInterface::destroyVessel(const std::string &vessel_name)
+bool ROSInterface::destroyVessel(const std::string& vessel_name)
 {
     sendDestroyMessage(vessel_name);
     // Always true as we will still remove models from updating list
     return true;
 }
 bool ROSInterface::customPreUpdates(
-    const gz::sim::UpdateInfo &_info,
-    gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo&,
+    gz::sim::EntityComponentManager&)
 {
     return true;
 }
 
 bool ROSInterface::customUpdates(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo&,
+    const gz::sim::EntityComponentManager&)
 {
     return true;
 }
 
 void ROSInterface::sendCreateMessage(
-    const std::string &name,
-    const gz::math::Pose3d &pose,
-    const std::string &type)
+    const std::string& name,
+    const gz::math::Pose3d& pose,
+    const std::string& type)
 {
     lotusim_msgs::msg::RendererCmd render_msg;
     render_msg.cmd_type = lotusim_msgs::msg::RendererCmd::CREATE_CMD;
@@ -131,7 +134,7 @@ void ROSInterface::sendCreateMessage(
     m_renderer_cmd_pub->publish(render_msg);
 }
 
-void ROSInterface::sendDestroyMessage(const std::string &name)
+void ROSInterface::sendDestroyMessage(const std::string& name)
 {
     lotusim_msgs::msg::RendererCmd render_msg;
     render_msg.header.stamp = m_ros_node->now();
@@ -140,7 +143,7 @@ void ROSInterface::sendDestroyMessage(const std::string &name)
     m_renderer_cmd_pub->publish(render_msg);
 }
 
-void ROSInterface::sendExplodeMessage(const std::string &name)
+void ROSInterface::sendExplodeMessage(const std::string& name)
 {
     lotusim_msgs::msg::RendererCmd render_msg;
     render_msg.header.stamp = m_ros_node->now();

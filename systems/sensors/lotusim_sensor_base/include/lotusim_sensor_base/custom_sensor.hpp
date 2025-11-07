@@ -59,11 +59,11 @@ public:
     /// \brief Inherited function. Loading the sensor
     virtual bool Load(const sdf::Sensor& _sdf) override;
 
-    virtual bool Update(
+    virtual bool UpdateSensor(
         const gz::sim::UpdateInfo& _info,
         const gz::sim::EntityComponentManager& _ecm) = 0;
 
-    bool Update(const std::chrono::steady_clock::duration& _now);
+    bool Update(const std::chrono::steady_clock::duration& _now) override;
 
     void Position(const gz::math::Vector3d& _pos);
 

@@ -5,10 +5,10 @@ namespace lotusim::sensor {
 SubseaPressureSensor::SubseaPressureSensor(
     std::shared_ptr<spdlog::logger> logger,
     rclcpp::Node::SharedPtr node,
-    const gz::sim::Entity &vessel_entity,
-    const gz::sim::Entity &sensor_entity,
-    const std::string &parent_name,
-    const std::string &sensor_name)
+    const gz::sim::Entity& vessel_entity,
+    const gz::sim::Entity& sensor_entity,
+    const std::string& parent_name,
+    const std::string& sensor_name)
     : CustomSensor(
           logger,
           node,
@@ -21,7 +21,7 @@ SubseaPressureSensor::SubseaPressureSensor(
 
 SubseaPressureSensor::~SubseaPressureSensor() {}
 
-bool SubseaPressureSensor::CustomSensorLoad(const sdf::Sensor &_sdf)
+bool SubseaPressureSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 {
     sdf::ElementPtr _sdfptr = _sdf.Element();
     GetSDFParam<double>(_sdfptr, "m_saturation", m_saturation, 3000);
@@ -39,9 +39,9 @@ bool SubseaPressureSensor::CustomSensorLoad(const sdf::Sensor &_sdf)
     return true;
 }
 
-bool SubseaPressureSensor::Update(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+bool SubseaPressureSensor::UpdateSensor(
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager&)
 {
     // Need to rewrite
     if (!EnableMeasurement(_info.simTime))

@@ -22,15 +22,16 @@ namespace lotusim::gazebo {
 class ROSInterface : public RenderInterfaceBase {
 public:
     ROSInterface(
-        const std::string &world_name,
+        const std::string& world_name,
         std::shared_ptr<spdlog::logger> logger);
     ~ROSInterface();
 
-    bool configureInterface(const std::shared_ptr<const sdf::Element> &_sdf);
+    bool configureInterface(
+        const std::shared_ptr<const sdf::Element>& _sdf) override final;
 
     bool sendPosition(
-        const std::chrono::steady_clock::duration &runTime,
-        const std::vector<std::pair<std::string, gz::math::Pose3d>> &poses)
+        const std::chrono::steady_clock::duration& runTime,
+        const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
         override final;
 
     /**
@@ -43,29 +44,29 @@ public:
      * @return false
      */
     bool createVessel(
-        const std::string &vessel_name,
-        const gz::math::Pose3d &pose,
-        sdf::ElementPtr sdfptr);
+        const std::string& vessel_name,
+        const gz::math::Pose3d& pose,
+        sdf::ElementPtr sdfptr) override final;
 
-    bool destroyVessel(const std::string &vessel_name);
+    bool destroyVessel(const std::string& vessel_name) override final;
 
     virtual bool customPreUpdates(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) override final;
+        const gz::sim::UpdateInfo& _info,
+        gz::sim::EntityComponentManager& _ecm) override final;
 
     virtual bool customUpdates(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) override final;
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) override final;
 
 private:
     void sendCreateMessage(
-        const std::string &name,
-        const gz::math::Pose3d &pose,
-        const std::string &type);
+        const std::string& name,
+        const gz::math::Pose3d& pose,
+        const std::string& type);
 
-    void sendDestroyMessage(const std::string &name);
+    void sendDestroyMessage(const std::string& name);
 
-    void sendExplodeMessage(const std::string &name);
+    void sendExplodeMessage(const std::string& name);
 
 private:
     rclcpp::Node::SharedPtr m_ros_node;

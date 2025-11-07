@@ -118,8 +118,8 @@ void EntityManager::Configure(
 }
 
 void EntityManager::PreUpdate(
-    const gz::sim::UpdateInfo& _info,
-    gz::sim::EntityComponentManager& _ecm)
+    const gz::sim::UpdateInfo&,
+    gz::sim::EntityComponentManager&)
 {
     // Handle MAS Array cmd
     {
@@ -247,15 +247,14 @@ EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
 }
 
 void EntityManager::Update(
-    const gz::sim::UpdateInfo& _info,
+    const gz::sim::UpdateInfo&,
     gz::sim::EntityComponentManager& _ecm)
 {
     // Seperating MAS cmd handle and other plugins as MAS cmd may fail to run
-    _ecm.EachNew<
-        gz::sim::components::ModelSdf>([this](
-                                           const gz::sim::Entity& _entity,
-                                           const gz::sim::components::ModelSdf*
-                                               _model) {
+    _ecm.EachNew<gz::sim::components::
+                     ModelSdf>([this](
+                                   const gz::sim::Entity& _entity,
+                                   const gz::sim::components::ModelSdf*) {
         auto name_opt = m_ecm->Component<gz::sim::components::Name>(_entity);
         std::string vessel_name;
         if (name_opt) {
@@ -290,7 +289,7 @@ void EntityManager::Update(
     _ecm.EachRemoved<gz::sim::components::ModelSdf>(
         [this](
             const gz::sim::Entity& _entity,
-            const gz::sim::components::ModelSdf* _model) {
+            const gz::sim::components::ModelSdf*) {
             auto name_opt =
                 m_ecm->Component<gz::sim::components::Name>(_entity);
             std::string vessel_name;
@@ -311,8 +310,8 @@ void EntityManager::PostUpdate(
 }
 
 rclcpp_action::GoalResponse EntityManager::handleMASCmdArrayGoal(
-    const rclcpp_action::GoalUUID& uuid,
-    std::shared_ptr<const lotusim_msgs::action::MASCmdArray::Goal> goal)
+    const rclcpp_action::GoalUUID&,
+    std::shared_ptr<const lotusim_msgs::action::MASCmdArray::Goal>)
 {
     m_logger->info(
         "EntityManager::handleMASCmdArrayGoal: Received MASCmdArray.");
@@ -320,7 +319,7 @@ rclcpp_action::GoalResponse EntityManager::handleMASCmdArrayGoal(
 }
 
 rclcpp_action::CancelResponse EntityManager::handleMASCmdArrayCancel(
-    const std::shared_ptr<GoalHandleMASCmdArray> goal_handle)
+    const std::shared_ptr<GoalHandleMASCmdArray>)
 {
     // Not allowed to cancel for now
     return rclcpp_action::CancelResponse::REJECT;
@@ -334,15 +333,15 @@ void EntityManager::handleMASCmdArrayAccepted(
 }
 
 rclcpp_action::GoalResponse EntityManager::handleMASCmdGoal(
-    const rclcpp_action::GoalUUID& uuid,
-    std::shared_ptr<const lotusim_msgs::action::MASCmd::Goal> goal)
+    const rclcpp_action::GoalUUID&,
+    std::shared_ptr<const lotusim_msgs::action::MASCmd::Goal>)
 {
     m_logger->info("EntityManager::handleMASCmdGoal: Received MASCmd.");
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
 rclcpp_action::CancelResponse EntityManager::handleMASCmdCancel(
-    const std::shared_ptr<GoalHandleMASCmd> goal_handle)
+    const std::shared_ptr<GoalHandleMASCmd>)
 {
     // Not allowed to cancel for now
     return rclcpp_action::CancelResponse::REJECT;
@@ -356,7 +355,7 @@ void EntityManager::handleMASCmdAccepted(
 }
 
 void EntityManager::customUserConfiguration(
-    const std::shared_ptr<const sdf::Element>& _sdf)
+    const std::shared_ptr<const sdf::Element>&)
 {
     return;
 }
@@ -371,12 +370,12 @@ void EntityManager::customUserPostUpdate()
     return;
 }
 
-void EntityManager::customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg)
+void EntityManager::customUserAddEntity(const lotusim_msgs::msg::MASCmd&)
 {
     return;
 }
 
-void EntityManager::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg)
+void EntityManager::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd&)
 {
     return;
 }
@@ -561,6 +560,12 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
         bool res = m_ecm->SetComponentData<gz::sim::components::Pose>(
             vessel_entity,
             pose);
+        if (!res) {
+            m_logger->warn(
+                "EntityManager::moveEntity: Failed to set componenent data {},{}",
+                vessel_entity,
+                m_vessels_names[vessel_entity]);
+        }
 
         m_ecm->SetChanged(
             vessel_entity,

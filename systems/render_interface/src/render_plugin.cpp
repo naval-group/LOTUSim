@@ -11,17 +11,17 @@ RenderPlugin::~RenderPlugin()
 }
 
 void RenderPlugin::Configure(
-    const gz::sim::Entity &_entity,
-    const std::shared_ptr<const sdf::Element> &_sdf,
-    gz::sim::EntityComponentManager &_ecm,
-    gz::sim::EventManager &_eventMgr)
+    const gz::sim::Entity&,
+    const std::shared_ptr<const sdf::Element>& _sdf,
+    gz::sim::EntityComponentManager& _ecm,
+    gz::sim::EventManager&)
 {
     m_world_name = lotusim::common::getWorldName(_ecm);
     m_logger = logger::createConsoleAndFileLogger(
         "render_plugin",
         m_world_name + "_render_plugin.txt");
 
-    auto sdfPtr = const_cast<sdf::Element *>(_sdf.get());
+    auto sdfPtr = const_cast<sdf::Element*>(_sdf.get());
 
     std::string connection_protocol;
     if (sdfPtr->HasElement("connection_protocol")) {
@@ -43,8 +43,8 @@ void RenderPlugin::Configure(
 }
 
 void RenderPlugin::PreUpdate(
-    const gz::sim::UpdateInfo &_info,
-    gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo& _info,
+    gz::sim::EntityComponentManager& _ecm)
 {
     m_render_interface->customPreUpdates(_info, _ecm);
 
@@ -52,9 +52,9 @@ void RenderPlugin::PreUpdate(
     _ecm.EachNew<
         gz::sim::components::ModelSdf,
         gz::sim::components::ParentEntity>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::ModelSdf *_model,
-            const gz::sim::components::ParentEntity *_parent) -> bool {
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::ModelSdf* _model,
+            const gz::sim::components::ParentEntity*) -> bool {
             sdf::Model data = _model->Data();
             sdf::ElementPtr sdfptr = data.Element();
 
@@ -93,9 +93,9 @@ void RenderPlugin::PreUpdate(
     _ecm.EachRemoved<
         gz::sim::components::ModelSdf,
         gz::sim::components::ParentEntity>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::ModelSdf *_model,
-            const gz::sim::components::ParentEntity *_parent) -> bool {
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::ModelSdf*,
+            const gz::sim::components::ParentEntity*) -> bool {
             auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
             if (m_vessel_entity.find(name_opt->Data()) !=
                 m_vessel_entity.end()) {
@@ -110,8 +110,8 @@ void RenderPlugin::PreUpdate(
 }
 
 void RenderPlugin::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager& _ecm)
 {
     if (!m_render_interface) {
         m_logger->info("RenderPlugin::PostUpdate: No render update");
@@ -120,7 +120,7 @@ void RenderPlugin::PostUpdate(
 
     // get a vector of vessel name, pose
     std::vector<std::pair<std::string, gz::math::Pose3d>> vessel_pose;
-    for (auto &&entity : m_vessel_entity) {
+    for (auto&& entity : m_vessel_entity) {
         gz::math::Pose3d pose =
             _ecm.Component<gz::sim::components::Pose>(entity.second)->Data();
 

@@ -10,13 +10,13 @@ CustomSensor::CustomSensor(
     const std::string& parent_name,
     const std::string& sensor_name)
     : m_logger(logger)
-    , m_ros_node(node)
     , m_vessel_entity(vessel_entity)
     , m_sensor_entity(sensor_entity)
     , m_vessel_name(parent_name)
     , m_sensor_name(sensor_name)
-    , m_is_on(true)
     , m_last_measurement_time(std::chrono::seconds(0))
+    , m_is_on(true)
+    , m_ros_node(node)
 {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     m_rnd_gen = std::default_random_engine(seed);
@@ -49,17 +49,16 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
                 std::placeholders::_2));
 
     GetSDFParam<double>(_sdfptr, "noise_sigma", m_noise_sigma, 0.0);
-    GZ_ASSERT(
-        m_noise_sigma >= 0.0,
-        "Signal noise sigma must be greater or equal to zero");
+    if (m_noise_sigma >= 0.0) {
+        m_logger->warn("Signal noise sigma must be greater or equal to zero");
+    }
 
     GetSDFParam<double>(_sdfptr, "noise_amplitude", m_noise_amp, 0.0);
-    GZ_ASSERT(
-        m_noise_amp >= 0.0,
-        "Signal noise amplitude must be greater or equal to zero");
-
+    if (m_noise_amp >= 0.0) {
+        m_logger->warn(
+            "Signal noise amplitude must be greater or equal to zero");
+    }
     AddNoiseModel("default", m_noise_sigma);
-
     return true;
 }
 
@@ -75,9 +74,10 @@ bool CustomSensor::ChangeSensorState(
 
 double CustomSensor::GetGaussianNoise(std::string _name, double _amp)
 {
-    GZ_ASSERT(
-        m_noise_models.count(_name),
-        "Gaussian noise model does not exist");
+    if (m_noise_models.count(_name)) {
+        m_logger->warn("Gaussian noise model does not exist");
+        return 0;
+    }
     return _amp * m_noise_models[_name](m_rnd_gen);
 }
 
@@ -100,7 +100,10 @@ bool CustomSensor::IsOn()
     return m_is_on;
 }
 
-bool CustomSensor::Update(const std::chrono::steady_clock::duration& _now) {}
+bool CustomSensor::Update(const std::chrono::steady_clock::duration&)
+{
+    return true;
+}
 
 void CustomSensor::Position(const gz::math::Vector3d& _pos)
 {

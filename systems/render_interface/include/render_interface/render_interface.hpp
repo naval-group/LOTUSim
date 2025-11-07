@@ -24,14 +24,9 @@ namespace lotusim::gazebo {
 class RenderInterfaceBase {
 public:
     RenderInterfaceBase(
-        const std::string &world_name,
+        const std::string& world_name,
         std::shared_ptr<spdlog::logger> logger)
-        : m_world_name(world_name), m_logger(logger)
-    {
-        m_logger = logger::createConsoleAndFileLogger(
-            "render_interface",
-            "render_interface.txt");
-    };
+        : m_logger(logger), m_world_name(world_name) {};
 
     virtual ~RenderInterfaceBase() = default;
 
@@ -43,7 +38,7 @@ public:
      * @return false otherwise
      */
     virtual bool configureInterface(
-        const std::shared_ptr<const sdf::Element> &_sdf) = 0;
+        const std::shared_ptr<const sdf::Element>& _sdf) = 0;
 
     /**
      * @brief Send the simulation frame update to renderer
@@ -54,8 +49,8 @@ public:
      * @return false otherwise
      */
     virtual bool sendPosition(
-        const std::chrono::steady_clock::duration &runTime,
-        const std::vector<std::pair<std::string, gz::math::Pose3d>> &poses) = 0;
+        const std::chrono::steady_clock::duration& runTime,
+        const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses) = 0;
 
     /**
      * @brief Create a Vessel in the simulation.
@@ -69,8 +64,8 @@ public:
      * @return false
      */
     virtual bool createVessel(
-        const std::string &vessel_name,
-        const gz::math::Pose3d &pose,
+        const std::string& vessel_name,
+        const gz::math::Pose3d& pose,
         sdf::ElementPtr sdfptr) = 0;
 
     /**
@@ -80,7 +75,7 @@ public:
      * @return true
      * @return false
      */
-    virtual bool destroyVessel(const std::string &vessel_name) = 0;
+    virtual bool destroyVessel(const std::string& vessel_name) = 0;
 
     /**
      * @brief CustomPreupdate loop if required
@@ -91,8 +86,8 @@ public:
      * @return false
      */
     virtual bool customPreUpdates(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm)
+        const gz::sim::UpdateInfo&,
+        gz::sim::EntityComponentManager&)
     {
         return true;
     };
@@ -106,8 +101,8 @@ public:
      * @return false
      */
     virtual bool customUpdates(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm)
+        const gz::sim::UpdateInfo&,
+        const gz::sim::EntityComponentManager&)
     {
         return true;
     };

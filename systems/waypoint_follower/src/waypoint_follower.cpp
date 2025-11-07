@@ -222,7 +222,7 @@ bool WaypointFollowerPlugin::load(
 //////////////////////////////////////////////////
 void WaypointFollowerPlugin::Configure(
     const gz::sim::Entity& _entity,
-    const std::shared_ptr<const sdf::Element>& _sdf,
+    const std::shared_ptr<const sdf::Element>&,
     gz::sim::EntityComponentManager& _ecm,
     gz::sim::EventManager& /*_eventMgr*/)
 {
@@ -244,7 +244,7 @@ void WaypointFollowerPlugin::Configure(
     gz::sim::Entity worldEntity;
     _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
         [&](const gz::sim::Entity& _entity,
-            const gz::sim::components::Name* _name,
+            const gz::sim::components::Name*,
             const gz::sim::components::World*) -> bool {
             worldEntity = _entity;
             return true;
@@ -320,28 +320,6 @@ void WaypointFollowerPlugin::Update(
 
         if (m_waypoint_state.find(_entity) == m_waypoint_state.end()) {
             m_waypoint_state[_entity] = 0;
-
-            // Removing setting position of the vessel
-            // // angle to goal and changing atan2 convention to gz
-            // convention gz::math::Vector3d goal = {
-            //     _waypoints[0].X(),
-            //     _waypoints[0].Y(),
-            //     pose.Z()};
-            // // Direction vector to the goal from the model.
-            // gz::math::Vector3d direction = goal - pose.Pos();
-            // gz::math::Vector3d directionLocalFrame =
-            //     pose.Rot().RotateVectorReverse(direction);
-            // gz::math::Angle bearing(
-            //     atan2(directionLocalFrame.Y(), directionLocalFrame.X()));
-            // bearing.Normalize();
-
-            // // Setting angle
-            // pose.Rot().SetFromEuler(
-            //     pose.Roll(),
-            //     pose.Pitch(),
-            //     bearing.Radian());
-            // _ecm.SetComponentData<gz::sim::components::Pose>(_entity,
-            // pose);
         }
 
         gz::math::Vector2d current_goal = _waypoints[m_waypoint_state[_entity]];
