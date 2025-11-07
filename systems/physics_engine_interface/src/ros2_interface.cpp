@@ -14,6 +14,7 @@ std::shared_ptr<ROS2Interface> ROS2Interface::getInstance(
 }
 
 ROS2Interface::ROS2Interface(std::shared_ptr<const sdf::Element> _sdf)
+    : PhysicsInterfaceBase("Ros2Interface")
 {
     if (!rclcpp::ok()) {
         rclcpp::init(0, nullptr);

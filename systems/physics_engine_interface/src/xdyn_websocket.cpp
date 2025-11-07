@@ -100,7 +100,7 @@ bool XdynWebsocket::createConnection(
         auto thrusters_cmd = json::object();
         do {
             std::string thruster_name = sdfPtr_thruster->Get<std::string>();
-            thrusters_cmd[thruster_name + "(rpm)"] = 0.01;
+            thrusters_cmd[thruster_name + "(rpm)"] = 2.0;
             thrusters_cmd[thruster_name + "(P/D)"] = 0.79;
             thrusters_cmd[thruster_name + "(beta)"] = 0.0;
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();

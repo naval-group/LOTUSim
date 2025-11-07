@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <sdf version="1.6">
-  <model name="{name}">
+  <model name="bluerov2">
     <link name="base_link">
       <collision name="base_link_collision">
         <geometry>

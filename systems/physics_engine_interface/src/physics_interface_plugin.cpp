@@ -106,12 +106,12 @@ void PhysicsInterfacePlugin::Update(
         }
         futures.push_back(
             std::async(
-                std::launch::async,
-                &PhysicsInterfacePlugin::updateVesselState,
-                this,
-                vessel_entity,
-                _info,
-                std::ref(_ecm)));
+            std::launch::async,
+            &PhysicsInterfacePlugin::updateVesselState,
+            this,
+            vessel_entity,
+            _info,
+            std::ref(_ecm)));
     }
     for (auto& fut : futures) {
         fut.get();
@@ -224,13 +224,13 @@ void PhysicsInterfacePlugin::updateVesselState(
         } else {
             m_logger->warn(
                 "PhysicsInterfacePlugin::Update: {} update failed.",
-                vessel_entity);
+                vessel_name);
         }
         return;
     } catch (const std::exception& e) {
         m_logger->warn(
-            "PhysicsInterfacePlugin::Update: Error update for {}\n{}.\n.",
-            vessel_name,
+            "PhysicsInterfacePlugin::Update: Error update for entity {}\n{}.\n.",
+            vessel_entity,
             e.what());
     }
 }
@@ -280,8 +280,8 @@ bool PhysicsInterfacePlugin::vesselTransition(
             } else {
                 throw std::runtime_error(
                     fmt::format(
-                        "{} requested to switch domain to aerial but no defined connection in that domain. Ignoring transition.",
-                        m_vessels_name_map[_vessel]));
+                    "{} requested to switch domain to aerial but no defined connection in that domain. Ignoring transition.",
+                    m_vessels_name_map[_vessel]));
             }
         } else if (_new_mode == DomainType::Surface) {
             if (m_surface_interface.find(_vessel) !=
@@ -291,8 +291,8 @@ bool PhysicsInterfacePlugin::vesselTransition(
             } else {
                 throw std::runtime_error(
                     fmt::format(
-                        "{} requested to switch domain to Surface but no defined connection in that domain. Ignoring transition.",
-                        m_vessels_name_map[_vessel]));
+                    "{} requested to switch domain to Surface but no defined connection in that domain. Ignoring transition.",
+                    m_vessels_name_map[_vessel]));
             }
         } else if (_new_mode == DomainType::Underwater) {
             if (m_underwater_interface.find(_vessel) !=
@@ -302,8 +302,8 @@ bool PhysicsInterfacePlugin::vesselTransition(
             } else {
                 throw std::runtime_error(
                     fmt::format(
-                        "{} requested to switch domain to Underwater but no defined connection in that domain. Ignoring transition.",
-                        m_vessels_name_map[_vessel]));
+                    "{} requested to switch domain to Underwater but no defined connection in that domain. Ignoring transition.",
+                    m_vessels_name_map[_vessel]));
             }
         }
     } catch (const std::exception& e) {
@@ -390,14 +390,21 @@ bool PhysicsInterfacePlugin::loadVessel(
                         "PhysicsInterfacePlugin::loadVessel: {} missing aerial connectionType or uri. Removing aerial calculation.",
                         vessel_name);
                 }
-                aerial_connection_type =
-                    ConnectionTypeMap[lotusim::common::toUpper(
-                        aerial_sdf->Get<std::string>("connection_type"))];
-                m_aerial_interface[_entity] = createConnection(
-                    _entity,
-                    vessel_name,
-                    aerial_connection_type,
-                    aerial_sdf);
+                try {
+                    aerial_connection_type =
+                        ConnectionTypeMap.at(lotusim::common::toUpper(
+                            aerial_sdf->Get<std::string>("connection_type")));
+                    m_aerial_interface[_entity] = createConnection(
+                        _entity,
+                        vessel_name,
+                        aerial_connection_type,
+                        aerial_sdf);
+                } catch (const std::out_of_range&) {
+                    aerial_connection_type = ConnectionType::Unknown;
+                    m_logger->warn(
+                        "PhysicsInterfacePlugin::loadVessel: {} missing aerial connection_type. Removing aerial calculation.",
+                        vessel_name);
+                }
             }
 
             // If vessel has surface component
@@ -413,14 +420,21 @@ bool PhysicsInterfacePlugin::loadVessel(
                         "PhysicsInterfacePlugin::loadVessel: {} missing surface connection_type or uri. Removing surface calculation.",
                         vessel_name);
                 }
-                surface_connection_type =
-                    ConnectionTypeMap[lotusim::common::toUpper(
-                        surface_sdf->Get<std::string>("connection_type"))];
-                m_surface_interface[_entity] = createConnection(
-                    _entity,
-                    vessel_name,
-                    surface_connection_type,
-                    surface_sdf);
+                try {
+                    surface_connection_type =
+                        ConnectionTypeMap.at(lotusim::common::toUpper(
+                            surface_sdf->Get<std::string>("connection_type")));
+                    m_surface_interface[_entity] = createConnection(
+                        _entity,
+                        vessel_name,
+                        surface_connection_type,
+                        surface_sdf);
+                } catch (const std::out_of_range&) {
+                    surface_connection_type = ConnectionType::Unknown;
+                    m_logger->warn(
+                        "PhysicsInterfacePlugin::loadVessel: {} missing surface connection_type. Removing surface calculation.",
+                        vessel_name);
+                }
             }
 
             // If vessel has underwater component
@@ -434,17 +448,25 @@ bool PhysicsInterfacePlugin::loadVessel(
                 if (!underwater_sdf->HasElement("connection_type") ||
                     !underwater_sdf->HasElement("uri")) {
                     m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing surface connectionType or uri. Removing surface calculation.",
+                        "PhysicsInterfacePlugin::loadVessel: {} missing underwater connectionType or uri. Removing underwater calculation.",
                         vessel_name);
                 }
-                underwater_connection_type =
-                    ConnectionTypeMap[lotusim::common::toUpper(
-                        underwater_sdf->Get<std::string>("connection_type"))];
-                m_underwater_interface[_entity] = createConnection(
-                    _entity,
-                    vessel_name,
-                    underwater_connection_type,
-                    underwater_sdf);
+                try {
+                    underwater_connection_type =
+                        ConnectionTypeMap.at(lotusim::common::toUpper(
+                            underwater_sdf->Get<std::string>(
+                                "connection_type")));
+                    m_underwater_interface[_entity] = createConnection(
+                        _entity,
+                        vessel_name,
+                        underwater_connection_type,
+                        underwater_sdf);
+                } catch (const std::out_of_range&) {
+                    underwater_connection_type = ConnectionType::Unknown;
+                    m_logger->warn(
+                        "PhysicsInterfacePlugin::loadVessel: {} missing underwater connection_type. Removing underwater calculation.",
+                        vessel_name);
+                }
             }
 
             // Add warning that the init is not found and find the
@@ -465,8 +487,8 @@ bool PhysicsInterfacePlugin::loadVessel(
                         } else {
                             throw std::runtime_error(
                                 fmt::format(
-                                    "{} Init state aerial. No aerial physics engine set.",
-                                    vessel_name));
+                                "{} Init state aerial. No aerial physics engine set.",
+                                vessel_name));
                         }
                         break;
                     }
@@ -480,8 +502,8 @@ bool PhysicsInterfacePlugin::loadVessel(
                         } else {
                             throw std::runtime_error(
                                 fmt::format(
-                                    "{} Init state surface. No surface physics engine set.",
-                                    vessel_name));
+                                "{} Init state surface. No surface physics engine set.",
+                                vessel_name));
                         }
                         break;
                     }
@@ -495,16 +517,16 @@ bool PhysicsInterfacePlugin::loadVessel(
                         } else {
                             throw std::runtime_error(
                                 fmt::format(
-                                    "{} Init state underwater. No underwater physics engine set.",
-                                    vessel_name));
+                                "{} Init state underwater. No underwater physics engine set.",
+                                vessel_name));
                         }
                         break;
                     }
                     default: {
                         throw std::runtime_error(
                             fmt::format(
-                                "Failed to find {} init state",
-                                vessel_name));
+                            "Failed to find {} init state",
+                            vessel_name));
                     }
                 }
                 m_current_vessel_interface[_entity]->activateConnection(

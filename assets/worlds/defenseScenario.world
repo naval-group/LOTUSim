@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<!-- Silent Storm Scenario Gz World -->
+<!-- Defense Scenario Gz World -->
 <sdf version="1.9">
-    <world name="Silent_Storm">
+    <world name="defenseScenario">
         <light type="directional" name="sun">
             <cast_shadows>true</cast_shadows>
             <pose>0 0 10 0 0 0</pose>
@@ -34,16 +34,13 @@
             <elevation>0</elevation>
             <heading_deg>0</heading_deg>
         </spherical_coordinates>
-        <!-- <plugin filename="entity_manager_plugin" name="lotusim::gazebo::EntityManager" />
-        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin" />
-        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
-            <connection_protocol>ROS2</connection_protocol>
-        </plugin>
+
+
         <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
         <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
         <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer" />
         <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
-        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" /> -->
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 
         <!-- Core Plugins -->
         <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
@@ -51,16 +48,18 @@
         <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
         <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
 
-        <plugin filename="silencieuse_demo_entity_manager"
-        name="lotusim::gazebo::SilencieuseEntityManager">
-        <aerial_namespace>aerialWorld</aerial_namespace>
+        <plugin filename="physics_interface_plugin"
+            name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
-        
-        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin" />
+
+        <plugin filename="aerial_demo_entity_manager"
+            name="lotusim::gazebo::AerialEntityManager">
+            <aerial_namespace>aerialWorld</aerial_namespace>
+        </plugin>
 
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>ROS2</connection_protocol>
-        </plugin> 
+        </plugin>
 
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 

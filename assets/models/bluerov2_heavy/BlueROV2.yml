@@ -14,7 +14,7 @@ environment models:
 
   - model: ekman current
     #seabed depth: 123
-    seabed file: lrauv/height_map.png
+    seabed file: seabed/seabed.png
     latitude: { value: 43, unit: deg }
     top layer thickness: { value: 5, unit: m}
     bottom layer thickness: { value: 8, unit: m}
@@ -29,7 +29,7 @@ bodies: # All bodies have NED as parent frame
   - name: BlueRov2
 
     # The mesh definition from this stl file is necessary for hydrostatic and Froud-Krylov
-    mesh: bluerov/meshes/bluerov2_heavy_ASCII.stl
+    mesh: bluerov2_heavy/meshes/bluerov2_heavy_ASCII.stl
 
     position of body frame relative to mesh:
         frame: mesh
