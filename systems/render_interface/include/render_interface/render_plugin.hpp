@@ -21,8 +21,8 @@
 namespace lotusim::gazebo {
 
 std::shared_ptr<RenderInterfaceBase> CreateRenderInterface(
-    const std::string &protocol,
-    const std::string &world_name,
+    const std::string& protocol,
+    const std::string& world_name,
     std::shared_ptr<spdlog::logger> logger)
 {
     if (protocol == "TCPUDP") {
@@ -59,18 +59,18 @@ public:
     ~RenderPlugin();
 
     void Configure(
-        const gz::sim::Entity &_entity,
-        const std::shared_ptr<const sdf::Element> &_sdf,
-        gz::sim::EntityComponentManager &_ecm,
-        gz::sim::EventManager &_eventMgr) override;
+        const gz::sim::Entity& _entity,
+        const std::shared_ptr<const sdf::Element>& _sdf,
+        gz::sim::EntityComponentManager& _ecm,
+        gz::sim::EventManager& _eventMgr) override;
 
     void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) override;
+        const gz::sim::UpdateInfo& _info,
+        gz::sim::EntityComponentManager& _ecm) override;
 
     void PostUpdate(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) override;
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) override;
 
 private:
     /**
@@ -90,18 +90,6 @@ private:
      *
      */
     std::unordered_map<std::string, gz::sim::Entity> m_vessel_entity;
-
-    /**
-     * @brief Update period for rendering
-     *
-     */
-    std::chrono::steady_clock::duration m_update_period;
-
-    /**
-     * @brief Last publication time
-     *
-     */
-    std::chrono::steady_clock::duration m_last_pub;
 
     /**
      * @brief Render interface implementation

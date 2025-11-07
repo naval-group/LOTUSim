@@ -23,7 +23,7 @@ IMUSensor::IMUSensor(
 
 IMUSensor::~IMUSensor() {}
 
-bool IMUSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
+bool IMUSensor::CustomSensorLoad(const sdf::Sensor&)
 {
     m_sensor_pub = m_ros_node->create_publisher<sensor_msgs::msg::Imu>(
         m_vessel_name + "/" + m_sensor_name + "/" + "IMU",
@@ -31,7 +31,7 @@ bool IMUSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
     return true;
 }
 
-bool IMUSensor::Update(
+bool IMUSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {

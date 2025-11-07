@@ -28,7 +28,7 @@ print_help() {
     echo -e "  --debug                 Enable debug mode"
     echo -e "  --gui                   Run gz sim GUI (for run command)"
     echo -e "  --help                  Display this help message"
-    echo ""
+    echo -e ""
     echo -e "${GREEN}Commands:${NC}"
     echo -e "  install                 Install the dependencies"
     echo -e "  clean                   Clean the project"
@@ -36,8 +36,9 @@ print_help() {
     echo -e "  build_lotus             Build the lotus only"
     echo -e "  clean_build             Clean and build the project"
     echo -e "  doc                     Generate project documentation"
+    echo -e "  ui                      Run the frontend and backend"
     echo -e "  run [world_name]        Run the simulation"
-    echo ""
+    echo -e ""
     echo -e "${GREEN}Examples:${NC}"
     echo -e "  lotusim run --debug --gui my_world_name"
     echo -e "  lotusim --debug run my_world_name"
@@ -46,7 +47,7 @@ print_help() {
 }
 
 parse_all_arguments() {
-    local valid_commands=("install" "install_lotus" "clean" "build" "build_lotus" "clean_build" "doc" "run")
+    local valid_commands=("install" "install_lotus" "install_ui" "clean" "build" "build_lotus" "clean_build" "doc" "ui" "run")
     
     while [[ "$#" -gt 0 ]]; do
         case $1 in
@@ -127,7 +128,12 @@ parse_all_arguments() {
 }
 
 install_lotus_dep() {
-    echo "Installing dependencies..."
+
+    echo -e "
+********************************************************************************************
+*******************************    ${GREEN}Installing Lotusim${NC}    ***********************************
+********************************************************************************************
+    "
     if [ "$EUID" -ne 0 ]; then
         sudo -E "$LOTUSIM_PATH/launch/install_dep.sh"
     else
@@ -210,19 +216,20 @@ install_ui() {
 build_lotus() {
     echo -e "
 ********************************************************************************************
-*******************************    ${GREEN}Installing Lotusim${NC}    ***********************************
+********************************    ${GREEN}Building Lotusim${NC}    ************************************
 ********************************************************************************************
     "
     source "/opt/ros/humble/setup.bash"
     cd ${LOTUSIM_WS}
     if [ "$DEBUG" == "-v4" ]; then
-        echo "Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
+        echo -e "${GREEN}Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
         colcon build --cmake-args -DLOTUSIM_TIDY=ON -DDEBUG=ON --symlink-install --merge-install || {
             echo -e "${RED}Error:${NC} Build failed."
             exit 1
         }
     else
-        colcon build --merge-install || {
+        colcon --log-level 50 build --merge-install --event-handlers compile_commands+ console_cohesion- console_direct- console_package_list- console_start_end- console_stderr+ \
+        desktop_notification- event_log+ log+ log_command+ status+ store_result- summary+ terminal_title- || {
             echo -e "${RED}Error:${NC} Build failed."
             exit 1
         }
@@ -234,7 +241,7 @@ build_lotus() {
     "
 }
 
-validate_setup() {
+validate_lotusim_core_setup() {
     if [ ! -f "/opt/ros/humble/setup.bash" ]; then
         echo -e "${RED}Error:${NC} ROS2 Humble is not installed or the setup.bash is not found at /opt/ros/humble/setup.bash."
         exit 1
@@ -249,19 +256,80 @@ validate_setup() {
     fi
 }
 
+validate_ui_setup() {
+    local errors=0
+    # Check if nvm is available
+    if ! command -v nvm &> /dev/null; then
+        # nvm is a shell function, try to source it
+        if [ -f "$HOME/.nvm/nvm.sh" ]; then
+            source "$HOME/.nvm/nvm.sh"
+        else
+            echo -e "❌ ${RED}Error:${NC} nvm is not installed or not found"
+            errors=$((errors + 1))
+        fi
+    fi
+    
+    # Check if Node.js 18 is available via nvm
+    if command -v nvm &> /dev/null || type nvm &> /dev/null; then
+        if ! nvm ls 18 &> /dev/null; then
+            echo -e "❌ ${RED}Error:${NC} Node.js version 18 is not installed via nvm"
+            echo -e "   Install with: nvm install 18"
+            errors=$((errors + 1))
+        fi
+    fi
+    
+    # Check backend directory
+    BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
+    if [ ! -d "$BACKEND_DIR" ]; then
+        echo -e "${RED}Error:${NC} Backend directory not found: $BACKEND_DIR"
+        errors=$((errors + 1))
+    fi
+    
+    # Check frontend directory
+    FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        echo -e "${RED}Error:${NC}: Frontend directory not found: $FRONTEND_DIR"
+        errors=$((errors + 1))
+    fi
+
+    if [ $errors -gt 0 ]; then
+        exit 1
+    fi
+}
+
+
+source_environment() {
+    source "/opt/ros/humble/setup.bash"
+    source "${LOTUSIM_WS}/install/setup.bash"
+
+    export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
+    export GZ_GUI_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
+    export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
+    export LOTUSIM_SPDLOG_LEVEL="${LOTUSIM_SPDLOG_LEVEL}"
+
+    echo -e "${GREEN}GZ_SIM_SYSTEM_PLUGIN_PATH${NC}: $GZ_SIM_SYSTEM_PLUGIN_PATH"
+    echo -e "${GREEN}GZ_SIM_RESOURCE_PATH${NC}: $GZ_SIM_RESOURCE_PATH"
+    echo -e "${YELLOW}LOTUSIM_SPDLOG_LEVEL${NC}: $LOTUSIM_SPDLOG_LEVEL"
+
+}
+
 run_command() {
     case $COMMAND in
     install)
         install_lotus_dep
-        echo "Building the project..."
-        validate_setup
+        validate_lotusim_core_setup
         build_lotus
         install_ui
         ;;
     install_lotus)
         install_lotus_dep
-        validate_setup
+        validate_lotusim_core_setup
         build_lotus
+        ;;
+    install_ui)
+        install_lotus_dep
+        validate_lotusim_core_setup
+        install_ui
         ;;
     clean)
         rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
@@ -269,18 +337,12 @@ run_command() {
         ;;
     build)
         clear
-        validate_setup
-        build_lotus
-        install_ui
-        ;;
-    build_lotus)
-        clear
-        validate_setup
+        validate_lotusim_core_setup
         build_lotus
         ;;
     clean_build)
         clear
-        echo "Cleaning and building the project..."
+        echo -e "Cleaning and building the project..."
         rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
         build_lotus
         ;;
@@ -293,29 +355,51 @@ run_command() {
             echo -e "${RED}Error:${NC} Documentation generation failed."
             exit 1
         }
-        echo "Docs generated at ${LOTUSIM_PATH}/docs"
+        echo -e "Docs generated at ${LOTUSIM_PATH}/docs"
         ;;
     run)
         clear
-        validate_setup
-
-        source "/opt/ros/humble/setup.bash"
-        source "${LOTUSIM_WS}/install/setup.bash"
-
-        export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
-        export GZ_GUI_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
-        export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
-        export LOTUSIM_SPDLOG_LEVEL="${LOTUSIM_SPDLOG_LEVEL}"
-
-        echo -e "${GREEN}GZ_SIM_SYSTEM_PLUGIN_PATH${NC}: $GZ_SIM_SYSTEM_PLUGIN_PATH"
-        echo -e "${GREEN}GZ_SIM_RESOURCE_PATH${NC}: $GZ_SIM_RESOURCE_PATH"
-        echo -e "${YELLOW}LOTUSIM_SPDLOG_LEVEL${NC}: $LOTUSIM_SPDLOG_LEVEL"
+        validate_lotusim_core_setup
+        source_environment
 
         # Use provided world or default
         local world_file="${WORLD:-$DEFAULT_WORLD}"
 
         echo -e "${GREEN}Running the simulation world${NC}: ${WORLD_PATH}/${world_file}"
         gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${world_file}"
+        ;;
+    ui)
+        clear
+        validate_lotusim_core_setup
+        source_environment
+        validate_ui_setup
+
+        cleanup() {
+        echo -e "${GREEN}Shutting down${NC} backend and frontend..."
+        kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+        wait $BACKEND_PID $FRONTEND_PID 2>/dev/null
+        exit
+        }
+
+        # Set up trap to catch signals
+        trap cleanup SIGINT SIGTERM EXIT
+
+        # Start backend
+        cd ${LOTUSIM_WS}/src/lotusim_backend
+        npx ts-node src/main.ts &
+        BACKEND_PID=$!
+
+        # Start frontend
+        cd ${LOTUSIM_WS}/src/lotusim_ui
+        npm run dev &
+        FRONTEND_PID=$!
+
+        echo -e "${GREEN}Backend PID:${NC} $BACKEND_PID"
+        echo -e "${GREEN}Frontend PID:${NC} $FRONTEND_PID"
+        echo -e "Press ${GREEN}Ctrl+C${NC} to stop both processes"
+
+        # Wait for both processes
+        wait $BACKEND_PID $FRONTEND_PID
         ;;
     *)
         echo -e "${RED}Error:${NC} Unknown command: $COMMAND"

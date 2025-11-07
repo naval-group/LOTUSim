@@ -95,7 +95,6 @@ bool XdynWebsocket::createConnection(
     }
     m_uri[_entity] = uri;
 
-    // Need to create json file and add to the command
     if (_sdf->HasElement("thrusters") && m_vessels_cmd_map_ptr) {
         auto sdfPtr_thruster = _sdf->GetElement("thrusters")->GetFirstElement();
         auto thrusters_cmd = json::object();

@@ -84,5 +84,16 @@
         "hash_map": "cpp",
         "hash_set": "cpp"
     },
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "none",
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools",
+        "editor.formatOnSave": true
+    },
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools",
+        "editor.formatOnSave": true
+    },
     "cmake.sourceDirectory": "/home/malcom/lotusim_ws/src/lotusim/systems/sensors/lotusim_sensor_base"
 }

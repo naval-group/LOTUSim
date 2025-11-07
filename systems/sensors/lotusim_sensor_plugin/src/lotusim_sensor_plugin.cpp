@@ -6,10 +6,10 @@ namespace lotusim::sensor {
 LotusimSensorPlugin::LotusimSensorPlugin() {}
 
 void LotusimSensorPlugin::Configure(
-    const gz::sim::Entity& _entity,
-    const std::shared_ptr<const sdf::Element>& _sdf,
+    const gz::sim::Entity&,
+    const std::shared_ptr<const sdf::Element>&,
     gz::sim::EntityComponentManager& _ecm,
-    gz::sim::EventManager& _eventMgr)
+    gz::sim::EventManager&)
 {
     m_gz_node.Subscribe("/collision", &LotusimSensorPlugin::collisionCB, this);
 
@@ -35,7 +35,7 @@ void LotusimSensorPlugin::Configure(
 
 void LotusimSensorPlugin::PreUpdate(
     const gz::sim::UpdateInfo&,
-    gz::sim::EntityComponentManager& _ecm)
+    gz::sim::EntityComponentManager&)
 {
     // {
     // if (!m_scene) {
@@ -228,7 +228,7 @@ void LotusimSensorPlugin::PostUpdate(
             if (lat_long) {
                 sensor->LatLong(lat_long.value());
             }
-            sensor->Update(_info, _ecm);
+            sensor->UpdateSensor(_info, _ecm);
         }
     }
 }

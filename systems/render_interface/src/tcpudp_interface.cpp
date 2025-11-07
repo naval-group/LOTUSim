@@ -10,6 +10,9 @@ TcpUdpInterface::TcpUdpInterface(
     std::shared_ptr<spdlog::logger> logger)
     : RenderInterfaceBase(world_name, std::move(logger))
 {
+    m_logger = logger::createConsoleAndFileLogger(
+        "tcp_render_interface",
+        "tcp_render_interface.txt");
 }
 
 TcpUdpInterface::~TcpUdpInterface()
@@ -150,11 +153,8 @@ bool TcpUdpInterface::sendPosition(
         msgs.pop_back();
     }
     msgs += "]}";
-    auto sent = m_udp_socket_ptr->send_to(
-        boost::asio::buffer(msgs),
-        m_udp_endpoint,
-        0,
-        err);
+    m_udp_socket_ptr
+        ->send_to(boost::asio::buffer(msgs), m_udp_endpoint, 0, err);
 
     m_io_context.run_one();
     return true;
@@ -206,15 +206,15 @@ bool TcpUdpInterface::destroyVessel(const std::string& vessel_name)
     return true;
 }
 bool TcpUdpInterface::customPreUpdates(
-    const gz::sim::UpdateInfo& _info,
-    gz::sim::EntityComponentManager& _ecm)
+    const gz::sim::UpdateInfo&,
+    gz::sim::EntityComponentManager&)
 {
     return true;
 }
 
 bool TcpUdpInterface::customUpdates(
-    const gz::sim::UpdateInfo& _info,
-    const gz::sim::EntityComponentManager& _ecm)
+    const gz::sim::UpdateInfo&,
+    const gz::sim::EntityComponentManager&)
 {
     return true;
 }
@@ -229,7 +229,6 @@ bool TcpUdpInterface::sendCreateMessage(
     }
 
     m_logger->info("RenderPlugin creating model: {}", name);
-    boost::system::error_code err;
     std::string msg = fmt::format(
         R"({{
         "cmd": "create",
@@ -273,7 +272,6 @@ bool TcpUdpInterface::sendDestroyMessage(const std::string& name)
     }
 
     m_logger->info("RenderPlugin destroying model: {}", name);
-    boost::system::error_code err;
     std::string msg = fmt::format(
         R"(
         {
@@ -309,7 +307,6 @@ bool TcpUdpInterface::sendExplodeMessage(const std::string& name)
     }
 
     m_logger->info("RenderPlugin exploding model: {}", name);
-    boost::system::error_code err;
     std::string msg = fmt::format(
         R"(
         {

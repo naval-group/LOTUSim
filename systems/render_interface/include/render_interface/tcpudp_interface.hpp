@@ -31,16 +31,16 @@ constexpr unsigned short DEFAULT_TCP_PORT = 23457;
  * </plugin>
  */
 
-class TcpUdpInterface : public RenderInterfaceBase {
+class TcpUdpInterface final : public RenderInterfaceBase {
 public:
     TcpUdpInterface(
         const std::string& world_name,
         std::shared_ptr<spdlog::logger> logger);
 
-    ~TcpUdpInterface() override final;
+    ~TcpUdpInterface() override;
 
     bool configureInterface(
-        const std::shared_ptr<const sdf::Element>& _sdf) override final;
+        const std::shared_ptr<const sdf::Element>& _sdf) override;
 
     /**
      * @brief Inherited sendPosition method
@@ -53,7 +53,7 @@ public:
     bool sendPosition(
         const std::chrono::steady_clock::duration& runTime,
         const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
-        override final;
+        override;
 
     /**
      * @brief Method to create new vessel
@@ -67,17 +67,17 @@ public:
     bool createVessel(
         const std::string& vessel_name,
         const gz::math::Pose3d& pose,
-        sdf::ElementPtr sdfptr) override final;
+        sdf::ElementPtr sdfptr) override;
 
-    bool destroyVessel(const std::string& vessel_name) override final;
+    bool destroyVessel(const std::string& vessel_name) override;
 
     virtual bool customPreUpdates(
         const gz::sim::UpdateInfo& _info,
-        gz::sim::EntityComponentManager& _ecm) override final;
+        gz::sim::EntityComponentManager& _ecm) override;
 
     virtual bool customUpdates(
         const gz::sim::UpdateInfo& _info,
-        const gz::sim::EntityComponentManager& _ecm) override final;
+        const gz::sim::EntityComponentManager& _ecm) override;
 
 private:
     /**

@@ -14,19 +14,19 @@ public:
     IMUSensor(
         std::shared_ptr<spdlog::logger> logger,
         rclcpp::Node::SharedPtr node,
-        const gz::sim::Entity &vessel_entity,
-        const gz::sim::Entity &sensor_entity,
-        const std::string &parent_name,
-        const std::string &sensor_name);
+        const gz::sim::Entity& vessel_entity,
+        const gz::sim::Entity& sensor_entity,
+        const std::string& parent_name,
+        const std::string& sensor_name);
 
     ~IMUSensor();
 
-    virtual bool Update(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) final;
+    virtual bool UpdateSensor(
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) final;
 
 private:
-    virtual bool CustomSensorLoad(const sdf::Sensor &_sdf) final;
+    virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) final;
 
 private:
     // Sensor params

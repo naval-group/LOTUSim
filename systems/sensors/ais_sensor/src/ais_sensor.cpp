@@ -28,7 +28,7 @@ AISSensor::AISSensor(
 }
 AISSensor::~AISSensor() = default;
 
-bool AISSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
+bool AISSensor::CustomSensorLoad(const sdf::Sensor&)
 {
     m_sensor_pub = m_ros_node->create_publisher<lotusim_sensor_msgs::msg::AIS>(
         m_vessel_name + "/" + m_sensor_name + "/" + "ais",
@@ -36,7 +36,7 @@ bool AISSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
     return true;
 }
 
-bool AISSensor::Update(
+bool AISSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
