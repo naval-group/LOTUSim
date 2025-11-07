@@ -11,7 +11,7 @@ environment models:
     constant sea elevation in NED frame: {value: 0, unit: m}
   - model: ekman current
     #seabed depth: 123
-    seabed file: lrauv/height_map.png
+    seabed file: seabed/seabed.png
     latitude: { value: 43, unit: deg }
     top layer thickness: { value: 5, unit: m}
     bottom layer thickness: { value: 8, unit: m}

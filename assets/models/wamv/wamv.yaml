@@ -12,18 +12,6 @@ environment models:
   - model: no waves
     constant sea elevation in NED frame: {value: 0, unit: m}
 
-  - model: ekman current
-    #seabed depth: 123
-    seabed file: lrauv/height_map.png
-    latitude: { value: 43, unit: deg }
-    top layer thickness: { value: 10, unit: m}
-    bottom layer thickness: { value: 10, unit: m}
-    current velocity: { value: 0.1, unit: m/s }
-    current orientation: { value: -45, unit: deg } # the middle current is pointing north if 0
-    U10: { value: 3, unit: m/s }
-    wind orientation: { value: 0.2, unit: rad }
-
-
 # Fixed frame: NED
 bodies: # All bodies have NED as parent frame
 
@@ -61,7 +49,6 @@ bodies: # All bodies have NED as parent frame
 
     dynamics:
 
-        # This is taken from the bluerov2 Katell files
         hydrodynamic forces calculation point in body frame:
             # center_of_volume:
             # x: 0.0
@@ -71,7 +58,6 @@ bodies: # All bodies have NED as parent frame
             y: {value: 0, unit: m}
             z: {value: 0, unit: m}
 
-        # This is taken from the bluerov2 Katell files
         centre of inertia:
             # center_of_mass:
             # x: 0.0
@@ -82,12 +68,6 @@ bodies: # All bodies have NED as parent frame
             y: {value: 0, unit: m}
             z: {value: 0.011, unit: m}
 
-        # This is taken from the bluerov2 Katell files
-        # inertia:
-        # mass: 13.0
-        # ixx: 0.26
-        # iyy: 0.23
-        # izz: 0.37
         rigid body inertia matrix at the center of gravity and projected in the body frame:
             row 1: [ 13,  0,  0,    0,    0,    0]
             row 2: [  0, 13,  0,    0,    0,    0]
@@ -96,14 +76,6 @@ bodies: # All bodies have NED as parent frame
             row 5: [  0,  0,  0,    0, 0.23,    0]
             row 6: [  0,  0,  0,    0,    0, 0.37]
             
-        # This is taken from the bluerov2 Katell files
-        # <!-- Added mass: -->
-        # <xDotU>0</xDotU>
-        # <yDotV>0</yDotV>
-        # <zDotW>0</zDotW>
-        # <kDotP>0</kDotP>
-        # <mDotQ>0</mDotQ>
-        # <nDotR>0</nDotR>
         added mass matrix at the center of gravity and projected in the body frame:
             row 1: [ 0, 0,  0,  0,  0, 0]
             row 2: [ 0, 0,  0,  0,  0, 0]

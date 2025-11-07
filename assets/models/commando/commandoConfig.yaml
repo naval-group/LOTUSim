@@ -34,7 +34,7 @@ environment models:
 
 bodies:   
   - name: floating_cube
-    mesh: cube/meshes/commando.stl
+    mesh: commando/meshes/commando.stl
 
     position of body frame relative to mesh:
       frame: mesh
