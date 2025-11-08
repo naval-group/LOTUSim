@@ -5,7 +5,7 @@ if(POLICY CMP0100)
   cmake_policy(SET CMP0100 NEW)
 endif()
 
-project(WindAdjusterPlugin)
+project(wind_adjuster_plugin)
 
 # Enable Qt support for ROS 2
 find_package(ament_cmake REQUIRED)
@@ -18,12 +18,12 @@ find_package(Qt5 REQUIRED COMPONENTS Core Widgets Qml)
 set(CMAKE_AUTOMOC ON)
 
 # Add the Qt resources file
-QT5_ADD_RESOURCES(resources_RCC ${PROJECT_NAME}.qrc)
+qt5_add_resources(resources_RCC wind_adjuster_plugin.qrc)
 
 # Define the shared library (plugin)
 add_library(${PROJECT_NAME} SHARED
   WindAdjusterPlugin.cc
-  ${resources_RCC}
+  ${resources_RCC} # Include the generated resource file
 )
 
 # Link against necessary libraries
@@ -35,6 +35,12 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE Qt5::Widgets
   PRIVATE Qt5::Qml
 )
+
+# Include directories if needed
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Set C++ standard
+target_compile_features(wind_adjuster_plugin PUBLIC cxx_std_17)
 
 # Install the plugin to the proper location
 install(TARGETS ${PROJECT_NAME}

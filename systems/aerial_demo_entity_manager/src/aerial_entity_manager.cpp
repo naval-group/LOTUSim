@@ -7,7 +7,7 @@ AerialEntityManager::AerialEntityManager() : EntityManager() {}
 AerialEntityManager::~AerialEntityManager() {}
 
 void AerialEntityManager::customUserConfiguration(
-    const std::shared_ptr<const sdf::Element> &_sdf)
+    const std::shared_ptr<const sdf::Element>& _sdf)
 {
     if (_sdf->HasElement("aerial_namespace")) {
         m_aerial_namespace = _sdf->Get<std::string>("aerial_namespace");
@@ -33,7 +33,7 @@ void AerialEntityManager::customUserConfiguration(
 }
 
 void AerialEntityManager::customUserAddEntity(
-    const lotusim_msgs::msg::MASCmd &msg)
+    const lotusim_msgs::msg::MASCmd& msg)
 {
     auto aerial_goal_msg = lotusim_msgs::action::MASCmd::Goal();
     aerial_goal_msg.header.stamp = rclcpp::Clock().now();
@@ -55,7 +55,7 @@ void AerialEntityManager::customUserAddEntity(
 }
 
 void AerialEntityManager::customUserDeleteEntity(
-    const lotusim_msgs::msg::MASCmd &msg)
+    const lotusim_msgs::msg::MASCmd& msg)
 {
     auto aerial_goal_msg = lotusim_msgs::action::MASCmd::Goal();
     aerial_goal_msg.header.stamp = rclcpp::Clock().now();
@@ -89,7 +89,7 @@ void AerialEntityManager::goalResponseCB(
 }
 
 void AerialEntityManager::resultCB(
-    const ClientGoalHandleMASCmd::WrappedResult &result)
+    const ClientGoalHandleMASCmd::WrappedResult& result)
 {
     switch (result.code) {
         case rclcpp_action::ResultCode::SUCCEEDED:
@@ -108,4 +108,5 @@ GZ_ADD_PLUGIN(
     gz::sim::System,
     lotusim::gazebo::AerialEntityManager::ISystemConfigure,
     lotusim::gazebo::AerialEntityManager::ISystemPreUpdate,
+    lotusim::gazebo::AerialEntityManager::ISystemUpdate,
     lotusim::gazebo::AerialEntityManager::ISystemPostUpdate)

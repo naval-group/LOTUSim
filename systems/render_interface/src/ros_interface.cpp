@@ -23,14 +23,17 @@ bool ROSInterface::configureInterface(
 {
     m_logger->info(
         "ROSInterface::configureInterface : ROS renderer interface created");
+
+    rclcpp::QoS qos_profile(10);
+    qos_profile.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
     m_renderer_cmd_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::RendererCmd>(
-            "renderer_cmd",
-            rclcpp::QoS(10));
+            "renderer_cmd", qos_profile);
+
     m_pose_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
-            "renderer_poses",
-            rclcpp::QoS(10));
+            "renderer_poses", qos_profile);
     return true;
 }
 
