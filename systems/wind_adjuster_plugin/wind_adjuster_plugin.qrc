@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/wind_adjuster_plugin">
+    <file>wind_adjuster_plugin.qml</file>
+</qresource>
+</RCC>

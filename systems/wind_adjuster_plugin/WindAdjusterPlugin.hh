@@ -7,7 +7,7 @@
 
 #include <gz/sim/EntityComponentManager.hh>
 
-class WindAdjusterPlugin : public gz::sim::GuiSystem
+class WindAdjusterPlugin : public gz::gui::Plugin
 {
   Q_OBJECT
   Q_PROPERTY(double xVelocity READ XVelocity WRITE SetXVelocity NOTIFY XVelocityChanged)
@@ -19,13 +19,12 @@ public:
   ~WindAdjusterPlugin() override;
 
   void LoadConfig(const tinyxml2::XMLElement *_pluginElem) override;
-  void Update(const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm) override;
 
   double XVelocity() const;
   double YVelocity() const;
   double ZVelocity() const;
 
-  Q_INVOKABLE void setWindVelocity(double x, double y, double z);  // Function to set wind velocity
+  Q_INVOKABLE void setWindVelocity(double x, double y, double z);
 
   void SetXVelocity(double x);
   void SetYVelocity(double y);

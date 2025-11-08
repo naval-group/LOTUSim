@@ -53,9 +53,4 @@ To use this plugin, ensure that you have the following installed:
 2. Load the `WindAdjusterPlugin` via the Gazebo GUI or specify it in the world file.
 3. Use the plugin interface to adjust wind velocities in real-time.
 
-## Author
-
-Jacob Borthwick-Pellissier
-
-
 

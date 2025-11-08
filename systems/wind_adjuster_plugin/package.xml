@@ -1,16 +1,17 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>WindAdjusterPlugin</name>
+  <name>wind_adjuster_plugin</name>
   <version>0.1.0</version>
   <description>Wind Adjuster Plugin for Gazebo simulation with Qt interface</description>
   <maintainer email="malcom.neo@fe.naval-group.com">malcom neo</maintainer>
-
+  
+  <author email="jgrosset10@gmail.com">juliette</author>
   <author email="jakepell501@gmail.com">jacob borthwick-pellissier</author>
   <author email="hlechene.exterieur@pacific.naval-group.com">helene lechene</author>
   <author email="malcom.neo@fe.naval-group.com">malcom neo</author>
 
 
-  <license>EPL-2.0</license>
+  <license>Apache-2.0</license>
   <!-- Build system dependencies -->
   <buildtool_depend>ament_cmake</buildtool_depend>
 
