@@ -143,7 +143,7 @@ void EntityManager::PreUpdate(
             }
             try {
                 action_handle->succeed(result);
-            } catch (std::runtime_error e) {
+            } catch (std::runtime_error& e) {
                 m_logger->error(
                     "EntityManager::PreUpdate:ERROR Unable to reply action. Action dropped\n{}",
                     e.what());
@@ -171,7 +171,7 @@ void EntityManager::PreUpdate(
             auto res = handleMASCmd(action_handle->get_goal()->cmd);
             try {
                 action_handle->succeed(res);
-            } catch (std::runtime_error e) {
+            } catch (std::runtime_error& e) {
                 m_logger->error(
                     "EntityManager::PreUpdate:ERROR Unable to reply action. Action dropped\n{}",
                     e.what());
@@ -227,7 +227,7 @@ EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 break;
             }
         }
-    } catch (std::runtime_error e) {
+    } catch (std::runtime_error &e) {
         m_logger->error(
             "EntityManager::PreUpdate:ERROR Vessel: {}, Entity: {}, \n{}",
             cmd.vessel_name,
@@ -260,15 +260,20 @@ void EntityManager::Update(
         if (name_opt) {
             vessel_name = name_opt->Data();
             m_logger->info(
-                "EntityManager::EachNew: Vessel {} spawned.",
+                "EntityManager::EachNew: Vessel {}, {} spawned.",
+                _entity,
                 vessel_name);
         } else {
             m_logger->warn(
                 "EntityManager::EachNew: New vessel with no name found. Ignoring model.");
             return true;
         }
-        m_vessels_entities[vessel_name] = _entity;
-        m_vessels_names[_entity] = vessel_name;
+
+        {
+            std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
+            m_vessels_entities[vessel_name] = _entity;
+            m_vessels_names[_entity] = vessel_name;
+        }
 
         // Making the base_link in the model report velocity
         auto child_link =
@@ -296,6 +301,7 @@ void EntityManager::Update(
             if (!name_opt) {
                 return true;
             }
+            std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
             m_vessels_entities.erase(vessel_name);
             m_vessels_names.erase(_entity);
             return true;
@@ -523,19 +529,22 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
 
 bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
-    gz::sim::Entity vessel_entity;
-    if (msg.entity) {
-        vessel_entity = msg.entity;
-    } else if (
-        !msg.vessel_name.empty() &&
-        m_vessels_entities.find(msg.vessel_name) != m_vessels_entities.end()) {
-        vessel_entity = m_vessels_entities[msg.vessel_name];
-    } else {
-        m_logger->error(
-            "EntityManager::moveEntity: Called without providing entity or vessel_name");
-        return false;
-    }
     try {
+        gz::sim::Entity vessel_entity;
+        if (msg.entity) {
+            vessel_entity = msg.entity;
+        } else if (
+            !msg.vessel_name.empty() &&
+            m_vessels_entities.find(msg.vessel_name) !=
+                m_vessels_entities.end()) {
+            std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
+            vessel_entity = m_vessels_entities.at(msg.vessel_name);
+        } else {
+            m_logger->error(
+                "EntityManager::moveEntity: Called without providing entity or vessel_name");
+            return false;
+        }
+
         gz::math::Pose3 pose = gz::math::Pose3<double>(
             msg.vessel_position.position.x,
             msg.vessel_position.position.y,
@@ -562,9 +571,9 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             pose);
         if (!res) {
             m_logger->warn(
-                "EntityManager::moveEntity: Failed to set componenent data {},{}",
-                vessel_entity,
-                m_vessels_names[vessel_entity]);
+                "EntityManager::moveEntity: Failed to set componenent data {}, entity: {}",
+                msg.vessel_name,
+                msg.entity);
         }
 
         m_ecm->SetChanged(
@@ -572,11 +581,17 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             gz::sim::components::Pose::typeId,
             gz::sim::ComponentState::OneTimeChange);
 
+    } catch (std::out_of_range const& exc) {
+        m_logger->error(
+            "EntityManager::moveEntity: Failed to move {}, entity: {}",
+            msg.vessel_name,
+            msg.entity);
+
     } catch (...) {
         m_logger->error(
             "EntityManager::moveEntity: Failed to move {}, entity: {}",
             msg.vessel_name,
-            vessel_entity);
+            msg.entity);
         return false;
     }
     return true;
@@ -586,6 +601,8 @@ bool EntityManager::deleteEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
     gz::sim::Entity vessel_entity;
     try {
+        std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
+
         if (msg.entity) {
             vessel_entity = msg.entity;
         } else if (
@@ -621,7 +638,7 @@ void EntityManager::publishPose(
     array_msg.header.stamp.nanosec =
         static_cast<uint32_t>(simTimeNs % 1000000000);
     array_msg.header.frame_id = "world";
-
+    std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
     for (auto&& vessel_map : m_vessels_names) {
         auto entity = vessel_map.first;
         auto latLonEle = sphericalCoordinates(entity, _ecm);

@@ -23,7 +23,8 @@ gz::math::Vector3d vecEnuToNed(const gz::math::Vector3d& v_enu)
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::m_instance = nullptr;
-std::mutex XdynWebsocket::m_mutex;
+std::mutex XdynWebsocket::m_instance_mutex;
+std::mutex XdynWebsocket::m_variable_mutex;
 std::unordered_map<gz::sim::Entity, std::string> XdynWebsocket::m_name_mapping;
 std::unordered_map<std::string, gz::sim::Entity>
     XdynWebsocket::m_entity_mapping;
@@ -46,11 +47,8 @@ XdynWebsocket::XdynWebsocket() : PhysicsInterfaceBase("XdynWebsocket")
     m_client.init_asio();
     m_client.start_perpetual();
 
-    // know how this thread is running. To determine whether this is a
-    // bottleneck
     m_thread = Weblib::make_shared<Weblib::thread>(&Client::run, &m_client);
 
-    // Header for excel file
     m_engine_logger->debug("t,vessel_name,X,Y,Z,U,V,W,qi,qj,qk,qr,p,q,r");
 }
 
@@ -70,11 +68,11 @@ std::shared_ptr<XdynWebsocket> XdynWebsocket::getInstance(
     const gz::sim::Entity& _entity,
     const std::string& _name)
 {
+    std::scoped_lock lock(m_instance_mutex, m_variable_mutex);
     m_name_mapping[_entity] = _name;
     m_entity_mapping[_name] = _entity;
     if (m_instance == nullptr) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_instance = std::shared_ptr<XdynWebsocket>(new XdynWebsocket());
+        m_instance = std::make_shared<XdynWebsocket>();
     }
     return m_instance;
 }
@@ -84,6 +82,7 @@ bool XdynWebsocket::createConnection(
     const std::string& _name,
     const sdf::ElementPtr _sdf)
 {
+    std::unique_lock<std::mutex> lock(m_variable_mutex);
     std::string uri;
     if (_sdf->HasElement("uri")) {
         uri = _sdf->Get<std::string>("uri");
@@ -110,55 +109,97 @@ bool XdynWebsocket::createConnection(
     return true;
 }
 
+bool XdynWebsocket::removeConnection(const gz::sim::Entity& _entity)
+{
+    deactivateConnection(_entity);
+    m_vessels_cmd_map_ptr->erase(_entity);
+    m_uri.erase(_entity);
+    return true;
+}
+
 bool XdynWebsocket::activateConnection(const gz::sim::Entity& _entity)
 {
-    websocketpp::lib::error_code ec;
+    try {
+        if (m_status.find(_entity) != m_status.end() &&
+            (m_status[_entity] == "opened" ||
+             m_status[_entity] == "configuring")) {
+            m_logger->warn(
+                "XdynWebsocket::activateConnection: Called for vessel entity {} even when it is active",
+                _entity);
+            return true;
+        }
 
-    Client::connection_ptr con = m_client.get_connection(m_uri[_entity], ec);
-    if (ec) {
-        m_logger->info(
-            "XdynWebsocket::activateConnection: Connect initialization error: {}",
-            ec.message());
-        return -1;
-    }
-    m_connection_mapping.insert({_entity, con});
-    m_connection_entity_mapping.insert({con, _entity});
-    m_status.insert({_entity, "configuring"});
-    con->set_open_handler(bind(
-        &XdynWebsocket::onOpen,
-        this,
-        _entity,
-        websocketpp::lib::placeholders::_1));
-    con->set_fail_handler(bind(
-        &XdynWebsocket::onFail,
-        this,
-        _entity,
-        websocketpp::lib::placeholders::_1));
-    con->set_message_handler(bind(
-        &XdynWebsocket::onMessage,
-        this,
-        websocketpp::lib::placeholders::_1,
-        websocketpp::lib::placeholders::_2));
+        if (m_uri.find(_entity) == m_uri.end()) {
+            m_logger->error(
+                "XdynWebsocket::activateConnection: Called for vessel entity {} but no uri found.",
+                _entity);
+            return false;
+        }
 
-    int retry = 0;
-    while (m_status[_entity] != "opened" && retry < 3) {
-        m_logger->info(
-            "XdynWebsocket::activateConnection: Starting connection: {}",
-            m_name_mapping[_entity]);
-        m_client.connect(con);
-        // TBD: Damn dumb implementation. You are killing the thread.
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        retry += 1;
+        websocketpp::lib::error_code ec;
+        Client::connection_ptr con =
+            m_client.get_connection(m_uri[_entity], ec);
+        if (ec) {
+            m_logger->info(
+                "XdynWebsocket::activateConnection: Connect initialization error: {}",
+                ec.message());
+            return false;
+        }
+        {
+            std::unique_lock<std::mutex> lock(m_variable_mutex);
+            m_connection_mapping.insert({_entity, con});
+            m_connection_entity_mapping.insert({con, _entity});
+            m_status.insert({_entity, "configuring"});
+        }
+        con->set_open_handler(bind(
+            &XdynWebsocket::onOpen,
+            this,
+            _entity,
+            websocketpp::lib::placeholders::_1));
+        con->set_fail_handler(bind(
+            &XdynWebsocket::onFail,
+            this,
+            _entity,
+            websocketpp::lib::placeholders::_1));
+        con->set_message_handler(bind(
+            &XdynWebsocket::onMessage,
+            this,
+            websocketpp::lib::placeholders::_1,
+            websocketpp::lib::placeholders::_2));
+
+        int retry = 0;
+        while (m_status[_entity] != "opened" && retry < 3) {
+            m_logger->info(
+                "XdynWebsocket::activateConnection: Starting connection: {}",
+                m_name_mapping[_entity]);
+            m_client.connect(con);
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            retry += 1;
+        }
+        if (retry > 2) {
+            m_logger->error(
+                "XdynWebsocket::activateConnection: Called for vessel entity {} but unable to connect.",
+                _entity);
+            return false;
+        }
+        return true;
+    } catch (const std::exception& e) {
+        m_logger->error(
+            "XdynWebsocket::activateConnection: Called for vessel entity {} but error\n{}.",
+            _entity,
+            e.what());
+
+    } catch (...) {
+        m_logger->error(
+            "XdynWebsocket::activateConnection: Called for vessel entity {} but unkown error.",
+            _entity);
     }
-    if (retry > 2) {
-        throw std::runtime_error(
-            "XdynWebsocket::activateConnection: Failed to activate websocket");
-    }
-    return true;
+    return false;
 }
 
 bool XdynWebsocket::deactivateConnection(const gz::sim::Entity& _entity)
 {
+    std::unique_lock<std::mutex> lock(m_variable_mutex);
     websocketpp::lib::error_code ec;
     m_client.close(
         m_connection_mapping[_entity]->get_handle(),
@@ -173,13 +214,19 @@ bool XdynWebsocket::deactivateConnection(const gz::sim::Entity& _entity)
 
 std::string XdynWebsocket::getURI(const gz::sim::Entity& _entity)
 {
-    return m_uri[_entity];
+    std::unique_lock<std::mutex> lock(m_variable_mutex);
+    if (m_uri.find(_entity) != m_uri.end()) {
+        return m_uri[_entity];
+    } else {
+        return "";
+    }
 }
 
 void XdynWebsocket::onOpen(
     const gz::sim::Entity& _entity,
     websocketpp::connection_hdl hdl)
 {
+    std::unique_lock<std::mutex> lock(m_variable_mutex);
     auto uri = m_client.get_con_from_hdl(hdl)->get_uri()->str();
     m_status[_entity] = "opened";
     m_logger->info("XdynWebsocket::onOpen: Opened {}", uri);
@@ -189,6 +236,7 @@ void XdynWebsocket::onFail(
     const gz::sim::Entity& _entity,
     websocketpp::connection_hdl hdl)
 {
+    std::unique_lock<std::mutex> lock(m_variable_mutex);
     auto uri = m_client.get_con_from_hdl(hdl)->get_uri()->str();
     m_status[_entity] = "failed";
     m_logger->info("XdynWebsocket::onFail: Failed {}", uri);
@@ -299,6 +347,7 @@ bool XdynWebsocket::send(
     const gz::sim::Entity& _entity,
     const std::string& message)
 {
+    std::unique_lock<std::mutex> lock(m_variable_mutex);
     websocketpp::lib::error_code ec;
     m_client.send(
         m_connection_mapping[_entity]->get_handle(),
@@ -313,7 +362,6 @@ bool XdynWebsocket::send(
     }
     {
         std::unique_lock<std::mutex> lock(m_msg_mutex[_entity]);
-        // TODO: To be more stringent on timeout time.
         if (m_msg_cv[_entity].wait_for(
                 lock,
                 std::chrono::seconds(DEFAULT_WEBSOCKET_TIMEOUT)) ==

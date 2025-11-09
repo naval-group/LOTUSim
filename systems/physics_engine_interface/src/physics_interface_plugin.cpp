@@ -93,25 +93,34 @@ void PhysicsInterfacePlugin::Update(
         std::chrono::system_clock::now();
 
     for (auto&& vessel_entity : m_vessels_entities) {
-        // Bound checking for all map used
-        if (m_current_vessel_interface.find(vessel_entity) ==
-                m_current_vessel_interface.end() &&
-            m_vessels_name_map.find(vessel_entity) ==
-                m_vessels_name_map.end() &&
-            m_vessels_base_link_map.find(m_vessels_name_map[vessel_entity]) ==
-                m_vessels_base_link_map.end()) {
+        auto it_name = m_vessels_name_map.find(vessel_entity);
+        auto it_interface = m_current_vessel_interface.find(vessel_entity);
+        if (it_name == m_vessels_name_map.end() ||
+            it_interface == m_current_vessel_interface.end()) {
             m_logger->warn(
-                "PhysicsInterfacePlugin::Update: Entity {} update failed. Unable for find mappings",
+                "PhysicsInterfacePlugin::Update: Entity {} update failed. Missing vessel name or interface mapping",
                 vessel_entity);
+            continue;
         }
+
+        const std::string& vessel_name = it_name->second;
+        auto it_base = m_vessels_base_link_map.find(vessel_name);
+        if (it_base == m_vessels_base_link_map.end()) {
+            m_logger->warn(
+                "PhysicsInterfacePlugin::Update: Entity {} ({}) has no base link mapping",
+                vessel_entity,
+                vessel_name);
+            continue;
+        }
+
         futures.push_back(
             std::async(
-            std::launch::async,
-            &PhysicsInterfacePlugin::updateVesselState,
-            this,
-            vessel_entity,
-            _info,
-            std::ref(_ecm)));
+                std::launch::async,
+                &PhysicsInterfacePlugin::updateVesselState,
+                this,
+                vessel_entity,
+                _info,
+                std::ref(_ecm)));
     }
     for (auto& fut : futures) {
         fut.get();
@@ -130,66 +139,93 @@ void PhysicsInterfacePlugin::updateVesselState(
     const gz::sim::UpdateInfo& _info,
     gz::sim::EntityComponentManager& _ecm)
 {
-    std::string vessel_name = m_vessels_name_map[vessel_entity];
-    float target_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt).count();
     try {
-        std::chrono::_V2::system_clock::time_point start_time =
-            std::chrono::system_clock::now();
-
-        // TODO: Temp fix measure. Test if the worldPose component matters
-        // and if the rest of the child / sensors links follow along and
-        // update to give good sensor reading
+        std::optional<std::tuple<VesselInformation, DomainType>> update_opt;
         gz::math::Pose3d pose;
         gz::math::Vector3d lin_vel;
         gz::math::Vector3d ang_vel;
-        auto pose_comp =
-            _ecm.Component<gz::sim::components::Pose>(vessel_entity);
-        if (pose_comp) {
-            pose = pose_comp->Data();
-        } else {
-            m_logger->error(
-                "PhysicsInterfacePlugin::Update: unable to get pose component for {}",
-                vessel_name);
-            return;
-        }
+        std::string vessel_name;
+        {
+            std::shared_lock<std::shared_mutex> lock(m_mutex);
+            auto it_name = m_vessels_name_map.find(vessel_entity);
+            if (it_name == m_vessels_name_map.end()) {
+                m_logger->error(
+                    "PhysicsInterfacePlugin::Update: Unknown vessel entity {}",
+                    vessel_entity);
+                return;
+            }
+            vessel_name = it_name->second;
 
-        gz::sim::Link _link(m_vessels_base_link_map[vessel_name]);
+            float target_time =
+                std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt)
+                    .count();
 
-        // Get the linear and angular velocity in world frame, ENU.
-        auto lin_vel_opt = _link.WorldLinearVelocity(_ecm);
-        auto ang_vel_opt = _link.WorldAngularVelocity(_ecm);
+            std::chrono::_V2::system_clock::time_point start_time =
+                std::chrono::system_clock::now();
 
-        VesselInformation vessel_info;
-        vessel_info.time =
-            std::chrono::duration_cast<std::chrono::milliseconds>(_info.simTime)
-                .count() /
-            1000.0;
-        if (lin_vel_opt) {
-            vessel_info.lin_vel = lin_vel_opt.value();
-        }
-        if (ang_vel_opt) {
-            vessel_info.ang_vel = ang_vel_opt.value();
-        }
-        vessel_info.entity = vessel_entity;
-        vessel_info.pose = pose;
+            auto pose_comp =
+                _ecm.Component<gz::sim::components::Pose>(vessel_entity);
+            if (pose_comp) {
+                pose = pose_comp->Data();
+            } else {
+                m_logger->error(
+                    "PhysicsInterfacePlugin::Update: unable to get pose component for {}",
+                    vessel_name);
+                return;
+            }
 
-        std::optional<std::tuple<VesselInformation, DomainType>> update_opt =
-            m_current_vessel_interface[vessel_entity]->getNewState(
+            auto it_base = m_vessels_base_link_map.find(vessel_name);
+            if (it_base == m_vessels_base_link_map.end()) {
+                m_logger->error(
+                    "PhysicsInterfacePlugin::Update: No base link found for vessel {}",
+                    vessel_name);
+                return;
+            }
+            gz::sim::Link _link(it_base->second);
+
+            // Get the linear and angular velocity in world frame, ENU.
+            auto lin_vel_opt = _link.WorldLinearVelocity(_ecm);
+            auto ang_vel_opt = _link.WorldAngularVelocity(_ecm);
+
+            VesselInformation vessel_info;
+            vessel_info.time =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    _info.simTime)
+                    .count() /
+                1000.0;
+            if (lin_vel_opt) {
+                vessel_info.lin_vel = lin_vel_opt.value();
+            }
+            if (ang_vel_opt) {
+                vessel_info.ang_vel = ang_vel_opt.value();
+            }
+            vessel_info.entity = vessel_entity;
+            vessel_info.pose = pose;
+
+            auto it_interface = m_current_vessel_interface.find(vessel_entity);
+            if (it_interface == m_current_vessel_interface.end() ||
+                !it_interface->second) {
+                m_logger->error(
+                    "PhysicsInterfacePlugin::Update: No physics interface found for vessel {}",
+                    vessel_name);
+                return;
+            }
+
+            update_opt = it_interface->second->getNewState(
                 vessel_entity,
                 vessel_info,
                 target_time);
 
-        // Print physics engine response time if compiled in debug mode
-        if (m_logger->level() < spdlog::level::info) {
-            m_logger->debug(
-                "PhysicsInterfacePlugin::Update: {} Phyiscs update time: {}",
-                vessel_name,
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now() - start_time)
-                    .count());
+            // Print physics engine response time if compiled in debug mode
+            if (m_logger->level() < spdlog::level::info) {
+                m_logger->debug(
+                    "PhysicsInterfacePlugin::Update: {} Phyiscs update time: {}",
+                    vessel_name,
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now() - start_time)
+                        .count());
+            }
         }
-
         if (update_opt) {
             if (!vesselTransition(
                     vessel_entity,
@@ -232,6 +268,43 @@ void PhysicsInterfacePlugin::updateVesselState(
             "PhysicsInterfacePlugin::Update: Error update for entity {}\n{}.\n.",
             vessel_entity,
             e.what());
+    } catch (...) {
+        m_logger->warn(
+            "PhysicsInterfacePlugin::Update: Unknown error update for {}.",
+            vessel_entity);
+    }
+}
+void PhysicsInterfacePlugin::createDomainConnection(
+    const gz::sim::Entity& _entity,
+    const std::string& _vessel_name,
+    sdf::ElementPtr _physics_sdf,
+    const lotusim::gazebo::DomainType& _domain,
+    std::unordered_map<gz::sim::Entity, std::shared_ptr<PhysicsInterfaceBase>>&
+        _interface_map)
+{
+    ConnectionType connection_type;
+    if (!_physics_sdf->HasElement("connection_type") ||
+        !_physics_sdf->HasElement("uri")) {
+        m_logger->warn(
+            "PhysicsInterfacePlugin::loadVessel: {} missing {} connectionType or uri. Removing aerial calculation.",
+            _vessel_name,
+            DomainTypeToStringMap[_domain]);
+    }
+    try {
+        connection_type = ConnectionTypeMap.at(
+            lotusim::common::toUpper(
+                _physics_sdf->Get<std::string>("connection_type")));
+        _interface_map[_entity] = createConnection(
+            _entity,
+            _vessel_name,
+            connection_type,
+            _physics_sdf);
+    } catch (const std::out_of_range&) {
+        connection_type = ConnectionType::Unknown;
+        m_logger->warn(
+            "PhysicsInterfacePlugin::loadVessel: {} missing {} connection_type. Removing physics calculation.",
+            _vessel_name,
+            DomainTypeToStringMap[_domain]);
     }
 }
 
@@ -270,50 +343,68 @@ bool PhysicsInterfacePlugin::vesselTransition(
     DomainType _new_mode)
 {
     std::shared_ptr<PhysicsInterfaceBase> new_interface;
+    std::string new_domain;
+    bool transited = false;
     try {
-        if (m_vehicle_current_mode[_vessel] == _new_mode) {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
+
+        if (m_vehicle_current_mode.find(_vessel) !=
+                m_vehicle_current_mode.end() &&
+            m_vehicle_current_mode[_vessel] == _new_mode) {
             return true;
         } else if (_new_mode == DomainType::Aerial) {
+            new_domain = "aerial";
             if (m_aerial_interface.find(_vessel) != m_aerial_interface.end()) {
                 new_interface = m_aerial_interface[_vessel];
-                new_interface->activateConnection(_vessel);
-            } else {
-                throw std::runtime_error(
-                    fmt::format(
-                    "{} requested to switch domain to aerial but no defined connection in that domain. Ignoring transition.",
-                    m_vessels_name_map[_vessel]));
+                transited = new_interface->activateConnection(_vessel);
             }
         } else if (_new_mode == DomainType::Surface) {
+            new_domain = "surface";
             if (m_surface_interface.find(_vessel) !=
                 m_surface_interface.end()) {
                 new_interface = m_surface_interface[_vessel];
-                new_interface->activateConnection(_vessel);
-            } else {
-                throw std::runtime_error(
-                    fmt::format(
-                    "{} requested to switch domain to Surface but no defined connection in that domain. Ignoring transition.",
-                    m_vessels_name_map[_vessel]));
+                transited = new_interface->activateConnection(_vessel);
             }
         } else if (_new_mode == DomainType::Underwater) {
+            new_domain = "underwater";
             if (m_underwater_interface.find(_vessel) !=
                 m_underwater_interface.end()) {
                 new_interface = m_underwater_interface[_vessel];
-                new_interface->activateConnection(_vessel);
-            } else {
-                throw std::runtime_error(
-                    fmt::format(
-                    "{} requested to switch domain to Underwater but no defined connection in that domain. Ignoring transition.",
-                    m_vessels_name_map[_vessel]));
+                transited = new_interface->activateConnection(_vessel);
             }
+        } else {
+            m_logger->error(
+                "PhysicsInterfacePlugin::vesselTransition: Unknown domain transition called.\nReverting to previous physics engine.");
+            return false;
+        }
+
+        if (!transited) {
+            m_logger->error(
+                "PhysicsInterfacePlugin::vesselTransition: Failed transition to {}.\nReverting to previous physics engine.",
+                new_domain);
+            return false;
         }
     } catch (const std::exception& e) {
         m_logger->warn(
-            "PhysicsInterfacePlugin::vesselTransition: {}.\nReverting to previous physics engine.",
+            "PhysicsInterfacePlugin::vesselTransition: Entity {} error.\n{}.\nReverting to previous physics engine.",
+            _vessel,
             e.what());
         return false;
+    } catch (...) {
+        m_logger->warn(
+            "PhysicsInterfacePlugin::vesselTransition: Entity {} unknown error.\nReverting to previous physics engine.",
+            _vessel);
+        return false;
+    }
+
+    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    if (m_vehicle_current_mode.find(_vessel) != m_vehicle_current_mode.end() &&
+        !m_current_vessel_interface[_vessel]->deactivateConnection(_vessel)) {
+        m_logger->warn(
+            "PhysicsInterfacePlugin::vesselTransition: Vessel {} unable to deactivate previous physics interface. Ignoring.",
+            _vessel);
     }
     m_vehicle_current_mode[_vessel] = _new_mode;
-    m_current_vessel_interface[_vessel]->deactivateConnection(_vessel);
     m_current_vessel_interface[_vessel] = new_interface;
     return true;
 }
@@ -338,7 +429,8 @@ bool PhysicsInterfacePlugin::loadVessel(
         }
 
         auto includeptr = sdfptr->GetIncludeElement();
-        // The lotus param will either be include statement or part of the model
+        // The lotus param will either be include statement or part of the
+        // model
         if (!includeptr) {
             includeptr = sdfptr;
         }
@@ -347,12 +439,13 @@ bool PhysicsInterfacePlugin::loadVessel(
             includeptr->GetElement("lotus_param")
                 ->HasElement("physics_engine_interface")) {
             m_logger->debug(includeptr->ToString(""));
-            m_vessels_entities.push_back(_entity);
-            // Get Base Link. Currently a fix as only base_link can get
-            // model speed
-            m_vessels_model_map[vessel_name] = _entity;
-            m_vessels_name_map[_entity] = vessel_name;
-
+            {
+                std::unique_lock<std::shared_mutex> lock(m_mutex);
+                m_vessels_entities.push_back(_entity);
+                m_vessels_model_map[vessel_name] = _entity;
+                m_vessels_name_map[_entity] = vessel_name;
+            }
+            // Get base link
             auto child_link = _ecm->ChildrenByComponents(
                 _entity,
                 gz::sim::components::Link());
@@ -374,7 +467,8 @@ bool PhysicsInterfacePlugin::loadVessel(
                 includeptr->GetElement("lotus_param")
                     ->GetElement("physics_engine_interface");
             m_logger->info(
-                "PhysicsInterfacePlugin::loadVessel: {} physics update request detected.",
+                "PhysicsInterfacePlugin::loadVessel: entity: {} , {} physics update request detected.",
+                _entity,
                 vessel_name);
 
             // If vessel has aerial component
@@ -383,28 +477,12 @@ bool PhysicsInterfacePlugin::loadVessel(
                     physics_sdf_ptr,
                     "aerial");
             if (aerial_sdf) {
-                ConnectionType aerial_connection_type;
-                if (!aerial_sdf->HasElement("connection_type") ||
-                    !aerial_sdf->HasElement("uri")) {
-                    m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing aerial connectionType or uri. Removing aerial calculation.",
-                        vessel_name);
-                }
-                try {
-                    aerial_connection_type =
-                        ConnectionTypeMap.at(lotusim::common::toUpper(
-                            aerial_sdf->Get<std::string>("connection_type")));
-                    m_aerial_interface[_entity] = createConnection(
-                        _entity,
-                        vessel_name,
-                        aerial_connection_type,
-                        aerial_sdf);
-                } catch (const std::out_of_range&) {
-                    aerial_connection_type = ConnectionType::Unknown;
-                    m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing aerial connection_type. Removing aerial calculation.",
-                        vessel_name);
-                }
+                createDomainConnection(
+                    _entity,
+                    vessel_name,
+                    aerial_sdf,
+                    lotusim::gazebo::DomainType::Aerial,
+                    m_aerial_interface);
             }
 
             // If vessel has surface component
@@ -413,28 +491,12 @@ bool PhysicsInterfacePlugin::loadVessel(
                     physics_sdf_ptr,
                     "surface");
             if (surface_sdf) {
-                ConnectionType surface_connection_type;
-                if (!surface_sdf->HasElement("connection_type") ||
-                    !surface_sdf->HasElement("uri")) {
-                    m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing surface connection_type or uri. Removing surface calculation.",
-                        vessel_name);
-                }
-                try {
-                    surface_connection_type =
-                        ConnectionTypeMap.at(lotusim::common::toUpper(
-                            surface_sdf->Get<std::string>("connection_type")));
-                    m_surface_interface[_entity] = createConnection(
-                        _entity,
-                        vessel_name,
-                        surface_connection_type,
-                        surface_sdf);
-                } catch (const std::out_of_range&) {
-                    surface_connection_type = ConnectionType::Unknown;
-                    m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing surface connection_type. Removing surface calculation.",
-                        vessel_name);
-                }
+                createDomainConnection(
+                    _entity,
+                    vessel_name,
+                    surface_sdf,
+                    lotusim::gazebo::DomainType::Surface,
+                    m_surface_interface);
             }
 
             // If vessel has underwater component
@@ -444,113 +506,53 @@ bool PhysicsInterfacePlugin::loadVessel(
                     "underwater");
 
             if (underwater_sdf) {
-                ConnectionType underwater_connection_type;
-                if (!underwater_sdf->HasElement("connection_type") ||
-                    !underwater_sdf->HasElement("uri")) {
-                    m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing underwater connectionType or uri. Removing underwater calculation.",
-                        vessel_name);
-                }
-                try {
-                    underwater_connection_type =
-                        ConnectionTypeMap.at(lotusim::common::toUpper(
-                            underwater_sdf->Get<std::string>(
-                                "connection_type")));
-                    m_underwater_interface[_entity] = createConnection(
-                        _entity,
-                        vessel_name,
-                        underwater_connection_type,
-                        underwater_sdf);
-                } catch (const std::out_of_range&) {
-                    underwater_connection_type = ConnectionType::Unknown;
-                    m_logger->warn(
-                        "PhysicsInterfacePlugin::loadVessel: {} missing underwater connection_type. Removing underwater calculation.",
-                        vessel_name);
-                }
+                createDomainConnection(
+                    _entity,
+                    vessel_name,
+                    underwater_sdf,
+                    lotusim::gazebo::DomainType::Underwater,
+                    m_underwater_interface);
             }
 
             // Add warning that the init is not found and find the
             // possible state
             if (physics_sdf_ptr->HasElement("init_state")) {
-                DomainType init_domain =
-                    DomainTypeMap[physics_sdf_ptr->Get<std::string>(
-                        "init_state")];
-
-                switch (init_domain) {
-                    case (DomainType::Aerial): {
-                        if (m_aerial_interface.find(_entity) !=
-                            m_aerial_interface.end()) {
-                            m_current_vessel_interface[_entity] =
-                                m_aerial_interface[_entity];
-                            m_vehicle_current_mode[_entity] =
-                                DomainType::Aerial;
-                        } else {
-                            throw std::runtime_error(
-                                fmt::format(
-                                "{} Init state aerial. No aerial physics engine set.",
-                                vessel_name));
-                        }
-                        break;
-                    }
-                    case (DomainType::Surface): {
-                        if (m_surface_interface.find(_entity) !=
-                            m_surface_interface.end()) {
-                            m_current_vessel_interface[_entity] =
-                                m_surface_interface[_entity];
-                            m_vehicle_current_mode[_entity] =
-                                DomainType::Surface;
-                        } else {
-                            throw std::runtime_error(
-                                fmt::format(
-                                "{} Init state surface. No surface physics engine set.",
-                                vessel_name));
-                        }
-                        break;
-                    }
-                    case (DomainType::Underwater): {
-                        if (m_underwater_interface.find(_entity) !=
-                            m_underwater_interface.end()) {
-                            m_current_vessel_interface[_entity] =
-                                m_underwater_interface[_entity];
-                            m_vehicle_current_mode[_entity] =
-                                DomainType::Underwater;
-                        } else {
-                            throw std::runtime_error(
-                                fmt::format(
-                                "{} Init state underwater. No underwater physics engine set.",
-                                vessel_name));
-                        }
-                        break;
-                    }
-                    default: {
-                        throw std::runtime_error(
-                            fmt::format(
-                            "Failed to find {} init state",
-                            vessel_name));
-                    }
+                DomainType init_domain;
+                auto domain_it = DomainTypeMap.find(
+                    physics_sdf_ptr->Get<std::string>("init_state"));
+                if (domain_it != DomainTypeMap.end()) {
+                    init_domain = domain_it->second;
+                } else {
+                    m_logger->error(
+                        "PhysicsInterfacePlugin::loadVessel: {}. Loading failed, Init state not found.",
+                        _entity);
                 }
-                m_current_vessel_interface[_entity]->activateConnection(
-                    _entity);
+                if (vesselTransition(_entity, init_domain)) {
+                    m_logger->info(
+                        "PhysicsInterfacePlugin::loadVessel: entity: {} , {} physics in domain {} init completed.",
+                        _entity,
+                        vessel_name,
+                        DomainTypeToStringMap[init_domain]);
+                    return true;
+                }
             }
-            m_logger->info(
-                "PhysicsInterfacePlugin::loadVessel: {} physics successfully created.",
-                vessel_name);
-        } else {
-            m_logger->warn(
-                "PhysicsInterfacePlugin::loadVessel: Not calculating phyics for {}",
-                vessel_name);
         }
-        return true;
     } catch (const std::exception& e) {
         m_logger->error(
-            "PhysicsInterfacePlugin::loadVessel: {}. Loading failed.",
+            "PhysicsInterfacePlugin::loadVessel: {}. Loading failed. \n{}",
+            _entity,
             e.what());
     } catch (...) {
         m_logger->error(
             "PhysicsInterfacePlugin::loadVessel: Unknown error. Failed.");
     }
+    m_logger->error(
+        "PhysicsInterfacePlugin::loadVessel: {}. Loading failed, Removing physics from vessel.",
+        _entity);
     deleteVessel(_entity, _model, _ecm);
-    return false;
+
+    // This function must return true for CB to persist.
+    return true;
 }
 
 bool PhysicsInterfacePlugin::deleteVessel(
@@ -559,6 +561,7 @@ bool PhysicsInterfacePlugin::deleteVessel(
     gz::sim::EntityComponentManager*)
 {
     try {  // Deactivate connection
+        std::unique_lock<std::shared_mutex> lock(m_mutex);
         if (m_vessels_name_map.find(_entity) != m_vessels_name_map.end()) {
             m_logger->info(
                 "PhysicsInterfacePlugin::deleteVessel: Removing vessel {}",
@@ -566,8 +569,7 @@ bool PhysicsInterfacePlugin::deleteVessel(
 
             if (m_current_vessel_interface.find(_entity) !=
                 m_current_vessel_interface.end()) {
-                m_current_vessel_interface[_entity]->deactivateConnection(
-                    _entity);
+                m_current_vessel_interface[_entity]->removeConnection(_entity);
                 m_logger->info(
                     "PhysicsInterfacePlugin::deleteVessel: Deactivated vessel {} physics engine connection",
                     m_vessels_name_map[_entity]);

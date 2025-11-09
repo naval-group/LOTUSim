@@ -33,7 +33,6 @@ print_help() {
     echo -e "  install                 Install the dependencies"
     echo -e "  clean                   Clean the project"
     echo -e "  build                   Build the project"
-    echo -e "  build_lotus             Build the lotus only"
     echo -e "  clean_build             Clean and build the project"
     echo -e "  doc                     Generate project documentation"
     echo -e "  ui                      Run the frontend and backend"
@@ -47,7 +46,7 @@ print_help() {
 }
 
 parse_all_arguments() {
-    local valid_commands=("install" "install_lotus" "install_ui" "clean" "build" "build_lotus" "clean_build" "doc" "ui" "run")
+    local valid_commands=("install" "install_lotus" "install_ui" "clean" "build" "clean_build" "doc" "ui" "run")
     
     while [[ "$#" -gt 0 ]]; do
         case $1 in

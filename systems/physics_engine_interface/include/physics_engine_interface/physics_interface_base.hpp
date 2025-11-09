@@ -30,18 +30,21 @@ enum class DomainType
 {
     Aerial,
     Surface,
-    Underwater
+    Underwater,
+    Unknown
 };
 
 static std::unordered_map<std::string, DomainType> DomainTypeMap{
     {"Aerial", DomainType::Aerial},
     {"Surface", DomainType::Surface},
-    {"Underwater", DomainType::Underwater}};
+    {"Underwater", DomainType::Underwater},
+    {"Unknown", DomainType::Unknown}};
 
 static std::unordered_map<DomainType, std::string> DomainTypeToStringMap{
     {DomainType::Aerial, "Aerial"},
     {DomainType::Surface, "Surface"},
-    {DomainType::Underwater, "Underwater"}};
+    {DomainType::Underwater, "Underwater"},
+    {DomainType::Unknown, "Unknown"}};
 
 /**
  * @brief Struct to hold vessel information in ENU frame
@@ -103,6 +106,15 @@ public:
         const sdf::ElementPtr _sdf) = 0;
 
     /**
+     * @brief Remove Connection for this entity
+     *
+     * @param _entity
+     * @return true
+     * @return false
+     */
+    virtual bool removeConnection(const gz::sim::Entity& _entity) = 0;
+
+    /**
      * @brief Activate the connection to be used
      *
      * @param _entity
@@ -113,6 +125,8 @@ public:
 
     /**
      * @brief Close the connection when vessel transit
+     * Interface must deactivate. Failure to deactivate must be handled on
+     * interface level
      *
      * @param _entity
      * @return true

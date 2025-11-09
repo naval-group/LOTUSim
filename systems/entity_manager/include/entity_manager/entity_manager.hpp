@@ -20,6 +20,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
+#include <shared_mutex>
 #include <string>
 #include <thread>
 #include <tuple>
@@ -76,10 +77,10 @@ public:
 
      */
     void Configure(
-        const gz::sim::Entity &_entity,
-        const std::shared_ptr<const sdf::Element> &_sdf,
-        gz::sim::EntityComponentManager &_ecm,
-        gz::sim::EventManager &_eventMgr) override;
+        const gz::sim::Entity& _entity,
+        const std::shared_ptr<const sdf::Element>& _sdf,
+        gz::sim::EntityComponentManager& _ecm,
+        gz::sim::EventManager& _eventMgr) override;
 
     /**
      * @brief Function called before physics update
@@ -96,8 +97,8 @@ public:
      * @param _ecm  The EntityComponentManager of the given simulation instance.
      */
     void PreUpdate(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) override;
+        const gz::sim::UpdateInfo& _info,
+        gz::sim::EntityComponentManager& _ecm) override;
 
     /**
      * @briefFunction called during physics update
@@ -108,8 +109,8 @@ public:
      * @param _ecm
      */
     void Update(
-        const gz::sim::UpdateInfo &_info,
-        gz::sim::EntityComponentManager &_ecm) override;
+        const gz::sim::UpdateInfo& _info,
+        gz::sim::EntityComponentManager& _ecm) override;
 
     /**
      * @brief Function called after physics update.
@@ -123,8 +124,8 @@ public:
      * @param _ecm  The EntityComponentManager of the given simulation instance.
      */
     void PostUpdate(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) override;
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) override;
 
     // Todo: Changing time setting during runtime
     // void changeRuntime();
@@ -137,7 +138,7 @@ protected:
      * @param _sdf sdf to the plugin. Users are to extract their custom param
      */
     virtual void customUserConfiguration(
-        const std::shared_ptr<const sdf::Element> &_sdf);
+        const std::shared_ptr<const sdf::Element>& _sdf);
 
     /**
      * @brief Custom User update command called after MAS cmd is called and
@@ -155,13 +156,13 @@ protected:
      * @brief Custom User add entity command called after built-in addEntity
      * is done
      */
-    virtual void customUserAddEntity(const lotusim_msgs::msg::MASCmd &msg);
+    virtual void customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg);
 
     /**
      * @brief Custom User delete command called after built-in deleteEntity
      * is done
      */
-    virtual void customUserDeleteEntity(const lotusim_msgs::msg::MASCmd &msg);
+    virtual void customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg);
 
 private:
     /**
@@ -172,7 +173,7 @@ private:
      * @param msg
      */
     std::optional<std::tuple<uint16_t, std::string>> addEntity(
-        const lotusim_msgs::msg::MASCmd &msg);
+        const lotusim_msgs::msg::MASCmd& msg);
 
     /**
      * @brief Move existing entity
@@ -181,7 +182,7 @@ private:
      *
      * @param msg
      */
-    bool moveEntity(const lotusim_msgs::msg::MASCmd &msg);
+    bool moveEntity(const lotusim_msgs::msg::MASCmd& msg);
 
     /**
      * @brief Delete entity
@@ -189,7 +190,7 @@ private:
      *
      * @param msg
      */
-    bool deleteEntity(const lotusim_msgs::msg::MASCmd &msg);
+    bool deleteEntity(const lotusim_msgs::msg::MASCmd& msg);
 
     /**
      * @brief Publishes pose of all vessels in the system
@@ -198,13 +199,13 @@ private:
      * @param _ecm
      */
     void publishPose(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm);
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm);
 
 private:
     // MASCmd Array action server functions
     rclcpp_action::GoalResponse handleMASCmdArrayGoal(
-        const rclcpp_action::GoalUUID &uuid,
+        const rclcpp_action::GoalUUID& uuid,
         std::shared_ptr<const lotusim_msgs::action::MASCmdArray::Goal> goal);
     rclcpp_action::CancelResponse handleMASCmdArrayCancel(
         const std::shared_ptr<GoalHandleMASCmdArray> goal_handle);
@@ -213,7 +214,7 @@ private:
 
     // MASCmd action server functions
     rclcpp_action::GoalResponse handleMASCmdGoal(
-        const rclcpp_action::GoalUUID &uuid,
+        const rclcpp_action::GoalUUID& uuid,
         std::shared_ptr<const lotusim_msgs::action::MASCmd::Goal> goal);
     rclcpp_action::CancelResponse handleMASCmdCancel(
         const std::shared_ptr<GoalHandleMASCmd> goal_handle);
@@ -227,7 +228,7 @@ private:
      * @return std::shared_ptr<lotusim_msgs::action::MASCmd::Result>
      */
     std::shared_ptr<lotusim_msgs::action::MASCmd::Result> handleMASCmd(
-        const lotusim_msgs::msg::MASCmd &msg);
+        const lotusim_msgs::msg::MASCmd& msg);
 
 protected:
     /**
@@ -258,13 +259,15 @@ protected:
      * @brief GZ Entity Component Manager
      *
      */
-    gz::sim::EntityComponentManager *m_ecm;
+    gz::sim::EntityComponentManager* m_ecm;
 
     // MAS cmds and mutex
     std::mutex m_cmds_array_mutex;
     std::vector<std::shared_ptr<GoalHandleMASCmdArray>> m_mas_cmds_array;
     std::mutex m_cmds_mutex;
     std::vector<std::shared_ptr<GoalHandleMASCmd>> m_mas_cmds;
+
+    mutable std::shared_mutex m_variable_mutex;
 
     /**
      * @brief Mapping of string to Gz entity of the current vessel in the
