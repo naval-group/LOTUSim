@@ -8,7 +8,7 @@ std::shared_ptr<ROS2Interface> ROS2Interface::getInstance(
     std::shared_ptr<const sdf::Element> _sdf)
 {
     if (m_instance == nullptr) {
-        m_instance = std::shared_ptr<ROS2Interface>(new ROS2Interface(_sdf));
+        m_instance = std::make_shared<ROS2Interface>(_sdf);
     }
     return m_instance;
 }
@@ -50,7 +50,15 @@ bool ROS2Interface::createConnection(
     const std::string& _name,
     const sdf::ElementPtr)
 {
+    std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
     m_entity_name_map[_entity] = _name;
+    return true;
+}
+
+bool ROS2Interface::removeConnection(const gz::sim::Entity& _entity)
+{
+    std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
+    m_entity_name_map.erase(_entity);
     return true;
 }
 
@@ -68,6 +76,7 @@ ROS2Interface::getNewState(
     const VesselInformation& previous_state,
     float time_dif)
 {
+    std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
     auto name_it = m_entity_name_map.find(_entity);
     if (name_it == m_entity_name_map.end()) {
         return std::nullopt;

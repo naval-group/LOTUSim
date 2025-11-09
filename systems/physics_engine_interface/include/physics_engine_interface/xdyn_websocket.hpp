@@ -2,6 +2,7 @@
 #define LOTUSIM_XDYN_WEBSOCKET_HH_
 
 #include <future>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
@@ -136,6 +137,8 @@ public:
         const std::string& _name,
         const sdf::ElementPtr _sdf) override final;
 
+    bool removeConnection(const gz::sim::Entity& _entity) override final;
+
     bool activateConnection(const gz::sim::Entity& _entity) override final;
 
     bool deactivateConnection(const gz::sim::Entity& _entity) override final;
@@ -145,7 +148,7 @@ public:
 protected:
     static std::shared_ptr<XdynWebsocket> m_instance;
 
-    static std::mutex m_mutex;
+    static std::mutex m_instance_mutex;
 
 private:
     bool send(const gz::sim::Entity& _entity, const std::string& message);
@@ -172,6 +175,8 @@ private:
      */
     Weblib::shared_ptr<Weblib::thread> m_thread;
 
+    static std::mutex m_variable_mutex;
+
     /**
      * @brief Mapping for entity and naming
      *
@@ -185,7 +190,7 @@ private:
     static std::unordered_map<std::string, gz::sim::Entity> m_entity_mapping;
 
     /**
-     * @brief URI mapping
+     * @brief Mapping of entity to URI of the physics engine
      *
      */
     static std::unordered_map<gz::sim::Entity, std::string> m_uri;

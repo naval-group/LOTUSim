@@ -33,24 +33,26 @@ public:
         std::shared_ptr<const sdf::Element> _sdf);
 
     std::optional<std::tuple<VesselInformation, DomainType>> getNewState(
-        const gz::sim::Entity &_entity,
-        const VesselInformation &previous_state,
+        const gz::sim::Entity& _entity,
+        const VesselInformation& previous_state,
         float time_dif) override;
 
     bool createConnection(
-        const gz::sim::Entity &_entity,
-        const std::string &_name,
+        const gz::sim::Entity& _entity,
+        const std::string& _name,
         const sdf::ElementPtr _sdf) override;
 
-    bool activateConnection(const gz::sim::Entity &_entity) override;
+    bool removeConnection(const gz::sim::Entity& _entity) override;
 
-    bool deactivateConnection(const gz::sim::Entity &_entity) override;
+    bool activateConnection(const gz::sim::Entity& _entity) override;
 
-    std::string getURI(const gz::sim::Entity &_entity) override;
+    bool deactivateConnection(const gz::sim::Entity& _entity) override;
+
+    std::string getURI(const gz::sim::Entity& _entity) override;
 
 private:
     void aerialPosesCB(
-        const lotusim_msgs::msg::VesselPositionArray::ConstSharedPtr &msg);
+        const lotusim_msgs::msg::VesselPositionArray::ConstSharedPtr& msg);
 
 private:
     static std::shared_ptr<ROS2Interface> m_instance;
@@ -65,6 +67,8 @@ private:
     std::shared_ptr<std::thread> m_ros_node_thread;
     rclcpp::Subscription<lotusim_msgs::msg::VesselPositionArray>::SharedPtr
         m_pose_sub;
+
+    mutable std::shared_mutex m_variable_mutex;
 
     /**
      * @brief Mapping of gazebo entity to name

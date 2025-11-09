@@ -11,6 +11,7 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Sensor.hh>
+#include <mutex>
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
@@ -84,6 +85,8 @@ private:
      *
      */
     std::string m_world_name;
+
+    std::mutex m_mutex;
 
     /**
      * @brief Mapping of vessel name to model entity
