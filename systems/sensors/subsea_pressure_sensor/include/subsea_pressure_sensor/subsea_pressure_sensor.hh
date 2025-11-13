@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
-#define __SUBSEA_PRESSURE_ROS_PLUGIN_HH__
+#ifndef SUBSEA_PRESSURE_ROS_PLUGIN_HH_
+#define SUBSEA_PRESSURE_ROS_PLUGIN_HH_
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_sensor_base/custom_sensor.hpp"
@@ -27,21 +27,21 @@ public:
     SubseaPressureSensor(
         std::shared_ptr<spdlog::logger> logger,
         rclcpp::Node::SharedPtr node,
-        const gz::sim::Entity &vessel_entity,
-        const gz::sim::Entity &sensor_entity,
-        const std::string &parent_name,
-        const std::string &sensor_name);
+        const gz::sim::Entity& vessel_entity,
+        const gz::sim::Entity& sensor_entity,
+        const std::string& parent_name,
+        const std::string& sensor_name);
 
     /// \brief Class destructor
     ~SubseaPressureSensor();
 
     /// \brief Update sensor measurement
-    virtual bool Update(
-        const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager &_ecm) final;
+    virtual bool UpdateSensor(
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) final;
 
 private:
-    virtual bool CustomSensorLoad(const sdf::Sensor &_sdf) final;
+    virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) final;
 
     /// \brief Sensor m_saturation (max. value for output pressure in Pa)
     double m_saturation;

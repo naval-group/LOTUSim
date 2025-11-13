@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 
 #include "lotusim_sensor_plugin/lotusim_sensor_plugin.hpp"
 
@@ -6,11 +15,13 @@ namespace lotusim::sensor {
 LotusimSensorPlugin::LotusimSensorPlugin() {}
 
 void LotusimSensorPlugin::Configure(
-    const gz::sim::Entity &_entity,
-    const std::shared_ptr<const sdf::Element> &_sdf,
-    gz::sim::EntityComponentManager &_ecm,
-    gz::sim::EventManager &_eventMgr)
+    const gz::sim::Entity&,
+    const std::shared_ptr<const sdf::Element>&,
+    gz::sim::EntityComponentManager& _ecm,
+    gz::sim::EventManager&)
 {
+    m_gz_node.Subscribe("/collision", &LotusimSensorPlugin::collisionCB, this);
+
     m_ecm = &_ecm;
     m_world_name = lotusim::common::getWorldName(_ecm);
 
@@ -22,13 +33,18 @@ void LotusimSensorPlugin::Configure(
     m_ros_node = rclcpp::Node::make_shared(
         m_world_name + "_sensor_system",
         m_world_name);
+    m_collision_pub =
+        m_ros_node->create_publisher<lotusim_sensor_msgs::msg::Collisions>(
+            "collisions",
+            rclcpp::QoS(10));
+
     m_logger->info(
         "LotusimSensorPlugin::Configure: LotusimSensorPlugin successfully startup.");
 }
 
 void LotusimSensorPlugin::PreUpdate(
-    const gz::sim::UpdateInfo &,
-    gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo&,
+    gz::sim::EntityComponentManager&)
 {
     // {
     // if (!m_scene) {
@@ -97,16 +113,15 @@ void LotusimSensorPlugin::PreUpdate(
 
     //     lidar_iter = m_lidar_tbc.erase(lidar_iter);
     // }
-    return;
 }
 
 void LotusimSensorPlugin::OnNewLidarFrame(
-    const gz::sim::Entity &_entity,
-    const float *_scan,
+    const gz::sim::Entity& _entity,
+    const float* _scan,
     unsigned int _width,
     unsigned int _height,
     unsigned int _channels,
-    const std::string & /*_format*/)
+    const std::string& /*_format*/)
 {
     sensor_msgs::msg::PointCloud2 msg;
     msg.header = common::generateHeaderMessage(m_current_time);
@@ -145,9 +160,19 @@ void LotusimSensorPlugin::OnNewLidarFrame(
     m_lidar_pub_mapping[_entity]->publish(msg);
 }
 
+void LotusimSensorPlugin::collisionCB(const gz::msgs::Contacts& _msg)
+{
+    std::lock_guard<std::mutex> lock(m_collision_mutex);
+    for (auto&& collision : _msg.contact()) {
+        m_collision_graph.addPair(
+            collision.collision1().id(),
+            collision.collision2().id());
+    }
+}
+
 void LotusimSensorPlugin::PostUpdate(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager& _ecm)
 {
     // TODO
     // Temporary measure to handle the lidar publish ros2 pointcloud
@@ -162,6 +187,25 @@ void LotusimSensorPlugin::PostUpdate(
     //         return true;
     //     });
 
+    /// Collision handling, to rewrite to detect at this level
+    {
+        std::vector<std::vector<uint64_t>> collisions;
+        {
+            std::lock_guard<std::mutex> lock(m_collision_mutex);
+            collisions = m_collision_graph.getAllSets();
+            m_collision_graph.clearGraph();
+        }
+        lotusim_sensor_msgs::msg::Collisions collisions_msg;
+        for (auto&& collided_entities : collisions) {
+            lotusim_sensor_msgs::msg::Collision collision;
+            for (auto&& entity : collided_entities) {
+                collision.entity.push_back(entity);
+            }
+            collisions_msg.collisions.push_back(collision);
+        }
+        m_collision_pub->publish(collisions_msg);
+    }
+
     _ecm.EachNew<
         gz::sim::components::CustomSensor,
         gz::sim::components::ParentEntity>(std::bind(
@@ -171,8 +215,8 @@ void LotusimSensorPlugin::PostUpdate(
         std::placeholders::_2));
 
     _ecm.EachRemoved<gz::sim::components::CustomSensor>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::CustomSensor *) -> bool {
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::CustomSensor*) -> bool {
             if (m_entity_sensor_map.erase(_entity) == 0) {
                 m_logger->error(
                     "LotusimSensorPlugin::PreUpdate: Sensor entity [{}] removed but not found in system",
@@ -184,7 +228,7 @@ void LotusimSensorPlugin::PostUpdate(
     // Only update and publish if not paused.
     if (!_info.paused) {
         m_current_time = _info.simTime;
-        for (auto &[entity, sensor] : m_entity_sensor_map) {
+        for (auto& [entity, sensor] : m_entity_sensor_map) {
             auto world_pos = gz::sim::worldPose(entity, _ecm);
             sensor->Position(world_pos.Pos());
             sensor->Orientation(world_pos.Rot());
@@ -193,15 +237,14 @@ void LotusimSensorPlugin::PostUpdate(
             if (lat_long) {
                 sensor->LatLong(lat_long.value());
             }
-
-            sensor->Update(_info, _ecm);
+            sensor->UpdateSensor(_info, _ecm);
         }
     }
 }
 
 bool LotusimSensorPlugin::EachNew(
-    const gz::sim::Entity &_entity,
-    const gz::sim::components::CustomSensor *_custom)
+    const gz::sim::Entity& _entity,
+    const gz::sim::components::CustomSensor* _custom)
 {
     try {
         std::string model_name;
@@ -260,7 +303,7 @@ bool LotusimSensorPlugin::EachNew(
         auto child_link = m_ecm->ChildrenByComponents(
             model_entity,
             gz::sim::components::Link());
-        for (auto &&link : child_link) {
+        for (auto&& link : child_link) {
             auto name_opt = m_ecm->Component<gz::sim::components::Name>(link);
             if (name_opt &&
                 name_opt->Data().find("base_link") != std::string::npos) {

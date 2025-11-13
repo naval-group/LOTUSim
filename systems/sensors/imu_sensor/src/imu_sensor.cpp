@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 #include "imu_sensor/imu_sensor.hpp"
 
 namespace lotusim::sensor {
@@ -5,10 +14,10 @@ namespace lotusim::sensor {
 IMUSensor::IMUSensor(
     std::shared_ptr<spdlog::logger> logger,
     rclcpp::Node::SharedPtr node,
-    const gz::sim::Entity &vessel_entity,
-    const gz::sim::Entity &sensor_entity,
-    const std::string &parent_name,
-    const std::string &sensor_name)
+    const gz::sim::Entity& vessel_entity,
+    const gz::sim::Entity& sensor_entity,
+    const std::string& parent_name,
+    const std::string& sensor_name)
     : CustomSensor(
           logger,
           node,
@@ -23,7 +32,7 @@ IMUSensor::IMUSensor(
 
 IMUSensor::~IMUSensor() {}
 
-bool IMUSensor::CustomSensorLoad(const sdf::Sensor &_sdf)
+bool IMUSensor::CustomSensorLoad(const sdf::Sensor&)
 {
     m_sensor_pub = m_ros_node->create_publisher<sensor_msgs::msg::Imu>(
         m_vessel_name + "/" + m_sensor_name + "/" + "IMU",
@@ -31,10 +40,13 @@ bool IMUSensor::CustomSensorLoad(const sdf::Sensor &_sdf)
     return true;
 }
 
-bool IMUSensor::Update(
-    const gz::sim::UpdateInfo &_info,
-    const gz::sim::EntityComponentManager &_ecm)
+bool IMUSensor::UpdateSensor(
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager& _ecm)
 {
+    if (!EnableMeasurement(_info.simTime))
+        return false;
+
     sensor_msgs::msg::Imu msg;
 
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
@@ -61,7 +73,8 @@ bool IMUSensor::Update(
         msg.angular_velocity.y = accel.Y();
         msg.angular_velocity.z = accel.Z();
     }
-
+    m_sensor_pub->publish(msg);
+    m_last_measurement_time = _info.simTime;
     return true;
 }
 

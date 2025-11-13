@@ -1,5 +1,4 @@
 <?xml version="1.0"?>
-<!-- World to test model -->
 <sdf version="1.7"
     xmlns:experimental="http://sdformat.org/schemas/experimental">
     <world name="lotusim">
@@ -26,26 +25,6 @@
 
 
         <gravity>0 0 0</gravity>
-        <!-- <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
-        </plugin> -->
-
-        <!-- <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
-        </plugin>
-        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
-        </plugin> -->
-
-        <!-- <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-            <render_engine>ogre2</render_engine>
-        </plugin> -->
-
-        <!-- <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
-        </plugin>
-        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
-        </plugin> -->
-
-        <!-- <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-            <render_engine>ogre2</render_engine>
-        </plugin> -->
 
         <plugin filename="physics_interface_plugin"
             name="lotusim::gazebo::PhysicsInterfacePlugin">
@@ -73,30 +52,5 @@
         <plugin filename="waypoint_plugin"
             name="lotusim::gazebo::WaypointFollowerPlugin" />
 
-        <!-- <include>
-            <uri>model://dtmb_hull</uri>
-            <name>frigate</name>
-            <pose>0 0 0 0 0 0</pose>
-
-            <lotus_param>
-                <waypoint_follower>
-                    <follower>
-                        <loop>true</loop>
-                        <linear_accel_limit>0.5</linear_accel_limit>
-                        <angular_accel_limit>0.005</angular_accel_limit>
-                        <angular_velocities_limits>0.01</angular_velocities_limits>
-                        <range_tolerance>2</range_tolerance>
-                        <circle>
-                            <radius>10</radius>
-                        </circle>
-                    </follower>
-                </waypoint_follower>
-                <render_interface>
-                    <publish_render>true</publish_render>
-                    <renderer_type_name>frigate</renderer_type_name>
-                </render_interface>
-            </lotus_param>
-        </include>
-        -->
     </world>
 </sdf>

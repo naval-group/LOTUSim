@@ -1,6 +1,47 @@
+/*
+ * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 #include "lotusim_common/logger.hpp"
 
 namespace lotusim::logger {
+
+spdlog::level::level_enum getLogLevelFromEnv()
+{
+    const char *env_level = std::getenv("LOTUSIM_SPDLOG_LEVEL");
+    if (env_level == nullptr) {
+        return DEFAULT_LOG_LEVEL;
+    }
+
+    std::string level_str(env_level);
+    // Convert to uppercase for case-insensitive comparison
+    for (auto &c : level_str)
+        c = std::toupper(c);
+
+    if (level_str == "TRACE")
+        return spdlog::level::trace;
+    if (level_str == "DEBUG")
+        return spdlog::level::debug;
+    if (level_str == "INFO")
+        return spdlog::level::info;
+    if (level_str == "WARN" || level_str == "WARNING")
+        return spdlog::level::warn;
+    if (level_str == "ERROR")
+        return spdlog::level::err;
+    if (level_str == "CRITICAL")
+        return spdlog::level::critical;
+    if (level_str == "OFF")
+        return spdlog::level::off;
+
+    std::cerr << "Invalid LOTUSIM_LOG_LEVEL: " << env_level
+              << ". Using default level." << std::endl;
+    return DEFAULT_LOG_LEVEL;
+}
 
 auto createConsoleAndFileLogger(
     const std::string &logger_name,
@@ -21,9 +62,10 @@ auto createConsoleAndFileLogger(
         std::string file_path = createOrGetLogFolderPath();
 
         file_path = file_path + "/" + file_name;
-        auto file_sink =
-            std::make_shared<spdlog::sinks::basic_file_sink_mt>(file_path);
 
+        auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+            file_path,
+            true);
         std::filesystem::permissions(
             file_path,
             std::filesystem::perms::owner_all |
@@ -34,12 +76,12 @@ auto createConsoleAndFileLogger(
             logger_name,
             spdlog::sinks_init_list{file_sink, console_sink});
 
-        logger->set_level(LOG_LEVEL);
+        logger->set_level(getLogLevelFromEnv());
 
         spdlog::flush_every(std::chrono::seconds(3));
         spdlog::register_logger(logger);
 
-        if (LOG_LEVEL < spdlog::level::info) {
+        if (DEFAULT_LOG_LEVEL < spdlog::level::info) {
             logger->set_pattern("%v");
         } else {
             logger->set_pattern("[%D %T] [%l]: %v");
@@ -65,7 +107,7 @@ auto createBasicFileLogger(
 
         file_path = file_path + "/" + file_name;
         auto logger = spdlog::basic_logger_mt(logger_name, file_path);
-        logger->set_level(LOG_LEVEL);
+        logger->set_level(getLogLevelFromEnv());
         return logger;
     } catch (const spdlog::spdlog_ex &ex) {
         spdlog::info(
@@ -95,7 +137,16 @@ std::string createOrGetLogFolderPath()
         std::filesystem::current_path(std::filesystem::temp_directory_path());
     }
 
-    const std::string logs_dir = "lotus_logs";
+    std::filesystem::path logs_dir =
+        std::filesystem::current_path() / "lotus_logs";
+    if (DEFAULT_LOG_LEVEL >= spdlog::level::info) {
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d_%H-%M-%S");
+        logs_dir /= ss.str();
+    }
+
     if (!std::filesystem::exists(logs_dir)) {
         std::filesystem::create_directory(logs_dir);
         std::filesystem::permissions(
@@ -104,9 +155,6 @@ std::string createOrGetLogFolderPath()
                 std::filesystem::perms::group_all);
     }
 
-    auto log_folder_path =
-        std::filesystem::current_path().generic_string() + "/" + logs_dir + "/";
-
-    return log_folder_path;
+    return logs_dir.generic_string() + "/";
 }
 }  // namespace lotusim::logger

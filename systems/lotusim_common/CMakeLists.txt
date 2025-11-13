@@ -14,17 +14,7 @@ endif()
 # Optional clang-tidy
 if(LOTUS_TIDY)
   set(CMAKE_CXX_CLANG_TIDY
-      clang-tidy;
-      -checks=-*,
-              clang-analyzer-*,
-              modernize-*,
-              performance-*,
-              hicpp-*,
-              concurrency-*,
-              bugprone-*,
-              portability-*,
-              cppcoreguidelines-*,
-      -header-filter=.*)
+      "clang-tidy;-checks=-*,clang-analyzer-*,modernize-*,performance-*,hicpp-*,concurrency-*,bugprone-*,portability-*,cppcoreguidelines-*;-header-filter=.*")
 endif()
 
 # Debugging
@@ -43,9 +33,9 @@ endif()
 # Dependencies
 #============================================================================
 find_package(ament_cmake REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(gz-sim8 REQUIRED)
-find_package(std_msgs REQUIRED)
 
 #============================================================================
 # Library
@@ -53,9 +43,9 @@ find_package(std_msgs REQUIRED)
 add_library(${PROJECT_NAME} SHARED
   src/logger.cpp
   src/common.cpp
+  src/entity_group.cpp
 )
 
-# Expose include folder with subfolder for namespace
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -77,6 +67,10 @@ ament_target_dependencies(${PROJECT_NAME}
 install(
   DIRECTORY include/
   DESTINATION include
+  FILES_MATCHING
+  PATTERN "*.hpp"
+  PATTERN "*.h"
+  PATTERN ".~" EXCLUDE
 )
 
 install(
@@ -85,12 +79,18 @@ install(
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
 #============================================================================
 # Ament export
 #============================================================================
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+  std_msgs
+  spdlog
+  gz-sim8
+)
 ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(std_msgs spdlog gz-sim8)
+
 ament_package()

@@ -1,2 +1,0 @@
-clear
-xdyn-for-cs lrauv_xdyn/lrauv_old.yml -v -a 127.0.0.1 -p 12346 -d --dt 0.2

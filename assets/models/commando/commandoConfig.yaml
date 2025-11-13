@@ -1,0 +1,119 @@
+rotations convention: [psi, theta', phi'']
+
+environmental constants:
+  g: {value: 9.81, unit: m/s^2}
+  rho: {value: 1025, unit: kg/m^3}
+  nu: {value: 1.18e-6, unit: m^2/s}
+
+environment models:
+  - model: no wind
+  - model: waves
+    discretization:
+      ndir: 8
+      nfreq: 16
+      omega min: { value: 0.1, unit: rad/s }
+      omega max: { value: 10, unit: rad/s }
+      energy fraction: 0.99
+      equal energy bins: false
+    spectra:
+      - model: airy
+        depth: { value: 1000, unit: m }
+        seed of the random data generator: 2
+        stretching:
+          delta: 1
+          h: { unit: m, value: 0 }
+        directional spreading:
+          type: cos2s
+          s: 2
+          waves propagating to: { value: 0, unit: deg }
+        spectral density:
+          type: jonswap
+          Hs: { value: 1.5, unit: m }
+          Tp: { value: 3, unit: s }
+          gamma: 1.2
+  - model: ekman current
+    #seabed depth: 123
+    seabed file: seabed/seabed.png
+    latitude: { value: 43, unit: deg }
+    top layer thickness: { value: 5, unit: m}
+    bottom layer thickness: { value: 8, unit: m}
+    current velocity: { value: 0.1, unit: m/s }
+    current orientation: { value: 0, unit: deg }
+    U10: { value: 1, unit: m/s }
+    wind orientation: { value: 0, unit: rad }
+
+bodies:   
+  - name: floating_cube
+    mesh: commando/meshes/commando.stl
+
+    position of body frame relative to mesh:
+      frame: mesh
+      x: {value: 0.0, unit: m}
+      y: {value: 0.0, unit: m}
+      z: {value: -0.5, unit: m}
+      phi: { value: 0, unit: rad }
+      theta: { value: 0, unit: rad }
+      psi: { value: 0, unit: rad }
+
+    initial position of body frame relative to NED:
+      frame: NED
+      x: {value: 0.0, unit: m}
+      y: {value: 0.0, unit: m}
+      z: {value: 0.0, unit: m}
+      phi: { value: 0, unit: deg }
+      theta: { value: 0, unit: deg }
+      psi: { value: 0, unit: deg }
+
+    initial velocity of body frame relative to NED:
+      frame: body
+      u: { value: 0, unit: m/s }
+      v: { value: 0, unit: m/s }
+      w: { value: 0, unit: m/s }
+      p: { value: 0, unit: rad/s }
+      q: { value: 0, unit: rad/s }
+      r: { value: 0, unit: rad/s }
+
+    dynamics:
+      hydrodynamic forces calculation point in body frame:
+        x: { value: 0, unit: m }
+        y: { value: 0, unit: m }
+        z: { value: 0.5, unit: m }
+
+      centre of inertia:
+        frame: floating_cube
+        x: {value: 0.0, unit: m}
+        y: {value: 0.0, unit: m}
+        z: {value: 1.0, unit: m}
+
+      rigid body inertia matrix at the center of gravity and projected in the body frame:
+        frame: body
+        row 1: [100, 0, 0, 0, 0, 0]
+        row 2: [0, 100, 0, 0, 0, 0]
+        row 3: [0, 0, 100, 0, 0, 0]
+        row 4: [0, 0, 0, 100, 0, 0]
+        row 5: [0, 0, 0, 0, 100, 0]
+        row 6: [0, 0, 0, 0, 0, 100]
+
+      added mass matrix at the center of gravity and projected in the body frame:
+        frame: body
+        row 1: [4E3, 0, 0, 0, 0, 0]
+        row 2: [0, 4E3, 0, 0, 0, 0]
+        row 3: [0, 0, 4E3, 0, 0, 0]
+        row 4: [0, 0, 0, 4E3, 0, 0]
+        row 5: [0, 0, 0, 0, 4E3, 0]
+        row 6: [0, 0, 0, 0, 0, 4E3]
+
+    external forces:
+      - model: gravity
+
+      - model: non-linear hydrostatic (fast)
+
+      - model: linear damping
+        damping matrix at the center of gravity projected in the body frame:
+          frame: body
+          row 1: [0.5e4, 0, 0, 0, 0, 0] 
+          row 2: [0, 0.5e4, 0, 0, 0, 0] 
+          row 3: [0, 0, 0.5e4, 0, 0, 0]
+          row 4: [0, 0, 0, 0.5e4, 0, 0]
+          row 5: [0, 0, 0, 0, 0.5e4, 0]
+          row 6: [0, 0, 0, 0, 0, 1e4] 

@@ -2,10 +2,8 @@
 # Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
-
-# Default configurations
-DEFAULT_WORLD="lotusim.world"
 
 ASSETS_PATH="${LOTUSIM_PATH}/assets"
 MODEL_PATH="${ASSETS_PATH}/models"
@@ -14,35 +12,127 @@ WORLD_PATH="${ASSETS_PATH}/worlds"
 # Flags for simulation options
 DEBUG="-v0"
 GUI="-s"
-
+LOTUSIM_SPDLOG_LEVEL="info"
+COMMAND=""
+DEFAULT_WORLD="lotusim.world"
+WORLD=""
 
 ###########
 # Functions
 ###########
 print_help() {
-    echo -e "${GREEN}Usage:${NC} lotusim [OPTIONS] <command> [world_name]"
-    echo -e "${GREEN}Options:${NC}"
+    echo -e "${GREEN}Usage:${NC} lotusim [OPTIONS] <command> [arguments]"
+    echo -e "${GREEN}Options (can be placed anywhere):${NC}"
     echo -e "  --ws-path PATH          Path to the lotusim workspace (default: $LOTUSIM_WS)"
     echo -e "  --assets-path PATH      Path to the assets directory (default: $ASSETS_PATH)"
     echo -e "  --debug                 Enable debug mode"
-    echo -e "  --gui                   Run gz sim GUI"
+    echo -e "  --gui                   Run gz sim GUI (for run command)"
     echo -e "  --help                  Display this help message"
-    echo ""
+    echo -e ""
     echo -e "${GREEN}Commands:${NC}"
     echo -e "  install                 Install the dependencies"
     echo -e "  clean                   Clean the project"
     echo -e "  build                   Build the project"
-    echo -e "  build_lotus             Build the lotus only"
     echo -e "  clean_build             Clean and build the project"
     echo -e "  doc                     Generate project documentation"
-    echo -e "  run                     Run the simulation [optional: world_name]"
-    echo ""
-    echo -e "${GREEN}Example:${NC}"
-    echo -e "  lotusim --ws-path /new/path/to/ws --debug --gui run my_world_name"
+    echo -e "  ui                      Run the frontend and backend"
+    echo -e "  run [world_name]        Run the simulation"
+    echo -e ""
+    echo -e "${GREEN}Examples:${NC}"
+    echo -e "  lotusim run --debug --gui my_world_name"
+    echo -e "  lotusim --debug run my_world_name"
+    echo -e "  lotusim --ws-path /new/path run --gui"
+    echo -e "  lotusim build --debug"
+}
+
+parse_all_arguments() {
+    local valid_commands=("install" "install_lotus" "install_ui" "clean" "build" "clean_build" "doc" "ui" "run")
+    
+    while [[ "$#" -gt 0 ]]; do
+        case $1 in
+        --ws-path)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}Error:${NC} --ws-path requires a path argument"
+                exit 1
+            fi
+            LOTUSIM_WS="$2"
+            shift 2
+            ;;
+        --assets-path)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}Error:${NC} --assets-path requires a path argument"
+                exit 1
+            fi
+            ASSETS_PATH="$2"
+            MODEL_PATH="${ASSETS_PATH}/models"
+            WORLD_PATH="${ASSETS_PATH}/worlds"
+            shift 2
+            ;;
+        --debug)
+            DEBUG="-v4"
+            LOTUSIM_SPDLOG_LEVEL="debug"
+            shift
+            ;;
+        --gui)
+            GUI=""
+            shift
+            ;;
+        --help)
+            print_help
+            exit 0
+            ;;
+        --*)
+            echo -e "${RED}Error:${NC} Unknown option: $1"
+            print_help
+            exit 1
+            ;;
+        *)
+            # Check if this is a valid command
+            if [[ " ${valid_commands[@]} " =~ " $1 " ]]; then
+                if [[ -n "$COMMAND" ]]; then
+                    echo -e "${RED}Error:${NC} Multiple commands detected: '$COMMAND' and '$1'"
+                    echo -e "Please specify only one command."
+                    print_help
+                    exit 1
+                fi
+                COMMAND="$1"
+                shift
+             else
+                # This is a positional argument (world file)
+                if [[ "$1" == *.world ]]; then
+                    if [[ -n "$WORLD" ]]; then
+                        echo -e "${RED}Error:${NC} Multiple world files specified: '$WORLD' and '$1'"
+                        echo -e "Please specify only one world file."
+                        exit 1
+                    fi
+                    WORLD="$1"
+                else
+                    echo -e "${RED}Error:${NC} Unexpected argument: $1"
+                    echo -e "World files must have .world extension (e.g., my_world.world)"
+                    print_help
+                    exit 1
+                fi
+                shift
+            fi
+            ;;
+        esac
+    done
+    
+    # Validate that a command was provided
+    if [[ -z "$COMMAND" ]]; then
+        echo -e "${RED}Error:${NC} No command provided."
+        print_help
+        exit 1
+    fi
 }
 
 install_lotus_dep() {
-    echo "Installing dependencies..."
+
+    echo -e "
+********************************************************************************************
+*******************************    ${GREEN}Installing Lotusim${NC}    ***********************************
+********************************************************************************************
+    "
     if [ "$EUID" -ne 0 ]; then
         sudo -E "$LOTUSIM_PATH/launch/install_dep.sh"
     else
@@ -53,7 +143,7 @@ install_lotus_dep() {
 install_ui() {
     echo -e "
 ********************************************************************************************
-******************************    ${GREEN}Installing Lotusim$ UI{NC}    **********************************
+******************************    ${GREEN}Installing Lotusim UI${NC}    **********************************
 ********************************************************************************************
     "
     echo -e "\n🔄 Sourcing ROS workspace setup..."
@@ -72,62 +162,85 @@ install_ui() {
 
     echo -e "
 ********************************************************************************************
-*******************************    ${GREEN}Installing UI backend{NC}   *********************************
+*******************************    ${GREEN}Installing UI backend${NC}   *********************************
 ********************************************************************************************
     "
 
     BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
     if [ -d "$BACKEND_DIR" ]; then
         echo -e "\n📦 Installing backend dependencies..."
-        npm install --silent --prefix "$BACKEND_DIR" >/dev/null 2>&1
+        npm install --silent --prefix "$BACKEND_DIR" >/dev/null 2>&1 || {
+            echo -e "${RED}❌ Error:${NC} Backend dependencies installation failed."
+            return 1
+        }
 
         echo -e "\n⚙️  Generating ROS messages for backend..."
-        npx --prefix "$BACKEND_DIR" generate-ros-messages >/dev/null 2>&1
+        npx --prefix "$BACKEND_DIR" generate-ros-messages >/dev/null 2>&1 || {
+            echo -e "${RED}❌ Error:${NC} ROS message generation failed."
+            return 1
+        }
+        
+        echo -e "${GREEN}✅ Backend installation successful!${NC}"
+
     else
         echo -e "\n⚠️  Backend directory not found: $BACKEND_DIR — skipping backend installation."
     fi
 
     echo -e "
 ********************************************************************************************
-*******************************    ${GREEN}Installing UI frontend{NC}  *********************************
+*******************************    ${GREEN}Installing UI frontend${NC}  *********************************
 ********************************************************************************************
     "
 
     FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
     if [ -d "$FRONTEND_DIR" ]; then
         echo -e "\n📦 Installing frontend dependencies..."
-        npm install --silent --prefix "$FRONTEND_DIR" >/dev/null 2>&1
+        npm install --silent --prefix "$FRONTEND_DIR" >/dev/null 2>&1 || {
+            echo -e "${RED}❌ Error:${NC} Frontend dependencies installation failed."
+            return 1
+        }
+        
+        echo -e "${GREEN}✅ Frontend installation successful!${NC}"    
     else
         echo -e "\n⚠️  Frontend directory not found: $FRONTEND_DIR — skipping frontend installation."
     fi
 
-    echo -e "\n✅ UI installation complete."
+    echo -e "
+********************************************************************************************
+**************************    ${GREEN}✅ UI installation complete!${NC}    *******************************
+********************************************************************************************
+    "
 }
-
 
 build_lotus() {
     echo -e "
 ********************************************************************************************
-*******************************    ${GREEN}Installing Lotusim${NC}    ***********************************
+********************************    ${GREEN}Building Lotusim${NC}    ************************************
 ********************************************************************************************
     "
     source "/opt/ros/humble/setup.bash"
     cd ${LOTUSIM_WS}
     if [ "$DEBUG" == "-v4" ]; then
-        echo "Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
+        echo -e "${GREEN}Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
         colcon build --cmake-args -DLOTUSIM_TIDY=ON -DDEBUG=ON --symlink-install --merge-install || {
             echo -e "${RED}Error:${NC} Build failed."
             exit 1
         }
     else
-        colcon build --merge-install || {
+        colcon --log-level 50 build --merge-install --event-handlers compile_commands+ console_cohesion- console_direct- console_package_list- console_start_end- console_stderr+ \
+        desktop_notification- event_log+ log+ log_command+ status+ store_result- summary+ terminal_title- || {
             echo -e "${RED}Error:${NC} Build failed."
             exit 1
         }
     fi
+    echo -e "
+********************************************************************************************
+**************************    ${GREEN}✅ Lotusim build successful!${NC}    ****************************
+********************************************************************************************
+    "
 }
 
-validate_setup() {
+validate_lotusim_core_setup() {
     if [ ! -f "/opt/ros/humble/setup.bash" ]; then
         echo -e "${RED}Error:${NC} ROS2 Humble is not installed or the setup.bash is not found at /opt/ros/humble/setup.bash."
         exit 1
@@ -142,154 +255,173 @@ validate_setup() {
     fi
 }
 
-#######
-# Main
-#######
-export GZ_VERSION=harmonic
+validate_ui_setup() {
+    local errors=0
+    # Check if nvm is available
+    if ! command -v nvm &> /dev/null; then
+        # nvm is a shell function, try to source it
+        if [ -f "$HOME/.nvm/nvm.sh" ]; then
+            source "$HOME/.nvm/nvm.sh"
+        else
+            echo -e "❌ ${RED}Error:${NC} nvm is not installed or not found"
+            errors=$((errors + 1))
+        fi
+    fi
+    
+    # Check if Node.js 18 is available via nvm
+    if command -v nvm &> /dev/null || type nvm &> /dev/null; then
+        if ! nvm ls 18 &> /dev/null; then
+            echo -e "❌ ${RED}Error:${NC} Node.js version 18 is not installed via nvm"
+            echo -e "   Install with: nvm install 18"
+            errors=$((errors + 1))
+        fi
+    fi
+    
+    # Check backend directory
+    BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
+    if [ ! -d "$BACKEND_DIR" ]; then
+        echo -e "${RED}Error:${NC} Backend directory not found: $BACKEND_DIR"
+        errors=$((errors + 1))
+    fi
+    
+    # Check frontend directory
+    FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        echo -e "${RED}Error:${NC}: Frontend directory not found: $FRONTEND_DIR"
+        errors=$((errors + 1))
+    fi
 
-# Check if no command is provided
-if [ $# -eq 0 ]; then
-    echo -e "${RED}Error:${NC} No command provided."
-    print_help
-    exit 1
-fi
-
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-    --ws-path)
-        LOTUSIM_WS="$2"
-        shift
-        ;;
-    --assets-path)
-        ASSETS_PATH="$2"
-        shift
-        ;;
-    --debug)
-        DEBUG="-v4"
-        ;;
-    --gui)
-        GUI=""
-        ;;
-    --help)
-        print_help
-        exit 0
-        ;;
-    -*)
-        echo -e "${RED}Invalid option:${NC} $1"
-        print_help
+    if [ $errors -gt 0 ]; then
         exit 1
-        ;;
-    *)
-        COMMAND=$1
-        shift
-        break
-        ;;
-    esac
-    shift
-done
+    fi
+}
 
-# Execute the command
-case $COMMAND in
-install)
-    install_lotus_dep
-    echo "Building the project..."
-    validate_setup
-    build_lotus
-    install_ui
-    ;;
-install_lotus)
-    install_lotus_dep
-    validate_setup
-    build_lotus
-    ;;
-clean)
-    rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
-    ;;
-build)
-    clear
-    validate_setup
-    build_lotus
-    install_ui
-    ;;
-build_lotus)
-    clear
-    validate_setup
-    build_lotus
-    ;;
-clean_build)
-    clear
-    echo "Cleaning and building the project..."
-    rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
-    build_lotus
-    ;;
-doc)
-    cd "${LOTUSIM_PATH}/docs" || {
-        echo -e "${RED}Error:${NC} Failed to change directory to docs."
-        exit 1
-    }
-    doxygen Doxyfile || {
-        echo -e "${RED}Error:${NC} Documentation generation failed."
-        exit 1
-    }
-    echo "Docs generated at ${LOTUSIM_PATH}/docs"
-    ;;
-run)
-    clear
-    validate_setup
 
+source_environment() {
     source "/opt/ros/humble/setup.bash"
     source "${LOTUSIM_WS}/install/setup.bash"
 
     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
     export GZ_GUI_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
     export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
+    export LOTUSIM_SPDLOG_LEVEL="${LOTUSIM_SPDLOG_LEVEL}"
 
     echo -e "${GREEN}GZ_SIM_SYSTEM_PLUGIN_PATH${NC}: $GZ_SIM_SYSTEM_PLUGIN_PATH"
     echo -e "${GREEN}GZ_SIM_RESOURCE_PATH${NC}: $GZ_SIM_RESOURCE_PATH"
+    echo -e "${YELLOW}LOTUSIM_SPDLOG_LEVEL${NC}: $LOTUSIM_SPDLOG_LEVEL"
 
-    WORLD=${1:-$DEFAULT_WORLD}
+}
 
-    echo -e "${GREEN}Running the simulation world ${NC}: ${WORLD_PATH}/${WORLD}"
-    gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${WORLD}"
-    ;;
+run_command() {
+    case $COMMAND in
+    install)
+        install_lotus_dep
+        validate_lotusim_core_setup
+        build_lotus
+        install_ui
+        ;;
+    install_lotus)
+        install_lotus_dep
+        validate_lotusim_core_setup
+        build_lotus
+        ;;
+    install_ui)
+        install_lotus_dep
+        validate_lotusim_core_setup
+        install_ui
+        ;;
+    clean)
+        rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
+        echo -e "${GREEN}Clean complete.${NC}"
+        ;;
+    build)
+        clear
+        validate_lotusim_core_setup
+        build_lotus
+        ;;
+    clean_build)
+        clear
+        echo -e "Cleaning and building the project..."
+        rm -rf "${LOTUSIM_WS}/log" "${LOTUSIM_WS}/install" "${LOTUSIM_WS}/build"
+        build_lotus
+        ;;
+    doc)
+        cd "${LOTUSIM_PATH}/docs" || {
+            echo -e "${RED}Error:${NC} Failed to change directory to docs."
+            exit 1
+        }
+        doxygen Doxyfile || {
+            echo -e "${RED}Error:${NC} Documentation generation failed."
+            exit 1
+        }
+        echo -e "Docs generated at ${LOTUSIM_PATH}/docs"
+        ;;
+    run)
+        clear
+        validate_lotusim_core_setup
+        source_environment
 
-    # TODO: Common bridge is not done yet. Change all GZ transport to ROS2 transport and have common launch script to bridge world gz msg
-    # run-w-bridge)
-    #     echo "Running the simulation."
-    #     source "/opt/ros/humble/setup.bash"
-    #     source "${LOTUSIM_WS}/install/setup.bash"
+        # Use provided world or default
+        local world_file="${WORLD:-$DEFAULT_WORLD}"
 
-    #     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
-    #     export GZ_SIM_RESOURCE_PATH="${ASSETS_PATH}"
+        echo -e "${GREEN}Running the simulation world${NC}: ${WORLD_PATH}/${world_file}"
+        gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${world_file}"
+        ;;
+    ui)
+        clear
+        validate_lotusim_core_setup
+        source_environment
+        validate_ui_setup
 
-    #     echo -e "GZ_SIM_SYSTEM_PLUGIN_PATH: ${GREEN}$GZ_SIM_SYSTEM_PLUGIN_PATH${NC}"
-    #     echo -e "GZ_SIM_RESOURCE_PATH: ${GREEN}$GZ_SIM_RESOURCE_PATH${NC}"
+        cleanup() {
+        echo -e "${GREEN}Shutting down${NC} backend and frontend..."
+        kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+        wait $BACKEND_PID $FRONTEND_PID 2>/dev/null
+        exit
+        }
 
-    #     ros2 launch assets common_ros_bridge.launch.py &
-    #     pidBridge=$!
+        # Set up trap to catch signals
+        trap cleanup SIGINT SIGTERM EXIT
 
-    #     WORLD=${1:-$DEFAULT_WORLD}
-    #     gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${WORLD}"
+        # Start backend
+        cd ${LOTUSIM_WS}/src/lotusim_backend
+        npx ts-node src/main.ts &
+        BACKEND_PID=$!
 
-    #     killBridge() {
-    #         echo "Killing Lotus."
-    #         kill $pidBridge
-    #         wait $pidBridge
-    #         echo "Bridge killed."
-    #         exit 0
-    #     }
-    #     trap killBridge SIGINT
-    #     wait $pidBridge
-    #     ;;
+        # Start frontend
+        cd ${LOTUSIM_WS}/src/lotusim_ui
+        npm run dev &
+        FRONTEND_PID=$!
 
-    # TODO: A dream for now. Someone who actually bother to read this, please help me to do it. Or you can ignore it totally.
-    # mas)
-    # ;;
+        echo -e "${GREEN}Backend PID:${NC} $BACKEND_PID"
+        echo -e "${GREEN}Frontend PID:${NC} $FRONTEND_PID"
+        echo -e "Press ${GREEN}Ctrl+C${NC} to stop both processes"
 
-*)
-    echo -e "${RED}Invalid command: $COMMAND${NC}"
+        # Wait for both processes
+        wait $BACKEND_PID $FRONTEND_PID
+        ;;
+    *)
+        echo -e "${RED}Error:${NC} Unknown command: $COMMAND"
+        print_help
+        exit 1
+        ;;
+    esac
+}
+
+#######
+# Main
+#######
+export GZ_VERSION=harmonic
+
+# Check if no arguments provided
+if [ $# -eq 0 ]; then
+    echo -e "${RED}Error:${NC} No command provided."
     print_help
     exit 1
-    ;;
-esac
+fi
+
+# Parse all arguments in one pass
+parse_all_arguments "$@"
+
+# Execute the command
+run_command
