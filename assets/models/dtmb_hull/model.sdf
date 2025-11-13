@@ -3,7 +3,6 @@
     xmlns:experimental="http://sdformat.org/schemas/experimental">
     <model name='dtmb'>
         <link name="base_link">
-
             <collision name="body_collision">
                 <geometry>
                     <mesh>
