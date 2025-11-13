@@ -1,8 +1,16 @@
+/*
+ * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 #include "lotusim_common/common.hpp"
-
 namespace lotusim::common {
 
-bool pose3Eql(const gz::math::Pose3d &_a, const gz::math::Pose3d &_b)
+bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b)
 {
     return _a.Pos().Equal(_b.Pos(), 1e-6) &&
            gz::math::equal(_a.Rot().X(), _b.Rot().X(), 1e-6) &&
@@ -11,13 +19,13 @@ bool pose3Eql(const gz::math::Pose3d &_a, const gz::math::Pose3d &_b)
            gz::math::equal(_a.Rot().W(), _b.Rot().W(), 1e-6);
 }
 
-std::string getWorldName(const gz::sim::EntityComponentManager &_ecm)
+std::string getWorldName(const gz::sim::EntityComponentManager& _ecm)
 {
     std::string world_name = "";
     _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::Name *_name,
-            const gz::sim::components::World *) -> bool {
+        [&](const gz::sim::Entity&,
+            const gz::sim::components::Name* _name,
+            const gz::sim::components::World*) -> bool {
             world_name = _name->Data();
             return true;
         });
@@ -25,8 +33,8 @@ std::string getWorldName(const gz::sim::EntityComponentManager &_ecm)
 }
 
 std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
-    const gz::sim::EntityComponentManager &_ecm,
-    const gz::sim::Entity &_entity)
+    const gz::sim::EntityComponentManager& _ecm,
+    const gz::sim::Entity& _entity)
 {
     gz::sim::Entity entity = _entity;
 
@@ -54,7 +62,7 @@ std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
 }
 
 std_msgs::msg::Header generateHeaderMessage(
-    const std::chrono::steady_clock::duration &_time)
+    const std::chrono::steady_clock::duration& _time)
 {
     std_msgs::msg::Header msg;
     auto simTimeNs =
@@ -65,18 +73,18 @@ std_msgs::msg::Header generateHeaderMessage(
     return msg;
 }
 
-std::optional<std::tuple<double, double>> getXYFromLatLong(
-    const gz::sim::EntityComponentManager &_ecm,
+std::optional<std::tuple<double, double>> XYFromLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
     double lat,
-    double longi)
+    double lon)
 {
     gz::math::Angle lat0, lon0;
     gz::sim::Entity worldEntity;
     gz::math::SphericalCoordinates sphCoords;
     _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity &_entity,
-            const gz::sim::components::Name *_name,
-            const gz::sim::components::World *) -> bool {
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::Name*,
+            const gz::sim::components::World*) -> bool {
             worldEntity = _entity;
             return true;
         });
@@ -91,8 +99,33 @@ std::optional<std::tuple<double, double>> getXYFromLatLong(
     sphCoords.SetElevationReference(0);
 
     gz::math::Vector3d xyz =
-        sphCoords.LocalFromSphericalPosition(gz::math::Vector3d{lat, longi, 0});
+        sphCoords.LocalFromSphericalPosition(gz::math::Vector3d{lat, lon, 0});
 
     return std::make_tuple(xyz.X(), xyz.Y());
 }
+
+sdf::ElementPtr getElementCaseInsensitive(
+    sdf::ElementPtr parent,
+    const std::string& name)
+{
+    std::string capitalized = toUpper(name);
+    auto element = parent->GetFirstElement();
+    while (element) {
+        auto element_name = toUpper(element->GetName());
+        if (element_name == capitalized) {
+            return element;
+        }
+        element = element->GetNextElement();
+    }
+    return nullptr;
+}
+
+std::string toUpper(std::string str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+        return std::toupper(c);
+    });
+    return str;
+}
+
 }  // namespace lotusim::common

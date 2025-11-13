@@ -1,12 +1,10 @@
-cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
 project(render_interface_plugin VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
 #============================================================================
-include(GNUInstallDirs)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -15,155 +13,110 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(LOTUS_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=-*,-header-filter=.*, clang-analyzer-*,modernize-*,performance-*,hicpp-*,concurrency-*,bugprone-*,portability-*,cppcoreguidelines-*")
+  set(CMAKE_CXX_CLANG_TIDY 
+    "clang-tidy;-checks=-*,clang-analyzer-*,modernize-*,performance-*,hicpp-*,concurrency-*,bugprone-*,portability-*,cppcoreguidelines-*;-header-filter=.*")
 endif()
 
 #============================================================================
 # Set project-specific options
 #============================================================================
-# For debugging
 if(DEBUG)
-  message("Building ${PROJECT_NAME} with debug options ${DEBUG}")
+  message(STATUS "Building ${PROJECT_NAME} with debug options ${DEBUG}")
   add_compile_options(-g -Og)
   find_package(backward_ros)
-  # Used to define the logger level
-  add_definitions(-DDEBUG=${DEBUG} )
+  add_definitions(-DDEBUG=${DEBUG})
 endif()
 
-# For profiling
 if(BUILD_PROFILING)
   add_compile_options(-pg -g -Og)
 endif()
 
-if(NOT DEFINED BUILD_SHARED_LIBS)
-  option(BUILD_SHARED_LIBS "Build dynamically-linked binaries" ON)
-endif()
-
-# Code coverage
-# if(BUILD_TESTING)
-#     add_compile_options(-fprofile-arcs -ftest-coverage -g -Og)
-# endif()
-
 #============================================================================
-# Search for project-specific dependencies
+# Search for dependencies
 #============================================================================
-find_package(gz-cmake3 REQUIRED)
-
-set(GZ_CMAKE_VER ${gz-cmake3_VERSION_MAJOR})
-
-gz_configure_project(VERSION_SUFFIX)
-
-set(protobuf_MODULE_COMPATIBLE TRUE)
-
-gz_find_package(sdformat14 REQUIRED VERSION)
-set(SDF_VER ${sdformat14_VERSION_MAJOR})
-
-find_package(gz-sim8 REQUIRED)
-set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
-
-gz_find_package(gz-msgs10 REQUIRED)
-set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
-
-gz_find_package(gz-transport13 REQUIRED COMPONENTS log)
-set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
-
-gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
-set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
-
-gz_find_package(gz-common5
-  COMPONENTS
-    profiler
-    events
-    av
-  REQUIRED
-)
-
+# ROS 2 packages
 find_package(ament_cmake REQUIRED)
-find_package(yaml-cpp REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(Boost REQUIRED system)
 find_package(lotusim_common REQUIRED)
-find_package(fmt REQUIRED)
 find_package(lotusim_msgs REQUIRED)
 
-include_directories(
-  include
-  ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-  )
+# Third-party libraries
+find_package(yaml-cpp REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
 
-link_directories(
-  ${CMAKE_INSTALL_FULL_LIBDIR}
-)
+# Gazebo packages
+find_package(sdformat14 REQUIRED)
+find_package(gz-sim8 REQUIRED)
+find_package(gz-msgs10 REQUIRED)
+find_package(gz-transport13 REQUIRED COMPONENTS log)
+find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
+find_package(gz-common5 REQUIRED COMPONENTS profiler events av)
 
 #============================================================================
-# Create and install project files
+# Create library
 #============================================================================
-add_library(render_plugin 
-  SHARED   
-  src/TcpUdpInterface.cpp
-  src/RenderPlugin.cpp
-  src/RosInterface.cpp
+add_library(render_plugin SHARED   
+  src/tcpudp_interface.cpp
+  src/render_plugin.cpp
+  src/ros_interface.cpp
 )
 
-target_include_directories(render_plugin
-  PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
+target_include_directories(render_plugin PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(render_plugin
-  ${Boost_SYSTEM_LIBRARY}
   gz-sim8::gz-sim8
-  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  lotusim_common
-  fmt::fmt
+  gz-plugin2::gz-plugin2
+  gz-msgs10::gz-msgs10
+  gz-transport13::gz-transport13
+  Boost::system
+  yaml-cpp
 )
 
-ament_target_dependencies(render_plugin 
-  ament_cmake
+ament_target_dependencies(render_plugin
   rclcpp
+  lotusim_common
   lotusim_msgs
+)
+
+#============================================================================
+# Installation
+#============================================================================
+install(
+  DIRECTORY include/
+  DESTINATION include
+  FILES_MATCHING
+  PATTERN "*.hpp"
+  PATTERN "*.h"
 )
 
 install(
   TARGETS render_plugin
-  EXPORT  export_render_plugin
-  ARCHIVE DESTINATION lib
+  EXPORT export_render_plugin
   LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
 #============================================================================
-# Install the files for this package
+# Export
 #============================================================================
-install(
-  DIRECTORY include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING
-  PATTERN "*.hpp"
-  PATTERN "*.h"
-  PATTERN ".~"
-  EXCLUDE
-)
-
-ament_export_targets(
-  export_render_plugin
-)
-
+ament_export_targets(export_render_plugin HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
-  ament_cmake
   lotusim_common
   lotusim_msgs
-)
-ament_export_include_directories(include)
-ament_export_libraries(
-  render_plugin
+  yaml-cpp
+  Boost
+  gz-sim8
+  gz-plugin2
+  gz-msgs10
+  gz-transport13
+  sdformat14
+  gz-common5
 )
 
 ament_package()
-
-gz_create_packages()
-
-
-

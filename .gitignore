@@ -1,4 +1,8 @@
-.vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
 docs/doxygen
 lotus_logs/*
 .ipynb_checkpoints
+*.rviz

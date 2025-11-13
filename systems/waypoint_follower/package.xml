@@ -13,7 +13,7 @@
   <author email="sebastian.scherer2@de.bosch.com">Sebastian Scherer</author>
   <author email="luizricardo.douat@de.bosch.com">Luiz Ricardo Douat</author>
 
-  <license>Apache-2.0</license>
+  <license>EPL-2.0</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>gz-cmake3</depend>
   <depend>lotusim_common</depend>

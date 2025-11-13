@@ -1,2 +1,0 @@
-clear
-xdyn-for-cs dtmb/dtmb-xdyn.yml -v -a 127.0.0.1 -p 12345 -d --dt 0.2

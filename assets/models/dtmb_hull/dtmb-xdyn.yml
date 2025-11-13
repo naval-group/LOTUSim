@@ -35,7 +35,7 @@ environment models:
 # Fixed frame: NED
 bodies: # All bodies have NED as parent frame
   - name: dtmb
-    mesh: dtmb_hull/dtmb.stl
+    mesh: dtmb_hull/meshes/dtmb.stl
 
     position of body frame relative to mesh:
       frame: mesh
@@ -76,8 +76,8 @@ bodies: # All bodies have NED as parent frame
         y: { value: 0, unit: m }
         z: { value: 0, unit: m }
 
-      ? rigid body inertia matrix at the center of buoyancy projected in the body frame
-      : frame: body
+      rigid body inertia matrix at the center of buoyancy projected in the body frame:
+        frame: body
         row 1: [8.569e6, 0, 0, 0, 0, 0]
         row 2: [0, 8.569e6, 0, 0, 0, 0]
         row 3: [0, 0, 8.569e6, 0, 0, 0]

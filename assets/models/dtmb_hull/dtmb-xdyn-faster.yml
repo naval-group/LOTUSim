@@ -1,0 +1,334 @@
+rotations convention: [psi, theta', phi'']
+
+environmental constants:
+  g: { value: 9.81, unit: m/s^2 }
+  rho: { value: 1025, unit: kg/m^3 }
+  nu: { value: 1.18e-6, unit: m^2/s }
+
+environment models:
+  - model: no wind
+  - model: waves
+    discretization:
+      ndir: 8
+      nfreq: 16
+      omega min: { value: 0.1, unit: rad/s }
+      omega max: { value: 10, unit: rad/s }
+      energy fraction: 0.99
+      equal energy bins: false
+    spectra:
+      - model: airy
+        depth: { value: 1000, unit: m }
+        seed of the random data generator: 2
+        stretching:
+          delta: 1
+          h: { unit: m, value: 0 }
+        directional spreading:
+          type: cos2s
+          s: 2
+          waves propagating to: { value: 0, unit: deg }
+        spectral density:
+          type: jonswap
+          Hs: { value: 1.5, unit: m }
+          Tp: { value: 3, unit: s }
+          gamma: 1.2
+  - model: ekman current
+    #seabed depth: 123
+    seabed file: seabed/seabed.png
+    latitude: { value: 43, unit: deg }
+    top layer thickness: { value: 5, unit: m}
+    bottom layer thickness: { value: 8, unit: m}
+    current velocity: { value: 0.1, unit: m/s }
+    current orientation: { value: 0, unit: deg }
+    U10: { value: 1, unit: m/s }
+    wind orientation: { value: 0, unit: rad }
+
+# Fixed frame: NED
+bodies: # All bodies have NED as parent frame
+  - name: dtmb
+    mesh: dtmb_hull/meshes/dtmb.stl
+
+    position of body frame relative to mesh:
+      frame: mesh
+      x: { value: 70.27, unit: m }
+      y: { value: 0, unit: m }
+      z: { value: -7.55, unit: m }
+      phi: { value: 0, unit: rad }
+      theta: { value: 0, unit: rad }
+      psi: { value: 0, unit: rad }
+
+    initial position of body frame relative to NED:
+      frame: NED
+      x: { value: 0, unit: m }
+      y: { value: 0, unit: m }
+      z: { value: 0, unit: m }
+      phi: { value: 0, unit: deg }
+      theta: { value: 0, unit: deg }
+      psi: { value: 0, unit: deg }
+
+    initial velocity of body frame relative to NED:
+      frame: body
+      u: { value: 0, unit: m/s }
+      v: { value: 0, unit: m/s }
+      w: { value: 0, unit: m/s }
+      p: { value: 0, unit: rad/s }
+      q: { value: 0, unit: rad/s }
+      r: { value: 0, unit: rad/s }
+
+    dynamics:
+      hydrodynamic forces calculation point in body frame:
+        x: { value: 0, unit: m }
+        y: { value: 0, unit: m }
+        z: { value: 3.45, unit: m }
+
+      centre of inertia:
+        frame: dtmb
+        x: { value: 0, unit: m }
+        y: { value: 0, unit: m }
+        z: { value: 0, unit: m }
+
+      rigid body inertia matrix at the center of buoyancy projected in the body frame:
+        frame: body
+        row 1: [8.569e6, 0, 0, 0, 0, 0]
+        row 2: [0, 8.569e6, 0, 0, 0, 0]
+        row 3: [0, 0, 8.569e6, 0, 0, 0]
+        row 4: [0, 0, 0, 4.271e8, 0, 0]
+        row 5: [0, 0, 0, 0, 1.080e10, 0]
+        row 6: [0, 0, 0, 0, 0, 1.080e10]
+
+      # added mass matrix at the center of gravity and projected in the body frame:
+      #     from raodb: issue_196_test.raodb.ini
+      added mass matrix at the center of buoyancy projected in the body frame:
+        frame: body
+        row 1:
+          [8.979E+04, 0.000E+00, -1.981E+05, 0.000E+00, -1.962E+07, 0.000E+00]
+        row 2:
+          [0.000E+00, 2.172E+06, 0.000E+00, 1.135E+06, 0.000E+00, 2.523E+07]
+        row 3:
+          [-1.981E+05, 0.000E+00, 9.680E+06, 0.000E+00, 6.716E+07, 0.000E+00]
+        row 4:
+          [0.000E+00, 1.135E+06, 0.000E+00, 3.865E+07, 0.000E+00, -2.228E+08]
+        row 5:
+          [-1.962E+07, 0.000E+00, 6.716E+07, 0.000E+00, 9.117E+09, 0.000E+00]
+        row 6:
+          [0.000E+00, 2.523E+07, 0.000E+00, -2.228E+08, 0.000E+00, 3.338E+09]
+
+    external forces:
+      - model: gravity
+
+      - model: non-linear hydrostatic (fast)
+
+      #      - model: non-linear Froude-Krylov
+
+      - model: linear damping
+        damping matrix at the center of gravity projected in the body frame:
+          frame: dtmb
+          row 1: [1.0e5, 0, 0, 0, 0, 0] #added 1.0e5 for stability
+          row 2: [0, 1.0e5, 0, 0, 0, 0] #added 1.0e5 for stability
+          row 3: [0, 0, 8.86e6, 0, 0, 0]
+          row 4: [0, 0, 0, 3.18e7, 0, 0]
+          row 5: [0, 0, 0, 0, 1.01e10, 0]
+          row 6: [0, 0, 0, 0, 0, 1.0e5] #added 1.0e5 for stability
+
+      - model: quadratic damping
+        damping matrix at the center of gravity projected in the body frame:
+          frame: dtmb
+          row 1: [0, 0, 0, 0, 0, 0]
+          row 2: [0, 0, 0, 0, 0, 0]
+          row 3: [0, 0, 0, 0, 0, 0]
+          row 4: [0, 0, 0, 1.16e8, 0, 0]
+          row 5: [0, 0, 0, 0, 0, 0]
+          row 6: [0, 0, 0, 0, 0, 0]
+
+      - model: resistance curve
+        speed:
+          {
+            unit: m/s,
+            values:
+              [
+                -1.858,
+                0.000,
+                1.858,
+                2.212,
+                2.616,
+                2.785,
+                2.979,
+                3.353,
+                3.732,
+                4.100,
+                4.474,
+                4.843,
+                5.212,
+                5.600,
+                5.964,
+                6.338,
+                6.711,
+                7.090,
+                7.479,
+                7.842,
+                8.211,
+                8.580,
+                8.938,
+                9.332,
+                9.696,
+                10.069,
+                10.448,
+                10.817,
+                11.195,
+                11.554,
+                11.933,
+                12.311,
+                12.685,
+                13.059,
+                13.432,
+                13.811,
+                14.185,
+                14.369,
+                14.544,
+                14.743,
+                14.927,
+                15.301,
+                15.665,
+                16.053,
+                16.427,
+                16.791,
+              ],
+          }
+        resistance:
+          {
+            unit: N,
+            values:
+              [
+                -1.890E+04,
+                0.000E+00,
+                1.890E+04,
+                2.557E+04,
+                3.185E+04,
+                3.683E+04,
+                3.853E+04,
+                4.778E+04,
+                5.996E+04,
+                6.849E+04,
+                8.565E+04,
+                9.835E+04,
+                1.145E+05,
+                1.357E+05,
+                1.613E+05,
+                1.789E+05,
+                1.991E+05,
+                2.253E+05,
+                2.465E+05,
+                2.720E+05,
+                3.029E+05,
+                3.327E+05,
+                3.708E+05,
+                4.061E+05,
+                4.415E+05,
+                4.762E+05,
+                5.392E+05,
+                6.029E+05,
+                6.597E+05,
+                7.331E+05,
+                7.862E+05,
+                8.579E+05,
+                9.303E+05,
+                1.011E+06,
+                1.117E+06,
+                1.254E+06,
+                1.414E+06,
+                1.526E+06,
+                1.611E+06,
+                1.723E+06,
+                1.846E+06,
+                2.056E+06,
+                2.283E+06,
+                2.530E+06,
+                2.708E+06,
+                2.992E+06,
+              ],
+          }
+      - name: PSPropRudd
+        model: propeller+rudder
+        position of propeller frame:
+          frame: dtmb
+          x: { value: -60.695, unit: m }
+          y: { value: -4.650, unit: m }
+          z: { value: 6.574, unit: m }
+          phi: { value: 0, unit: rad }
+          theta: { value: 2.95, unit: deg }
+          psi: { value: 0, unit: deg }
+        wake coefficient w: 0.15
+        relative rotative efficiency etaR: 1
+        thrust deduction factor t: 0.12
+        rotation: clockwise
+        number of blades: 5
+        blade area ratio AE/A0: 0.58
+        diameter: { value: 6.15, unit: m }
+        rudder area: { value: 15.4, unit: m^2 }
+        rudder height: { value: 4.4, unit: m }
+        effective aspect ratio factor: 1.7
+        lift tuning coefficient: 1.
+        drag tuning coefficient: 1.
+        position of rudder in body frame:
+          x: { value: -66.27, unit: m }
+          y: { value: -4.75, unit: m }
+          z: { value: 4.60, unit: m }
+      - name: SBPropRudd
+        model: propeller+rudder
+        position of propeller frame:
+          frame: dtmb
+          x: { value: -60.695, unit: m }
+          y: { value: 4.650, unit: m }
+          z: { value: 6.574, unit: m }
+          phi: { value: 0, unit: rad }
+          theta: { value: 2.95, unit: deg }
+          psi: { value: 0, unit: deg }
+        wake coefficient w: 0.15
+        relative rotative efficiency etaR: 1
+        thrust deduction factor t: 0.12
+        rotation: anti-clockwise
+        number of blades: 5
+        blade area ratio AE/A0: 0.58
+        diameter: { value: 6.15, unit: m }
+        rudder area: { value: 15.4, unit: m^2 }
+        rudder height: { value: 4.4, unit: m }
+        effective aspect ratio factor: 1.7
+        lift tuning coefficient: 1.
+        drag tuning coefficient: 1.
+        position of rudder in body frame:
+          x: { value: -66.27, unit: m }
+          y: { value: 4.75, unit: m }
+          z: { value: 4.60, unit: m }
+
+commands:
+  # Taken from tutorial_06_propulsion
+  - name: PSPropRudd
+    t: [0]
+    rpm: { unit: rad/s, values: [30] }
+    P/D: { unit: 1, values: [0.79] }
+    beta: { unit: deg, values: [0] }
+  - name: SBPropRudd
+    t: [0]
+    rpm: { unit: rad/s, values: [30] }
+    P/D: { unit: 1, values: [0.79] }
+    beta: { unit: deg, values: [0] }
+
+output:
+  - format: csv
+    filename: dtmb.csv
+    data:
+      [
+        t,
+        x(dtmb),
+        y(dtmb),
+        z(dtmb),
+        u(dtmb),
+        v(dtmb),
+        w(dtmb),
+        qi(dtmb),
+        qj(dtmb),
+        qk(dtmb),
+        qr(dtmb),
+        p(dtmb),
+        q(dtmb),
+        r(dtmb),
+      ]
