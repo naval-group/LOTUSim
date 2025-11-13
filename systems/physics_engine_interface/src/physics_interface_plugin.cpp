@@ -292,10 +292,9 @@ void PhysicsInterfacePlugin::createDomainConnection(
         _interface_map)
 {
     ConnectionType connection_type;
-    if (!_physics_sdf->HasElement("connection_type") ||
-        !_physics_sdf->HasElement("uri")) {
+    if (!_physics_sdf->HasElement("connection_type")) {
         m_logger->warn(
-            "PhysicsInterfacePlugin::loadVessel: {} missing {} connectionType or uri. Removing aerial calculation.",
+            "PhysicsInterfacePlugin::loadVessel: {} missing {} connection_type or uri.",
             _vessel_name,
             DomainTypeToStringMap[_domain]);
     }

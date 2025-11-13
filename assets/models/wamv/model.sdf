@@ -10,6 +10,11 @@
           </mesh>
         </geometry>
       </collision>
+      <sensor name="ais_sensor" type="custom" gz:type="ais">
+        <update_rate>1</update_rate>
+        <noise_sigma>0.01</noise_sigma>
+        <noise_amplitude>0.01</noise_amplitude>
+      </sensor>
     </link>
   </model>
 </sdf>
