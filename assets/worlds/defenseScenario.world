@@ -58,5 +58,8 @@
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
+        <plugin filename="waypoint_plugin"
+            name="lotusim::gazebo::WaypointFollowerPlugin" />
+
     </world>
 </sdf>
