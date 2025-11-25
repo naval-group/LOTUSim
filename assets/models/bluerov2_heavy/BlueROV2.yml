@@ -1,0 +1,339 @@
+rotations convention: [psi, theta', phi'']
+
+environmental constants:
+    g: {value: 9.81, unit: m/s^2}
+    rho: {value: 1025, unit: kg/m^3}
+    nu: {value: 1.18e-6, unit: m^2/s}
+
+environment models:
+
+  - model: no wind
+
+  - model: no waves
+    constant sea elevation in NED frame: {value: 0, unit: m}
+
+  - model: ekman current
+    #seabed depth: 123
+    seabed file: seabed/seabed.png
+    latitude: { value: 43, unit: deg }
+    top layer thickness: { value: 5, unit: m}
+    bottom layer thickness: { value: 8, unit: m}
+    current velocity: { value: 0.1, unit: m/s }
+    current orientation: { value: 0, unit: deg }
+    U10: { value: 1, unit: m/s }
+    wind orientation: { value: 0, unit: rad }
+
+# Fixed frame: NED
+bodies: # All bodies have NED as parent frame
+
+  - name: BlueRov2
+
+    # The mesh definition from this stl file is necessary for hydrostatic and Froud-Krylov
+    mesh: bluerov2_heavy/meshes/bluerov2_heavy_ASCII.stl
+
+    position of body frame relative to mesh:
+        frame: mesh
+        x: {value: 0, unit: m}
+        y: {value: 0, unit: m}
+        z: {value: 5, unit: m}
+        phi: {value: 0, unit: rad}
+        theta: {value: 0, unit: rad}
+        psi: {value: 0, unit: rad}
+
+    initial position of body frame relative to NED:
+        frame: NED
+        x: {value: -12.3, unit: m}
+        y: {value: 7.4, unit: m}
+        z: {value: 2.0, unit: m}
+        phi: {value: -1.1, unit: rad}
+        theta: {value: 2.3, unit: rad}
+        psi: {value: 0.2, unit: rad}
+
+    initial velocity of body frame relative to NED:
+        frame: BlueRov2
+        u: {value: 0.1, unit: m/s}
+        v: {value: 0, unit: m/s}
+        w: {value: 0, unit: m/s}
+        p: {value: 0, unit: rad/s}
+        q: {value: 0, unit: rad/s}
+        r: {value: 0, unit: rad/s}
+
+    dynamics:
+
+        # This is taken from the bluerov2 Katell files
+        hydrodynamic forces calculation point in body frame:
+            # center_of_volume:
+            # x: 0.0
+            # y: 0.0
+            # z: 0.06
+            x: {value: 0, unit: m}
+            y: {value: 0, unit: m}
+            z: {value: 0, unit: m}
+
+        # This is taken from the bluerov2 Katell files
+        centre of inertia:
+            # center_of_mass:
+            # x: 0.0
+            # y: 0.0
+            # z: 0.011
+            frame: BlueRov2
+            x: {value: 0, unit: m}
+            y: {value: 0, unit: m}
+            z: {value: 0.011, unit: m}
+
+        # This is taken from the bluerov2 Katell files
+        # inertia:
+        # mass: 13.0
+        # ixx: 0.26
+        # iyy: 0.23
+        # izz: 0.37
+        rigid body inertia matrix at the center of gravity and projected in the body frame:
+            row 1: [ 13,  0,  0,    0,    0,    0]
+            row 2: [  0, 13,  0,    0,    0,    0]
+            row 3: [  0,  0, 13,    0,    0,    0]
+            row 4: [  0,  0,  0, 0.26,    0,    0]
+            row 5: [  0,  0,  0,    0, 0.23,    0]
+            row 6: [  0,  0,  0,    0,    0, 0.37]
+            
+        # This is taken from the bluerov2 Katell files
+        # <!-- Added mass: -->
+        # <xDotU>0</xDotU>
+        # <yDotV>0</yDotV>
+        # <zDotW>0</zDotW>
+        # <kDotP>0</kDotP>
+        # <mDotQ>0</mDotQ>
+        # <nDotR>0</nDotR>
+        added mass matrix at the center of gravity and projected in the body frame:
+            row 1: [ 0, 0,  0,  0,  0, 0]
+            row 2: [ 0, 0,  0,  0,  0, 0]
+            row 3: [ 0, 0,  0,  0,  0, 0]
+            row 4: [ 0, 0,  0,  0,  0, 0]
+            row 5: [ 0, 0,  0,  0,  0, 0]
+            row 6: [ 0, 0,  0,  0,  0, 0]
+
+    external forces:
+
+      # # needs inertia matrix
+      - model: gravity
+
+      - model: basic buoyancy
+        volume: {value: 12.7, unit: litres}
+
+      # This is taken from the bluerov2 Katell files
+      - model: quadratic damping
+        # <!-- Second order stability derivative: -->
+        # <xUabsU>-58.42</xUabsU>
+        # <yVabsV>-55.137</yVabsV>
+        # <zWabsW>-124.818</zWabsW>
+        # <kPabsP>-4.0</kPabsP>
+        # <mQabsQ>-4.0</mQabsQ>
+        # <nRabsR>-4.0</nRabsR>
+        damping matrix at the center of gravity projected in the body frame:
+            row 1: [ 58.42,      0,       0,     0,    0,   0]
+            row 2: [     0, 55.137,       0,     0,    0,   0]
+            row 3: [     0,      0, 124.818,     0,    0,   0]
+            row 4: [     0,      0,       0,   4.0,    0,   0]
+            row 5: [     0,      0,       0,     0,  4.0,   0]
+            row 6: [     0,      0,       0,     0,    0, 4.0]
+
+      # This is taken from the bluerov2 Katell files
+      - model: linear damping
+        # <!-- First order stability derivative: -->
+        # <xU>0</xU>
+        # <yV>0</yV>
+        # <zW>0</zW>
+        # <kP>0</kP>
+        # <mQ>0</mQ>
+        # <nR>0</nR>
+        damping matrix at the center of gravity projected in the body frame:
+            row 1: [ 0, 0,  0,  0,  0, 0]
+            row 2: [ 0, 0,  0,  0,  0, 0]
+            row 3: [ 0, 0,  0,  0,  0, 0]
+            row 4: [ 0, 0,  0,  0,  0, 0]
+            row 5: [ 0, 0,  0,  0,  0, 0]
+            row 6: [ 0, 0,  0,  0,  0, 0]
+
+      - name: thruster1
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: -0.14, unit: m}
+            y: {value: 0., unit: m}
+            z: {value: -0.092, unit: m}
+            phi: {value: -1.57, unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: 2.355, unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: anti-clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster2
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: -0.14, unit: m}
+            y: {value: 0., unit: m}
+            z: {value: 0.092, unit: m}
+            phi: {value: -1.57, unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: -2.355, unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: anti-clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster3
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: 0.15, unit: m}
+            y: {value: 0., unit: m}
+            z: {value: -0.092, unit: m}
+            phi: {value: -1.57, unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: 0.785, unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster4
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: 0.15, unit: m}
+            y: {value: 0., unit: m}
+            z: {value: 0.092, unit: m}
+            phi: {value: -1.57, unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: -0.787, unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster5
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: -0.118, unit: m}
+            y: {value: 0.064, unit: m}
+            z: {value: -0.215, unit: m}
+            phi: {value: 3.142, unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: 3.142, unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: anti-clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster6
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: -0.118, unit: m}
+            y: {value: 0.064, unit: m}
+            z: {value: 0.215, unit: m}
+            phi: {value: 0., unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: 0., unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster7
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: 0.118, unit: m}
+            y: {value: 0.064, unit: m}
+            z: {value: -0.215, unit: m}
+            phi: {value: 0., unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: 0., unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+      - name: thruster8
+        model: wageningen B-series
+        position of propeller frame:
+            frame: BlueRov2
+            x: {value: 0.118, unit: m}
+            y: {value: 0.064, unit: m}
+            z: {value: 0.215, unit: m}
+            phi: {value: 3.142, unit: rad}
+            theta: {value: 0., unit: rad}
+            psi: {value: 3.142, unit: rad}
+        wake coefficient w: 0.2 # TO CHECK
+        relative rotative efficiency etaR: 0.8 # TO CHECK
+        thrust deduction factor t: 0.2 # TO CHECK
+        rotation: anti-clockwise
+        number of blades: 3
+        blade area ratio AE/A0: 0.3
+        diameter: {value: 0.1, unit: m}
+
+
+# commands:
+#   - name: thruster1
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1000,1000]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster2
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1000,1000]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster3
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1,1]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster4
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1,1]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster5
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1,1]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster6
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1,1]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster7
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1,1]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+#   - name: thruster8
+#     t: [0, 10]
+#     rpm: {unit: rpm, values: [1,1]}
+#     P/D: {unit: 1, values: [0.88,0.88]}
+
+
+# output:
+#  - format: csv
+#    filename: BlueRov2_OUPUT.csv
+#    data: [x(BlueRov2), y(BlueRov2), z(BlueRov2), phi(BlueRov2), theta(BlueRov2), psi(BlueRov2)]

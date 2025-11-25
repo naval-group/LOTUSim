@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>lotusim_sensor_plugin</name>
+  <version>0.0.1</version>
+  <description>
+    The custom lotus_sensor_system package for Lotusim.
+    Custom sensors have been added and gazebo sensors have been altered to pub in ros
+  </description>
+
+  <maintainer email="malcom.neo@fe.naval-group.com">malcom</maintainer>
+
+  <author email="malcom.neo@fe.naval-group.com">malcom</author>
+
+  <license>EPL-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>lotusim_sensor_base</depend>
+  <depend>lotusim_common</depend>
+  <depend>subsea_pressure_sensor</depend>
+  <depend>ais_sensor</depend>
+  <depend>imu_sensor</depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

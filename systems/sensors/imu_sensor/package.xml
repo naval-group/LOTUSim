@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
+  <name>imu_sensor</name>
+  <version>0.0.1</version>
+  <description>AIS system to pub imu msg in the simulation</description>
+
+  <maintainer email="malcom.neo@fe.naval-group.com">malcom</maintainer>
+
+  <author email="malcom.neo@fe.naval-group.com">malcom</author>
+
+  <license>EPL-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>lotusim_sensor_base</depend>
+  <depend>lotusim_sensor_msgs</depend>
+  <depend>lotusim_common</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
