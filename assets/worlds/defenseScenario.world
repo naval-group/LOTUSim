@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!-- Defense Scenario Gz World -->
+<sdf version="1.9">
+    <world name="defenseScenario">
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+        <scene>
+            <ambient>1.0 1.0 1.0</ambient>
+            <background>0.8 0.8 0.8</background>
+            <grid>1</grid>
+        </scene>
+        <gravity>0 0 0</gravity>
+        <physics type="ode">
+            <max_step_size>0.1</max_step_size>
+            <real_time_factor>1</real_time_factor>
+        </physics>
+
+        <spherical_coordinates>
+            <surface_model>EARTH_WGS84</surface_model>
+            <world_frame_orientation>ENU</world_frame_orientation>
+            <latitude_deg>1.2421</latitude_deg>
+            <longitude_deg>103.7198</longitude_deg>
+            <elevation>0</elevation>
+            <heading_deg>0</heading_deg>
+        </spherical_coordinates>
+
+        <!-- Core Plugins -->
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
+        <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer" />
+        <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
+
+        <plugin filename="physics_interface_plugin"
+            name="lotusim::gazebo::PhysicsInterfacePlugin">
+        </plugin>
+
+        <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
+        </plugin>
+
+        <plugin filename="aerial_demo_entity_manager"
+            name="lotusim::gazebo::AerialEntityManager">
+            <aerial_namespace>aerialWorld</aerial_namespace>
+        </plugin>
+
+        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
+            <connection_protocol>ROS2</connection_protocol>
+        </plugin>
+
+        <plugin filename="waypoint_plugin"
+            name="lotusim::gazebo::WaypointFollowerPlugin" />
+
+    </world>
+</sdf>

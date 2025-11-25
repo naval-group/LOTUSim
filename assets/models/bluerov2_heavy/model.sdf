@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sdf version="1.6">
+  <model name="bluerov2">
+    <link name="base_link">
+      <collision name="base_link_collision">
+        <geometry>
+          <mesh>
+            <uri>model://bluerov/meshes/bluerov2_heavy.dae</uri>
+            <scale>0.025 0.025 0.025</scale>
+          </mesh>
+        </geometry>
+      </collision>
+      <sensor name="ais_sensor" type="custom" gz:type="ais">
+        <update_rate>1</update_rate>
+        <noise_sigma>0.01</noise_sigma>
+        <noise_amplitude>0.01</noise_amplitude>
+      </sensor>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="lrauv">
+    <!-- Body -->
+    <link name="base_link">
+      <pose>0 0 0 0 0 3.1415</pose>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
+            <submesh>
+              <name>Body</name>
+              <center>false</center>
+            </submesh>
+          </mesh>
+        </geometry>
+      </collision>
+      <sensor name="ais_sensor" type="custom" gz:type="ais">
+        <update_rate>1</update_rate>
+        <noise_sigma>0.01</noise_sigma>
+        <noise_amplitude>0.01</noise_amplitude>
+      </sensor>
+      <sensor name="imu_sensor" type="custom"  gz:type="imu">
+        <always_on>1</always_on>
+        <update_rate>1000.0</update_rate>
+      </sensor>
+    </link>
+  </model>
+</sdf>

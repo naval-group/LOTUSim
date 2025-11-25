@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+    <model name="mine">
+        <pose>0 0 0 0 0 0</pose>
+        <static>false</static>
+        <link name="base_link">
+            <collision name="collision">
+                <pose>0 0 -0.5 0 0 0</pose>
+                <geometry>
+                    <mesh>
+                        <uri>model://mine/meshes/mine.stl</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+        </link>
+    </model>
+</sdf>

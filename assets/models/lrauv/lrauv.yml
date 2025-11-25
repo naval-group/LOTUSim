@@ -1,0 +1,341 @@
+rotations convention: [psi, theta', phi'']
+
+environmental constants:
+  g: { value: 9.81, unit: m/s^2 } # TODO: Input from general config file
+  rho: { value: 1026, unit: kg/m^3 } # TODO: Input from general config file
+  nu: { value: 1.18e-6, unit: m^2/s } # TODO: Input from general config file
+
+environment models:
+  - model: waves
+    discretization:
+      ndir: 8
+      nfreq: 16
+      omega min: { value: 0.5, unit: rad/s }
+      omega max: { value: 5, unit: rad/s }
+      energy fraction: 0.99
+    spectra:
+      - model: airy
+        depth: { value: 100, unit: m }
+        seed of the random data generator: 2
+        stretching:
+          delta: 1
+          h: { unit: m, value: 0 }
+        directional spreading:
+          type: cos2s
+          s: 2
+          waves propagating to: { value: 0, unit: deg }
+        spectral density:
+          type: jonswap
+          Hs: { value: 5, unit: m }
+          Tp: { value: 8, unit: s }
+          gamma: 1.2
+  - model: ekman current
+    #seabed depth: 123
+    seabed file: seabed/seabed.png
+    latitude: { value: 43, unit: deg }
+    top layer thickness: { value: 5, unit: m}
+    bottom layer thickness: { value: 8, unit: m}
+    current velocity: { value: 0.1, unit: m/s }
+    current orientation: { value: 0, unit: deg }
+    U10: { value: 1, unit: m/s }
+    wind orientation: { value: 0, unit: rad }
+
+bodies:
+  - name: LRAUV
+    mesh: lrauv/tethys.stl
+
+    position of body frame relative to mesh:
+      frame: mesh(LRAUV)
+      x: { value: 0, unit: m }
+      y: { value: 0, unit: m }
+      z: { value: 0, unit: m }
+      phi: { value: 0, unit: rad }
+      theta: { value: 0, unit: rad }
+      psi: { value: 0, unit: rad }
+
+    initial position of body frame relative to NED:
+      frame: NED
+      x: { value: 0, unit: m }
+      y: { value: 0, unit: m }
+      z: { value: 50, unit: m }
+      phi: { value: 0, unit: rad }
+      theta: { value: 0, unit: rad }
+      psi: { value: 0, unit: rad }
+
+    initial velocity of body frame relative to NED:
+      frame: LRAUV
+      u: { value: 0.2, unit: m/s }
+      v: { value: 0, unit: m/s }
+      w: { value: 0, unit: m/s }
+      p: { value: 0, unit: rad/s }
+      q: { value: 0, unit: rad/s }
+      r: { value: 0, unit: rad/s }
+
+    dynamics:
+      hydrodynamic forces calculation point in body frame:
+        x: { value: 0, unit: m }
+        y: { value: 0, unit: m }
+        z: { value: 0, unit: m }
+
+      centre of inertia:
+        frame: mesh(LRAUV)
+        x: { value: 0, unit: m }
+        y: { value: 0, unit: m }
+        z:
+          { value: 0, unit: m }
+
+          # This is taken from the LRAUV github
+      ? rigid body inertia matrix at the center of gravity and projected in the body frame
+      : row 1: [125, 0, 0, 0, 0, 0]
+        row 2: [0, 125, 0, 0, 0, 0]
+        row 3: [0, 0, 125, 0, 0, 0]
+        row 4: [0, 0, 0, 10000, 0, 0] # to keep the trajectory straight
+        row 5: [0, 0, 0, 0, 5000000, 0] # to keep the trajectory straight
+        row 6: [0, 0, 0, 0, 0, 5000000] # to keep the trajectory straight
+
+      ? added mass matrix at the center of gravity and projected in the body frame
+      : row 1: [4.876161, 0, 0, 0, 0, 0]
+        row 2: [0, 126.324739, 0, 0, 0, 0]
+        row 3: [0, 0, 126.324739, 0, 0, 0]
+        row 4: [0, 0, 0, 0, 0, 0]
+        row 5: [0, 0, 0, 0, 33.46, 0]
+        row 6: [0, 0, 0, 0, 0, 33.46]
+
+      external forces:
+        - model: gravity
+        - model: non-linear hydrostatic (fast) # Looks like this is the best choice with precison and speed
+        #- model: non-linear hydrostatic (exact) # If precision prevails
+        #- model: non-linear hydrostatic (fast) # If computation speed prevails
+        - model: non-linear Froude-Krylov
+        - model: diffraction
+          hdb: LRAUV.hdb
+          calculation point in body frame:
+            x: { value: 0, unit: m } # Check at what point was the RAO in the HDB file computed
+            y: { value: 0, unit: m } # Check at what point was the RAO in the HDB file computed
+            z: { value: 0, unit: m } # Check at what point was the RAO in the HDB file computed
+          mirror for 180 to 360: false # Check your HDB file to see if this is necessary
+
+        - model: airy
+          depth: { value: 500, unit: m } # TODO: Input from general config file = SurfaceHeight
+          seed of the random data generator: 121
+          stretching: # I'm forcing the streching model to be Wheeler's, do not change delta and set h to depth
+            delta: 0
+            h: { unit: m, value: 500 } # TODO: Input from general config file = SurfaceHeight
+          directional spreading:
+            type: cos2s
+            s: 2 # Higher value will decrease the spreading
+            waves propagating to: { value: 0, unit: deg }
+          spectral density: # Moderate Sea State values
+            type: jonswap
+            Hs: { value: 1.8750, unit: m } # TODO: Input from setupMetocean script from user input
+            Tp: { value: 7.2573, unit: s } # TODO: Input from setupMetocean script from user input
+            gamma: 2.65 # TODO: Input from setupMetocean script from user input
+
+        - model: radiation damping
+          hdb: LRAUV.hdb
+          type of quadrature for cos transform: gauss-kronrod # If precision prevails
+          #type of quadrature for cos transform: simpson # If speed and precision prevail
+          #type of quadrature for cos transform: rectangle # If speed prevails (bad precision)
+          type of quadrature for convolution: clenshaw-curtis
+
+          nb of points for retardation function discretization: 100 # Higher value means better precision
+          omega min: { value: 0, unit: rad/s } # Check with HDB file
+          omega max: { value: 40, unit: rad/s } # Check with HDB file
+          tau min: { value: 0.2094395, unit: s } # Check with HDB file
+          tau max: { value: 10, unit: s } # Check with HDB file
+          output Br and K: false # Set to true when validating your choice of algorithm and parameters by validating Radiation Damping Matrices and Retardation Functions
+
+    controlled forces:
+      # - name: propeller
+      #   model: Kt(J) & Kq(J)
+      #   position of propeller frame:
+      #     frame: mesh(LRAUV)
+      #     x: { value: 1.43162, unit: m } # Check if it appears in the correct direction
+      #     y: { value: 0, unit: m }
+      #     z: { value: 0, unit: m }
+      #     phi: { value: 0, unit: rad }
+      #     theta: { value: 0, unit: deg }
+      #     psi: { value: 0, unit: deg }
+      #   wake coefficient w: 0.13 # IDK if it's w or (1-w) but I think it's good
+      #   relative rotative efficiency etaR: 0.8 # Not sure
+      #   thrust deduction factor t: 0.21978 # Hoping it's t and not (1-t) but I think it's good
+      #   rotation: clockwise
+      #   diameter: { value: 0.2539, unit: m }
+      #   J:
+      #     [
+      #       -0.001,
+      #       0.0762032296179596,
+      #       0.0862032296179596,
+      #       0.0962032296179596,
+      #       0.106203229617960,
+      #       0.156203229617960,
+      #       0.206203229617960,
+      #       0.256203229617960,
+      #       0.306203229617960,
+      #       0.356203229617960,
+      #       0.406203229617960,
+      #       0.456203229617960,
+      #       0.506203229617960,
+      #       0.556203229617960,
+      #       0.606203229617960,
+      #       0.656203229617960,
+      #       0.706203229617960,
+      #       0.756203229617960,
+      #       0.806203229617960,
+      #       0.856203229617960,
+      #       0.906203229617960,
+      #       0.956203229617960,
+      #       1.00620322961796,
+      #       1.05620322961796,
+      #       1.10620322961796,
+      #       1.11406061941751,
+      #       1.12191800921707,
+      #       1.12977539901662,
+      #       1.13763278881617,
+      #       1.13920118162787,
+      #       1.14076957443957,
+      #       1.14233796725126,
+      #       1.14390636006296,
+      #       1.14547475287465,
+      #       1.5,
+      #     ]
+      #   Kt:
+      #     [
+      #       0.15,
+      #       0.149629106145000,
+      #       0.149092288412162,
+      #       0.148536430426468,
+      #       0.147919613472432,
+      #       0.144437078245700,
+      #       0.140109845563664,
+      #       0.135122058696110,
+      #       0.129544987035366,
+      #       0.123556013896421,
+      #       0.117182865263515,
+      #       0.110505076749667,
+      #       0.103544728583763,
+      #       0.0963708040128529,
+      #       0.0889894743293849,
+      #       0.0814080166920051,
+      #       0.0736517390097282,
+      #       0.0657330941916959,
+      #       0.0576649267518059,
+      #       0.0494590908797343,
+      #       0.0411402110924796,
+      #       0.0326918590249985,
+      #       0.0241419742556138,
+      #       0.0155102366973646,
+      #       0.00682462425822040,
+      #       0.00546660627669125,
+      #       0.00409899094470137,
+      #       0.00273151369777944,
+      #       0.00136441489483806,
+      #       0.00109636518078016,
+      #       0.000823738200248799,
+      #       0.000551084129529683,
+      #       0.000278456931594917,
+      #       5.86402940020502e-06,
+      #       1.0e-08,
+      #     ]
+      #   Kq:
+      #     [
+      #       0.012,
+      #       0.0118790445988717,
+      #       0.0118696875525910,
+      #       0.0118763704025666,
+      #       0.0118642417926806,
+      #       0.0118341743504546,
+      #       0.0117931631436763,
+      #       0.0117483960244211,
+      #       0.0116645967412515,
+      #       0.0115530157456858,
+      #       0.0113891529092768,
+      #       0.0111725731833462,
+      #       0.0108934007565432,
+      #       0.0105556160483550,
+      #       0.0101512989388275,
+      #       0.00967497608560276,
+      #       0.00912594446586473,
+      #       0.00850188128950673,
+      #       0.00780100404474114,
+      #       0.00702266561520187,
+      #       0.00616781961975354,
+      #       0.00523414267410088,
+      #       0.00422509244093917,
+      #       0.00314536888748986,
+      #       0.00200354529198709,
+      #       0.00182065036923060,
+      #       0.00163530009132233,
+      #       0.00144893592241605,
+      #       0.00126165026006050,
+      #       0.00122483511130689,
+      #       0.00118734215099423,
+      #       0.00114980875821818,
+      #       0.00111224468063942,
+      #       0.00107465130413332,
+      #       0.001,
+      #     ]
+
+      - name: propeller
+        model: wageningen B-series # False but idk what to do instead
+        position of propeller frame:
+          frame: mesh(LRAUV)
+          x: { value: -1.43162, unit: m } # Check if it appears in the correct direction
+          y: { value: 0, unit: m }
+          z: { value: 0, unit: m }
+          phi: { value: 0, unit: rad }
+          theta: { value: 0, unit: deg }
+          psi: { value: 0, unit: deg }
+        wake coefficient w: 0.13 # IDK if it's w or (1-w) but I think it's good
+        relative rotative efficiency etaR: 0.8 # Not sure
+        thrust deduction factor t: 0.21978 # Hoping it's t and not (1-t) but I think it's good
+        rotation: clockwise
+        number of blades: 2
+        blade area ratio AE/A0: 0.308 # WARNING: Value is way outside valid range for Xdyn (Wageningen B-series validity) - Multiply by 2 to fake it
+        diameter: { value: 0.2539, unit: m }
+
+      # - name: vertical_fins
+      #   model: hydrodynamic polar
+      #   position of calculation frame:
+      #       frame: mesh(LRAUV)
+      #       x: {value: 0, unit: m}
+      #       y: {value: 0, unit: m}
+      #       z: {value: 0, unit: m}
+      #       phi: {value: 90, unit: deg}
+      #       theta: {value: 0, unit: deg}
+      #       psi: {value: 0, unit: deg}
+      #   reference area: {value: 0.025, unit: m^2}
+      #   angle of attack: {unit: deg, values: [0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,180]}
+      #   lift coefficient: [0.0, 0.697, 0.505, 0.313, 0.121, -0.071, -0.263, -0.455, -0.647, -0.839, -1.031, -1.223, -1.415, -1.607, -1.799, -1.991, -2.183, -2.375]
+      #   drag coefficient: [0.0, 0.034, 0.039, 0.045, 0.05, 0.055, 0.06, 0.066, 0.071, 0.076, 0.081, 0.086, 0.092, 0.097, 0.102, 0.107, 0.113, 0.118]
+      #   take waves orbital velocity into account: true
+      #   angle command: beta
+      
+      # - name: horizontal_fins
+      #   model: hydrodynamic polar
+      #   position of calculation frame:
+      #       frame: mesh(LRAUV)
+      #       x: {value: 0, unit: m}
+      #       y: {value: 0, unit: m}
+      #       z: {value: 0, unit: m}
+      #       phi: {value: 0, unit: deg}
+      #       theta: {value: 0, unit: deg}
+      #       psi: {value: 0, unit: deg}
+      #   reference area: {value: 0.025, unit: m^2}
+      #   angle of attack: {unit: deg, values: [0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,180]}
+      #   lift coefficient: [0.0, 0.697, 0.505, 0.313, 0.121, -0.071, -0.263, -0.455, -0.647, -0.839, -1.031, -1.223, -1.415, -1.607, -1.799, -1.991, -2.183, -2.375]
+      #   drag coefficient: [0.0, 0.034, 0.039, 0.045, 0.05, 0.055, 0.06, 0.066, 0.071, 0.076, 0.081, 0.086, 0.092, 0.097, 0.102, 0.107, 0.113, 0.118]
+      #   take waves orbital velocity into account: true
+      #   angle command: beta
+
+
+# commands:
+#   - name: propeller
+#     t: [0, 1]
+#     rpm: {unit: rpm, values: [300,300]} # LRAUV normal values are 150 and 300
+#     P/D: {unit: 1, values: [0.88,0.88]}
+
+# output:
+#  - format: csv
+#    filename: LRAUV_OUPUT.csv
+#    data: [t, x(LRAUV), y(LRAUV), z(LRAUV), phi(LRAUV), theta(LRAUV), psi(LRAUV), u(LRAUV), v(LRAUV), w(LRAUV), p(LRAUV), q(LRAUV), r(LRAUV)]

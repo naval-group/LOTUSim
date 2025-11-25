@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+    <model name="fremm">
+        <link name="base_link">
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://fremm/meshes/fremm.dae</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </visual>
+            <sensor name="ais_sensor" type="custom" gz:type="ais">
+                <update_rate>1</update_rate>
+                <noise_sigma>0.01</noise_sigma>
+                <noise_amplitude>0.01</noise_amplitude>
+            </sensor>
+        </link>
+    </model>
+</sdf>
