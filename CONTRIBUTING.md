@@ -19,7 +19,7 @@ This roadmap is updated every six months and available in the Project Roadmap se
 
 New ideas that enrich LOTUSim are always welcome, even if they are not listed on the roadmap.
 
-- For roadmap-related questions, please contact the Product Owner [naval-group.com] - .
+- For roadmap-related questions, please contact the [Product Owner](mailto:estelle.chauveau@naval-group.com).
 
 The LOTUSim Governance Committee ensures:
 
