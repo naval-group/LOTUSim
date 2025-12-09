@@ -166,7 +166,7 @@ install_ui() {
 ********************************************************************************************
     "
 
-    BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
+    BACKEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-backend"
     if [ -d "$BACKEND_DIR" ]; then
         echo -e "\n📦 Installing backend dependencies..."
         npm install --silent --prefix "$BACKEND_DIR" >/dev/null 2>&1 || {
@@ -192,7 +192,7 @@ install_ui() {
 ********************************************************************************************
     "
 
-    FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
+    FRONTEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-frontend"
     if [ -d "$FRONTEND_DIR" ]; then
         echo -e "\n📦 Installing frontend dependencies..."
         npm install --silent --prefix "$FRONTEND_DIR" >/dev/null 2>&1 || {
@@ -278,14 +278,14 @@ validate_ui_setup() {
     fi
     
     # Check backend directory
-    BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
+    BACKEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-backend"
     if [ ! -d "$BACKEND_DIR" ]; then
         echo -e "${RED}Error:${NC} Backend directory not found: $BACKEND_DIR"
         errors=$((errors + 1))
     fi
     
     # Check frontend directory
-    FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
+    FRONTEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-frontend"
     if [ ! -d "$FRONTEND_DIR" ]; then
         echo -e "${RED}Error:${NC}: Frontend directory not found: $FRONTEND_DIR"
         errors=$((errors + 1))
@@ -384,12 +384,12 @@ run_command() {
         trap cleanup SIGINT SIGTERM EXIT
 
         # Start backend
-        cd ${LOTUSIM_WS}/src/lotusim_backend
+        cd ${LOTUSIM_WS}/src/LOTUSim-UI-backend
         npx ts-node src/main.ts &
         BACKEND_PID=$!
 
         # Start frontend
-        cd ${LOTUSIM_WS}/src/lotusim_ui
+        cd ${LOTUSIM_WS}/src/LOTUSim-UI-frontend
         npm run dev &
         FRONTEND_PID=$!
 

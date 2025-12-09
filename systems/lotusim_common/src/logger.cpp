@@ -148,7 +148,7 @@ std::string createOrGetLogFolderPath()
     }
 
     if (!std::filesystem::exists(logs_dir)) {
-        std::filesystem::create_directory(logs_dir);
+        std::filesystem::create_directories(logs_dir);
         std::filesystem::permissions(
             logs_dir,
             std::filesystem::perms::owner_all |
