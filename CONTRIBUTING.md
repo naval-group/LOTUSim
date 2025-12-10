@@ -3,14 +3,12 @@
 This document explains how to contribute to the LOTUSim project.
 
 ## Contribution Philosophy
-
 LOTUSim aims to foster research, experimentation, and interoperability in the field of multi-agent simulation.
 
 A LOTUSim Governance Committee, established within Naval Group, oversees the overall coherence of the project’s developments.
 In the future, the committee may include external personas (key partners or major contributors).
 
 The committee publishes a roadmap highlighting priority topics and features, based on:
-
 - Internal needs within Naval Group,
 - Partner priorities,
 - And community-driven contributions.
@@ -30,7 +28,6 @@ The LOTUSim Governance Committee ensures:
 Before proposing a contribution, please first open an issue (see the Technical Specification section).
 
 ## Types of Contributions
-
 You can contribute in several ways:
 
 - New features – e.g. new algorithmic modules for platform guidance.

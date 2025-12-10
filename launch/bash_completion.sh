@@ -14,7 +14,7 @@ lotusim_script_completion() {
 
     # Define the options and commands
     opts="--ws-path --assets-path --debug --gui --help"
-    commands="install clean build build_lotus clean_build doc run run-w-bridge"
+    commands="install clean build clean_build doc run run-w-bridge"
 
     case "${prev}" in
     lotusim)
