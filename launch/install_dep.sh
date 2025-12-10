@@ -22,9 +22,17 @@ add-apt-repository -y universe  >/dev/nul 2>&1
 apt-get -y -qq install locales tzdata lsb-release curl gnupg2 ca-certificates >/dev/nul 2>&1 
 update-ca-certificates >/dev/nul 2>&1 || echo "Warning: CA certificate update had issues"
 
-# Install ROS2 repository
-if ls /etc/apt/sources.list.d/*ros2* 1>/dev/null 2>&1; then
-  echo -e "\n✅ ROS2 repo already exists."
+# Detect Ubuntu codename
+VERSION_CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
+if [[ -z "$VERSION_CODENAME" ]]; then
+  echo -e "\n❌ Error: Could not detect Ubuntu VERSION_CODENAME" >&2
+  exit 1
+fi
+
+# Install ROS2
+ROS2_LIST_FILE="/etc/apt/sources.list.d/ros2.list"
+if [[ -f "$ROS2_LIST_FILE" ]]; then
+  echo -e "\n✅ ROS2 repo already exists at: $ROS2_LIST_FILE"
 else
   echo -e "\n🌐 ROS2 repo not found — downloading ros2-apt-source package..."
   ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
@@ -33,6 +41,7 @@ else
   fi
 
   ROS_APT_SOURCE_VERSION=$(echo "$ROS_APT_SOURCE_VERSION" | tr -d '\n' | xargs)
+  VERSION_CODENAME=$(echo "$VERSION_CODENAME" | tr -d '\n' | xargs)
   ROS2_PKG_NAME="ros2-apt-source"
   ROS2_PKG_VERSION="${ROS_APT_SOURCE_VERSION}.${VERSION_CODENAME}"
   DOWNLOAD_ROS2_DEB=0
@@ -59,7 +68,6 @@ else
     fi
     apt-get install -y -qq "$ROS2_DEB_PATH" >/dev/null 2>&1
   fi
-  echo -e "\n✅ ROS2 repo added"
 fi
 
 # Install GZ
@@ -67,7 +75,7 @@ GAZEBO_LIST_FILE="/etc/apt/sources.list.d/gazebo-stable.list"
 GAZEBO_KEYRING="/usr/share/keyrings/gazebo-archive-keyring.gpg"
 GAZEBO_SOURCE_LINE="deb [arch=$(dpkg --print-architecture) signed-by=${GAZEBO_KEYRING}] http://packages.osrfoundation.org/gazebo/ubuntu-stable ${VERSION_CODENAME} main"
 if [[ -f "$GAZEBO_LIST_FILE" ]]; then
-    echo -e "\n✅ Gazebo repo already exists."
+    echo -e "\n✅ Gazebo repo already exists at: $GAZEBO_LIST_FILE"
 else
   echo -e "\n🌐 Gazebo repo not found — adding new source..."
   # Add key if missing
@@ -75,20 +83,15 @@ else
     curl -fsSL https://packages.osrfoundation.org/gazebo.key 2>/dev/null | gpg --dearmor -o "$GAZEBO_KEYRING" 2>/dev/null
   fi
   echo "$GAZEBO_SOURCE_LINE" | tee "$GAZEBO_LIST_FILE" >/dev/null
-  echo -e "\n✅ Gazebo repo added"
 fi
 
-echo -e "\n🔧 Updating apt"
 apt-get update -qq >/dev/null 
-echo -e "\n✅ Apt updated"
-
-echo -e "\n🔧 Installing dependencies"
 apt-get -y install \
-  gz-$GAZEBO_VERSION \
+  gz-harmonic \
   libstdc++-12-dev \
-  ros-$ROS_DISTRO-ros-core \
-  ros-$ROS_DISTRO-backward-ros \
-  ros-$ROS_DISTRO-geographic-msgs \
+  ros-humble-ros-core \
+  ros-humble-backward-ros \
+  ros-humble-geographic-msgs \
   python3-colcon-common-extensions \
   clang \
   libyaml-cpp-dev \
