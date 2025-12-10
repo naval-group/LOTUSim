@@ -7,6 +7,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
