@@ -17,6 +17,19 @@ COMMAND=""
 DEFAULT_WORLD="lotusim.world"
 WORLD=""
 
+# Detect Ubuntu codename
+export VERSION_CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
+if [[ "$VERSION_CODENAME" == "jammy" ]]; then
+  export ROS_DISTRO="humble"
+  export GAZEBO_VERSION="harmonic"
+elif [[ "$VERSION_CODENAME" == "noble" ]]; then
+  export ROS_DISTRO="jazzy"
+  export GAZEBO_VERSION="harmonic"
+else
+  echo -e "\n❌ Error: Could not detect Ubuntu VERSION_CODENAME" >&2
+  exit 1
+fi
+
 ###########
 # Functions
 ###########
@@ -133,6 +146,7 @@ install_lotus_dep() {
 *******************************    ${GREEN}Installing Lotusim${NC}    ***********************************
 ********************************************************************************************
     "
+
     if [ "$EUID" -ne 0 ]; then
         sudo -E "$LOTUSIM_PATH/launch/install_dep.sh"
     else
@@ -218,7 +232,7 @@ build_lotus() {
 ********************************    ${GREEN}Building Lotusim${NC}    ************************************
 ********************************************************************************************
     "
-    source "/opt/ros/humble/setup.bash"
+    source "/opt/ros/$ROS_DISTRO/setup.bash"
     cd ${LOTUSIM_WS}
     if [ "$DEBUG" == "-v4" ]; then
         echo -e "${GREEN}Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
@@ -241,8 +255,8 @@ build_lotus() {
 }
 
 validate_lotusim_core_setup() {
-    if [ ! -f "/opt/ros/humble/setup.bash" ]; then
-        echo -e "${RED}Error:${NC} ROS2 Humble is not installed or the setup.bash is not found at /opt/ros/humble/setup.bash."
+    if [ ! -f "/opt/ros/$ROS_DISTRO/setup.bash" ]; then
+        echo -e "${RED}Error:${NC} ROS2 $ROS_DISTRO is not installed or the setup.bash is not found at /opt/ros/$ROS_DISTRO/setup.bash."
         exit 1
     fi
     if [ ! -d "${LOTUSIM_WS}" ]; then
@@ -298,7 +312,7 @@ validate_ui_setup() {
 
 
 source_environment() {
-    source "/opt/ros/humble/setup.bash"
+    source "/opt/ros/$ROS_DISTRO/setup.bash"
     source "${LOTUSIM_WS}/install/setup.bash"
 
     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
@@ -411,7 +425,6 @@ run_command() {
 #######
 # Main
 #######
-export GZ_VERSION=harmonic
 
 # Check if no arguments provided
 if [ $# -eq 0 ]; then

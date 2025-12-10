@@ -146,15 +146,14 @@ std::string createOrGetLogFolderPath()
         ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d_%H-%M-%S");
         logs_dir /= ss.str();
     }
-
+    
     if (!std::filesystem::exists(logs_dir)) {
-        std::filesystem::create_directory(logs_dir);
+        std::filesystem::create_directories(logs_dir);
         std::filesystem::permissions(
             logs_dir,
             std::filesystem::perms::owner_all |
                 std::filesystem::perms::group_all);
     }
-
     return logs_dir.generic_string() + "/";
 }
 }  // namespace lotusim::logger
