@@ -1,25 +1,11 @@
 FROM ubuntu:22.04
 
-COPY df-ca.crt /usr/local/share/ca-certificates/df-ca.crt
-COPY debian.sources /etc/apt/sources.list
-COPY ros2.list /etc/apt/sources.list.d/ros2.list
-COPY gazebo-stable.list /etc/apt/sources.list.d/gazebo-stable.list
-
-RUN echo "Acquire::https::CaInfo \"/usr/local/share/ca-certificates/df-ca.crt\";" > /etc/apt/apt.conf.d/99proxy-cert && \
-    chmod 644 /usr/local/share/ca-certificates/df-ca.crt
-
-ARG HTTP_PROXY
-ARG HTTPS_PROXY
-
-ENV http_proxy=$HTTP_PROXY \
-    https_proxy=$HTTPS_PROXY
-
 # Set environment variables
 ENV LOTUSIM_WS=/home/lotusim_ws \
-    LOTUSIM_PATH=/home/lotusim_ws/src/lotusim \
-    LOTUSIM_MODELS_PATH=/home/lotusim_ws/src/lotusim/assets/models \
-    PATH=/home/lotusim_ws/src/lotusim/physics:/home/lotusim_ws/src/lotusim/launch:$PATH \
-    LD_LIBRARY_PATH=/home/lotusim_ws/src/lotusim/physics:$LD_LIBRARY_PATH \
+    LOTUSIM_PATH=/home/lotusim_ws/src/LOTUSim \
+    LOTUSIM_MODELS_PATH=/home/lotusim_ws/src/LOTUSim/assets/models \
+    PATH=/home/lotusim_ws/src/LOTUSim/physics:/home/lotusim_ws/src/LOTUSim/launch:$PATH \
+    LD_LIBRARY_PATH=/home/lotusim_ws/src/LOTUSim/physics:$LD_LIBRARY_PATH \
     FASTDDS_BUILTIN_TRANSPORTS=UDPv4 
 
 # Set the working directory

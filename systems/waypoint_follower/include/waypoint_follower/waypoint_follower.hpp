@@ -159,7 +159,7 @@ private:
 
     // Sets up ROS subscriptions and publishers for a given model/entity
     void setupRosForModel(
-        const gz::sim::Entity& entity, 
+        const gz::sim::Entity& entity,
         const std::string& model_name);
 
 private:
@@ -225,8 +225,8 @@ private:
      * @brief Vectors of geographic waypoint (lat, lon) for the vessel
      *
      */
-    std::map<gz::sim::Entity,
-         std::vector<std::pair<double, double>>> m_waypoints_geo;
+    std::map<gz::sim::Entity, std::vector<std::pair<double, double>>>
+        m_waypoints_geo;
 
     /**
      * @brief The current waypoint the vessel is going
@@ -235,7 +235,8 @@ private:
     std::unordered_map<gz::sim::Entity, uint> m_waypoint_state;
 
     /**
-     * @brief Entities that should stop being processed by the waypoint follower..
+     * @brief Entities that should stop being processed by the waypoint
+     * follower..
      *
      */
     std::set<gz::sim::Entity> m_entities_to_remove;
@@ -263,7 +264,10 @@ private:
         m_subscription;
     gz::math::SphericalCoordinates m_origin_spherical;
 
-    std::unordered_map<gz::sim::Entity, rclcpp::Publisher<lotusim_msgs::msg::WaypointReached>::SharedPtr> m_waypoint_pub;
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Publisher<lotusim_msgs::msg::WaypointReached>::SharedPtr>
+        m_waypoint_pub;
 
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 };
