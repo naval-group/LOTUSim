@@ -2,26 +2,26 @@ FROM ros_gz_base:latest
 
 # Set environment variables
 ENV LOTUSIM_WS=/home/lotusim_ws \
-    LOTUSIM_PATH=/home/lotusim_ws/src/lotusim \
-    LOTUSIM_MODELS_PATH=/home/lotusim_ws/src/lotusim/assets/models \
-    PATH=/home/lotusim_ws/src/lotusim/physics:/home/lotusim_ws/src/lotusim/launch:$PATH \
-    LD_LIBRARY_PATH=/home/lotusim_ws/src/lotusim/physics:$LD_LIBRARY_PATH \
+    LOTUSIM_PATH=/home/lotusim_ws/src/LOTUSim \
+    LOTUSIM_MODELS_PATH=/home/lotusim_ws/src/LOTUSim/assets/models \
+    PATH=/home/lotusim_ws/src/LOTUSim/physics:/home/lotusim_ws/src/LOTUSim/launch:$PATH \
+    LD_LIBRARY_PATH=/home/lotusim_ws/src/LOTUSim/physics:$LD_LIBRARY_PATH \
     FASTDDS_BUILTIN_TRANSPORTS=UDPv4 
 
 # Set the working directory
 WORKDIR /home/lotusim_ws
 
 # Copy local files to the container
-COPY ./lotusim ./src/lotusim 
+COPY ./LOTUSim ./src/LOTUSim 
 
-COPY ./lotusim_backend ./src/lotusim_backend 
+COPY ./LOTUSim-UI-backend ./src/LOTUSim-UI-backend 
 
 # Use bash shell
 SHELL ["/bin/bash", "-c"]
 
-RUN rm -rf ./src/lotusim/gui && \
+RUN rm -rf ./src/LOTUSim/gui && \
     lotusim build && \
-    chmod +x ./src/lotusim/launch/entrypoint.sh
+    chmod +x ./src/LOTUSim/launch/entrypoint.sh
 
-ENTRYPOINT ["/home/lotusim_ws/src/lotusim/launch/entrypoint.sh"]
+ENTRYPOINT ["/home/lotusim_ws/src/LOTUSim/launch/entrypoint.sh"]
 CMD ["/bin/bash"]

@@ -3,7 +3,7 @@ version: "3.8"
 services:
   backend:
     image: lotusim:latest
-    working_dir: /home/lotusim_ws/src/lotusim_backend
+    working_dir: /home/lotusim_ws/src/LOTUSim-UI-backend
     command:
       - /bin/bash
       - -c
