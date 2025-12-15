@@ -38,6 +38,7 @@
 #include "geographic_msgs/msg/geo_path.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "lotusim_msgs/msg/waypoint_reached.hpp"
 
 namespace lotusim::gazebo {
 
@@ -156,6 +157,11 @@ private:
         sdf::ElementPtr _lotus_param,
         gz::sim::EntityComponentManager& _ecm);
 
+    // Sets up ROS subscriptions and publishers for a given model/entity
+    void setupRosForModel(
+        const gz::sim::Entity& entity,
+        const std::string& model_name);
+
 private:
     /**
      * @brief Spdlogger
@@ -216,10 +222,24 @@ private:
         m_waypoints;
 
     /**
+     * @brief Vectors of geographic waypoint (lat, lon) for the vessel
+     *
+     */
+    std::map<gz::sim::Entity, std::vector<std::pair<double, double>>>
+        m_waypoints_geo;
+
+    /**
      * @brief The current waypoint the vessel is going
      *
      */
     std::unordered_map<gz::sim::Entity, uint> m_waypoint_state;
+
+    /**
+     * @brief Entities that should stop being processed by the waypoint
+     * follower..
+     *
+     */
+    std::set<gz::sim::Entity> m_entities_to_remove;
 
     // Implementing pid for heading control
     std::unordered_map<gz::sim::Entity, double> m_headingIntegral;
@@ -243,6 +263,11 @@ private:
     std::vector<rclcpp::Subscription<geographic_msgs::msg::GeoPath>::SharedPtr>
         m_subscription;
     gz::math::SphericalCoordinates m_origin_spherical;
+
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Publisher<lotusim_msgs::msg::WaypointReached>::SharedPtr>
+        m_waypoint_pub;
 
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 };
