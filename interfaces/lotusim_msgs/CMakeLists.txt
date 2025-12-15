@@ -15,6 +15,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RendererCmd.msg"
   "msg/Wind.msg"
   "msg/SimStats.msg"
+  "msg/WaypointReached.msg"
   "action/MASCmdArray.action"
   "action/MASCmd.action"
   

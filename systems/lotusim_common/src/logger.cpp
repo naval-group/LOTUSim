@@ -13,14 +13,14 @@ namespace lotusim::logger {
 
 spdlog::level::level_enum getLogLevelFromEnv()
 {
-    const char *env_level = std::getenv("LOTUSIM_SPDLOG_LEVEL");
+    const char* env_level = std::getenv("LOTUSIM_SPDLOG_LEVEL");
     if (env_level == nullptr) {
         return DEFAULT_LOG_LEVEL;
     }
 
     std::string level_str(env_level);
     // Convert to uppercase for case-insensitive comparison
-    for (auto &c : level_str)
+    for (auto& c : level_str)
         c = std::toupper(c);
 
     if (level_str == "TRACE")
@@ -44,8 +44,8 @@ spdlog::level::level_enum getLogLevelFromEnv()
 }
 
 auto createConsoleAndFileLogger(
-    const std::string &logger_name,
-    const std::string &file_name) -> std::shared_ptr<spdlog::logger>
+    const std::string& logger_name,
+    const std::string& file_name) -> std::shared_ptr<spdlog::logger>
 {
     try {
         std::shared_ptr<spdlog::logger> logger;
@@ -88,7 +88,7 @@ auto createConsoleAndFileLogger(
         }
 
         return logger;
-    } catch (const spdlog::spdlog_ex &ex) {
+    } catch (const spdlog::spdlog_ex& ex) {
         // logs using spdlog default global logger
         spdlog::info(
             "Log initialization failed while creating console and file logger: {}",
@@ -99,8 +99,8 @@ auto createConsoleAndFileLogger(
 }
 
 auto createBasicFileLogger(
-    const std::string &logger_name,
-    const std::string &file_name) -> std::shared_ptr<spdlog::logger>
+    const std::string& logger_name,
+    const std::string& file_name) -> std::shared_ptr<spdlog::logger>
 {
     try {
         std::string file_path = createOrGetLogFolderPath();
@@ -109,7 +109,7 @@ auto createBasicFileLogger(
         auto logger = spdlog::basic_logger_mt(logger_name, file_path);
         logger->set_level(getLogLevelFromEnv());
         return logger;
-    } catch (const spdlog::spdlog_ex &ex) {
+    } catch (const spdlog::spdlog_ex& ex) {
         spdlog::info(
             "Log initialization failed while creating basic file logger: {}",
             ex.what());
@@ -118,7 +118,7 @@ auto createBasicFileLogger(
     }
 }
 
-auto getLogger(const std::string &logger_name)
+auto getLogger(const std::string& logger_name)
     -> std::shared_ptr<spdlog::logger>
 {
     return spdlog::get(logger_name);
@@ -126,7 +126,7 @@ auto getLogger(const std::string &logger_name)
 
 std::string createOrGetLogFolderPath()
 {
-    const char *env_log_file_path =
+    const char* env_log_file_path =
         std::getenv("LOTUSIM_PATH") ? std::getenv("LOTUSIM_PATH") : nullptr;
     if (env_log_file_path != nullptr) {
         std::filesystem::path p1 = env_log_file_path;
@@ -148,13 +148,12 @@ std::string createOrGetLogFolderPath()
     }
 
     if (!std::filesystem::exists(logs_dir)) {
-        std::filesystem::create_directory(logs_dir);
+        std::filesystem::create_directories(logs_dir);
         std::filesystem::permissions(
             logs_dir,
             std::filesystem::perms::owner_all |
                 std::filesystem::perms::group_all);
     }
-
     return logs_dir.generic_string() + "/";
 }
 }  // namespace lotusim::logger

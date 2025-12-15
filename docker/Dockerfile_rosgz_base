@@ -2,12 +2,13 @@ FROM ubuntu:22.04
 
 # Set environment variables
 ENV LOTUSIM_WS=/home/lotusim_ws \
-    LOTUSIM_PATH=/home/lotusim_ws/src/lotusim \
-    LOTUSIM_MODELS_PATH=/home/lotusim_ws/src/lotusim/assets/models \
-    PATH=/home/lotusim_ws/src/lotusim/physics:/home/lotusim_ws/src/lotusim/launch:$PATH \
-    LD_LIBRARY_PATH=/home/lotusim_ws/src/lotusim/physics:$LD_LIBRARY_PATH \
+    LOTUSIM_PATH=/home/lotusim_ws/src/LOTUSim \
+    LOTUSIM_MODELS_PATH=/home/lotusim_ws/src/LOTUSim/assets/models \
+    PATH=/home/lotusim_ws/src/LOTUSim/physics:/home/lotusim_ws/src/LOTUSim/launch:$PATH \
+    LD_LIBRARY_PATH=/home/lotusim_ws/src/LOTUSim/physics:$LD_LIBRARY_PATH \
     FASTDDS_BUILTIN_TRANSPORTS=UDPv4 
 
+# Set the working directory
 WORKDIR /home/lotusim_ws
 
 # Copy local files to the container

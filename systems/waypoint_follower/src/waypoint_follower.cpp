@@ -37,35 +37,35 @@ bool WaypointFollowerPlugin::load(
     gz::sim::EntityComponentManager& _ecm)
 {
     auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
-    if (name_opt) {
-        m_logger->info("WaypointFollower::load Loading {}", name_opt->Data());
 
-        std::string model_name = name_opt->Data();
-
-        // Create ros subscription for waypoints to override given waypoints
-        m_subscription.push_back(
-            m_ros_node->create_subscription<geographic_msgs::msg::GeoPath>(
-                model_name + "/waypoints",
-                10,
-                [this,
-                 _entity](const geographic_msgs::msg::GeoPath::SharedPtr msg) {
-                    this->m_waypoints[_entity].clear();
-                    for (auto const& geo_point_stamped : msg->poses) {
-                        gz::math::Vector3d xyz =
-                            m_origin_spherical.LocalFromSphericalPosition(
-                                gz::math::Vector3d{
-                                    geo_point_stamped.pose.position.latitude,
-                                    geo_point_stamped.pose.position.longitude,
-                                    0});
-                        this->m_waypoints[_entity].push_back(
-                            {xyz.X(), xyz.Y()});
-                    }
-                }));
-    } else {
+    if (!name_opt) {
         m_logger->warn(
             "WaypointFollower::load Loading entity with no name: {}",
             _entity);
         return false;
+    }
+
+    m_logger->info("WaypointFollower::load Loading {}", name_opt->Data());
+
+    std::string model_name = name_opt->Data();
+
+    // Always do the ROS-topic initialization regardless of lotus_param_sdf
+    setupRosForModel(_entity, model_name);
+
+    // Initialize default values regardless of SDF
+    m_prevHeadingError[_entity] = 0.0;
+    m_headingIntegral[_entity] = 0.0;
+    m_waypoints[_entity] = {};
+    m_loop[_entity] = false;
+    m_rangeTolerance[_entity] = 0.5;
+    m_linear_accel_limit[_entity] = 0.5;
+    m_angular_accel_limit[_entity] = 0.01;
+    m_linear_velocities_limits[_entity] = gz::math::Vector2d(1, 10);
+    m_angular_velocities_limits[_entity] = 0.05;
+    m_velocities[_entity] = {0, 0};
+
+    if (!lotus_param_sdf) {
+        return true;  // No SDF, keep defaults
     }
 
     sdf::ElementPtr _sdf;
@@ -73,18 +73,15 @@ bool WaypointFollowerPlugin::load(
     if (lotus_param_sdf->HasElement("follower")) {
         _sdf = lotus_param_sdf->GetElement("follower");
     } else {
-        return true;
+        return true;  // No follower element, defaults are enough
     }
-
-    m_prevHeadingError[_entity] = 0.0;
-    m_headingIntegral[_entity] = 0.0;
 
     auto pose_opt = _ecm.Component<gz::sim::components::Pose>(_entity);
     if (!pose_opt) {
         return false;
     }
-    auto pose = pose_opt->Data();
     // Parse the optional <waypoints> element.
+    auto pose = pose_opt->Data();
     std::vector<gz::math::Vector2d> waypoint;
     if (_sdf->HasElement("waypoints")) {
         auto waypointsElem = _sdf->GetElement("waypoints");
@@ -95,6 +92,7 @@ bool WaypointFollowerPlugin::load(
                 "TrajectoryFollower: Unable to find <waypoints><waypoint> element in SDF.");
             return true;
         }
+
         auto waypointElem = waypointsElem->GetElement("waypoint");
         while (waypointElem) {
             gz::math::Vector2d position =
@@ -108,7 +106,6 @@ bool WaypointFollowerPlugin::load(
                 "Waypoint, Local: X = {} Y = {}",
                 position.X(),
                 position.Y());
-
             waypointElem = waypointElem->GetNextElement("waypoint");
         }
     }
@@ -125,8 +122,8 @@ bool WaypointFollowerPlugin::load(
         // Parse the required <radius> field.
         double radius = circleElem->Get<double>("radius");
 
-        // Get the current model position in global coordinates. Create
-        // local vectors that represent a path along a rough circle.
+        // Get the current model position in global coordinates.
+        // Create local vectors that represent a path along a rough circle.
         gz::math::Vector2d position(pose.X(), pose.Y());
         double angle = 0;
         gz::math::Vector2d vec(radius, 0);
@@ -182,48 +179,27 @@ bool WaypointFollowerPlugin::load(
     }
     m_waypoints[_entity] = waypoint;
 
-    // Parse the optional <loop> element.
+    // Optional overrides from SDF
     if (_sdf->HasElement("loop"))
         m_loop[_entity] = _sdf->Get<bool>("loop");
 
-    // Parse the optional <range_tolerance> element.
-    if (_sdf->HasElement("range_tolerance")) {
-        double rangeTolerance = _sdf->Get<double>("range_tolerance");
-        m_rangeTolerance[_entity] = rangeTolerance;
-    } else {
-        m_rangeTolerance[_entity] = 0.5;
-    }
+    if (_sdf->HasElement("range_tolerance"))
+        m_rangeTolerance[_entity] = _sdf->Get<double>("range_tolerance");
 
-    if (_sdf->HasElement("linear_accel_limit")) {
-        double linear_accel_limit = _sdf->Get<double>("linear_accel_limit");
-        m_linear_accel_limit[_entity] = linear_accel_limit;
-    } else {
-        m_linear_accel_limit[_entity] = 0.5;
-    }
+    if (_sdf->HasElement("linear_accel_limit"))
+        m_linear_accel_limit[_entity] = _sdf->Get<double>("linear_accel_limit");
 
-    if (_sdf->HasElement("angular_accel_limit")) {
-        double angular_accel_limit = _sdf->Get<double>("angular_accel_limit");
-        m_angular_accel_limit[_entity] = angular_accel_limit;
-    } else {
-        m_angular_accel_limit[_entity] = 0.01;
-    }
+    if (_sdf->HasElement("angular_accel_limit"))
+        m_angular_accel_limit[_entity] =
+            _sdf->Get<double>("angular_accel_limit");
 
-    if (_sdf->HasElement("linear_velocities_limits")) {
+    if (_sdf->HasElement("linear_velocities_limits"))
         m_linear_velocities_limits[_entity] =
             _sdf->Get<gz::math::Vector2d>("linear_velocities_limits");
-    } else {
-        m_linear_velocities_limits[_entity] = gz::math::Vector2d(1, 10);
-    }
 
-    if (_sdf->HasElement("angular_velocities_limits")) {
-        double angular_velocities_limits =
+    if (_sdf->HasElement("angular_velocities_limits"))
+        m_angular_velocities_limits[_entity] =
             _sdf->Get<double>("angular_velocities_limits");
-        m_angular_velocities_limits[_entity] = angular_velocities_limits;
-    } else {
-        m_angular_velocities_limits[_entity] = 0.05;
-    }
-
-    m_velocities[_entity] = {0, 0};
 
     return true;
 }
@@ -237,7 +213,9 @@ void WaypointFollowerPlugin::Configure(
 {
     m_world_entity = _entity;
     m_world_name = lotusim::common::getWorldName(_ecm);
-    m_ros_node = rclcpp::Node::make_shared("wapoint_follower", m_world_name);
+
+    // Create ROS node
+    m_ros_node = rclcpp::Node::make_shared("waypoint_follower", m_world_name);
     if (rclcpp::ok()) {
         m_executor =
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
@@ -249,6 +227,7 @@ void WaypointFollowerPlugin::Configure(
             "WaypointFollowerPlugin::Configure: RCLCPP context shutdown.");
     }
 
+    // Get spherical coordinates
     gz::math::Angle lat0, lon0;
     gz::sim::Entity worldEntity;
     _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
@@ -287,6 +266,8 @@ void WaypointFollowerPlugin::Update(
             if (!_model)
                 return true;
 
+            sdf::ElementPtr lotus_param_sdf = nullptr;
+
             sdf::ElementPtr _sdf = _model->Data().Element();
             if (_sdf->GetIncludeElement()) {
                 _sdf = _sdf->GetIncludeElement();
@@ -294,21 +275,20 @@ void WaypointFollowerPlugin::Update(
             if (_sdf->HasElement("lotus_param") &&
                 _sdf->GetElement("lotus_param")
                     ->HasElement("waypoint_follower")) {
-                _sdf = _sdf->GetElement("lotus_param")
-                           ->GetElement("waypoint_follower");
-            } else {
-                return true;
+                lotus_param_sdf = _sdf->GetElement("lotus_param")
+                                      ->GetElement("waypoint_follower");
             }
-            m_model_load_queue[_entity] = _sdf;
+
+            m_model_load_queue[_entity] = lotus_param_sdf;
             return true;
         });
 
     for (auto it = m_model_load_queue.begin();
          it != m_model_load_queue.end();) {
         gz::sim::Entity entity = it->first;
-        sdf::ElementPtr sdfElem = it->second;
+        sdf::ElementPtr lotus_param_sdf = it->second;  // may be nullptr
 
-        bool res = load(entity, sdfElem, _ecm);
+        bool res = load(entity, lotus_param_sdf, _ecm);
         if (res) {
             it = m_model_load_queue.erase(it);
         } else {
@@ -322,15 +302,30 @@ void WaypointFollowerPlugin::Update(
     for (auto&& temp : m_waypoints) {
         gz::sim::Entity _entity = temp.first;
         std::vector<gz::math::Vector2d> _waypoints = temp.second;
-        gz::math::Pose3d pose =
-            _ecm.Component<gz::sim::components::Pose>(_entity)->Data();
-        double angle_to_goal = 0;
-        double distance_to_goal;
 
+        // Skip entities without Pose component
+        auto poseComp = _ecm.Component<gz::sim::components::Pose>(_entity);
+        if (!poseComp)
+            continue;
+
+        gz::math::Pose3d pose = poseComp->Data();
+
+        // Skip if no waypoints
+        if (_waypoints.empty())
+            continue;
+
+        // Initialize waypoint state if missing
         if (m_waypoint_state.find(_entity) == m_waypoint_state.end()) {
             m_waypoint_state[_entity] = 0;
         }
 
+        // Clamp waypoint index
+        if (m_waypoint_state[_entity] >= _waypoints.size()) {
+            m_waypoint_state[_entity] = 0;
+        }
+
+        double angle_to_goal = 0;
+        double distance_to_goal;
         gz::math::Vector2d current_goal = _waypoints[m_waypoint_state[_entity]];
         gz::math::Vector3d goal = {
             current_goal.X(),
@@ -345,6 +340,18 @@ void WaypointFollowerPlugin::Update(
         bearing.Normalize();
         angle_to_goal = bearing.Radian();
         distance_to_goal = directionLocalFrame.Length();
+
+        // --- DEBUG ---
+        size_t current_index = m_waypoint_state[_entity];
+
+        m_logger->debug(
+            "Entity {} is heading to waypoint {}/{}: X={} Y={} | Distance={}",
+            _entity,
+            current_index,
+            _waypoints.size() - 1,
+            current_goal.X(),
+            current_goal.Y(),
+            distance_to_goal);
 
         double current_velocity = m_velocities[_entity][0];
         double stopping_distance =
@@ -480,23 +487,105 @@ void WaypointFollowerPlugin::Update(
 
         _ecm.SetComponentData<gz::sim::components::Pose>(_entity, pose);
 
-        // goal tracking
+        // Goal Tracking ----
         if (distance_to_goal <= m_rangeTolerance[_entity]) {
-            // Last point
-            if (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1) {
-                // loop
-                if (m_loop[_entity])
+            bool isLast =
+                (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1);
+
+            // --- Publish ROS 2 message ---
+            auto it_pub = m_waypoint_pub.find(_entity);
+            if (it_pub != m_waypoint_pub.end() && it_pub->second) {
+                auto msg =
+                    std::make_shared<lotusim_msgs::msg::WaypointReached>();
+                auto name_comp =
+                    _ecm.Component<gz::sim::components::Name>(_entity);
+                msg->vessel_name = name_comp ? name_comp->Data() : "unknown";
+
+                int idx = m_waypoint_state[_entity];
+                if (idx >= 0 &&
+                    idx < static_cast<int>(m_waypoints[_entity].size())) {
+                    msg->waypoint_index = idx;
+                    msg->latitude = m_waypoints_geo[_entity].empty()
+                                        ? 0.0
+                                        : m_waypoints_geo[_entity][idx].first;
+                    msg->longitude = m_waypoints_geo[_entity].empty()
+                                         ? 0.0
+                                         : m_waypoints_geo[_entity][idx].second;
+                    it_pub->second->publish(*msg);
+                } else {
+                    m_logger->warn(
+                        "Waypoint index {} out of range for entity {}",
+                        idx,
+                        _entity);
+                }
+            } else {
+                m_logger->warn("Publisher not found for entity {}", _entity);
+            }
+
+            // ---------------------------------
+
+            if (isLast) {
+                if (m_loop[_entity]) {
+                    // loop back to the first waypoint
                     m_waypoint_state[_entity] = 0;
-                // Exit
-                else if (m_velocities[_entity][0] <= 0.1) {
-                    m_waypoints.erase(_entity);
-                    m_waypoint_state.erase(_entity);
+                } else {
+                    // stop movement
+                    m_velocities[_entity][0] = 0;
+
+                    // clear after finishing all calculations and before next
+                    // iteration
+                    m_entities_to_remove.insert(_entity);
+
+                    // skip the rest of update for this entity
+                    continue;
                 }
             } else {
                 m_waypoint_state[_entity] += 1;
             }
         }
     }
+
+    // Remove safely after the main update loop
+    for (auto e : m_entities_to_remove) {
+        m_waypoints.erase(e);
+        m_waypoint_state.erase(e);
+        m_prevHeadingError.erase(e);
+        m_headingIntegral.erase(e);
+    }
+    m_entities_to_remove.clear();
+}
+
+//////////////////////////////////////////////////
+void WaypointFollowerPlugin::setupRosForModel(
+    const gz::sim::Entity& entity,
+    const std::string& model_name)
+{
+    auto sub = m_ros_node->create_subscription<geographic_msgs::msg::GeoPath>(
+        model_name + "/waypoints",
+        10,
+        [this, entity](const geographic_msgs::msg::GeoPath::SharedPtr msg) {
+            // Only update internal state if different
+            if (msg->poses.size() != m_waypoints[entity].size()) {
+                this->m_waypoints[entity].clear();
+                for (auto const& geo_point_stamped : msg->poses) {
+                    gz::math::Vector3d xyz =
+                        m_origin_spherical.LocalFromSphericalPosition(
+                            {geo_point_stamped.pose.position.latitude,
+                             geo_point_stamped.pose.position.longitude,
+                             0});
+                    this->m_waypoints[entity].push_back({xyz.X(), xyz.Y()});
+                }
+            }
+        });
+
+    m_subscription.push_back(sub);
+
+    // Create publisher for waypoint reached messages
+    auto pub = m_ros_node->create_publisher<lotusim_msgs::msg::WaypointReached>(
+        model_name + "/waypoint_reached",
+        10);
+
+    m_waypoint_pub[entity] = pub;
 }
 
 }  // namespace lotusim::gazebo
