@@ -59,17 +59,24 @@ auto createConsoleAndFileLogger(
         auto console_sink =
             std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
-        std::string file_path = createOrGetLogFolderPath();
-
-        file_path = file_path + "/" + file_name;
+        std::filesystem::path file_path = createOrGetLogFolderPath();
+        file_path /= file_name;
 
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
             file_path,
             true);
-        std::filesystem::permissions(
-            file_path,
-            std::filesystem::perms::owner_all |
-                std::filesystem::perms::group_all);
+
+        try {
+            std::filesystem::permissions(
+                file_path,
+                std::filesystem::perms::owner_all |
+                    std::filesystem::perms::group_all);
+        } catch (const std::filesystem::filesystem_error& perm_ex) {
+            spdlog::warn(
+                "Failed to set file permissions for {}: {}",
+                file_path.string(),
+                perm_ex.what());
+        }
 
         // creating logger manually
         logger = std::make_shared<spdlog::logger>(
@@ -80,12 +87,7 @@ auto createConsoleAndFileLogger(
 
         spdlog::flush_every(std::chrono::seconds(3));
         spdlog::register_logger(logger);
-
-        if (DEFAULT_LOG_LEVEL < spdlog::level::info) {
-            logger->set_pattern("%v");
-        } else {
-            logger->set_pattern("[%D %T] [%l]: %v");
-        }
+        setLoggerPattern(logger);
 
         return logger;
     } catch (const spdlog::spdlog_ex& ex) {
@@ -103,11 +105,35 @@ auto createBasicFileLogger(
     const std::string& file_name) -> std::shared_ptr<spdlog::logger>
 {
     try {
-        std::string file_path = createOrGetLogFolderPath();
+        std::shared_ptr<spdlog::logger> logger;
 
-        file_path = file_path + "/" + file_name;
-        auto logger = spdlog::basic_logger_mt(logger_name, file_path);
+        logger = getLogger(logger_name);
+        if (logger) {
+            return logger;
+        }
+
+        std::filesystem::path file_path = createOrGetLogFolderPath();
+        file_path /= file_name;
+
+        logger = spdlog::basic_logger_mt(logger_name, file_path, true);
         logger->set_level(getLogLevelFromEnv());
+
+        try {
+            std::filesystem::permissions(
+                file_path,
+                std::filesystem::perms::owner_all |
+                    std::filesystem::perms::group_all);
+        } catch (const std::filesystem::filesystem_error& perm_ex) {
+            spdlog::warn(
+                "Failed to set file permissions for {}: {}",
+                file_path.string(),
+                perm_ex.what());
+        }
+
+        spdlog::flush_every(std::chrono::seconds(3));
+        spdlog::register_logger(logger);
+        setLoggerPattern(logger);
+
         return logger;
     } catch (const spdlog::spdlog_ex& ex) {
         spdlog::info(
@@ -124,36 +150,57 @@ auto getLogger(const std::string& logger_name)
     return spdlog::get(logger_name);
 }
 
-std::string createOrGetLogFolderPath()
+std::filesystem::path createOrGetLogFolderPath()
 {
-    const char* env_log_file_path =
-        std::getenv("LOTUSIM_PATH") ? std::getenv("LOTUSIM_PATH") : nullptr;
+    std::filesystem::path base_path;
+
+    const char* env_log_file_path = std::getenv("LOTUSIM_PATH");
     if (env_log_file_path != nullptr) {
-        std::filesystem::path p1 = env_log_file_path;
-        std::filesystem::current_path(p1);
+        base_path = env_log_file_path;
     } else {
         spdlog::info(
             "No environmental variable found for log file path, create logs folder in /tmp");
-        std::filesystem::current_path(std::filesystem::temp_directory_path());
+        base_path = std::filesystem::temp_directory_path();
     }
 
-    std::filesystem::path logs_dir =
-        std::filesystem::current_path() / "lotus_logs";
-    if (DEFAULT_LOG_LEVEL >= spdlog::level::info) {
+    std::filesystem::path logs_dir = base_path / "lotus_logs";
+
+    auto env_level = getLogLevelFromEnv();
+    if (env_level >= spdlog::level::info) {
         auto now = std::chrono::system_clock::now();
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
         std::stringstream ss;
         ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d_%H-%M-%S");
         logs_dir /= ss.str();
+    } else {
+        logs_dir /= "debug";
     }
 
     if (!std::filesystem::exists(logs_dir)) {
         std::filesystem::create_directories(logs_dir);
-        std::filesystem::permissions(
-            logs_dir,
-            std::filesystem::perms::owner_all |
-                std::filesystem::perms::group_all);
+
+        try {
+            std::filesystem::permissions(
+                logs_dir,
+                std::filesystem::perms::owner_all |
+                    std::filesystem::perms::group_all);
+        } catch (const std::filesystem::filesystem_error& perm_ex) {
+            spdlog::warn(
+                "Failed to set directory permissions for {}: {}",
+                logs_dir.string(),
+                perm_ex.what());
+        }
     }
-    return logs_dir.generic_string() + "/";
+
+    return logs_dir;
+}
+
+void setLoggerPattern(std::shared_ptr<spdlog::logger>& logger)
+{
+    if (logger->level() < spdlog::level::info) {
+        logger->set_pattern("%v");
+    } else {
+        logger->set_pattern("[%D %T] [%l]: %v");
+    }
 }
 }  // namespace lotusim::logger
