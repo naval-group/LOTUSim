@@ -51,15 +51,13 @@
         <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 
-        <plugin filename="physics_interface_plugin"
-            name="lotusim::gazebo::PhysicsInterfacePlugin">
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
 
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
         </plugin>
 
-        <plugin filename="aerial_demo_entity_manager"
-            name="lotusim::gazebo::AerialEntityManager">
+        <plugin filename="aerial_demo_entity_manager" name="lotusim::gazebo::AerialEntityManager">
             <aerial_namespace>aerialWorld</aerial_namespace>
         </plugin>
 
@@ -67,8 +65,7 @@
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
-        <plugin filename="waypoint_plugin"
-            name="lotusim::gazebo::WaypointFollowerPlugin" />
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin" />
 
     </world>
 </sdf>

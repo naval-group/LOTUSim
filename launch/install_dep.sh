@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 echo -e "\n🔧 Starting install of ROS and Gazebo..." 
 
 apt-get -qq update  >/dev/nul 2>&1
-apt-get install -y -qq software-properties-common  >/dev/nul 2>&1
+apt-get install -y -qq software-properties-common build-essential  >/dev/nul 2>&1
 add-apt-repository -y universe  >/dev/nul 2>&1
 apt-get -y -qq install locales tzdata lsb-release curl gnupg2 ca-certificates >/dev/nul 2>&1 
 update-ca-certificates >/dev/nul 2>&1 || echo "Warning: CA certificate update had issues"

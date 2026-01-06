@@ -27,7 +27,7 @@ WaypointFollowerPlugin::~WaypointFollowerPlugin()
     rclcpp::shutdown();
     m_ros_node_thread->join();
     m_logger->info(
-        "EntityManager::~EntityManager: EntityManager successfully shutdown.");
+        "WaypointFollowerPlugin::~WaypointFollowerPlugin: WaypointFollowerPlugin successfully shutdown.");
 }
 
 //////////////////////////////////////////////////
@@ -44,17 +44,20 @@ bool WaypointFollowerPlugin::load(
             _entity);
         return false;
     }
-
-    m_logger->info("WaypointFollower::load Loading {}", name_opt->Data());
-
     std::string model_name = name_opt->Data();
+
+    m_logger->info("WaypointFollower::load Loading {}", model_name);
+
+    if (!lotus_param_sdf) {
+        return true;  // No SDF, keep defaults
+    }
 
     // Always do the ROS-topic initialization regardless of lotus_param_sdf
     setupRosForModel(_entity, model_name);
 
     // Initialize default values regardless of SDF
-    m_prevHeadingError[_entity] = 0.0;
-    m_headingIntegral[_entity] = 0.0;
+    m_prev_heading_error[_entity] = 0.0;
+    m_heading_integral[_entity] = 0.0;
     m_waypoints[_entity] = {};
     m_loop[_entity] = false;
     m_rangeTolerance[_entity] = 0.5;
@@ -63,10 +66,9 @@ bool WaypointFollowerPlugin::load(
     m_linear_velocities_limits[_entity] = gz::math::Vector2d(1, 10);
     m_angular_velocities_limits[_entity] = 0.05;
     m_velocities[_entity] = {0, 0};
-
-    if (!lotus_param_sdf) {
-        return true;  // No SDF, keep defaults
-    }
+    m_linear_pid[_entity] = {0.5, 0.05, 0.1};
+    m_angular_pid[_entity] = {0.8, 0.05, 0.4};
+    m_prev_yaw[_entity] = 0.0;
 
     sdf::ElementPtr _sdf;
 
@@ -89,7 +91,7 @@ bool WaypointFollowerPlugin::load(
         // We need at least one waypoint
         if (!waypointsElem->HasElement("waypoint")) {
             m_logger->error(
-                "TrajectoryFollower: Unable to find <waypoints><waypoint> element in SDF.");
+                "WaypointFollowerPlugin::Load:: Unable to find <waypoints><waypoint> element in SDF.");
             return true;
         }
 
@@ -103,7 +105,7 @@ bool WaypointFollowerPlugin::load(
 
             // Print some debugging messages
             m_logger->debug(
-                "Waypoint, Local: X = {} Y = {}",
+                "WaypointFollowerPlugin::Load: Waypoint, Local: X = {} Y = {}",
                 position.X(),
                 position.Y());
             waypointElem = waypointElem->GetNextElement("waypoint");
@@ -111,11 +113,13 @@ bool WaypointFollowerPlugin::load(
     }
     // If no waypoints present, check for the <circle> element and parse.
     else if (_sdf->HasElement("circle")) {
-        m_logger->debug("Circle element activated");
+        m_logger->debug(
+            "WaypointFollowerPlugin::Load: Circle element activated");
         auto circleElem = _sdf->GetElement("circle");
 
         if (!circleElem->HasElement("radius")) {
-            m_logger->error("No <circle><radius> specified");
+            m_logger->error(
+                "WaypointFollowerPlugin::Load: No <circle><radius> specified");
             return true;
         }
 
@@ -135,7 +139,7 @@ bool WaypointFollowerPlugin::load(
             angle += 2 * GZ_PI / 8;
             vec.Set(radius * cos(angle), radius * sin(angle));
             m_logger->debug(
-                "Entered circle waypoint ({},{})",
+                "WaypointFollowerPlugin::Load: Entered circle waypoint ({},{})",
                 new_position.X(),
                 new_position.Y());
         }
@@ -145,14 +149,16 @@ bool WaypointFollowerPlugin::load(
         auto lineElem = _sdf->GetElement("line");
         // Parse the required <direction> field.
         if (!lineElem->HasElement("direction")) {
-            m_logger->error("No <line><direction> specified");
+            m_logger->error(
+                "WaypointFollowerPlugin::Load: No <line><direction> specified");
             return true;
         }
         gz::math::Angle direction = lineElem->Get<gz::math::Angle>("direction");
 
         // Parse the required <length> field.
         if (!lineElem->HasElement("length")) {
-            m_logger->error("No <line><length> specified");
+            m_logger->error(
+                "WaypointFollowerPlugin::Load: No <line><length> specified");
             return true;
         }
         auto length = lineElem->Get<double>("length");
@@ -171,14 +177,28 @@ bool WaypointFollowerPlugin::load(
         gz::math::Vector2d p2D = {p.X(), p.Y()};
         waypoint.push_back(p2D);
         m_logger->debug(
-            "Entered line waypoints ({},{}), ({},{})",
+            "WaypointFollowerPlugin::Load: Entered line waypoints ({},{}), ({},{})",
             position.X(),
             position.Y(),
             p2D.X(),
             p2D.Y());
     }
-    m_waypoints[_entity] = waypoint;
+    {
+        std::lock_guard<std::mutex> lock(m_waypoint_mutex);
 
+        m_waypoints[_entity] = waypoint;
+
+        for (auto&& point : waypoint) {
+            gz::math::Vector3d latlong =
+                m_origin_spherical.SphericalFromLocalPosition(
+                    {point.X(), point.Y(), 0});
+            geographic_msgs::msg::GeoPoint point_msg;
+            point_msg.latitude = latlong.X();
+            point_msg.longitude = latlong.Y();
+
+            m_waypoints_geo[_entity].push_back(point_msg);
+        }
+    }
     // Optional overrides from SDF
     if (_sdf->HasElement("loop"))
         m_loop[_entity] = _sdf->Get<bool>("loop");
@@ -201,18 +221,44 @@ bool WaypointFollowerPlugin::load(
         m_angular_velocities_limits[_entity] =
             _sdf->Get<double>("angular_velocities_limits");
 
+    if (_sdf->HasElement("linear_pid")) {
+        auto pid = _sdf->Get<gz::math::Vector3d>("linear_pid");
+        m_linear_pid[_entity][0] = pid.X();
+        m_linear_pid[_entity][1] = pid.Y();
+        m_linear_pid[_entity][2] = pid.Z();
+    };
+
+    if (_sdf->HasElement("angular_pid")) {
+        auto pid = _sdf->Get<gz::math::Vector3d>("angular_pid");
+        m_angular_pid[_entity][0] = pid.X();
+        m_angular_pid[_entity][1] = pid.Y();
+        m_angular_pid[_entity][2] = pid.Z();
+    };
     return true;
 }
 
 //////////////////////////////////////////////////
 void WaypointFollowerPlugin::Configure(
     const gz::sim::Entity& _entity,
-    const std::shared_ptr<const sdf::Element>&,
+    const std::shared_ptr<const sdf::Element>& _sdf,
     gz::sim::EntityComponentManager& _ecm,
     gz::sim::EventManager& /*_eventMgr*/)
 {
     m_world_entity = _entity;
     m_world_name = lotusim::common::getWorldName(_ecm);
+
+    m_status_update_period = 10;
+    auto sdfPtr = const_cast<sdf::Element*>(_sdf.get());
+    if (sdfPtr->HasElement("update_rate")) {
+        m_status_update_period = 1 / sdfPtr->Get<float>("update_rate");
+        m_logger->info(
+            "WaypointFollowerPlugin::Configure: update period set to  {}s",
+            m_status_update_period);
+    } else {
+        m_logger->warn(
+            "WaypointFollowerPlugin::Configure: Status publishing rate not found. Setting to default 10s");
+        return;
+    }
 
     // Create ROS node
     m_ros_node = rclcpp::Node::make_shared("waypoint_follower", m_world_name);
@@ -260,7 +306,7 @@ void WaypointFollowerPlugin::Update(
     gz::sim::EntityComponentManager& _ecm)
 {
     _ecm.EachNew<gz::sim::components::ModelSdf>(
-        [this](
+        [this, &_ecm](
             const gz::sim::Entity& _entity,
             const gz::sim::components::ModelSdf* _model) {
             if (!_model)
@@ -280,6 +326,9 @@ void WaypointFollowerPlugin::Update(
             }
 
             m_model_load_queue[_entity] = lotus_param_sdf;
+
+            auto name_comp = _ecm.Component<gz::sim::components::Name>(_entity);
+            m_vessel_name[_entity] = name_comp ? name_comp->Data() : "unknown";
             return true;
         });
 
@@ -298,6 +347,8 @@ void WaypointFollowerPlugin::Update(
 
     double dt =
         std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt).count();
+    // dt in seconds
+    double dt_s = dt / 1000.0;
 
     for (auto&& temp : m_waypoints) {
         gz::sim::Entity _entity = temp.first;
@@ -344,185 +395,190 @@ void WaypointFollowerPlugin::Update(
         // --- DEBUG ---
         size_t current_index = m_waypoint_state[_entity];
 
-        m_logger->debug(
-            "Entity {} is heading to waypoint {}/{}: X={} Y={} | Distance={}",
-            _entity,
-            current_index,
-            _waypoints.size() - 1,
-            current_goal.X(),
-            current_goal.Y(),
-            distance_to_goal);
-
         double current_velocity = m_velocities[_entity][0];
-        double stopping_distance =
-            std::pow(current_velocity, 2) / 2 / m_linear_accel_limit[_entity];
+        bool is_last_waypoint =
+            (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1) &&
+            !m_loop[_entity];
 
-        /**
-         * @brief Bang Bang controller for linear velocity
-         *
-         * Flag for linear velocity
-         * 0: Slow down to min speed
-         * 1: Fully stop
-         * 2: Speed up
-         *
-         */
-        int linear_veloctiy_flag = 0;
-        if (stopping_distance >= distance_to_goal) {
-            if (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1 &&
-                !m_loop[_entity]) {
-                linear_veloctiy_flag = 1;
-            } else {
-                linear_veloctiy_flag = 0;
-            }
-        } else if (angle_to_goal < 1.57 && angle_to_goal > -1.57) {
-            linear_veloctiy_flag = 2;
-        }
-        double vel_change = m_linear_accel_limit[_entity] * dt / 1000;
-        switch (linear_veloctiy_flag) {
-            case 1: {
-                if (m_velocities[_entity][0] < 0) {
-                    m_velocities[_entity][0] = 0;
-                } else if (m_velocities[_entity][0] > 0) {
-                    m_velocities[_entity][0] -= vel_change;
-                }
-                break;
-            }
-            case 2: {
-                // match to speed limit
-                if (current_velocity + vel_change >
-                    m_linear_velocities_limits[_entity][1]) {
-                    m_velocities[_entity][0] =
-                        m_linear_velocities_limits[_entity][1];
-                }
-                // full acceleartion
-                else {
-                    m_velocities[_entity][0] += vel_change;
-                }
-                break;
-            }
-            default: {
-                // Default case 0
-                // If speed is less than min, continue;
-                // if speed deduct is less than min, set to min
-                // else deduct
+        // PID controller for linear velocity based on distance error
+        double distance_error = distance_to_goal;
 
-                // match to speed limit
-                if (current_velocity - vel_change <
-                    m_linear_velocities_limits[_entity][0]) {
-                    m_velocities[_entity][0] =
-                        m_linear_velocities_limits[_entity][0];
-                }
-                // full acceleartion
-                else {
-                    m_velocities[_entity][0] -= vel_change;
-                }
-                break;
-            }
+        // Integral term with anti-windup
+        m_distance_error_integral[_entity] += distance_error * (dt_s);
+        double max_integral_contribution =
+            0.2 * m_linear_velocities_limits[_entity][1];
+        double max_integral =
+            max_integral_contribution / m_linear_pid[_entity][1];
+
+        m_distance_error_integral[_entity] = std::clamp(
+            m_distance_error_integral[_entity],
+            -max_integral,
+            max_integral);
+
+        // Derivative term (note: derivative of distance error is -velocity)
+        double distance_error_derivative =
+            (distance_error - m_distance_error_previous[_entity]) / (dt_s);
+        m_distance_error_previous[_entity] = distance_error;
+
+        // PID gains (tune these values for your system)
+        double kp = 0.5;   // Proportional gain (velocity per meter)
+        double ki = 0.05;  // Integral gain
+        double kd = 0.1;   // Derivative gain
+
+        // Calculate desired velocity from PID
+        double desired_velocity = kp * distance_error +
+                                  ki * m_distance_error_integral[_entity] +
+                                  kd * distance_error_derivative;
+
+        // Modify based on angle to goal (reduce speed when turning)
+        double angle_factor = std::cos(angle_to_goal);
+        if (angle_factor < 0)
+            angle_factor = 0;  // Don't go backwards
+        desired_velocity *= angle_factor;
+
+        // Apply velocity limits
+        desired_velocity = std::clamp(
+            desired_velocity,
+            m_linear_velocities_limits[_entity][0],
+            m_linear_velocities_limits[_entity][1]);
+
+        // Special handling for last waypoint
+        if (is_last_waypoint && distance_to_goal < 0.1) {
+            desired_velocity = 0.0;
         }
+
+        // Calculate velocity change with acceleration limits
+        double velocity_change = desired_velocity - current_velocity;
+        double max_accel = m_linear_accel_limit[_entity] * dt_s;
+        velocity_change = std::clamp(velocity_change, -max_accel, max_accel);
+
+        // Update velocity
+        m_velocities[_entity][0] = current_velocity + velocity_change;
+
+        // Final clamp to ensure limits
+        m_velocities[_entity][0] = std::clamp(
+            m_velocities[_entity][0],
+            m_linear_velocities_limits[_entity][0],
+            m_linear_velocities_limits[_entity][1]);
 
         /*
         PID angular velocity
-        Handling orientation
-        0: null
-        1: accelerate left
-        2: accelerate right
-        3: zeroing
         */
-        double Kp_heading = 0.8;
-        double Ki_heading = 0.05;
-        double Kd_heading = 0.4;
+        double Kp_heading = m_angular_pid[_entity][0];
+        double Ki_heading = m_angular_pid[_entity][1];
+        double Kd_heading = m_angular_pid[_entity][2];
 
-        // heading error in global frame
-        double desired_yaw = atan2(goal.Y() - pose.Y(), goal.X() - pose.X());
-        double heading_error = desired_yaw - pose.Yaw();
+        double heading_error = angle_to_goal;
+        double max_w = m_angular_velocities_limits[_entity];
+        // Check for goal change to reset integral
+        gz::math::Vector2d current_goal_2d(goal.X(), goal.Y());
 
-        // normalize to [-pi, pi]
-        while (heading_error > M_PI)
-            heading_error -= 2 * M_PI;
-        while (heading_error < -M_PI)
-            heading_error += 2 * M_PI;
-
-        // dt in seconds
-        double dt_s = dt / 1000.0;
+        if (m_prev_yaw.find(_entity) == m_prev_yaw.end()) {
+            m_prev_yaw[_entity] = pose.Yaw();
+        }
 
         // integrate error
-        m_headingIntegral[_entity] += heading_error * dt_s;
+        max_integral_contribution = 0.2 * m_angular_velocities_limits[_entity];
+        m_heading_integral[_entity] += heading_error * dt_s;
 
-        // derivative term
-        double d_error = (heading_error - m_prevHeadingError[_entity]) / dt_s;
-        m_prevHeadingError[_entity] = heading_error;
+        // Clamp integral (avoid division by zero)
+        if (Ki_heading > 1e-6) {
+            double integral_max = max_integral_contribution / Ki_heading;
+            m_heading_integral[_entity] = std::clamp(
+                m_heading_integral[_entity],
+                -integral_max,
+                integral_max);
+        }
+
+        // Derivative term (on measurement to avoid kick)
+        double yaw_diff = pose.Yaw() - m_prev_yaw[_entity];
+        // Handling the wrapping of yaw when goal is behind the vessel
+        while (yaw_diff > M_PI)
+            yaw_diff -= 2.0 * M_PI;
+        while (yaw_diff < -M_PI)
+            yaw_diff += 2.0 * M_PI;
+        double current_yaw_rate = yaw_diff / dt_s;
+
+        m_prev_yaw[_entity] = pose.Yaw();
+        double derivative_term = -Kd_heading * current_yaw_rate;
 
         // PID output
         double desired_w = Kp_heading * heading_error +
-                           Ki_heading * m_headingIntegral[_entity] +
-                           Kd_heading * d_error;
+                           Ki_heading * m_heading_integral[_entity] +
+                           derivative_term;
 
         // clamp to angular velocity limits
-        double max_w = m_angular_velocities_limits[_entity];
-        if (desired_w > max_w)
-            desired_w = max_w;
-        if (desired_w < -max_w)
-            desired_w = -max_w;
+        double unclamped_w = desired_w;
+        desired_w = std::clamp(desired_w, -max_w, max_w);
+
+        // Anti-windup: back-calculate integral if output saturated
+        if (Ki_heading > 1e-6 && std::abs(unclamped_w) > max_w) {
+            double clamped_integral =
+                (desired_w - Kp_heading * heading_error - derivative_term) /
+                Ki_heading;
+            m_heading_integral[_entity] = clamped_integral;
+        }
+
+        // Decay of I for anti-windup
+        if (std::abs(heading_error) < 0.05) {
+            m_heading_integral[_entity] *= 0.95;
+        }
 
         // apply accel limit to current angular velocity
-        vel_change = m_angular_accel_limit[_entity] * dt_s;
-        if (m_velocities[_entity][1] < desired_w)
+        double vel_change = m_angular_accel_limit[_entity] * dt_s;
+        if (m_velocities[_entity][1] < desired_w) {
             m_velocities[_entity][1] =
                 std::min(m_velocities[_entity][1] + vel_change, desired_w);
-        else
+        } else {
             m_velocities[_entity][1] =
                 std::max(m_velocities[_entity][1] - vel_change, desired_w);
+        }
 
         // Updating pose
         pose.SetX(
-            pose.X() +
-            (m_velocities[_entity][0] * cos(pose.Yaw()) * dt / 1000));
+            pose.X() + (m_velocities[_entity][0] * cos(pose.Yaw()) * dt_s));
         pose.SetY(
-            pose.Y() +
-            (m_velocities[_entity][0] * sin(pose.Yaw()) * dt / 1000));
+            pose.Y() + (m_velocities[_entity][0] * sin(pose.Yaw()) * dt_s));
         pose.Rot().SetFromEuler(
             pose.Roll(),
             pose.Pitch(),
-            pose.Yaw() + dt * m_velocities[_entity][1]);
+            pose.Yaw() + dt_s * m_velocities[_entity][1]);
 
         _ecm.SetComponentData<gz::sim::components::Pose>(_entity, pose);
 
+        m_logger->debug(
+            "\n\n\n-------------------------------\n"
+            "Entity {} is heading to waypoint {}/{}\n"
+            "Position : {:.2f} {:.2f} Goal {:.2f} {:.2f}\n"
+            "Distance to goal = {:.2f} Velocity = {:.2f}\n"
+            "DirectionLocalFrame:X : {:.2f} Y : {:.2f}\n"
+            "Yaw : {:.2f} Heading to goal = {:.2f} Angular Velocity = {:.2f} \n"
+            "heading int: {:.2f}, yaw_rate: {:.2f}",
+            _entity,
+            current_index,
+            _waypoints.size() - 1,
+            pose.X(),
+            pose.Y(),
+            current_goal.X(),
+            current_goal.Y(),
+            distance_to_goal,
+            m_velocities[_entity][0],
+            directionLocalFrame.X(),
+            directionLocalFrame.Y(),
+            pose.Yaw(),
+            angle_to_goal,
+            m_velocities[_entity][1],
+            m_heading_integral[_entity],
+            current_yaw_rate);
+
         // Goal Tracking ----
         if (distance_to_goal <= m_rangeTolerance[_entity]) {
+            m_heading_integral[_entity] = 0.0;
+            m_distance_error_integral[_entity] = 0.0;
             bool isLast =
                 (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1);
 
-            // --- Publish ROS 2 message ---
-            auto it_pub = m_waypoint_pub.find(_entity);
-            if (it_pub != m_waypoint_pub.end() && it_pub->second) {
-                auto msg =
-                    std::make_shared<lotusim_msgs::msg::WaypointReached>();
-                auto name_comp =
-                    _ecm.Component<gz::sim::components::Name>(_entity);
-                msg->vessel_name = name_comp ? name_comp->Data() : "unknown";
-
-                int idx = m_waypoint_state[_entity];
-                if (idx >= 0 &&
-                    idx < static_cast<int>(m_waypoints[_entity].size())) {
-                    msg->waypoint_index = idx;
-                    msg->latitude = m_waypoints_geo[_entity].empty()
-                                        ? 0.0
-                                        : m_waypoints_geo[_entity][idx].first;
-                    msg->longitude = m_waypoints_geo[_entity].empty()
-                                         ? 0.0
-                                         : m_waypoints_geo[_entity][idx].second;
-                    it_pub->second->publish(*msg);
-                } else {
-                    m_logger->warn(
-                        "Waypoint index {} out of range for entity {}",
-                        idx,
-                        _entity);
-                }
-            } else {
-                m_logger->warn("Publisher not found for entity {}", _entity);
-            }
-
-            // ---------------------------------
+            publishStatus(_entity);
 
             if (isLast) {
                 if (m_loop[_entity]) {
@@ -547,10 +603,7 @@ void WaypointFollowerPlugin::Update(
 
     // Remove safely after the main update loop
     for (auto e : m_entities_to_remove) {
-        m_waypoints.erase(e);
-        m_waypoint_state.erase(e);
-        m_prevHeadingError.erase(e);
-        m_headingIntegral.erase(e);
+        stopVessel(e);
     }
     m_entities_to_remove.clear();
 }
@@ -560,32 +613,106 @@ void WaypointFollowerPlugin::setupRosForModel(
     const gz::sim::Entity& entity,
     const std::string& model_name)
 {
-    auto sub = m_ros_node->create_subscription<geographic_msgs::msg::GeoPath>(
+    m_waypoint_services.push_back(m_ros_node->create_service<
+                                  lotusim_msgs::srv::SetWaypoints>(
         model_name + "/waypoints",
-        10,
-        [this, entity](const geographic_msgs::msg::GeoPath::SharedPtr msg) {
-            // Only update internal state if different
-            if (msg->poses.size() != m_waypoints[entity].size()) {
-                this->m_waypoints[entity].clear();
-                for (auto const& geo_point_stamped : msg->poses) {
+        [this, entity](
+            const std::shared_ptr<lotusim_msgs::srv::SetWaypoints::Request>
+                request,
+            std::shared_ptr<lotusim_msgs::srv::SetWaypoints::Response>
+                response) {
+            try {
+                std::lock_guard<std::mutex> lock(m_waypoint_mutex);
+                m_waypoints_geo[entity] = request->path;
+                m_waypoints[entity].clear();
+                m_waypoint_state[entity] = 0;
+                m_loop[entity] = request->loop;
+
+                for (const auto& geo_point : request->path) {
                     gz::math::Vector3d xyz =
                         m_origin_spherical.LocalFromSphericalPosition(
-                            {geo_point_stamped.pose.position.latitude,
-                             geo_point_stamped.pose.position.longitude,
-                             0});
-                    this->m_waypoints[entity].push_back({xyz.X(), xyz.Y()});
-                }
-            }
-        });
+                            {geo_point.latitude, geo_point.longitude, 0});
 
-    m_subscription.push_back(sub);
+                    m_waypoints[entity].push_back({xyz.X(), xyz.Y()});
+                }
+                response->success = true;
+            } catch (const std::exception& e) {
+                m_logger->error(
+                    "WaypointFollowerPlugin::SetWaypointCB:: error in setting new waypoint. {}.",
+                    e.what());
+            }
+        }));
+
+    m_waypoint_stop_services.push_back(
+        m_ros_node->create_service<std_srvs::srv::Empty>(
+            model_name + "/stop",
+            [this, entity](
+                const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+                std::shared_ptr<std_srvs::srv::Empty::Response> response) {
+                stopVessel(entity);
+            }));
 
     // Create publisher for waypoint reached messages
-    auto pub = m_ros_node->create_publisher<lotusim_msgs::msg::WaypointReached>(
-        model_name + "/waypoint_reached",
-        10);
+    m_waypoint_pub[entity] =
+        m_ros_node->create_publisher<lotusim_msgs::msg::WaypointFollowerStatus>(
+            model_name + "/waypoint_reached",
+            10);
 
-    m_waypoint_pub[entity] = pub;
+    m_status_timer = m_ros_node->create_wall_timer(
+        std::chrono::seconds(m_status_update_period),
+        [this]() {
+            for (const auto& [entity, publisher] : m_waypoint_pub) {
+                publishStatus(entity);
+            }
+        });
+}
+
+//////////////////////////////////////////////////
+bool WaypointFollowerPlugin::stopVessel(const gz::sim::Entity& entity)
+{
+    std::lock_guard<std::mutex> lock(m_waypoint_mutex);
+    m_velocities[entity] = {0, 0};
+    m_waypoints.erase(entity);
+    m_waypoints_geo.erase(entity);
+    m_waypoint_state.erase(entity);
+    m_prev_heading_error.erase(entity);
+    m_heading_integral.erase(entity);
+    return true;
+}
+
+//////////////////////////////////////////////////
+void WaypointFollowerPlugin::publishStatus(const gz::sim::Entity& _entity)
+{
+    std::lock_guard<std::mutex> lock(m_waypoint_mutex);
+    auto it_pub = m_waypoint_pub.find(_entity);
+    if (it_pub != m_waypoint_pub.end() && it_pub->second) {
+        auto msg =
+            std::make_shared<lotusim_msgs::msg::WaypointFollowerStatus>();
+        msg->vessel_name = m_vessel_name[_entity];
+        auto state_it = m_waypoint_state.find(_entity);
+        auto wp_it = m_waypoints.find(_entity);
+        auto geo_it = m_waypoints_geo.find(_entity);
+
+        if (state_it != m_waypoint_state.end() && wp_it != m_waypoints.end() &&
+            geo_it != m_waypoints_geo.end()) {
+            const uint idx = state_it->second;
+
+            if (idx < wp_it->second.size() && idx < geo_it->second.size()) {
+                msg->waypoint_index = idx;
+                msg->path = geo_it->second;
+            }
+        } else {
+            msg->waypoint_index = 0;
+            m_logger->warn(
+                "WaypointFollowerPlugin::publishStatus: Waypoint index out of range for entity {}",
+                _entity);
+        }
+        it_pub->second->publish(*msg);
+    } else {
+        m_logger->warn(
+            "WaypointFollowerPlugin::publishStatus: Publisher not found for entity {}",
+            _entity);
+    }
 }
 
 }  // namespace lotusim::gazebo
