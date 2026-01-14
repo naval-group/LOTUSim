@@ -69,7 +69,7 @@ std_msgs::msg::Header generateHeaderMessage(
         std::chrono::duration_cast<std::chrono::nanoseconds>(_time).count();
     msg.stamp.sec = static_cast<int32_t>(simTimeNs / 1000000000);
     msg.stamp.nanosec = static_cast<uint32_t>(simTimeNs % 1000000000);
-    msg.frame_id = "world";
+    msg.frame_id = "wgs84";
     return msg;
 }
 

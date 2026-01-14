@@ -9,7 +9,7 @@ ASSETS_PATH="${LOTUSIM_PATH}/assets"
 MODEL_PATH="${ASSETS_PATH}/models"
 WORLD_PATH="${ASSETS_PATH}/worlds"
 BACKEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-backend"
-FRONTEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-backend"
+FRONTEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-frontend"
 
 # Flags for simulation options
 DEBUG="-v0"
@@ -393,12 +393,12 @@ run_command() {
         trap cleanup SIGINT SIGTERM EXIT
 
         # Start backend
-        cd ${LOTUSIM_WS}/src/lotusim_backend
+        cd ${BACKEND_DIR}
         npx ts-node src/main.ts &
         BACKEND_PID=$!
 
         # Start frontend
-        cd ${LOTUSIM_WS}/src/lotusim_ui
+        cd ${FRONTEND_DIR}
         npm run dev &
         FRONTEND_PID=$!
 

@@ -40,6 +40,7 @@ find_package(rclcpp REQUIRED)
 find_package(geographic_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # Gazebo packages
 find_package(sdformat14 REQUIRED)
