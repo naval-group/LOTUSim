@@ -52,8 +52,8 @@ spdlog::level::level_enum getLogLevelFromEnv();
  * successful initializations else std::nullopt on any spdlog exceptions
  */
 std::shared_ptr<spdlog::logger> createConsoleAndFileLogger(
-    const std::string &logger_name,
-    const std::string &file_name);
+    const std::string& logger_name,
+    const std::string& file_name);
 
 /**
  * @brief creates basic file logger object
@@ -64,8 +64,8 @@ std::shared_ptr<spdlog::logger> createConsoleAndFileLogger(
  * successful initializations else std::nullopt on any spdlog exceptions
  */
 std::shared_ptr<spdlog::logger> createBasicFileLogger(
-    const std::string &logger_name,
-    const std::string &file_name);
+    const std::string& logger_name,
+    const std::string& file_name);
 
 /**
  * @brief Get the Logger object
@@ -74,14 +74,19 @@ std::shared_ptr<spdlog::logger> createBasicFileLogger(
  * @return std::shared_ptr<spdlog::logger> returns a shared_ptr to logger on
  * successful initializations else std::nullopt on any spdlog exceptions
  */
-std::shared_ptr<spdlog::logger> getLogger(const std::string &logger_name);
+std::shared_ptr<spdlog::logger> getLogger(const std::string& logger_name);
 
 /**
  * @brief Create a Or Get Log Folder Path object
  *
  * @return std::string
  */
-std::string createOrGetLogFolderPath();
+std::filesystem::path createOrGetLogFolderPath();
+
+/**
+ * @brief Set logger pattern based on log level
+ */
+void setLoggerPattern(std::shared_ptr<spdlog::logger>& logger);
 
 }  // namespace lotusim::logger
 
