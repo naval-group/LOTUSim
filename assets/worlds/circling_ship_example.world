@@ -30,18 +30,10 @@
 
         <plugin filename="entity_manager_plugin" name="lotusim::gazebo::EntityManager"/>
 
-        <!-- The rendering application interface, default to ROS2 connection -->
-        <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
-            <connection_protocol>TCPUDP</connection_protocol>
-            <ip>127.0.0.1</ip>
-            <udp_port>23457</udp_port>
-            <tcp_port>23457</tcp_port>
-        </plugin>
-
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin"/>
 
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
-            <connection_protocol>TCPUDP</connection_protocol>
+            <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
         <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin">
