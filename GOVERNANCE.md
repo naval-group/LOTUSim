@@ -75,6 +75,11 @@ The branch management strategy for both repositories follows the best practices 
 
 - Manages the integration of open source contributions.
 
+#### Scrum Master (internal)
+- Organizes and moderates Scrum meetings in line with the Product Owner's roadmap.
+- Assists the maintainers in meeting their delivery goals.
+- Identifies and helps remove blockers that impact the maintainers.
+
 #### Project Maintainer (internal)
 
 Among the maintainers, the **Project Maintainer**:
@@ -123,7 +128,7 @@ Non-corrective development intended to enhance LOTUSim, including the addition o
 
 - During sprint planning, the **Product Owner** presents the **Sprint Objective**.
 
-- This objective is broken down by the **Project Team** into **Backlog Items**.
+- This objective is broken down by the **Scrum Master** into **Backlog Items** and assigned to the **Project Team**.
 
 - Items are decomposed into technical contributions assigned to **Maintainers**.
 
