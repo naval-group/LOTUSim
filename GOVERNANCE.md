@@ -77,7 +77,9 @@ The branch management strategy for both repositories follows the best practices 
 
 #### Scrum Master (internal)
 - Organizes and moderates Scrum meetings in line with the Product Owner's roadmap.
+
 - Assists the maintainers in meeting their delivery goals.
+
 - Identifies and helps remove blockers that impact the maintainers.
 
 #### Project Maintainer (internal)
