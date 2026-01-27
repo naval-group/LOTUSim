@@ -26,11 +26,20 @@
             <real_time_factor>1</real_time_factor>
         </physics>
 
-        <spherical_coordinates>
+        <!-- <spherical_coordinates>
             <surface_model>EARTH_WGS84</surface_model>
             <world_frame_orientation>ENU</world_frame_orientation>
             <latitude_deg>1.2421</latitude_deg>
             <longitude_deg>103.7198</longitude_deg>
+            <elevation>0</elevation>
+            <heading_deg>0</heading_deg>
+        </spherical_coordinates> -->
+
+        <spherical_coordinates>
+            <surface_model>EARTH_WGS84</surface_model>
+            <world_frame_orientation>ENU</world_frame_orientation>
+            <latitude_deg>50.32879166666667</latitude_deg>
+            <longitude_deg>-4.195226666666667</longitude_deg>
             <elevation>0</elevation>
             <heading_deg>0</heading_deg>
         </spherical_coordinates>
@@ -42,15 +51,13 @@
         <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
         <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 
-        <plugin filename="physics_interface_plugin"
-            name="lotusim::gazebo::PhysicsInterfacePlugin">
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
 
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
         </plugin>
 
-        <plugin filename="aerial_demo_entity_manager"
-            name="lotusim::gazebo::AerialEntityManager">
+        <plugin filename="aerial_demo_entity_manager" name="lotusim::gazebo::AerialEntityManager">
             <aerial_namespace>aerialWorld</aerial_namespace>
         </plugin>
 
@@ -58,8 +65,7 @@
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
-        <plugin filename="waypoint_plugin"
-            name="lotusim::gazebo::WaypointFollowerPlugin" />
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin" />
 
     </world>
 </sdf>

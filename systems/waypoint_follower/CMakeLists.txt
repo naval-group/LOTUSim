@@ -39,6 +39,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geographic_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
+find_package(lotusim_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # Gazebo packages
 find_package(sdformat14 REQUIRED)
@@ -70,6 +72,7 @@ target_link_libraries(waypoint_plugin
 ament_target_dependencies(waypoint_plugin
   rclcpp
   geographic_msgs
+  lotusim_msgs
   lotusim_common
 )
 
@@ -100,6 +103,7 @@ ament_export_targets(export_waypoint_plugin HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
   geographic_msgs
+  lotusim_msgs
   lotusim_common
   gz-sim8
   gz-plugin2

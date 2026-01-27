@@ -1,0 +1,7 @@
+std_msgs/Header header
+
+geographic_msgs/GeoPoint[] path
+
+bool loop
+---
+bool success

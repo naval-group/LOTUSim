@@ -12,9 +12,16 @@ lotusim_script_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD - 1]}"
 
-    # Define the options and commands
     opts="--ws-path --assets-path --debug --gui --help"
-    commands="install clean build build_lotus clean_build doc run run-w-bridge"
+    commands="install clean build clean_build doc run"
+
+    local cmd=""
+    for word in "${COMP_WORDS[@]}"; do
+        if [[ "$word" == "run" ]]; then
+            cmd="$word"
+            break
+        fi
+    done
 
     case "${prev}" in
     lotusim)
@@ -25,12 +32,18 @@ lotusim_script_completion() {
         _filedir
         return 0
         ;;
-    run | run-w-bridge)
-        local worlds=$(find ${LOTUSIM_PATH}/assets/worlds -type f -name '*.world' | sed "s|${LOTUSIM_PATH}/assets/worlds/||")
+    esac
+
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        return 0
+    fi
+
+    if [[ -n "$cmd" ]]; then
+        local worlds=$(find ${LOTUSIM_PATH}/assets/worlds -type f -name '*.world' 2>/dev/null | sed "s|${LOTUSIM_PATH}/assets/worlds/||")
         COMPREPLY=($(compgen -W "${worlds}" -- ${cur}))
         return 0
-        ;;
-    esac
+    fi
 }
 
 xdyn_script_completion() {

@@ -8,6 +8,8 @@ NC='\033[0m' # No Color
 ASSETS_PATH="${LOTUSIM_PATH}/assets"
 MODEL_PATH="${ASSETS_PATH}/models"
 WORLD_PATH="${ASSETS_PATH}/worlds"
+BACKEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-backend"
+FRONTEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-frontend"
 
 # Flags for simulation options
 DEBUG="-v0"
@@ -16,6 +18,19 @@ LOTUSIM_SPDLOG_LEVEL="info"
 COMMAND=""
 DEFAULT_WORLD="lotusim.world"
 WORLD=""
+
+# Detect Ubuntu codename
+export VERSION_CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
+if [[ "$VERSION_CODENAME" == "jammy" ]]; then
+  export ROS_DISTRO="humble"
+  export GAZEBO_VERSION="harmonic"
+elif [[ "$VERSION_CODENAME" == "noble" ]]; then
+  export ROS_DISTRO="jazzy"
+  export GAZEBO_VERSION="harmonic"
+else
+  echo -e "\n❌ Error: Could not detect Ubuntu VERSION_CODENAME" >&2
+  exit 1
+fi
 
 ###########
 # Functions
@@ -165,8 +180,6 @@ install_ui() {
 *******************************    ${GREEN}Installing UI backend${NC}   *********************************
 ********************************************************************************************
     "
-
-    BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
     if [ -d "$BACKEND_DIR" ]; then
         echo -e "\n📦 Installing backend dependencies..."
         npm install --silent --prefix "$BACKEND_DIR" >/dev/null 2>&1 || {
@@ -191,8 +204,6 @@ install_ui() {
 *******************************    ${GREEN}Installing UI frontend${NC}  *********************************
 ********************************************************************************************
     "
-
-    FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
     if [ -d "$FRONTEND_DIR" ]; then
         echo -e "\n📦 Installing frontend dependencies..."
         npm install --silent --prefix "$FRONTEND_DIR" >/dev/null 2>&1 || {
@@ -218,7 +229,7 @@ build_lotus() {
 ********************************    ${GREEN}Building Lotusim${NC}    ************************************
 ********************************************************************************************
     "
-    source "/opt/ros/humble/setup.bash"
+    source "/opt/ros/$ROS_DISTRO/setup.bash"
     cd ${LOTUSIM_WS}
     if [ "$DEBUG" == "-v4" ]; then
         echo -e "${GREEN}Debug mode enabled: Printing out debug logs. Enabling LOTUSIM_TIDY"
@@ -241,8 +252,8 @@ build_lotus() {
 }
 
 validate_lotusim_core_setup() {
-    if [ ! -f "/opt/ros/humble/setup.bash" ]; then
-        echo -e "${RED}Error:${NC} ROS2 Humble is not installed or the setup.bash is not found at /opt/ros/humble/setup.bash."
+    if [ ! -f "/opt/ros/$ROS_DISTRO/setup.bash" ]; then
+        echo -e "${RED}Error:${NC} ROS2 $ROS_DISTRO is not installed or the setup.bash is not found at /opt/ros/$ROS_DISTRO/setup.bash."
         exit 1
     fi
     if [ ! -d "${LOTUSIM_WS}" ]; then
@@ -278,14 +289,12 @@ validate_ui_setup() {
     fi
     
     # Check backend directory
-    BACKEND_DIR="${LOTUSIM_WS}/src/lotusim_backend"
     if [ ! -d "$BACKEND_DIR" ]; then
         echo -e "${RED}Error:${NC} Backend directory not found: $BACKEND_DIR"
         errors=$((errors + 1))
     fi
     
     # Check frontend directory
-    FRONTEND_DIR="${LOTUSIM_WS}/src/lotusim_ui"
     if [ ! -d "$FRONTEND_DIR" ]; then
         echo -e "${RED}Error:${NC}: Frontend directory not found: $FRONTEND_DIR"
         errors=$((errors + 1))
@@ -298,7 +307,7 @@ validate_ui_setup() {
 
 
 source_environment() {
-    source "/opt/ros/humble/setup.bash"
+    source "/opt/ros/$ROS_DISTRO/setup.bash"
     source "${LOTUSIM_WS}/install/setup.bash"
 
     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
@@ -384,12 +393,12 @@ run_command() {
         trap cleanup SIGINT SIGTERM EXIT
 
         # Start backend
-        cd ${LOTUSIM_WS}/src/lotusim_backend
+        cd ${BACKEND_DIR}
         npx ts-node src/main.ts &
         BACKEND_PID=$!
 
         # Start frontend
-        cd ${LOTUSIM_WS}/src/lotusim_ui
+        cd ${FRONTEND_DIR}
         npm run dev &
         FRONTEND_PID=$!
 
@@ -411,7 +420,6 @@ run_command() {
 #######
 # Main
 #######
-export GZ_VERSION=harmonic
 
 # Check if no arguments provided
 if [ $# -eq 0 ]; then

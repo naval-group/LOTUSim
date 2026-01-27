@@ -92,7 +92,7 @@ std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
 /**
  * @brief Generate ROS2 Header message
  *
- * @param _time
+ * @param _time 
  * @return std_msgs::msg::Header
  */
 std_msgs::msg::Header generateHeaderMessage(

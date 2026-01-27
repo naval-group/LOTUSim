@@ -8,7 +8,7 @@
             <grid>1</grid>
         </scene>
 
-        <physics type="ode"> <!-- This is <10fps  -->
+        <physics type="ode">            <!-- This is <10fps  -->
             <max_step_size>0.2</max_step_size>
             <real_time_factor>1</real_time_factor>
             <real_time_update_rate>1</real_time_update_rate>
@@ -26,53 +26,45 @@
 
         <gravity>0 0 0</gravity>
 
-        <plugin filename="physics_interface_plugin"
-            name="lotusim::gazebo::PhysicsInterfacePlugin">
-        </plugin>
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin"/>
 
-        <plugin filename="entity_manager_plugin"
-            name="lotusim::gazebo::EntityManager">
-        </plugin>
+        <plugin filename="entity_manager_plugin" name="lotusim::gazebo::EntityManager"/>
 
-        <!-- The rendering application interface, default to ROS2 connection -->
-        <!-- <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
-            <connection_protocol>TCPUDP</connection_protocol>
-            <ip>127.0.0.1</ip>
-            <udp_port>23457</udp_port>
-            <tcp_port>23457</tcp_port>
-            </plugin> -->
-
-        <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
-        </plugin>
+        <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin"/>
 
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
-        <plugin filename="waypoint_plugin"
-            name="lotusim::gazebo::WaypointFollowerPlugin" />
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin">
+            <update_rate>5</update_rate>
+        </plugin>
 
         <include>
             <uri>model://dtmb_hull</uri>
-            <name>frigate</name>
+            <name>fremm</name>
             <pose>0 0 0 0 0 0</pose>
 
             <lotus_param>
                 <waypoint_follower>
                     <follower>
                         <loop>true</loop>
+                        <linear_velocities_limits>0.1 10</linear_velocities_limits>
                         <linear_accel_limit>0.5</linear_accel_limit>
-                        <angular_accel_limit>0.005</angular_accel_limit>
-                        <angular_velocities_limits>0.01</angular_velocities_limits>
-                        <range_tolerance>2</range_tolerance>
+                        <linear_pid>0.3 0.05 0.1</linear_pid>
+
+                        <angular_accel_limit>0.1</angular_accel_limit>
+                        <angular_velocities_limits>0.5</angular_velocities_limits>
+                        <angular_pid>0.8 0.05 0.4</angular_pid>
+                        <range_tolerance>2.0</range_tolerance>
                         <circle>
-                            <radius>50</radius>
+                            <radius>20</radius>
                         </circle>
                     </follower>
                 </waypoint_follower>
                 <render_interface>
                     <publish_render>true</publish_render>
-                    <renderer_type_name>frigate</renderer_type_name>
+                    <renderer_type_name>wamv</renderer_type_name>
                 </render_interface>
             </lotus_param>
         </include>

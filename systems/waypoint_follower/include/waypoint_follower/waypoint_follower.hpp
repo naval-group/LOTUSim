@@ -35,23 +35,25 @@
 #include <unordered_map>
 #include <vector>
 
-#include "geographic_msgs/msg/geo_path.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "lotusim_msgs/msg/waypoint_follower_status.hpp"
+#include "lotusim_msgs/srv/set_waypoints.hpp"
+#include "std_srvs/srv/empty.hpp"
 
 namespace lotusim::gazebo {
-
 /// \brief A plugin that scripts the movement of a model based on waypoints.
 /// Note that at this point, the trajectory is always in 2D (x, y).
-/// Acceleration will be added to the object until the model is close enough to
-/// the waypoint.
+/// Acceleration will be added to the object until the model is close enough
+/// to the waypoint.
 ///
 /// Waypoints may be inserted manually via the <waypoints> element, or
 /// generated relative to the model's initial position via the <line> or
 /// <circle> elements.  Only one of these options should be used.
 ///
-/// All waypoint follower will have a  `<model_name>/waypoints` topic for use to
-/// send in geographic_msgs/GeoPath messages to override the given waypoints
+/// All waypoint follower will have a  `<model_name>/waypoints` topic for
+/// use to send in geographic_msgs/GeoPath messages to override the given
+/// waypoints
 ///
 /// ## System Parameters
 ///
@@ -77,15 +79,18 @@ namespace lotusim::gazebo {
 ///   distance to it is within +- this tolerance (m).
 ///   The default value is 0.5m.
 ///
-/// - `<bearing_tolerance>`: If the bearing to the current waypoint is within
+/// - `<bearing_tolerance>`: If the bearing to the current waypoint is
+/// within
 ///   +- this tolerance, a torque won't be applied (degree).
 ///   The default value is 2 deg.
 ///
-/// - `<zero_vel_on_bearing_reached>`: Force angular velocity to be zero when
+/// - `<zero_vel_on_bearing_reached>`: Force angular velocity to be zero
+/// when
 ///   target bearing is reached.
 ///   Default is false.
 ///
-/// - `<line>`: Element that indicates the model should travel in "line" mode.
+/// - `<line>`: Element that indicates the model should travel in "line"
+/// mode.
 ///   The block should contain the relative direction and distance from
 ///   the initial position in which the vehicle should move, specified
 ///   in the world frame.
@@ -156,12 +161,25 @@ private:
         sdf::ElementPtr _lotus_param,
         gz::sim::EntityComponentManager& _ecm);
 
+    // Sets up ROS subscriptions and publishers for a given model/entity
+    void setupRosForModel(
+        const gz::sim::Entity& entity,
+        const std::string& model_name);
+
+    // Stop the vessel and stop updating
+    bool stopVessel(const gz::sim::Entity& entity);
+
+    // Publish the vessel status
+    void publishStatus(const gz::sim::Entity& entity);
+
 private:
     /**
      * @brief Spdlogger
      *
      */
     std::shared_ptr<spdlog::logger> m_logger;
+
+    std::unordered_map<gz::sim::Entity, std::string> m_vessel_name;
 
     /**
      * @brief Mapping of entity to velocities
@@ -189,10 +207,20 @@ private:
         m_linear_velocities_limits;
 
     /**
+     * @brief Linear velocity pid settings
+     */
+    std::unordered_map<gz::sim::Entity, std::array<double, 3>> m_linear_pid;
+
+    /**
      * @brief Velocities limit
      *
      */
     std::unordered_map<gz::sim::Entity, double> m_angular_velocities_limits;
+
+    /**
+     * @brief Angular pid settings
+     */
+    std::unordered_map<gz::sim::Entity, std::array<double, 3>> m_angular_pid;
 
     /**
      * @brief Flag for vessel looping
@@ -209,11 +237,27 @@ private:
     std::unordered_map<gz::sim::Entity, sdf::ElementPtr> m_model_load_queue;
 
     /**
-     * @brief Vectors of waypoint for the vessel
+     * @brief Mutex for all waypoint params
+     * Mutex for m_waypoints, m_waypoints_geo, m_waypoint_state
+     *
+     */
+    std::mutex m_waypoint_mutex;
+
+    /**
+     * @brief Vectors of waypoint for the vessel in local XY coord system
      *
      */
     std::unordered_map<gz::sim::Entity, std::vector<gz::math::Vector2d>>
         m_waypoints;
+
+    /**
+     * @brief Vectors of geographic waypoint (lat, lon) for the vessel
+     *
+     */
+    std::unordered_map<
+        gz::sim::Entity,
+        std::vector<geographic_msgs::msg::GeoPoint>>
+        m_waypoints_geo;
 
     /**
      * @brief The current waypoint the vessel is going
@@ -221,15 +265,32 @@ private:
      */
     std::unordered_map<gz::sim::Entity, uint> m_waypoint_state;
 
+    /**
+     * @brief Entities that should stop being processed by the waypoint
+     * follower..
+     *
+     */
+    std::set<gz::sim::Entity> m_entities_to_remove;
+
+    std::map<gz::sim::Entity, double> m_distance_error_integral;
+    std::map<gz::sim::Entity, double> m_distance_error_previous;
+
     // Implementing pid for heading control
-    std::unordered_map<gz::sim::Entity, double> m_headingIntegral;
-    std::unordered_map<gz::sim::Entity, double> m_prevHeadingError;
+    std::unordered_map<gz::sim::Entity, double> m_heading_integral;
+    std::unordered_map<gz::sim::Entity, double> m_prev_heading_error;
+    std::unordered_map<gz::sim::Entity, double> m_prev_yaw;
+    std::unordered_map<gz::sim::Entity, gz::math::Vector2d> m_prevGoal;
 
     /**
      * @brief GZ world entity
      *
      */
     gz::sim::Entity m_world_entity;
+
+    /**
+     * @brief GZ world name
+     *
+     */
     std::string m_world_name;
 
     /**
@@ -240,9 +301,21 @@ private:
 
     std::shared_ptr<std::thread> m_ros_node_thread;
 
-    std::vector<rclcpp::Subscription<geographic_msgs::msg::GeoPath>::SharedPtr>
-        m_subscription;
+    std::vector<rclcpp::Service<lotusim_msgs::srv::SetWaypoints>::SharedPtr>
+        m_waypoint_services;
+
+    std::vector<rclcpp::Service<std_srvs::srv::Empty>::SharedPtr>
+        m_waypoint_stop_services;
+
     gz::math::SphericalCoordinates m_origin_spherical;
+
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Publisher<lotusim_msgs::msg::WaypointFollowerStatus>::SharedPtr>
+        m_waypoint_pub;
+
+    rclcpp::TimerBase::SharedPtr m_status_timer;
+    uint16_t m_status_update_period;
 
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 };
