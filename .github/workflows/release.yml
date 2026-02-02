@@ -40,6 +40,11 @@ jobs:
         run: |
           echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
+      - name: Normalize repository name (lowercase)
+        id: repo
+        run: |
+          echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         id: image    
         uses: docker/build-push-action@v6
@@ -47,8 +52,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/malcom-neo/lotusim:${{ matrix.ros }}-${{ steps.commit.outputs.short_sha }}
-            ghcr.io/malcom-neo/lotusim:${{ matrix.ros }}-latest
+            ghcr.io/${{ steps.repo.outputs.repo }}:${{ matrix.ros }}-${{ steps.commit.outputs.short_sha }}
+            ghcr.io/${{ steps.repo.outputs.repo }}:${{ matrix.ros }}-latest
           build-args: |
             ROS_DISTRO=${{ matrix.ros }}
       
@@ -59,4 +64,4 @@ jobs:
 
       - name: Sign container image
         run: |
-          cosign sign --yes ghcr.io/malcom-neo/lotusim@${{ steps.image.outputs.digest }}
+          cosign sign --yes ghcr.io/${{ steps.repo.outputs.repo }}@${{ steps.image.outputs.digest }}
