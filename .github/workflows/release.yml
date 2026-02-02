@@ -2,12 +2,11 @@ name: Release Docker image
 
 on:
   push:
-    branches:
-      - main
-
+    
 permissions:
   contents: read
   packages: write
+  id-token: write
 
 jobs:
   release:
@@ -18,19 +17,14 @@ jobs:
       matrix:
         ros:
           - jazzy
-          - humble
 
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      IMAGE_NAME: lotusim
       LOTUSIM_WS: /lotusim_ws
       LOTUSIM_PATH: /lotusim_ws/src/LOTUSim
 
     steps:
-      - name: Verify ROS base image
-        run: |
-          cosign verify ghcr.io/sloretz/ros:${{ matrix.ros }}-desktop-full || exit 1
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -41,38 +35,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch
-            type=sha
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+      - name: Extract short commit SHA
+        id: commit
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
-        id: image
+        id: image    
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=lotusim
-          cache-to: type=gha,mode=max,scope=lotusim
-          platforms: linux/amd64
+          tags: |
+            ghcr.io/malcom-neo/lotusim:${{ matrix.ros }}-${{ steps.commit.outputs.short_sha }}
+            ghcr.io/malcom-neo/lotusim:${{ matrix.ros }}-latest
           build-args: |
             ROS_DISTRO=${{ matrix.ros }}
-
+      
       - name: Install cosign
-        uses: sigstore/cosign-installer@v4
+        uses: sigstore/cosign-installer@v4.0.0
         with:
           cosign-release: 'v2.6.2'
 
       - name: Sign container image
         run: |
-          cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.image.outputs.digest }}
+          cosign sign --yes ghcr.io/malcom-neo/lotusim@${{ steps.image.outputs.digest }}
