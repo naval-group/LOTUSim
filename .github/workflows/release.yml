@@ -64,7 +64,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=lotusim
           cache-to: type=gha,mode=max,scope=lotusim
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           build-args: |
             ROS_DISTRO=${{ matrix.ros }}
 
