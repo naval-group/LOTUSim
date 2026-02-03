@@ -52,8 +52,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ steps.repo.outputs.repo }}:${{ matrix.ros }}-${{ steps.commit.outputs.short_sha }}
-            ghcr.io/${{ steps.repo.outputs.repo }}:${{ matrix.ros }}-latest
+            ghcr.io/${{ steps.repo.outputs.repo }}:${{ steps.commit.outputs.short_sha }}
+            ghcr.io/${{ steps.repo.outputs.repo }}:latest
           build-args: |
             ROS_DISTRO=${{ matrix.ros }}
       
