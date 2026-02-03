@@ -14,8 +14,8 @@ WORKDIR ${LOTUSIM_WS}
 COPY . src/LOTUSim
 
 RUN \
-    source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    source $LOTUSIM_PATH/launch/bash_completion.sh && \
+    echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc && \
+    echo "source ${LOTUSIM_PATH}/launch/bash_completion.sh" >> ~/.bashrc && \
+    echo "source $LOTUSIM_WS/install/setup.bash" >> ~/.bashrc && \
     chmod +x $LOTUSIM_PATH/launch/lotusim && \
-    lotusim install && \
-    source $LOTUSIM_WS/install/setup.bash
+    lotusim install
