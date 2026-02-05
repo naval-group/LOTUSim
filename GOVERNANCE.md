@@ -76,6 +76,7 @@ The branch management strategy for both repositories follows the best practices 
 - Manages the integration of open source contributions.
 
 #### Scrum Master (internal)
+
 - Organizes and moderates Scrum meetings in line with the Product Owner's roadmap.
 
 - Assists the maintainers in meeting their delivery goals.
@@ -179,4 +180,4 @@ In case of disagreement within the Project Team, the decision is escalated to th
 
 - **Product Owner**: Estelle CHAUVEAU
 
-- **Project Maintainer**: Esther RAYSSIGUIE
+- **Project Maintainer**: Malcom NEO & Esther RAYSSIGUIE
