@@ -45,7 +45,6 @@ bool WaypointFollowerPlugin::load(
         return false;
     }
     std::string model_name = name_opt->Data();
-
     m_logger->info("WaypointFollower::load Loading {}", model_name);
 
     if (!lotus_param_sdf) {
@@ -257,7 +256,6 @@ void WaypointFollowerPlugin::Configure(
     } else {
         m_logger->warn(
             "WaypointFollowerPlugin::Configure: Status publishing rate not found. Setting to default 10s");
-        return;
     }
 
     // Create ROS node
@@ -272,7 +270,6 @@ void WaypointFollowerPlugin::Configure(
         m_logger->error(
             "WaypointFollowerPlugin::Configure: RCLCPP context shutdown.");
     }
-
     // Get spherical coordinates
     gz::math::Angle lat0, lon0;
     gz::sim::Entity worldEntity;
@@ -307,30 +304,31 @@ void WaypointFollowerPlugin::Update(
 {
     _ecm.EachNew<gz::sim::components::ModelSdf>(
         [this, &_ecm](
-            const gz::sim::Entity& _entity,
+                                           const gz::sim::Entity& _entity,
             const gz::sim::components::ModelSdf* _model) {
-            if (!_model)
-                return true;
+        if (!_model)
+            return true;
+        auto name_comp = _ecm.Component<gz::sim::components::Name>(_entity);
+        sdf::ElementPtr lotus_param_sdf = nullptr;
 
-            sdf::ElementPtr lotus_param_sdf = nullptr;
-
-            sdf::ElementPtr _sdf = _model->Data().Element();
-            if (_sdf->GetIncludeElement()) {
-                _sdf = _sdf->GetIncludeElement();
-            }
-            if (_sdf->HasElement("lotus_param") &&
+        sdf::ElementPtr _sdf = _model->Data().Element();
+        if (_sdf->GetIncludeElement()) {
+            _sdf = _sdf->GetIncludeElement();
+        }
+        if (_sdf->HasElement("lotus_param") &&
                 _sdf->GetElement("lotus_param")
                     ->HasElement("waypoint_follower")) {
-                lotus_param_sdf = _sdf->GetElement("lotus_param")
-                                      ->GetElement("waypoint_follower");
-            }
-
-            m_model_load_queue[_entity] = lotus_param_sdf;
-
-            auto name_comp = _ecm.Component<gz::sim::components::Name>(_entity);
-            m_vessel_name[_entity] = name_comp ? name_comp->Data() : "unknown";
-            return true;
-        });
+            lotus_param_sdf = _sdf->GetElement("lotus_param")
+                                  ->GetElement("waypoint_follower");
+        } else {
+            m_logger->warn(
+                "WaypointFollowerPlugin::Update: Vessel {} has no lotus_param for waypoint follower. Default will be used.",
+                name_comp->Data());
+        }
+        m_model_load_queue[_entity] = lotus_param_sdf;
+        m_vessel_name[_entity] = name_comp ? name_comp->Data() : "unknown";
+        return true;
+    });
 
     for (auto it = m_model_load_queue.begin();
          it != m_model_load_queue.end();) {

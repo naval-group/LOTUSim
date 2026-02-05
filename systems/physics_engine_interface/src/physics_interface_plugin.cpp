@@ -44,7 +44,7 @@ void PhysicsInterfacePlugin::Configure(
     m_ros_node = rclcpp::Node::make_shared("physics_plugin", m_world_name);
     m_cmd_array_sub = m_ros_node->create_subscription<
         lotusim_msgs::msg::VesselCmdArray>(
-        "lotusim_vessel_array_cmd",
+        "vessel_cmd_array",
         10,
         [this](lotusim_msgs::msg::VesselCmdArray::ConstSharedPtr msgs) -> void {
             for (auto&& msg : msgs->cmds) {
