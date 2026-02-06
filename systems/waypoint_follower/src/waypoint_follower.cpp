@@ -321,10 +321,9 @@ void WaypointFollowerPlugin::Update(
             lotus_param_sdf = _sdf->GetElement("lotus_param")
                                   ->GetElement("waypoint_follower");
         } else {
-            m_logger->error(
-                "WaypointFollowerPlugin::Update: Vessel {} has no lotus_param for waypoint follower. Vessel will not have waypoint follower module",
+            m_logger->warn(
+                "WaypointFollowerPlugin::Update: Vessel {} has no lotus_param for waypoint follower. Default will be used.",
                 name_comp->Data());
-            return true;
         }
         m_model_load_queue[_entity] = lotus_param_sdf;
         m_vessel_name[_entity] = name_comp ? name_comp->Data() : "unknown";
