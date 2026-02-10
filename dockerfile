@@ -6,6 +6,7 @@ SHELL ["/bin/bash", "-c"]
 ENV LOTUSIM_WS=/lotusim_ws \
     LOTUSIM_PATH=/lotusim_ws/src/LOTUSim \
     PATH=/lotusim_ws/src/LOTUSim/physics:/lotusim_ws/src/LOTUSim/launch:$PATH \
+    LOTUSIM_MODELS_PATH=/lotusim_ws/src/LOTUSim/assets/models/ \
     LD_LIBRARY_PATH=/lotusim_ws/src/LOTUSim/physics:$LD_LIBRARY_PATH \
     FASTDDS_BUILTIN_TRANSPORTS=UDPv4     
 

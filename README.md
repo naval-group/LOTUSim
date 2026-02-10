@@ -8,6 +8,6 @@ For more information, please read our [wiki here](https://github.com/naval-group
 
 For issues or question about the simulation, please create an issue on our issue board and we will get back to you asap.
 
-If you are interested in partnership or have questions regarding contributing to LOTUSim, please send an email to [LOTUSim support email](mailto:lotusim_support@navalgroup.com) `lotusim_support@navalgroup.com`.
+If you are interested in partnership or have questions regarding contributing to LOTUSim, please send an email to [LOTUSim support email](mailto:lotusim_support@naval-group.com) `lotusim_support@naval-group.com`.
 
 Upcoming open-source publication under [EPL-2.0](LICENSE).
