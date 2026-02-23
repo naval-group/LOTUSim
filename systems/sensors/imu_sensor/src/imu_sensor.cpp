@@ -68,10 +68,10 @@ bool IMUSensor::UpdateSensor(
     auto accel_opt = _ecm.Component<gz::sim::components::LinearAcceleration>(
         m_sensor_entity);
     if (accel_opt) {
-        gz::math::Vector3d accel = anglar_vel_opt->Data();
-        msg.angular_velocity.x = accel.X();
-        msg.angular_velocity.y = accel.Y();
-        msg.angular_velocity.z = accel.Z();
+        gz::math::Vector3d accel = accel_opt->Data();
+        msg.linear_acceleration.x = accel.X();
+        msg.linear_acceleration.y = accel.Y();
+        msg.linear_acceleration.z = accel.Z();
     }
     m_sensor_pub->publish(msg);
     m_last_measurement_time = _info.simTime;
