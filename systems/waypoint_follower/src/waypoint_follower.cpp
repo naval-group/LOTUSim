@@ -55,15 +55,16 @@ bool WaypointFollowerPlugin::load(
     setupRosForModel(_entity, model_name);
 
     // Initialize default values regardless of SDF
+    m_guidance_mode[_entity] = "pid";  // default guidance mode
     m_prev_heading_error[_entity] = 0.0;
     m_heading_integral[_entity] = 0.0;
     m_waypoints[_entity] = {};
     m_loop[_entity] = false;
     m_rangeTolerance[_entity] = 0.5;
     m_linear_accel_limit[_entity] = 0.5;
-    m_angular_accel_limit[_entity] = 0.01;
-    m_linear_velocities_limits[_entity] = gz::math::Vector2d(1, 10);
-    m_angular_velocities_limits[_entity] = 0.05;
+    m_angular_accel_limit[_entity] = 0.5; 
+    m_linear_velocities_limits[_entity] = gz::math::Vector2d(0.0, 5); 
+    m_angular_velocities_limits[_entity] = 1.0; 
     m_velocities[_entity] = {0, 0};
     m_linear_pid[_entity] = {0.5, 0.05, 0.1};
     m_angular_pid[_entity] = {0.8, 0.05, 0.4};
@@ -201,6 +202,17 @@ bool WaypointFollowerPlugin::load(
     // Optional overrides from SDF
     if (_sdf->HasElement("loop"))
         m_loop[_entity] = _sdf->Get<bool>("loop");
+
+    if (_sdf->HasElement("guidance_mode")) {
+        m_guidance_mode[_entity] = _sdf->Get<std::string>("guidance_mode");
+        m_logger->info(
+            "WaypointFollowerPlugin::load: guidance_mode set to '{}'",
+            m_guidance_mode[_entity]);
+    } else {
+        m_logger->warn(
+            "WaypointFollowerPlugin::load: no guidance_mode in SDF, using default '{}'",
+            m_guidance_mode[_entity]);
+    }
 
     if (_sdf->HasElement("range_tolerance"))
         m_rangeTolerance[_entity] = _sdf->Get<double>("range_tolerance");
@@ -394,132 +406,248 @@ void WaypointFollowerPlugin::Update(
         size_t current_index = m_waypoint_state[_entity];
 
         double current_velocity = m_velocities[_entity][0];
+        double current_yaw_rate = 0.0;
+
         bool is_last_waypoint =
             (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1) &&
             !m_loop[_entity];
 
-        // PID controller for linear velocity based on distance error
-        double distance_error = distance_to_goal;
+        // ----------------------------------------------------------------
+        // LINEAR VELOCITY CONTROL
+        // ----------------------------------------------------------------
+        if (m_guidance_mode[_entity] == "bang_bang") {
+            // Bang_bang: use stopping distance to decide when to decelerate
+            double stopping_distance =
+                std::pow(current_velocity, 2) / 2.0 / m_linear_accel_limit[_entity];
 
-        // Integral term with anti-windup
-        m_distance_error_integral[_entity] += distance_error * (dt_s);
-        double max_integral_contribution =
-            0.2 * m_linear_velocities_limits[_entity][1];
-        double max_integral =
-            max_integral_contribution / m_linear_pid[_entity][1];
+            /**
+            * @brief Bang Bang controller for linear velocity
+            *
+            * Flag for linear velocity
+            * 0: Slow down to min speed
+            * 1: Fully stop
+            * 2: Speed up
+            *
+            */
+            int linear_veloctiy_flag = 0;
+            if (stopping_distance >= distance_to_goal) {
+                if (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1 &&
+                    !m_loop[_entity]) {
+                    linear_veloctiy_flag = 1;
+                } else {
+                    linear_veloctiy_flag = 0;
+                }
+            } else if (angle_to_goal < 1.57 && angle_to_goal > -1.57) {
+                linear_veloctiy_flag = 2;
+            }
+            double vel_change = m_linear_accel_limit[_entity] * dt_s;
+            switch (linear_veloctiy_flag) {
+                case 1: {
+                    if (m_velocities[_entity][0] < 0) {
+                        m_velocities[_entity][0] = 0;
+                    } else if (m_velocities[_entity][0] > 0) {
+                        m_velocities[_entity][0] -= vel_change;
+                    }
+                    break;
+                }
+                case 2: {
+                    // match to speed limit
+                    if (current_velocity + vel_change >
+                        m_linear_velocities_limits[_entity][1]) {
+                        m_velocities[_entity][0] =
+                            m_linear_velocities_limits[_entity][1];
+                    }
+                    // full acceleartion
+                    else {
+                        m_velocities[_entity][0] += vel_change;
+                    }
+                    break;
+                }
+                default: {
+                    // Default case 0
+                    // If speed is less than min, continue;
+                    // if speed deduct is less than min, set to min
+                    // else deduct
 
-        m_distance_error_integral[_entity] = std::clamp(
-            m_distance_error_integral[_entity],
-            -max_integral,
-            max_integral);
+                    // match to speed limit
+                    if (current_velocity - vel_change <
+                        m_linear_velocities_limits[_entity][0]) {
+                        m_velocities[_entity][0] =
+                            m_linear_velocities_limits[_entity][0];
+                    }
+                    // full acceleartion
+                    else {
+                        m_velocities[_entity][0] -= vel_change;
+                    }
+                    break;
+                }
+            }
+        } else {
+            // PID controller for linear velocity based on distance error
+            double distance_error = distance_to_goal;
 
-        // Derivative term (note: derivative of distance error is -velocity)
-        double distance_error_derivative =
-            (distance_error - m_distance_error_previous[_entity]) / (dt_s);
-        m_distance_error_previous[_entity] = distance_error;
+            // Integral term with anti-windup
+            m_distance_error_integral[_entity] += distance_error * (dt_s);
+            double max_integral_contribution =
+                0.2 * m_linear_velocities_limits[_entity][1];
+            double max_integral =
+                max_integral_contribution / m_linear_pid[_entity][1];
 
-        // PID gains (tune these values for your system)
-        double kp = 0.5;   // Proportional gain (velocity per meter)
-        double ki = 0.05;  // Integral gain
-        double kd = 0.1;   // Derivative gain
+            m_distance_error_integral[_entity] = std::clamp(
+                m_distance_error_integral[_entity],
+                -max_integral,
+                max_integral);
 
-        // Calculate desired velocity from PID
-        double desired_velocity = kp * distance_error +
-                                  ki * m_distance_error_integral[_entity] +
-                                  kd * distance_error_derivative;
+            // Derivative term (note: derivative of distance error is -velocity)
+            double distance_error_derivative =
+                (distance_error - m_distance_error_previous[_entity]) / (dt_s);
+            m_distance_error_previous[_entity] = distance_error;
 
-        // Modify based on angle to goal (reduce speed when turning)
-        double angle_factor = std::cos(angle_to_goal);
-        if (angle_factor < 0)
-            angle_factor = 0;  // Don't go backwards
-        desired_velocity *= angle_factor;
+            // PID gains (tune these values for your system)
+            double kp = 0.5;   // Proportional gain (velocity per meter)
+            double ki = 0.05;  // Integral gain
+            double kd = 0.1;   // Derivative gain
 
-        // Apply velocity limits
-        desired_velocity = std::clamp(
-            desired_velocity,
-            m_linear_velocities_limits[_entity][0],
-            m_linear_velocities_limits[_entity][1]);
+            // Calculate desired velocity from PID
+            double desired_velocity = kp * distance_error +
+                                    ki * m_distance_error_integral[_entity] +
+                                    kd * distance_error_derivative;
 
-        // Special handling for last waypoint
-        if (is_last_waypoint && distance_to_goal < 0.1) {
-            desired_velocity = 0.0;
+            // Modify based on angle to goal (reduce speed when turning)
+            double angle_factor = std::cos(angle_to_goal);
+            if (angle_factor < 0)
+                angle_factor = 0;  // Don't go backwards
+            desired_velocity *= angle_factor;
+
+            // Apply velocity limits
+            desired_velocity = std::clamp(
+                desired_velocity,
+                m_linear_velocities_limits[_entity][0],
+                m_linear_velocities_limits[_entity][1]);
+
+            // Special handling for last waypoint
+            if (is_last_waypoint && distance_to_goal < 0.1) {
+                desired_velocity = 0.0;
+            }
+
+            // Calculate velocity change with acceleration limits
+            double velocity_change = desired_velocity - current_velocity;
+            double max_accel = m_linear_accel_limit[_entity] * dt_s;
+            velocity_change = std::clamp(velocity_change, -max_accel, max_accel);
+
+            // Update velocity
+            m_velocities[_entity][0] = current_velocity + velocity_change;
+
+            // Final clamp to ensure limits
+            m_velocities[_entity][0] = std::clamp(
+                m_velocities[_entity][0],
+                m_linear_velocities_limits[_entity][0],
+                m_linear_velocities_limits[_entity][1]);
         }
 
-        // Calculate velocity change with acceleration limits
-        double velocity_change = desired_velocity - current_velocity;
-        double max_accel = m_linear_accel_limit[_entity] * dt_s;
-        velocity_change = std::clamp(velocity_change, -max_accel, max_accel);
-
-        // Update velocity
-        m_velocities[_entity][0] = current_velocity + velocity_change;
-
-        // Final clamp to ensure limits
-        m_velocities[_entity][0] = std::clamp(
-            m_velocities[_entity][0],
-            m_linear_velocities_limits[_entity][0],
-            m_linear_velocities_limits[_entity][1]);
-
-        /*
-        PID angular velocity
-        */
-        double Kp_heading = m_angular_pid[_entity][0];
-        double Ki_heading = m_angular_pid[_entity][1];
-        double Kd_heading = m_angular_pid[_entity][2];
-
-        double heading_error = angle_to_goal;
+        // ----------------------------------------------------------------
+        // ANGULAR VELOCITY CONTROL
+        // ----------------------------------------------------------------
         double max_w = m_angular_velocities_limits[_entity];
-        // Check for goal change to reset integral
-        gz::math::Vector2d current_goal_2d(goal.X(), goal.Y());
+        double desired_w = 0.0;
 
-        if (m_prev_yaw.find(_entity) == m_prev_yaw.end()) {
+        if (m_guidance_mode[_entity] == "bang_bang") {
+            // Bang_bang controller for angular velocity
+            /*
+            PID angular velocity
+            Handling orientation
+            0: null
+            1: accelerate left
+            2: accelerate right
+            3: zeroing
+            */
+            double Kp_heading = m_angular_pid[_entity][0];
+            double Ki_heading = m_angular_pid[_entity][1];
+            double Kd_heading = m_angular_pid[_entity][2];
+
+            // heading error in global frame
+            double desired_yaw = atan2(goal.Y() - pose.Y(), goal.X() - pose.X());
+            double heading_error = desired_yaw - pose.Yaw();
+
+            // normalize to [-pi, pi]
+            while (heading_error > M_PI)
+                heading_error -= 2 * M_PI;
+            while (heading_error < -M_PI)
+                heading_error += 2 * M_PI;
+
+            // integrate error
+            m_heading_integral[_entity] += heading_error * dt_s;
+
+            // derivative term
+            double d_error = (heading_error - m_prev_heading_error[_entity]) / dt_s;
+            m_prev_heading_error[_entity] = heading_error;
+
+            // PID output
+            // clamp to angular velocity limits
+            desired_w = Kp_heading * heading_error +
+                        Ki_heading * m_heading_integral[_entity] +
+                        Kd_heading * d_error;
+            desired_w = std::clamp(desired_w, -max_w, max_w);
+        } else {
+            // PID controller for angular velocity based on heading error
+            double Kp_heading = m_angular_pid[_entity][0];
+            double Ki_heading = m_angular_pid[_entity][1];
+            double Kd_heading = m_angular_pid[_entity][2];
+
+            double heading_error = angle_to_goal;
+            // Check for goal change to reset integral
+            gz::math::Vector2d current_goal_2d(goal.X(), goal.Y());
+
+            if (m_prev_yaw.find(_entity) == m_prev_yaw.end()) {
+                m_prev_yaw[_entity] = pose.Yaw();
+            }
+
+            // integrate error
+            double max_integral_contribution = 0.2 * m_angular_velocities_limits[_entity];
+            m_heading_integral[_entity] += heading_error * dt_s;
+
+            // Clamp integral (avoid division by zero)
+            if (Ki_heading > 1e-6) {
+                double integral_max = max_integral_contribution / Ki_heading;
+                m_heading_integral[_entity] = std::clamp(
+                    m_heading_integral[_entity],
+                    -integral_max,
+                    integral_max);
+            }
+
+            // Derivative term (on measurement to avoid kick)
+            double yaw_diff = pose.Yaw() - m_prev_yaw[_entity];
+            // Handling the wrapping of yaw when goal is behind the vessel
+            while (yaw_diff > M_PI)
+                yaw_diff -= 2.0 * M_PI;
+            while (yaw_diff < -M_PI)
+                yaw_diff += 2.0 * M_PI;
+            double current_yaw_rate = yaw_diff / dt_s;
+
             m_prev_yaw[_entity] = pose.Yaw();
-        }
+            double derivative_term = -Kd_heading * current_yaw_rate;
 
-        // integrate error
-        max_integral_contribution = 0.2 * m_angular_velocities_limits[_entity];
-        m_heading_integral[_entity] += heading_error * dt_s;
+            // PID output
+            desired_w = Kp_heading * heading_error +
+                            Ki_heading * m_heading_integral[_entity] +
+                            derivative_term;
 
-        // Clamp integral (avoid division by zero)
-        if (Ki_heading > 1e-6) {
-            double integral_max = max_integral_contribution / Ki_heading;
-            m_heading_integral[_entity] = std::clamp(
-                m_heading_integral[_entity],
-                -integral_max,
-                integral_max);
-        }
+            // clamp to angular velocity limits
+            double unclamped_w = desired_w;
+            desired_w = std::clamp(desired_w, -max_w, max_w);
 
-        // Derivative term (on measurement to avoid kick)
-        double yaw_diff = pose.Yaw() - m_prev_yaw[_entity];
-        // Handling the wrapping of yaw when goal is behind the vessel
-        while (yaw_diff > M_PI)
-            yaw_diff -= 2.0 * M_PI;
-        while (yaw_diff < -M_PI)
-            yaw_diff += 2.0 * M_PI;
-        double current_yaw_rate = yaw_diff / dt_s;
+            // Anti-windup: back-calculate integral if output saturated
+            if (Ki_heading > 1e-6 && std::abs(unclamped_w) > max_w) {
+                double clamped_integral =
+                    (desired_w - Kp_heading * heading_error - derivative_term) /
+                    Ki_heading;
+                m_heading_integral[_entity] = clamped_integral;
+            }
 
-        m_prev_yaw[_entity] = pose.Yaw();
-        double derivative_term = -Kd_heading * current_yaw_rate;
-
-        // PID output
-        double desired_w = Kp_heading * heading_error +
-                           Ki_heading * m_heading_integral[_entity] +
-                           derivative_term;
-
-        // clamp to angular velocity limits
-        double unclamped_w = desired_w;
-        desired_w = std::clamp(desired_w, -max_w, max_w);
-
-        // Anti-windup: back-calculate integral if output saturated
-        if (Ki_heading > 1e-6 && std::abs(unclamped_w) > max_w) {
-            double clamped_integral =
-                (desired_w - Kp_heading * heading_error - derivative_term) /
-                Ki_heading;
-            m_heading_integral[_entity] = clamped_integral;
-        }
-
-        // Decay of I for anti-windup
-        if (std::abs(heading_error) < 0.05) {
-            m_heading_integral[_entity] *= 0.95;
+            // Decay of I for anti-windup
+            if (std::abs(heading_error) < 0.05) {
+                m_heading_integral[_entity] *= 0.95;
+            }
         }
 
         // apply accel limit to current angular velocity
@@ -532,15 +660,20 @@ void WaypointFollowerPlugin::Update(
                 std::max(m_velocities[_entity][1] - vel_change, desired_w);
         }
 
-        // Updating pose
+        // ----------------------------------------------------------------
+        // UPDATE POSE
+        // ----------------------------------------------------------------
         pose.SetX(
             pose.X() + (m_velocities[_entity][0] * cos(pose.Yaw()) * dt_s));
         pose.SetY(
             pose.Y() + (m_velocities[_entity][0] * sin(pose.Yaw()) * dt_s));
+
+        double yaw_dt = (m_guidance_mode[_entity] == "bang_bang") ? dt : dt_s;
+
         pose.Rot().SetFromEuler(
             pose.Roll(),
             pose.Pitch(),
-            pose.Yaw() + dt_s * m_velocities[_entity][1]);
+            pose.Yaw() + yaw_dt * m_velocities[_entity][1]);
 
         _ecm.SetComponentData<gz::sim::components::Pose>(_entity, pose);
 
@@ -569,7 +702,9 @@ void WaypointFollowerPlugin::Update(
             m_heading_integral[_entity],
             current_yaw_rate);
 
-        // Goal Tracking ----
+        // ----------------------------------------------------------------
+        // GOAL TRACKING
+        // ----------------------------------------------------------------
         if (distance_to_goal <= m_rangeTolerance[_entity]) {
             m_heading_integral[_entity] = 0.0;
             m_distance_error_integral[_entity] = 0.0;
