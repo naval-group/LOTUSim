@@ -420,10 +420,16 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
 
         if (!msg.sdf_string.empty()) {
             tinyxml2::XMLDocument sdfDoc;
+
+            // Use the provided sdf_file inside the model folder.
+            // If empty, default to "model.sdf".
+            std::string sdf_filename = msg.sdf_file.empty() ? "model.sdf" : msg.sdf_file;
+            m_logger->info("EntityManager::addEntity: using sdf_file='{}' for model='{}'", sdf_filename, msg.model_name);
+
             tinyxml2::XMLError loadResult =
-                sdfDoc.LoadFile((file_path + "/model.sdf").c_str());
+                sdfDoc.LoadFile((file_path + "/" + sdf_filename).c_str());
             if (loadResult != tinyxml2::XML_SUCCESS) {
-                m_logger->error("    file.{}", file_path + "/model.sdf");
+                m_logger->error("    file.{}", file_path + "/" + sdf_filename);
                 return std::nullopt;
             }
 
