@@ -124,7 +124,7 @@ void LotusimSensorPlugin::OnNewLidarFrame(
     const std::string& /*_format*/)
 {
     sensor_msgs::msg::PointCloud2 msg;
-    msg.header = common::generateHeaderMessage(m_current_time);
+    msg.header = lotusim::common::generateHeaderMessage(m_current_time);
     msg.header.frame_id = m_lidar_name[_entity];  // or proper TF frame
 
     msg.height = _height;
@@ -296,7 +296,17 @@ bool LotusimSensorPlugin::EachNew(
                 _entity,
                 model_name,
                 sensor_name);
-
+        } else if (type == "radar") {
+            m_logger->info(
+                "LotusimSensorPlugin::Radar: Creating sensor [{}/{}]",
+                model_name,
+                sensor_name);
+            sensor = CreateSensor<RadarSensor>(
+                data,
+                model_entity,
+                _entity,
+                model_name,
+                sensor_name);
         } else {
             return true;
         }
