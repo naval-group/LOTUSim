@@ -11,6 +11,11 @@ string sdf_string
 # Lotusim param will be retrieved from sdf_string
 string model_name
 
+# Optional SDF file name inside the model folder.
+# If not specified, the default file `model.sdf` will be used.
+# Only applicable when the model exists in `assets/models`.
+string sdf_file
+
 # Name of vessel in gazebo
 string vessel_name
 
