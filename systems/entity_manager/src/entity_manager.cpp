@@ -236,7 +236,7 @@ EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 break;
             }
         }
-    } catch (std::runtime_error &e) {
+    } catch (std::runtime_error& e) {
         m_logger->error(
             "EntityManager::PreUpdate:ERROR Vessel: {}, Entity: {}, \n{}",
             cmd.vessel_name,
@@ -563,7 +563,8 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             msg.vessel_position.orientation.y,
             msg.vessel_position.orientation.z);
 
-        if (msg.geo_point.latitude != 0 || msg.geo_point.longitude != 0) {
+        if (msg.geo_point.latitude != 0 || msg.geo_point.longitude != 0 ||
+            msg.geo_point.altitude != 0) {
             auto xy_opt = lotusim::common::XYFromLatLong(
                 *m_ecm,
                 msg.geo_point.latitude,
@@ -573,6 +574,7 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
                 pose.Pos().X() = std::get<0>(xy_opt.value());
                 pose.Pos().Y() = std::get<1>(xy_opt.value());
             }
+            pose.Pos().Z() = msg.geo_point.altitude;
         }
 
         bool res = m_ecm->SetComponentData<gz::sim::components::Pose>(

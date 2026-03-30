@@ -42,7 +42,7 @@ environment models:
 
 bodies:
   - name: LRAUV
-    mesh: lrauv/tethys.stl
+    mesh: lrauv/lrauv_xdyn.stl   # watertight mesh for xdyn
 
     position of body frame relative to mesh:
       frame: mesh(LRAUV)
@@ -115,21 +115,22 @@ bodies:
             z: { value: 0, unit: m } # Check at what point was the RAO in the HDB file computed
           mirror for 180 to 360: false # Check your HDB file to see if this is necessary
 
-        - model: airy
-          depth: { value: 500, unit: m } # TODO: Input from general config file = SurfaceHeight
-          seed of the random data generator: 121
-          stretching: # I'm forcing the streching model to be Wheeler's, do not change delta and set h to depth
-            delta: 0
-            h: { unit: m, value: 500 } # TODO: Input from general config file = SurfaceHeight
-          directional spreading:
-            type: cos2s
-            s: 2 # Higher value will decrease the spreading
-            waves propagating to: { value: 0, unit: deg }
-          spectral density: # Moderate Sea State values
-            type: jonswap
-            Hs: { value: 1.8750, unit: m } # TODO: Input from setupMetocean script from user input
-            Tp: { value: 7.2573, unit: s } # TODO: Input from setupMetocean script from user input
-            gamma: 2.65 # TODO: Input from setupMetocean script from user input
+        # ------ Already defined above ------
+        # - model: airy
+        #   depth: { value: 500, unit: m } # TODO: Input from general config file = SurfaceHeight
+        #   seed of the random data generator: 121
+        #   stretching: # I'm forcing the streching model to be Wheeler's, do not change delta and set h to depth
+        #     delta: 0
+        #     h: { unit: m, value: 500 } # TODO: Input from general config file = SurfaceHeight
+        #   directional spreading:
+        #     type: cos2s
+        #     s: 2 # Higher value will decrease the spreading
+        #     waves propagating to: { value: 0, unit: deg }
+        #   spectral density: # Moderate Sea State values
+        #     type: jonswap
+        #     Hs: { value: 1.8750, unit: m } # TODO: Input from setupMetocean script from user input
+        #     Tp: { value: 7.2573, unit: s } # TODO: Input from setupMetocean script from user input
+        #     gamma: 2.65 # TODO: Input from setupMetocean script from user input
 
         - model: radiation damping
           hdb: LRAUV.hdb
