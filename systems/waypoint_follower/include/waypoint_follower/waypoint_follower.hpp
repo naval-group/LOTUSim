@@ -155,7 +155,15 @@ public:
         gz::sim::EntityComponentManager& _ecm) override;
 
 private:
-    // TODO changing the returns to handle error
+    /**
+         * @brief Setup waypoint_follower subsystem for newly spawned models
+         * 
+         * @param _entity 
+         * @param _lotus_param 
+         * @param _ecm 
+         * @return true Success in setup
+         * @return false Failure in setup
+         */
     bool load(
         const gz::sim::Entity& _entity,
         sdf::ElementPtr _lotus_param,

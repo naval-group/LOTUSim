@@ -40,7 +40,7 @@ bool WaypointFollowerPlugin::load(
 
     if (!name_opt) {
         m_logger->warn(
-            "WaypointFollower::load Loading entity with no name: {}",
+            "WaypointFollower::load Failed. Entity with no name: {}",
             _entity);
         return false;
     }
@@ -48,7 +48,10 @@ bool WaypointFollowerPlugin::load(
     m_logger->info("WaypointFollower::load Loading {}", model_name);
 
     if (!lotus_param_sdf) {
-        return true;  // No SDF, keep defaults
+        m_logger->info(
+            "WaypointFollower::load Model {} does not have waypoint_follower in lotus_param. Waypoint_follower will not support model.",
+            model_name);
+        return false;  // No SDF, keep defaults
     }
 
     // Always do the ROS-topic initialization regardless of lotus_param_sdf
@@ -322,23 +325,22 @@ void WaypointFollowerPlugin::Update(
                                   ->GetElement("waypoint_follower");
         } else {
             m_logger->warn(
-                "WaypointFollowerPlugin::Update: Vessel {} has no lotus_param for waypoint follower. Default will be used.",
+                "WaypointFollowerPlugin::Update: Vessel {} has no waypoint follower in lotus_param. Waypoint_follower will not be used",
                 name_comp->Data());
+            return true;
         }
         m_model_load_queue[_entity] = lotus_param_sdf;
         m_vessel_name[_entity] = name_comp ? name_comp->Data() : "unknown";
         return true;
     });
+
     for (auto it = m_model_load_queue.begin();
          it != m_model_load_queue.end();) {
         gz::sim::Entity entity = it->first;
         sdf::ElementPtr lotus_param_sdf = it->second;
         bool res = load(entity, lotus_param_sdf, _ecm);
-        if (res) {
-            it = m_model_load_queue.erase(it);
-        } else {
-            ++it;
-        }
+        // Erase new model request even if setup failed,
+        it = m_model_load_queue.erase(it);
     }
 
     double dt =
