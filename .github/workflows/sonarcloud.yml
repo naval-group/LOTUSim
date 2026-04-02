@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/sonarcloud-ci
   pull_request:
     types: [opened, synchronize, reopened]
 
