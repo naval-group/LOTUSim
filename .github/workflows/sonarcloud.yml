@@ -1,0 +1,87 @@
+name: SonarCloud
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sloretz/ros:jazzy-desktop-full
+
+    env:
+      LOTUSIM_WS: /lotusim_ws
+      LOTUSIM_PATH: /lotusim_ws/src/LOTUSim
+
+    steps:
+      - name: Install prerequisites
+        run: apt-get update && apt-get install -y git unzip curl
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up workspace
+        run: |
+          mkdir -p ${LOTUSIM_WS}/src
+          ln -s ${GITHUB_WORKSPACE} ${LOTUSIM_PATH}
+
+      - name: Install dependencies
+        run: |
+          export VERSION_CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
+          export GAZEBO_VERSION="harmonic"
+          export ROS_DISTRO="jazzy"
+          ${LOTUSIM_PATH}/launch/install_dep.sh
+        shell: bash
+
+      - name: Build with compile_commands.json
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          cd ${LOTUSIM_WS}
+          colcon build \
+            --merge-install \
+            --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            --event-handlers compile_commands+
+        shell: bash
+
+      - name: Merge and rewrite compile_commands.json
+        run: |
+          mkdir -p ${GITHUB_WORKSPACE}/build
+          python3 -c "
+          import json, glob, pathlib
+          entries = []
+          for f in glob.glob('${LOTUSIM_WS}/build/**/compile_commands.json', recursive=True):
+              entries.extend(json.loads(pathlib.Path(f).read_text()))
+          for e in entries:
+              for key in ('directory', 'file', 'command'):
+                  if key in e:
+                      e[key] = e[key].replace('${LOTUSIM_PATH}', '${GITHUB_WORKSPACE}')
+          pathlib.Path('${GITHUB_WORKSPACE}/build/compile_commands.json').write_text(json.dumps(entries, indent=2))
+          "
+        shell: bash
+
+      - name: Install sonar-scanner
+        run: |
+          SCANNER_VERSION=6.2.1.4610
+          curl -sSLo /tmp/sonar-scanner.zip \
+            https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SCANNER_VERSION}-linux-x64.zip
+          unzip -q /tmp/sonar-scanner.zip -d /opt
+          ln -s /opt/sonar-scanner-${SCANNER_VERSION}-linux-x64/bin/sonar-scanner /usr/local/bin/sonar-scanner
+
+      - name: SonarCloud Scan
+        run: |
+          sonar-scanner \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${SONAR_TOKEN} \
+            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+            -Dsonar.organization=${SONAR_ORGANIZATION}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
