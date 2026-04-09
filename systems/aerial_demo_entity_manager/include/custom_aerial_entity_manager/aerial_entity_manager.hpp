@@ -24,7 +24,7 @@ public:
 
 private:
     void customUserConfiguration(
-        const std::shared_ptr<const sdf::Element> &_sdf);
+        const std::shared_ptr<const sdf::Element> &_sdf) override;
 
     void customUserAddEntity(
         const lotusim_msgs::msg::MASCmd &msg) override final;

@@ -10,6 +10,7 @@
 #ifndef LOTUSIM_ENTITY_MANAGEMENT_PLUGIN_HH_
 #define LOTUSIM_ENTITY_MANAGEMENT_PLUGIN_HH_
 
+#include <atomic>
 #include <cstdlib>
 #include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
@@ -71,6 +72,8 @@ public:
     EntityManager();
 
     ~EntityManager();
+
+    void shutdown();
 
     /**
      * @brief Inherited method from GZ.
@@ -300,6 +303,12 @@ protected:
 
 private:
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
+
+    /**
+     * @brief Atomic flag indicating whether the ROS executor thread is active.
+     *
+     */
+    std::atomic_bool m_running;
 
     std::shared_ptr<std::thread> m_ros_node_thread;
 

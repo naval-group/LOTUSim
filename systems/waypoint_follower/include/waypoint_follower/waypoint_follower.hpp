@@ -10,6 +10,7 @@
 #ifndef WAYPOINT_FOLLOWER_PLUGIN_HPP_
 #define WAYPOINT_FOLLOWER_PLUGIN_HPP_
 
+#include <atomic>
 #include <functional>
 #include <gz/math/Pose3.hh>
 #include <gz/math/SphericalCoordinates.hh>
@@ -306,6 +307,8 @@ private:
      *
      */
     rclcpp::Node::SharedPtr m_ros_node;
+
+    std::atomic_bool m_running;
 
     std::shared_ptr<std::thread> m_ros_node_thread;
 
