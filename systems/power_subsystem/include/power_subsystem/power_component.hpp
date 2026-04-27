@@ -28,7 +28,7 @@ public:
     
     struct BatteryState{
         // To read the battery topics
-        float current{0.0f};  // <[A] positive = discharging??  -> check
+        float current{0.0f};  // <[A] positive = discharging
         float voltage{0.0f};  // <[V]
     }
 
@@ -72,12 +72,16 @@ protected:
 private:
     // subscription callback - updates the cached battery state
     // updates state_.current and state_.voltage
-    void on_battery_state(
-        const sensor_msgs::msg::BatteryState::SharedPtr msg
+    void on_current(
+        const std_msgs::msg::Float64::SharedPtr msg
+    );
+    void on_voltage(
+        const std_msgs::msg::Float64::SharedPtr msg
     );
 
     std::string component_name_;
-    rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_state_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr current_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr voltage_sub_;
     // cached battery readings updated in the subscription callback
     // using atomic so power_consume() can read without a mutex
     std::atomic<float> state_current_{0.0f};
