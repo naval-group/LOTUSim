@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-#pragma OneTimeChange
+#pragma once
 
 #include <atomic>
 #include <memory>
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/battery_state.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 namespace lotusim::power_subsystem{
  /**
@@ -30,13 +30,12 @@ public:
         // To read the battery topics
         float current{0.0f};  // <[A] positive = discharging
         float voltage{0.0f};  // <[V]
-    }
+    };
 
     /**
     * @param node                shared ROS 2 node (must outlive this object)
     * @param component_name      identifier used in log messages
     * @param current_topic       topic name
-    *                            sensor_msgs/BatteryState.
     */
     explicit PowerComponent(
         rclcpp::Node::SharedPtr node,
@@ -48,10 +47,10 @@ public:
     virtual ~PowerComponent() = default;
 
     // subclasses must implement this - compute and return the power consumption [W]
-    [[nodiscard("Use the returned power consumption value")]] virtual float power_consume() const = 0;  //probably a bug if its returned value isnt being used
+    virtual float power_consume() const = 0;
 
     // return the latest battery state 
-    [[nodiscard("Use the returned battery state")]] BatteryState state() const;
+    BatteryState state() const;
 
     // to enable or disable this component
     // subclasses must respect this flag
@@ -59,7 +58,7 @@ public:
     void set_active(bool on);
 
     // return if this component is allowed to draw power
-    [[nodiscard("Use the returned active status of the component")]] bool is_active() const;
+    bool is_active() const;
 
     const std::string & component_name() const{
         return component_name_;
@@ -85,7 +84,7 @@ private:
     // cached battery readings updated in the subscription callback
     // using atomic so power_consume() can read without a mutex
     std::atomic<float> state_current_{0.0f};
-    std::atomic<float> state_voltage_{0.0f}
+    std::atomic<float> state_voltage_{0.0f};
     // if this component is allowed to consume power
     std::atomic<bool> active_{true};
 };

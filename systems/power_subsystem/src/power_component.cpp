@@ -19,7 +19,7 @@
         // splitting current and voltage as currently 2 different topics by fmu
         current_sub_ = node_->create_subscription<std_msgs::msg::Float64>(
             current_topic,
-            qos,
+            10,
             [this](const std_msgs::msg::Float64::SharedPtr msg) {
                 on_current(msg);
             });
@@ -33,7 +33,7 @@
 
         voltage_sub_ = node_->create_subscription<std_msgs::msg::Float64>(
             voltage_topic,
-            qos,
+            10,
             [this](const std_msgs::msg::Float64::SharedPtr msg) {
                 on_voltage(msg);
             });
@@ -46,7 +46,7 @@
         );
     }
     
-    void on_current(const std_msgs::msg::Float64::SharedPtr msg){
+    void PowerComponent::on_current(const std_msgs::msg::Float64::SharedPtr msg){
         //update the cached readongs
         state_current_.store(static_cast<float>(msg->data));
 
@@ -54,18 +54,18 @@
             node_->get_logger(),
             "[PowerComponent] '%s' battery update – current: %.3f A",
             component_name_.c_str(),
-            msg->current
+            msg->data
         );
     }
 
-    void on_voltage(const std_msgs::msg::Float64::SharedPtr msg){
+    void PowerComponent::on_voltage(const std_msgs::msg::Float64::SharedPtr msg){
         state_voltage_.store(static_cast<float>(msg->data));
 
         RCLCPP_DEBUG(
             node_->get_logger(),
             "[PowerComponent] '%s' battery update – voltage: %.3f V",
             component_name_.c_str(),
-            msg->voltage
+            msg->data
         );
     }
 
