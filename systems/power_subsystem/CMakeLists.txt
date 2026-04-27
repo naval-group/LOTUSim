@@ -48,6 +48,7 @@ find_package(rclcpp REQUIRED)
 add_library(power_subsystem
 SHARED
 src/power_component.cpp
+src/sensor_power_component.cpp
 )
 target_include_directories(power_subsystem
   PUBLIC
