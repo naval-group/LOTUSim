@@ -1,8 +1,12 @@
 /*
  * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 #pragma once
 
 #include <atomic>
@@ -16,14 +20,14 @@ namespace lotusim::power_subsystem{
  /**
  * @brief Abstract base class for all power-consuming components in the vessel.
  *
- * PowerComponent provides a common interface that each power consumer
+ * PowerProvider provides a common interface that each power consumer
  * (thruster, sensor array ...) must implement. It subscribes to battery state
  * topics published and keeps a local cached copy of the latest current and voltage 
  * readings so that subclasses can react to battery conditions without 
  * subscribing independently.
  */
 
-class PowerComponent {
+class PowerProvider {
 public:
     
     struct BatteryState{
@@ -37,14 +41,14 @@ public:
     * @param component_name      identifier used in log messages
     * @param current_topic       topic name
     */
-    explicit PowerComponent(
+    explicit PowerProvider(
         rclcpp::Node::SharedPtr node,
         const std::string& component_name,
         const std::string& current_topic,   // like "/hectate/OUT_I" but let it be defined by the node
         const std::string& voltage_topic
     );
 
-    virtual ~PowerComponent() = default;
+    virtual ~PowerProvider() = default;
 
     // subclasses must implement this - compute and return the power consumption [W]
     virtual float power_consume() const = 0;

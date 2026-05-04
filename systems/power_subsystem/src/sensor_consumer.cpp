@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-#include "power_subsystem/sensor_power_component.hpp"
+#include "power_subsystem/sensor_power_consumer.hpp"
 
 #include "rclcpp/logging.hpp"
 
 namespace lotusim::power_subsystem
 {
 
-SensorPowerComponent::SensorPowerComponent(
+SensorPowerConsumer::SensorPowerConsumer(
     rclcpp::Node::SharedPtr node,
     const std::string& sensor_name,
     const std::string& current_topic,
@@ -26,7 +26,7 @@ SensorPowerComponent::SensorPowerComponent(
         rated_power_w_);
 }
 
-float SensorPowerComponent::power_consume() const
+float SensorPowerConsumer::power_consume() const
 {
     if (!is_active()) {
         return 0.0f;
