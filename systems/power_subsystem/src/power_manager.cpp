@@ -192,17 +192,17 @@ void PowerManager::Update(
 void PowerManager::parsePowerProviders(const sdf::ElementPtr _sdf){
     // go through all <battery> tags in SDF
     // declaration order = priority order
-    auto el = _sdf->GetElement("battery");  ///////////// MIGHT NEED TO SWITCH TO PROVIDER TO INCLUDE GENERATOR
+    auto el = _sdf->GetElement("provider");  ///////////// MIGHT NEED TO SWITCH TO PROVIDER TO INCLUDE GENERATOR
     while (el) {
         // type and name are mandatory 
         if (!el->HasAttribute("type")) {
-            m_logger->info("PowerManager: <battery> tag missing required 'type' attribute — skipping");
+            m_logger->info("PowerManager: <provider> tag missing required 'type' attribute — skipping");
             el = el->GetNextElement("battery");
             continue;
         }
         if (!el->HasAttribute("name")) {
-            m_logger->info("PowerManager: <battery> tag missing required 'name' attribute — skipping");
-            el = el->GetNextElement("battery");
+            m_logger->info("PowerManager: <provider> tag missing required 'name' attribute — skipping");
+            el = el->GetNextElement("provider");
             continue;
         }
 
@@ -219,7 +219,7 @@ void PowerManager::parsePowerProviders(const sdf::ElementPtr _sdf){
                 std::make_unique<DieselGenerator>(name, el, m_node));
         } else {
             m_logger->info("PowerManager: unknown provider type: {} - skipping", type);
-            el = el->GetNextElement("battery");
+            el = el->GetNextElement("provider");
             continue;
         }
         // populate
@@ -233,7 +233,7 @@ void PowerManager::parsePowerProviders(const sdf::ElementPtr _sdf){
             m_generators.push_back(prov);
             m_logger->info("PowerManager: registered generator {} with type {}", name, type);
         }
-        el = el->GetNextElement("battery");
+        el = el->GetNextElement("provider");
     }
 
     if(m_providers.empty()){
