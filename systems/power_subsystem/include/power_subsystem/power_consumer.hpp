@@ -60,7 +60,7 @@ public:
      *        ThrusterConsumer: reads current RPM,
      *                          updates m_rpmRatio
      */
-    virtual void update() = 0;
+    virtual void update(gz::sim::EntityComponentManager& _ecm) = 0;
 
     // ----------------------------------------------------------------
     // Virtual with defaults —> subclasses override only if relevant

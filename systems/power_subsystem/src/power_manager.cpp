@@ -270,10 +270,6 @@ void PowerManager::parsePowerConsumers(
                 m_logger->info("PowerManager registered consumer {} : type {} and priority {}", consumer, power_type, priority);
                 m_consumers.push_back(
                     std::make_unique<SensorConsumer>(power_name, nominalW, priority, el, m_node, _ecm));
-            } else if (powerType == "thruster") {
-                m_logger->info("PowerManager registered consumer {} : type {} and priority {}", consumer, power_type, priority);
-                m_consumers.push_back(
-                    std::make_unique<ThrusterConsumer>(power_name, nominalW, priority, el, m_node, _ecm));
             } else {
                 m_logger->info("PowerManager: unknown consumer type: {} for consumer {} -> skipping", power_type, consumer);
                 el = el->GetNextElement("sensor");
@@ -282,8 +278,25 @@ void PowerManager::parsePowerConsumers(
         }
         el = el->GetNextElement("sensor");
     }
+    ////// will need to adapt depending on how generator is declared in SDF
+    ////// maybe could be a link: <link name="thruster_link" <thruster> .... </thruster> </link>
+    auto el = _sdf->GetElement("thruster");
+    while (el) { 
+        if(el->HasAttribute("name")){
+            const std::string power_name = el->Get<std::string>("power_name");
+            const float nominalW = el->Get<float>("nominal_w", 1.0f);
+            const int priority = el->Get<int>("priority", 2);
 
-    // TODO - walk thrusters and other types
+            m_logger->info("PowerManager registered consumer {} : type {} and priority {}", consumer, power_type, priority);
+            m_consumers.push_back(
+                    std::make_unique<ThrusterConsumer>(power_name, nominalW, priority, el, m_node, _ecm));
+        } else {
+                m_logger->info("PowerManager: unknown consumer type: {} for consumer {} -> skipping", power_type, consumer);
+                el = el->GetNextElement("thruster");
+                continue;
+        }
+        el = el->GetNextElement("thruster");
+    }
 }
 
 bool PowerManager::updateActiveProvider(){

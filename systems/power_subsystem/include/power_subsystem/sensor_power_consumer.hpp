@@ -13,7 +13,9 @@
 #include "power_subsystem/power_consumer.hpp"
 
 #include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/Entity.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Sensor.hh>
+#include <gz/common/Console.hh>
 
 namespace lotusim::gazebo
 {
@@ -48,7 +50,8 @@ public:
         int priority,
         const sdf::ElementPtr& sdf,
         rclcpp::Node::SharedPtr node,
-        gz::sim::EntityComponentManager& ecm);
+        gz::sim::EntityComponentManager& ecm) 
+        : PowerConsumer(std::move(name), nominalW, priority, std::move(node)){}
 
     // ----------------------------------------------------------------
     // PowerConsumer interface
@@ -57,19 +60,55 @@ public:
      * @brief Returns I = nominalPowerW() / m_voltage
      *        Returns 0.0 if inactive or bus voltage is zero
      */
-    float drawnCurrent() const override;
+    float drawnCurrent() const override
+    {
+        if (!isActive() || m_voltage <= 0.0f) {
+            return 0.0f;
+        }
+        return m_nominalPowerW / m_voltage;
+    }
 
     /**
      * @brief No-op for a fixed-draw sensor
      *        override in future if variable duty cycle is needed
      */
-    void update() override {}
+    void update(gz::sim::EntityComponentManager& ecm) override {}
 
     /**
      * @brief Deactivates the sensor
      *        calls PowerConsumer::deactivate() to set m_active = false
      */
-    void deactivate() override;
+    void deactivate() override
+    {
+        PowerConsumer::deactivate();
+        gzmsg << "[SensorConsumer] " << name()
+              << " deactivated (logical only — entity intact)\n";
+    }
+
+    /**
+     * @brief Sensor appeared in ECM —> called by PowerManager via
+     *        _ecm.EachNew<gz::sim::components::CustomSensor>()
+     *        Re-activates the consumer if it was previously deactivated,
+     *        for future reactivation logic
+     */
+    void eachNew() override
+    {
+        m_active = true;
+        gzmsg << "[SensorConsumer] " << name() << " connected\n";
+    }
+
+    /**
+     * @brief Sensor removed from ECM —> called by PowerManager via
+     *        _ecm.EachRemoved<gz::sim::components::CustomSensor>()
+     *        Different from deactivate(): this fires when the sensor entity
+     *        is physically gone from the simulation, not just powered off
+     */
+    void eachDelete() override
+    {
+        PowerConsumer::deactivate();
+        gzmsg << "[SensorConsumer] " << name()
+              << " removed from simulation\n";
+    }
 
 };
 
