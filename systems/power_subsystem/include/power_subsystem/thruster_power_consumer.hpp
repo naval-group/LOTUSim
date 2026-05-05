@@ -17,60 +17,53 @@
 
 namespace lotusim::gazebo
 {
-
 /**
- * @brief PowerConsumer for sensors -> fixed power draw
+ * @brief PowerConsumer for thrusters
  *
- * Sensors draw a stable nominal_w regardless of what it is doing
- * drawnCurrent() simply computes I = P / V using the last voltage
- * received from PowerManager
- *
- * SDF:
- *   <sensor name="ais_sensor" type="custom" gz:type="ais"
- *           power_type="sensor" nominal_w="5.0" priority="3">
- *     ...
- *   </sensor>
+ * Thrusters drawnCurrent() computes I = (P * rpm_ratio²) / V 
+ * using the last voltage received from PowerManager
  */
-class SensorPowerConsumer final : public PowerConsumer
-{
+class ThrusterPowerConsumer final : public PowerConsumer{
 public:
     /**
-     * @param name      sensor name from SDF name attribute
+     * @param name      thruster name from SDF name attribute
      * @param nominalW  power draw in Watts from SDF nominal_w
      * @param priority  load shedding priority from SDF priority (default 3)
-     * @param sdf       SDF element for this sensor tag 
+     * @param sdf       SDF element for this thruster tag 
+     * @param rpm       rpm published from the user example 
      * @param node      node from PowerManager
      * @param ecm       Gazebo EntityComponentManager
      */
-    SensorPowerConsumer(
+    ThrusterPowerConsumer(
         std::string name,
         float nominalW,
         int priority,
         const sdf::ElementPtr& sdf,
+        float rpm,
         rclcpp::Node::SharedPtr node,
-        gz::sim::EntityComponentManager& ecm);
+        gz::sim::EntityComponentManager& ecm
+    );
 
     // ----------------------------------------------------------------
     // PowerConsumer interface
     // ----------------------------------------------------------------
+    
     /**
-     * @brief Returns I = nominalPowerW() / m_voltage
+     * @brief Returns I = (nominalPowerW() * rpm_ratio²) / m_voltage
      *        Returns 0.0 if inactive or bus voltage is zero
      */
     float drawnCurrent() const override;
 
     /**
-     * @brief No-op for a fixed-draw sensor
-     *        override in future if variable duty cycle is needed
+     * @brief override as its a variable duty cycle
      */
     void update() override {}
 
     /**
-     * @brief Deactivates the sensor
+     * @brief Deactivates the thruster
      *        calls PowerConsumer::deactivate() to set m_active = false
      */
     void deactivate() override;
 
 };
-
-} // namespace lotusim::power_subsystem
+} //namespace lotusim::gazebo
