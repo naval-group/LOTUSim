@@ -18,6 +18,22 @@
 
 namespace lotusim::gazebo{
 /**
+ * @brief Health level of a power provider
+ *
+ * Threshold levels (computed from sdf voltage_min) PowerManager behaviour per level:
+ *   NORMAL   : no action
+ *   WARN     : warning log + shed priority 4 consumers
+ *   CRITICAL : warning log + shed priority 3 and below
+ *   DEPLETED : info log + switch to next battery if available
+ */
+enum class PowerLevel
+{
+    NORMAL,
+    WARN,
+    CRITICAL,
+    DEPLETED
+};
+/**
  * @brief Abstract base class for all power sources on a vessel.
  *
  * Defines the contract between any power source and PowerManager.
@@ -71,12 +87,18 @@ public:
 
     /**
      * @brief approximate power the provider can sustain right now (W)
-     *        Used by PowerManager for load shedding decisions and
-     *        generator vs battery split calculation
+     *        Used by PowerManager for load shedding decisions
      *        battery:   voltage * soc * capacity_ah  (remaining Wh estimate)
      *        generator: rated_output_w * fuel_ratio
      */
     virtual float availablePowerW() const = 0;
+
+    /**
+     * @brief Returns the current health level of this provider
+     *        computed internally from voltage vs voltage_min thresholds
+     *        PowerManager uses this to decide shedding and switching
+     */
+    virtual PowerLevel powerLevel() const = 0;
 
     /**
      * @brief if this provider can no longer supply power
@@ -101,7 +123,6 @@ public:
      *        Default: no-op. Generators ignore this 
      *        Battery implements: soc += (currentA * dt) / capacity_ah,
      *        clamped to 1.0
-     *
      * @param currentA  Surplus current available for charging (Amperes)
      * @param dt        Elapsed simulation time since last tick (seconds)
      */

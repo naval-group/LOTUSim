@@ -38,28 +38,28 @@ class PowerConsumer;
  *   - m_batteries  : PowerProvider* where canReceiveCharge() == true
  *
  * On each sim tick, Update() runs the following logic:
- *   1. Sum drawCurrent() from all active consumers -> totalCurrent
- *   2. Sum availablePowerW() from all generators -> genSupply
- *   3. If genSupply() >= demand:  generators cover load, surplus -> selectChargeTarget()->receiveCharge()
- *      else: shortfall drawn from battery via receiveLoad()
- *   4. If active battery soc < m_socMinThreshold -> updateActiveProvider()
- *         if all batteries depleted -> deactivate all consumers
- *   5. shedLoadsIfNeeded() -> based on combined availablePowerW() vs demand
- *   6. Push voltage to all consumers via receiveVoltage() + update()
+ *   1. EachNew / EachRemoved -> notify consumers 
+ *   2. Sum drawCurrent() from all active consumers -> totalCurrent
+ *   3. push totalCurrent to active battery via receiveLoad() (generator path to be implemented later)
+ *   (3. If genSupply() >= demand:  generators cover load, surplus -> selectChargeTarget()->receiveCharge()
+ *      else: shortfall drawn from battery via receiveLoad())
+ *   4. Read PowerLevel from active battery:
+ *        DEPLETED : log info + switch to next battery, deactivate all if none left
+ *        CRITICAL : log warning + shed priority 3 and below
+ *        WARN     : log warning + shed priority 4
+ *        NORMAL   : no action
+ *   5. Push voltage to all consumers via receiveVoltage() + update()
  * 
  * SDF format:
  *   <provider name="main_battery"  type="nuclear_battery"
- *             capacity_ah="200" initial_soc="1.0"  soc_min="0.1"/>
- *   <provider name="backup_battery" type="lithium_battery"
- *             capacity_ah="50"  initial_soc="1.0"  soc_min="0.1"/>
- *   <provider name="main_gen"      type="diesel_generator"
- *             rated_power_w="50000" fuel_capacity_l="500"
- *             initial_fuel_l="500"/>
+ *             capacity_ah="200" initial_soc="1.0" voltage_min="40.0"/>
  *
  *   <sensor name="ais_sensor" type="custom" gz:type="ais"
  *           power_type="sensor" nominal_w="5.0" priority="3">
  *     ...
  *   </sensor>
+ *   <thruster name="bow_thruster"
+ *             nominal_w="800.0" max_rpm="1200" priority="2"/>
  *
  * m_node is created here and passed into every providers and consumers
  */
@@ -90,14 +90,14 @@ public:
 
 private:
     /**
-     * @brief Walks all <battery> tags in SDF order and populates m_providers
-     *        Also populates m_generators and m_batteries
+     * @brief Walks all <provider> tags in SDF order and populates 
+     *        m_providers and m_batteries
      *        SDF order = priority order
      */
     void parsePowerProviders(const sdf::ElementPtr _sdf);
 
     /**
-     * @brief Walks all tags with power_type attribute and populates m_consumers
+     * @brief Walks <sensor> and <thrusters> attribute and populates m_consumers
      */
     void parsePowerConsumers(
         const sdf::ElementPtr _sdf,
@@ -116,17 +116,23 @@ private:
      *        Returns nullptr if m_batteries is empty (generator-only vessel,
      *        or no providers configured)
      */
-    PowerProvider* selectChargeTarget() const;
+    PowerProvider* selectChargeTarget() const; // leaving alone for now
 
     /**
-     * @brief Sheds non-essential consumers when combined available power
-     *        falls below total demand + safety margin
-     *        Never touches priority 1
-     *        Trigger: sum(availablePowerW()) < totalDemand * (1 + m_socMinThreshold)
-     *
+     * @brief Sheds consumers based on PowerLevel
      *        TODO: add reactivation logic when power margin recovers
      */
-    void shedLoadsIfNeeded();
+    void shedLoadsIfNeeded(PowerLevel level);
+
+    /**
+     * @brief Used by EachNew / EachRemoved callbacks to route topology
+     *        events to the correct consumer
+     */
+    bool matchesEntity(
+        const std::string& consumerName,
+        const gz::sim::Entity& _entity,
+        gz::sim::EntityComponentManager& _ecm) const;
+
 
     gz::sim::Entity m_entity;
 
@@ -137,6 +143,8 @@ private:
     // Single ROS2 node shared by all PowerProviders and PowerConsumers of
     // this vessel. Created in Configure(), destroyed with PowerManager
     rclcpp::Node::SharedPtr m_node;
+
+    gz::sim::EntityComponentManager* m_ecm{nullptr};
 
     //priority ordered list of power providers
     std::vector<std::unique_ptr<PowerProvider>> m_providers;
@@ -153,9 +161,5 @@ private:
     //index into m_providers of the currently active provider
     // updated by activeProviderIndex()
     int m_activeBatteryIndex{0};
-
-    // soc threashold below which shedding begins
-    // read from <battery> SDF tag as soc_min
-    float m_socMinThreshold{0.1f};
 };
 } //namespace lotusim::gazebo
