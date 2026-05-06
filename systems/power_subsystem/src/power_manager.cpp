@@ -10,18 +10,20 @@
 #include "power_subsystem/power_manager.hpp"
 
 #include <gz/sim/components/Name.hh>
+#include <gz/sim/components/CustomSensor.hh>
 #include <gz/common/Console.hh>
 
+// abstract classes
 #include "power_subsystem/power_provider.hpp"
 #include "power_subsystem/power_consumer.hpp"
 
-// Concrete PowerProvider subclasses
-#include "battery_provider_base.hpp"
-#include "generator_provider_base.hpp"
+// PowerProvider subclasses
+#include "power_subsystem/battery.hpp"
+//#include "generator_provider_base.hpp"
 
-// Concrete PowerConsumer subclasses
-#include "sensor_consumer_base.hpp"
-#include "thruster_consumer_base.hpp"
+// PowerConsumer subclasses
+#include "power_subsystem/sensor_power_consumer.hpp"
+#include "power_subsystem/thruster_power_consumer.hpp"
 
 namespace lotusim::gazebo{
 
@@ -37,9 +39,10 @@ void PowerManager::Configure(
     const gz::sim::Entity& _entity,
     const std::shared_ptr<const sdf::Element>& _sdf,
     gz::sim::EntityComponentManager& _ecm,
-    gz::sim::EventManager&)
+    gz::sim::EventManager& _eventMgr)
 {
     m_entity = _entity;
+    m_ecm = &_ecm;
 
     m_world_name = lotusim::common::getWorldName(_ecm);
     m_logger = logger::createConsoleAndFileLogger(
@@ -55,15 +58,6 @@ void PowerManager::Configure(
         rclcpp::init(0, nullptr);
     }
     m_node = rclcpp::Node::make_shared("power", m_vesselName);
-
-    // ── soc_min threshold ─────────────────────────────────────────────
-    // parse sdf
-    // m_socMinThreshold is a vessel-level safety margin
-    // Example: 0.1 means shed when available power < demand + 10% headroom
-    if(_sdf->HasElement("battery")){
-        const auto batteryE1 = _sdf->GetElement("battery");
-        m_socMinThreshold = batteryE1->Get<float>("soc_min", 0.1f);
-    }
 
     // ── Build provider and consumer lists ─────────────────────────────
     // m_generators and m_batteries populated inside 
@@ -88,10 +82,40 @@ void PowerManager::Update(
         return;
     }
 
+    // ── Step 1: topology change callbacks ─────────────────────────────
+    // EachNew fires when a CustomSensor component appears in the ECM
+    // EachRemoved fires when one is removed
+    // Thrusters: no component equivalent yet 
+    //  ---------------- is it the best way??
+    _ecm.EachNew<gz::sim::components::CustomSensor>(
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::CustomSensor*) -> bool
+        {
+            for (auto& consumer : m_consumers) {
+                if (matchesEntity(consumer->name(), _entity, _ecm)) {
+                    consumer->eachNew();
+                }
+            }
+            return true;
+        }
+    );
+ 
+    _ecm.EachRemoved<gz::sim::components::CustomSensor>(
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::CustomSensor*) -> bool
+        {
+            for (auto& consumer : m_consumers) {
+                if (matchesEntity(consumer->name(), _entity, _ecm)) {
+                    consumer->eachDelete();
+                }
+            }
+            return true;
+        }
+    );
 
-    // ── Step 1: sum consumer demand ───────────────────────────────────
-    //each consumer calculates its own individual draw
-    // PowerManager owns the sum
+
+    // ── Step 2: sum consumer demand ───────────────────────────────────
+    //each consumer calculates its own draw. PowerManager owns the sum
     float total_current = 0.0f;
     for(const auto& consumer : m_consumers){
         if(consumer->isActive()){
@@ -99,89 +123,88 @@ void PowerManager::Update(
         }
     }
 
-    // Use active battery voltage as bus voltage reference
-    // Falls back to 0 if no batteries configured 
-    const float bus_voltage = m_batteries.empty()
-        ? 0.0f
-        : m_batteries[m_activeBatteryIndex]->voltage();
-
-    const float total_demand_W = total_current * bus_voltage;
+    // ── Step 3: push total load to active battery ─────────────────────
+    // Battery forwards this so the model can update voltage
+    m_batteries[m_activeBatteryIndex]->receiveLoad(totalCurrent, dt);
 
 
-    // ── Step 2: sum generator supply ──────────────────────────────────
-    float gen_supply_W = 0.0f;
-    for (auto* generator : m_generators) {
-        gen_supply_W += generator->availablePowerW();
-    }
+    // // ──  sum generator supply ──────────────────────────────────
+    // float gen_supply_W = 0.0f;
+    // for (auto* generator : m_generators) {
+    //     gen_supply_W += generator->availablePowerW();
+    // }
 
+    // // ──  generator covers load or battery supplements ──────────
+    // if (!m_generators.empty()){
+    //     if(gen_supply_W >= total_demand_W){
+    //         // generators cover everything - push load to all generators
+    //         for (auto* generator : m_generators){
+    //             generator->receiveLoad(total_current, dt);
+    //         }
+    //         // surplus -> charge target battery
+    //         const float surplus_W = gen_supply_W - total_demand_W;
+    //         const float surplus_current = (bus_voltage > 1e-6f)
+    //                                        ? surplus_W / bus_voltage
+    //                                        : 0.0f;
+    //         PowerProvider* target = selectChargeTarget();
+    //         if(target && surplus_current > 1e-6f){
+    //             target->receiveCharge(surplus_current, dt);
+    //         }
+    //     } else {
+    //         // batteries supplement the shortfall
+    //         for(auto* generator : m_generators){
+    //             generator->receiveLoad(total_current, dt);
+    //         }
+    //         const float shortfall_W = total_demand_W - gen_supply_W;
+    //         const float shortfall_current = (bus_voltage > 1e-6f)
+    //                                        ? shortfall_W / bus_voltage
+    //                                        : total_current;
 
-    // ── Step 3: generator covers load or battery supplements ──────────
-    if (!m_generators.empty()){
-        if(gen_supply_W >= total_demand_W){
-            // generators cover everything - push load to all generators
-            for (auto* generator : m_generators){
-                generator->receiveLoad(total_current, dt);
+    //         if (!m_batteries.empty()){
+    //             m_batteries[m_activeBatteryIndex]->receiveLoad(shortfall_current, dt);
+    //         }
+    //     } 
+    // } else {
+    //     // battery only -> active battery covers full demand
+    //     if(!m_batteries.empty()){
+    //         m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
+    //     }
+    // }
+
+    // ── Step 4: check active battery PowerLevel and act ───────────────
+    const PowerLevel level = m_batteries[m_activeBatteryIndex]->powerLevel();
+ 
+    if (level == PowerLevel::DEPLETED) {
+        m_logger->info("[PowerManager] Vessel {} : battery {} {} is depleted", 
+                        m_vesselName, m_activeBatteryIndex,
+                        m_batteries[m_activeBatteryIndex]->name());
+ 
+        if (!updateActiveProvider()) {
+            // All batteries depleted -> cut power to all consumers
+            m_logger->info("[PowerManager] Vessel {} : all baterries depleted -> cutting power.",
+                            m_vesselName);
+            for (auto& consumer : m_consumers) {
+                consumer->deactivate();
             }
-            // surplus -> charge target battery
-            const float surplus_W = gen_supply_W - total_demand_W;
-            const float surplus_current = (bus_voltage > 1e-6f)
-                                           ? surplus_W / bus_voltage
-                                           : 0.0f;
-            PowerProvider* target = selectChargeTarget();
-            if(target && surplus_current > 1e-6f){
-                target->receiveCharge(surplus_current, dt);
-            }
-        } else {
-            // batteries supplement the shortfall
-            for(auto* generator : m_generators){
-                generator->receiveLoad(total_current, dt);
-            }
-            const float shortfall_W = total_demand_W - gen_supply_W;
-            const float shortfall_current = (bus_voltage > 1e-6f)
-                                           ? shortfall_W / bus_voltage
-                                           : total_current;
-
-            if (!m_batteries.empty()){
-                m_batteries[m_activeBatteryIndex]->receiveLoad(shortfall_current, dt);
-            }
-        } 
-    } else {
-        // battery only -> active battery covers full demand
-        if(!m_batteries.empty()){
-            m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
+            return;
         }
+        // Switched to new battery. log info and continue
+        m_logger->info("[PowerManager] Vessel {} : switched to new battery {} {}", 
+                        m_vesselName, m_activeBatteryIndex,
+                        m_batteries[m_activeBatteryIndex]->name());
     }
+ 
 
-    // ── Step 4: switch battery if soc dropped below threshold ─────────
-    if(!m_batteries.empty()){
-        const float soc = m_batteries[m_activeBatteryIndex]->getStateOfCharge();
-
-        if(soc < m_socMinThreshold){
-            if(!updateActiveProvider){
-                // all batteries depleted -> cut power to everything
-                m_logger->info("PowerManager: Vessel {} has all power providers depleted - cutting power", 
-                            m_vessel_name);
-                for(auto& consumer : m_consumers){
-                    consumer->deactivate();
-                }
-                return;
-            }
-        }
-    }
-
-    // ── Step 5: shed non-essential loads if power margin is low ───────
-    shedLoadsIfNeeded();
+    // ── Step 5: shed loads based on PowerLevel ───────
+    shedLoadsIfNeeded(level);
 
     // ── Step 6: push updated voltage to all active consumers ──────────
-    // re-read voltage after provider may have switched in step 4
-    const float newVoltage = m_batteries.empty()
-        ? (m_generators.empty()  ? 0.0f
-                                 : m_generators[0]->voltage())
-        : m_batteries[m_activeBatteryIndex]->voltage();
+    const float newVoltage =
+        m_batteries[m_activeBatteryIndex]->voltage();
  
     for (auto& consumer : m_consumers) {
         consumer->receiveVoltage(newVoltage);
-        consumer->update();
+        consumer->update(_ecm);
     }
 }
 
@@ -190,18 +213,18 @@ void PowerManager::Update(
 // ============================================================
 
 void PowerManager::parsePowerProviders(const sdf::ElementPtr _sdf){
-    // go through all <battery> tags in SDF
+    // go through all <provider> tags in SDF
     // declaration order = priority order
-    auto el = _sdf->GetElement("provider");  ///////////// MIGHT NEED TO SWITCH TO PROVIDER TO INCLUDE GENERATOR
+    auto el = _sdf->GetElement("provider");
     while (el) {
         // type and name are mandatory 
         if (!el->HasAttribute("type")) {
-            m_logger->info("PowerManager: <provider> tag missing required 'type' attribute — skipping");
-            el = el->GetNextElement("battery");
+            m_logger->info("PowerManager: <provider> tag missing required 'type' attribute -> skipping");
+            el = el->GetNextElement("provider");
             continue;
         }
         if (!el->HasAttribute("name")) {
-            m_logger->info("PowerManager: <provider> tag missing required 'name' attribute — skipping");
+            m_logger->info("PowerManager: <provider> tag missing required 'name' attribute -> skipping");
             el = el->GetNextElement("provider");
             continue;
         }
@@ -218,21 +241,20 @@ void PowerManager::parsePowerProviders(const sdf::ElementPtr _sdf){
             m_providers.push_back(
                 std::make_unique<DieselGenerator>(name, el, m_node));
         } else {
-            m_logger->info("PowerManager: unknown provider type: {} - skipping", type);
+            m_logger->info("PowerManager: unknown provider type: {} -> skipping", type);
             el = el->GetNextElement("provider");
             continue;
         }
         // populate
-        // m_batteries and m_generators point into m_providers
         PowerProvider* prov = m_providers.back().get();
         if(prov->canReceiveCharge()){
             m_batteries.push_back(prov);
             m_logger->info("PowerManager: registered battery {} with type {}", name, type);
         }
-        else {
-            m_generators.push_back(prov);
-            m_logger->info("PowerManager: registered generator {} with type {}", name, type);
-        }
+        // else {
+        //     m_generators.push_back(prov);
+        //     m_logger->info("PowerManager: registered generator {} with type {}", name, type);
+        // }
         el = el->GetNextElement("provider");
     }
 
@@ -245,14 +267,13 @@ void PowerManager::parsePowerConsumers(
     const sdf::ElementPtr _sdf,
     gz::sim::EntityComponentManager& _ecm)
 {
+    // ── Sensors ───────────────────────────────────────────────────────
     // go through <sensor> tags that includes a power_type attribute
-    // <sensor> without this attribute are ignored by the power subsystem
     // Priority level: 
     // 1 = safety critical         - never shed   e.g.: navigation, emergency light
     // 2 = operationally important - only shed for last resort
     // 3 = mission systems
     // 4 = non-essential           - shed first
-
     auto el = _sdf->GetElement("sensor");
     while(el){
         if(el->HasAttribute("power_type")){
@@ -261,40 +282,34 @@ void PowerManager::parsePowerConsumers(
                 el = el->GetNextElement("sensor");
                 continue;
             }
-            const std::string power_type = el->Get<std::string>("power_type");
-            const std::string power_name = el->Get<std::string>("power_name");
+            const std::string name = el->Get<std::string>("name");
             const float nominalW = el->Get<float>("nominal_w", 1.0f);
             const int priority = el->Get<int>("priority", 3);
 
-            if (powerType == "sensor") {
-                m_logger->info("PowerManager registered consumer {} : type {} and priority {}", consumer, power_type, priority);
-                m_consumers.push_back(
-                    std::make_unique<SensorConsumer>(power_name, nominalW, priority, el, m_node, _ecm));
-            } else {
-                m_logger->info("PowerManager: unknown consumer type: {} for consumer {} -> skipping", power_type, consumer);
-                el = el->GetNextElement("sensor");
-                continue;
-            }
+            m_logger->info("PowerManager registered sensor consumer {} with priority {}", name, priority);
+            m_consumers.push_back(
+                    std::make_unique<SensorConsumer>(name, nominalW, priority, el, m_node, _ecm));
         }
         el = el->GetNextElement("sensor");
     }
     ////// will need to adapt depending on how generator is declared in SDF
     ////// maybe could be a link: <link name="thruster_link" <thruster> .... </thruster> </link>
+    // ThrusterConsumer subscribes to /vessel_N/cmd_rpm  ------------------> might need to update!
     auto el = _sdf->GetElement("thruster");
     while (el) { 
-        if(el->HasAttribute("name")){
-            const std::string power_name = el->Get<std::string>("power_name");
-            const float nominalW = el->Get<float>("nominal_w", 1.0f);
-            const int priority = el->Get<int>("priority", 2);
-
-            m_logger->info("PowerManager registered consumer {} : type {} and priority {}", consumer, power_type, priority);
-            m_consumers.push_back(
-                    std::make_unique<ThrusterConsumer>(power_name, nominalW, priority, el, m_node, _ecm));
-        } else {
-                m_logger->info("PowerManager: unknown consumer type: {} for consumer {} -> skipping", power_type, consumer);
-                el = el->GetNextElement("thruster");
-                continue;
+        if (!el->HasAttribute("name")) {
+            m_logger->info("[PowerManager] <thruster> missing required 'name' -> skipping");
+            el = el->GetNextElement("thruster");
+            continue;
         }
+        const std::string name = el->Get<std::string>("name");
+        const float nominalW = el->Get<float>("nominal_w", 1.0f);
+        const int priority = el->Get<int>("priority", 2);
+
+        m_consumers.push_back(
+                std::make_unique<ThrusterConsumer>(name, nominalW, priority, el, m_node, _ecm));
+        m_logger->info("PowerManager registered thruster consumer {} with priority {}", consumer, priority);
+
         el = el->GetNextElement("thruster");
     }
 }
@@ -316,67 +331,80 @@ bool PowerManager::updateActiveProvider(){
     return false; // all providers are depleted, sad time :'(
 }
 
-PowerProvider* PowerManager::selectChargeTarget() const
-{
-    if (m_batteries.empty()) {
-        return nullptr;
-    }
+// ignoring for now
+// PowerProvider* PowerManager::selectChargeTarget() const
+// {
+//     if (m_batteries.empty()) {
+//         return nullptr;
+//     }
  
-    // Priority 1: first depleted battery —> restore it first
-    for (auto* battery : m_batteries) {
-        if (battery->isDepleted()) {
-            return battery;
-        }
-    }
+//     // Priority 1: first depleted battery —> restore it first
+//     for (auto* battery : m_batteries) {
+//         if (battery->isDepleted()) {
+//             return battery;
+//         }
+//     }
  
-    // Priority 2: current active battery —> keep it topped up
-    return m_batteries[m_activeBatteryIndex];
-}
+//     // Priority 2: current active battery —> keep it topped up
+//     return m_batteries[m_activeBatteryIndex];
+// }
 
-void PowerManager::shedLoadsIfNeeded(){
-
-    // ── Available power ───────────────────────────────────────────────
-    // Sum availablePowerW() across all non-depleted providers
-    // each provider implements this for its own type
-    float available_power = 0.0f;
-    for(const auto& provider : m_providers){
-        if(!provider->isDepleted()){
-            available_power += provider->availablePowerW();
-        }
-    }
-
-    // ── Total demand ──────────────────────────────────────────────────
-    float total_demand = 0.0f;
-    for (const auto& consumer : m_consumers){
-        if(consumer->isActive()){
-            total_demand += consumer->nominalPowerW();
-        }
-    }
-
-    // ── Margin check ──────────────────────────────────────────────────
-    // shedding fires when available_power < total_demand * (1 + threshold)
-    if(available_power >= total_demand * (1.0f + m_socMinThreshold)){
+void PowerManager::shedLoadsIfNeeded(const PowerLevel level){
+    // NORMAL -> no shedding needed
+    if (level == PowerLevel::NORMAL || level == PowerLevel::DEPLETED) {
         return;
+        // DEPLETED is handled before this call in Update(). if we reach
+        // here with DEPLETED it means we just switched to a new battery
+        // which starts at NORMAL, so no shedding needed.
     }
-
-    m_logger->info("PowerManager: Vessel {}: low power margin, available now: {}Wh with demand: 
-        {}W -> shedding.", m_vessel_name, available_power, total_demand);
-
-    // ── Priority-based shedding ───────────────────────────────────────
-    // re-evaluated every sim tick
-    // TO DO --------------------> add reactivation logic - when available power
-    // recovers above threshold
-    for (int group 4; group >=2; --group){
-        for (auto it = m_consumers.rbegin(); it !=m_consumers.rend(); ++it){
-            if ((*it)->isActive() && (*it)->priority() == group){
+ 
+    if (level == PowerLevel::WARN) {
+        // Level 1: voltage between 85–95% of voltage_min
+        // Shed one non-essential (priority 4) consumer per tick
+        m_logger->info("[PowerManager] Vessel {} : battery WARN level -> shedding non-essential loads",
+                        m_vesselName);
+ 
+        for (auto it = m_consumers.rbegin(); it != m_consumers.rend(); ++it) {
+            if ((*it)->isActive() && (*it)->priority() == 4) {
                 (*it)->deactivate();
-                m_logger->info("PowerManager: vessel {} shed consumer: {}", m_vessel_name, (*it)->name());
-                return;
+                m_logger->info("[PowerManager] shed: {} (priority 4)", (*it)->name());
+                return; // one per tick
             }
         }
+        // No priority-4 consumers left, log but do not escalate yet
+        m_logger->info("[PowerManager] Vessel {} : no priority-4 consumers left to shed", m_vesselName);
+        return;
     }
-    m_logger->info("PowerManager: Vessel {}: critical - only safety-critical consumers remain active", m_vessel_name);
+ 
+    if (level == PowerLevel::CRITICAL) {
+        // Level 2: voltage within 5% of voltage_min
+        // Shed priority 3 and below
+        m_logger->info("[PowerManager] Vessel {} : battery CRITICAL level -> shedding mission loads", m_vesselName);
+ 
+        for (int group = 3; group >= 2; --group) {
+            for (auto it = m_consumers.rbegin();
+                 it != m_consumers.rend(); ++it)
+            {
+                if ((*it)->isActive() && (*it)->priority() == group) {
+                    (*it)->deactivate();
+                    m_logger->info("[PowerManager] shed: {} with priotity {}", (*it)->name(), group);
+                    return; // one per tick
+                }
+            }
+        }
+ 
+        // Only priority 1 consumers remain 
+        m_logger->info("[PowerManager] Vessel {} : critical, only safety-critical consumers remain", m_vesselName);
+    }
+}
 
+bool PowerManager::matchesEntity(
+    const std::string& consumerName,
+    const gz::sim::Entity& _entity,
+    gz::sim::EntityComponentManager& _ecm) const
+{
+    const auto* nameComp = _ecm.Component<gz::sim::components::Name>(_entity);
+    return nameComp && nameComp->Data() == consumerName;
 }
 
 } //namespace lotusim::gazebo
