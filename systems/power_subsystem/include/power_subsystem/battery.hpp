@@ -1,6 +1,6 @@
 #pragma once
 
-#include "power_provide.hpp"
+#include "power_provider.hpp"
 #include <gz/common/Console.hh>
 
 namespace lotusim::gazebo{

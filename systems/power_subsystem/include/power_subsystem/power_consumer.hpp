@@ -14,6 +14,7 @@
  #include <memory>
  #include <sdf/Element.hh>
  #include <rclcpp/rclcpp.hpp>
+ #include <gz/sim/EntityComponentManager.hh>
 
  namespace lotusim::gazebo{
     /**
@@ -83,17 +84,28 @@ public:
     /**
      * @brief Deactivates this consumer —> called by PowerManager during
      *        load shedding or full power loss
-     *        Sets m_active = false
      *        Subclass should override to add type-specific shutdown behaviour
      *        (e.g. ThrusterConsumer sets rpm to zero, SensorConsumer
      *        publishes a power_state = OFF notification)
-     *        Always call PowerConsumer::deactivate() from the override
-     *        to ensure m_active is set correctly
      */
     virtual void deactivate()
     {
         m_active = false;
     }
+
+    /**
+     * @brief Reactivates this consumer after it was deactivated
+     *        Sets m_active = true so drawnCurrent() resumes 
+     *        Called by PowerManager when power margin recovers
+     *        TODO: PowerManager currently has no reactivation logic ->
+     *        call reactivate() in shedLoadsIfNeeded() when
+     *        PowerLevel returns to NORMAL
+     */
+    virtual void reactivate()
+    {
+        m_active = true;
+    }
+ 
 
     // ----------------------------------------------------------------
     // Non-virtual —> same for all providers
@@ -102,7 +114,7 @@ public:
     /**
      * @brief receives the current bus voltage from PowerManager
      *        Called before drawnCurrent() so the consumer
-     *        always uses an up-to-date voltage for its I = P/V calculation
+     *        always uses an up-to-date voltage for its I calculation
      *        Guards against zero voltage
      */
     void receiveVoltage(float v)
@@ -139,14 +151,14 @@ protected:
         float nominalW,
         int priority,
         rclcpp::Node::SharedPtr node)
-        : m_name(std::move(name))
-        , m_nominalPowerW(nominalW)
+        : m_nominalPowerW(nominalW)   
+        , m_node(std::move(node))   
+        , m_name(std::move(name))  
         , m_priority(priority)
-        , m_node(std::move(node))
     {}
 
-    // Last voltage pushed by PowerManager via receiveVoltage()
-    // Used by subclasses in drawnCurrent()
+    // last voltage pushed by PowerManager via receiveVoltage()
+    // used by subclasses in drawnCurrent()
     float m_voltage{0.0f};
 
     // nominal power draw in Watts, from SDF nominal_w

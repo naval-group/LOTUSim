@@ -19,11 +19,20 @@
                 <always_on>1</always_on>
                 <update_rate>100</update_rate>
             </sensor>
-            <sensor name="ais" type="custom" gz:type="ais">
+            <sensor name="ais" type="custom" gz:type="ais" power_type="sensor" nominal_w="5.0" priority="3">
                 <update_rate>1</update_rate>
                 <noise_sigma>0.01</noise_sigma>
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>
+            <link name="main_battery">
+                <lotusim_power>
+                    <type>simple_battery</type>
+                    <capacity_ah>100</capacity_ah>
+                    <initial_soc>1.0</initial_soc>
+                    <voltage_min>36.0</voltage_min>
+                    <voltage_nominal>48.0</voltage_nominal>
+                </lotusim_power>
+            </link>
         </link>
     </model>
 </sdf>

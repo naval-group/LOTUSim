@@ -16,6 +16,7 @@
 #include <gz/sim/Entity.hh>
 #include <algorithm>
 #include <cmath>
+#include <std_msgs/msg/float32.hpp>
 
 namespace lotusim::gazebo
 {
@@ -23,10 +24,11 @@ namespace lotusim::gazebo
  * @brief PowerConsumer for thrusters
  *
  * Thrusters drawnCurrent() computes I = (P * rpm_ratio²) / V 
- * update() reads the current RPM
+ * update() reads the current RPM -> received by subscription
  * using the last voltage received from PowerManager
  * Deactivation is purely logical - m_rpmRatio is set to 0.0 
  * so drawnCurrent() returns 0 immediately
+ * NOTE: no equivalent of CustomSensor exists for thruster yet
  */
 class ThrusterPowerConsumer final : public PowerConsumer{
 public:
@@ -34,39 +36,39 @@ public:
      * @param name      thruster name from SDF name attribute
      * @param nominalW  power draw in Watts from SDF nominal_w
      * @param priority  load shedding priority from SDF priority (default 3)
-     * @param sdf       SDF element for this thruster tag 
+     * @param _sdf      SDF for max_rpm of the thruster 
      * @param node      node from PowerManager
-     * @param ecm       Gazebo EntityComponentManager
+     * @param _ecm       Gazebo EntityComponentManager
      */
     ThrusterPowerConsumer(
         std::string name,
         float nominalW,
         int priority,
-        const sdf::ElementPtr& sdf,
+        const sdf::ElementPtr& _sdf,
         rclcpp::Node::SharedPtr node,
-        gz::sim::EntityComponentManager& ecm)
+        gz::sim::EntityComponentManager& /*_ecm*/)
         : PowerConsumer(std::move(name), nominalW, priority, std::move(node))
-        , m_maxRpm(_sdf->Get<float>("max_rpm", 1000.0f))
+        , m_maxRpm(_sdf->Get<float>("max_rpm", 1000.0f).first)
     {
+        // subscribe to rpm command
+        // @TODO: update the topic if needed
         // resolve the Gazebo joint entity for this thruster by name
-        _ecm.Each<gz::sim::components::Name,
-                  gz::sim::components::JointVelocity>(
-            [&](const gz::sim::Entity& _entity,
-                const gz::sim::components::Name* _nameComp,
-                const gz::sim::components::JointVelocity*) -> bool
+        const std::string topic = this->name() + "/rpm";
+        m_rpmSub = m_node->create_subscription<std_msgs::msg::Float32>(
+            topic,
+            rclcpp::QoS(10),
+            [this](const std_msgs::msg::Float32::SharedPtr msg)
             {
-                if (_nameComp->Data() == this->name()) {
-                    m_thrusterEntity = _entity;
-                    return false; // stop iteration — > found it
+                // ignore RPM commands while deactivated
+                if (!isActive()) {
+                    return;
                 }
-                return true;
+                m_rpmRatio = std::clamp(
+                    msg->data / m_maxRpm, 0.0f, 1.0f);
             });
+        gzmsg << "[ThrusterPowerConsumer] " << this->name()
+              << " subscribed to: " << topic << "\n";
  
-        if (m_thrusterEntity == gz::sim::kNullEntity) {
-            gzwarn << "[ThrusterConsumer] could not find joint entity for: "
-                   << this->name()
-                   << " — RPM will read as 0 until entity is found\n";
-        }
     }
 
     // ----------------------------------------------------------------
@@ -75,7 +77,7 @@ public:
     
     /**
      * @brief Returns I = (nominalPowerW() * rpm_ratio²) / m_voltage
-     *        Returns 0.0 if inactive or bus voltage is zero
+     *        returns 0.0 if inactive or bus voltage is zero
      */
     float drawnCurrent() const override
     {
@@ -87,32 +89,9 @@ public:
     }
 
     /**
-     * @brief Reads current RPM from Gazebo ECM and updates m_rpmRatio
-     *        if the thruster was deactivated, m_rpmRatio stays at 0
+     * @brief no op for now
      */
-    void update(gz::sim::EntityComponentManager& _ecm) override
-    {
-        // if deactivated, hold rpm at zero regardless of ECM state
-        if (!isActive()) {
-            m_rpmRatio = 0.0f;
-            return;
-        }
- 
-        if (m_thrusterEntity == gz::sim::kNullEntity || m_maxRpm <= 0.0f) {
-            return;
-        }
- 
-        const auto* velComp =
-            _ecm.Component<gz::sim::components::JointVelocity>(
-                m_thrusterEntity);
- 
-        if (velComp && !velComp->Data().empty()) {
-            // JointVelocity data is in RPM directly ?????
-            const float currentRpm =
-                static_cast<float>(velComp->Data()[0]);
-            m_rpmRatio = std::clamp(currentRpm / m_maxRpm, 0.0f, 1.0f);
-        }
-    }
+     void update(gz::sim::EntityComponentManager& /*_ecm*/) override {}
 
     /**
      * @brief Deactivates the thruster
@@ -123,17 +102,27 @@ public:
         PowerConsumer::deactivate();
         m_rpmRatio = 0.0f;
         gzmsg << "[ThrusterConsumer] " << name()
-              << " deactivated (logical only, entity intact, rpm = 0)\n";
+              << " deactivated (logic only, entity intact, rpm = 0)\n";
     }
 
     /**
-     * @brief Thruster appeared in ECM —> called by PowerManager via
-     *        _ecm.EachNew when a thruster joint component is detected
-     *        Re-activates the consumer and allows RPM polling to resume
+     * @brief reactivates this thruster after deactivation
+     *        Sets m_active = true 
+     */
+    void reactivate() override
+    {
+        PowerConsumer::reactivate();
+        // m_rpmRatio stays at 0.0 until a new rpm message arrives 
+        gzmsg << "[ThrusterPowerConsumer] " << name()
+              << " reactivated -> awaiting RPM command\n";
+    }
+
+    /**
+     * @brief Thruster appeared in ECM —> calls reactivate()
      */
     void eachNew() override
     {
-        m_active = true;
+        reactivate();
         gzmsg << "[ThrusterConsumer] " << name() << " connected\n";
     }
 
@@ -146,13 +135,12 @@ public:
     {
         PowerConsumer::deactivate();
         m_rpmRatio = 0.0f;
-        m_thrusterEntity = gz::sim::kNullEntity;
         gzmsg << "[ThrusterConsumer] " << name()
               << " removed from simulation\n";
     }
 private:
     float m_maxRpm{1000.0f};
     float m_rpmRatio{0.0f};
-    gz::sim::Entity m_thrusterEntity{gz::sim::kNullEntity};
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_rpmSub;
 };
 } //namespace lotusim::gazebo

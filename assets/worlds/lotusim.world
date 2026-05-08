@@ -52,5 +52,9 @@
 
         <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin" />
 
+        <plugin filename="power_subsystem" 
+            name="lotusim::gazebo::PowerManager">
+        </plugin>
+
     </world>
 </sdf>

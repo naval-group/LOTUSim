@@ -27,6 +27,9 @@ namespace lotusim::gazebo
  * drawnCurrent() simply computes I = P / V using the last voltage
  * received from PowerManager
  *
+ * eachNew()    : sensor appeared in ECM -> calls reactivate()
+ * eachDelete() : sensor physically removed from simulation -> deactivates
+ *
  * SDF:
  *   <sensor name="ais_sensor" type="custom" gz:type="ais"
  *           power_type="sensor" nominal_w="5.0" priority="3">
@@ -40,17 +43,17 @@ public:
      * @param name      sensor name from SDF name attribute
      * @param nominalW  power draw in Watts from SDF nominal_w
      * @param priority  load shedding priority from SDF priority (default 3)
-     * @param sdf       SDF element for this sensor tag 
+     * @param _df       SDF element for this sensor tag 
      * @param node      node from PowerManager
-     * @param ecm       Gazebo EntityComponentManager
+     * @param _ecm      Gazebo EntityComponentManager
      */
     SensorPowerConsumer(
         std::string name,
         float nominalW,
         int priority,
-        const sdf::ElementPtr& sdf,
+        const sdf::ElementPtr& /*_sdf*/,
         rclcpp::Node::SharedPtr node,
-        gz::sim::EntityComponentManager& ecm) 
+        gz::sim::EntityComponentManager& /*_ecm*/) 
         : PowerConsumer(std::move(name), nominalW, priority, std::move(node)){}
 
     // ----------------------------------------------------------------
@@ -58,7 +61,7 @@ public:
     // ----------------------------------------------------------------
     /**
      * @brief Returns I = nominalPowerW() / m_voltage
-     *        Returns 0.0 if inactive or bus voltage is zero
+     *        returns 0.0 if inactive or bus voltage is zero
      */
     float drawnCurrent() const override
     {
@@ -71,12 +74,15 @@ public:
     /**
      * @brief No-op for a fixed-draw sensor
      *        override in future if variable duty cycle is needed
+     *        kept ecm as var just for consistency with thruster_power_consumer
      */
-    void update(gz::sim::EntityComponentManager& ecm) override {}
+    void update(gz::sim::EntityComponentManager& /*_ecm*/) override {}
 
     /**
      * @brief Deactivates the sensor
      *        calls PowerConsumer::deactivate() to set m_active = false
+     *        TODO: publish /vessel_N/sensor_N = OFF so
+     *        nodes know this sensor is no longer powered
      */
     void deactivate() override
     {
@@ -86,21 +92,31 @@ public:
     }
 
     /**
+     * @brief reactivates this sensor 
+     *        called by PowerManager when power recovers
+     *        TODO: publish /vessel_N/sensor_N = ON so
+     *        nodes know this sensor is powered again
+     */
+    void reactivate() override
+    {
+        PowerConsumer::reactivate();
+        gzmsg << "[SensorConsumer] " << name() << " reactivated\n";
+    }
+
+    /**
      * @brief Sensor appeared in ECM —> called by PowerManager via
      *        _ecm.EachNew<gz::sim::components::CustomSensor>()
-     *        Re-activates the consumer if it was previously deactivated,
-     *        for future reactivation logic
+     *        activate for power draw
      */
     void eachNew() override
     {
-        m_active = true;
+        reactivate();
         gzmsg << "[SensorConsumer] " << name() << " connected\n";
     }
 
     /**
-     * @brief Sensor removed from ECM —> called by PowerManager via
-     *        _ecm.EachRemoved<gz::sim::components::CustomSensor>()
-     *        Different from deactivate(): this fires when the sensor entity
+     * @brief Sensor removed from ECM
+     *        different from deactivate(): this fires when the sensor entity
      *        is physically gone from the simulation, not just powered off
      */
     void eachDelete() override
