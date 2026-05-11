@@ -24,15 +24,15 @@
                 <noise_sigma>0.01</noise_sigma>
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>
-            <link name="main_battery">
-                <lotusim_power>
-                    <type>simple_battery</type>
-                    <capacity_ah>100</capacity_ah>
-                    <initial_soc>1.0</initial_soc>
-                    <voltage_min>36.0</voltage_min>
-                    <voltage_nominal>48.0</voltage_nominal>
-                </lotusim_power>
-            </link>
+        </link>
+        <link name="main_battery">
+            <lotusim_power>
+                <type>simple_battery</type>
+                <capacity_ah>100</capacity_ah>
+                <initial_soc>1.0</initial_soc>
+                <voltage_min>36.0</voltage_min>
+                <voltage_nominal>48.0</voltage_nominal>
+            </lotusim_power>
         </link>
     </model>
 </sdf>
