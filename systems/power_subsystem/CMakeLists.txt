@@ -104,7 +104,7 @@ install(
 #============================================================================
 # Export
 #============================================================================
-
+ament_export_targets(export_power_subsystem HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   gz-cmake3
   ament_cmake
