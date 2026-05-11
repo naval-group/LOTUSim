@@ -96,22 +96,38 @@ bool PowerManager::loadVessel(
  
     // check vessel has at least one <lotusim_power> link before creating
     // an instance
-    // bool hasPowerConfig = false;
-    // _ecm.Each<gz::sim::components::Link,
-    //           gz::sim::components::ParentEntity,
-    //           gz::sim::components::Name>(
-    //     [&](const gz::sim::Entity&,
-    //         const gz::sim::components::Link*,
-    //         const gz::sim::components::ParentEntity* _parent,
-    //         const gz::sim::components::Name*) -> bool
-    //     {
-    //         if (_parent->Data() != _entity) {
-    //             return true;
-    //         }
-    //         // checks if this link's SDF has a <lotusim_power> tag
-    //         hasPowerConfig = true;
-    //         return false;
-    //     });
+    const auto* modelSdfComp = _ecm.Component<gz::sim::components::ModelSdf>(_entity);
+    if (!modelSdfComp) {
+        m_logger->error(
+            "PowerManagerInstance [{}]: no ModelSdf component found", vesselName);
+        return false;
+    }
+
+    // Walk <link> elements in the SDF
+    const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
+    if (!modelEl) {
+        m_logger->error(
+            "PowerManagerInstance [{}]: ModelSdf has no element", vesselName);
+        return false;
+    }
+
+    bool hasPowerConfig = false;
+    auto linkEl = modelEl->GetElement("link");
+    while (linkEl) {
+        // Check for <lotusim_power> tag
+        if (linkEl->HasElement("lotusim_power")) {
+            hasPowerConfig = true;
+            break;
+        }
+        linkEl = linkEl->GetNextElement("link");
+    }
+
+    if (!hasPowerConfig) {
+        m_logger->warn(
+            "PowerManager::loadVessel [{}]: no <lotusim_power> tag found, skipping PowerManager creation",
+            vesselName);
+        return false;
+    }
  
     // creates per-vessel node
     auto vesselNode = rclcpp::Node::make_shared(
