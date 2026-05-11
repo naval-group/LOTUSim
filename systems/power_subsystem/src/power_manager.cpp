@@ -66,7 +66,7 @@ void PowerManager::Update(
  
     // ── Tick all active vessel instances ──────────────────────────────
     for (auto& [entity, instance] : m_vessel_instances) {
-        instance->update(_info, _ecm);
+        instance->Update(_info, _ecm);
     }
 }
 
@@ -96,22 +96,22 @@ bool PowerManager::loadVessel(
  
     // check vessel has at least one <lotusim_power> link before creating
     // an instance
-    bool hasPowerConfig = false;
-    _ecm.Each<gz::sim::components::Link,
-              gz::sim::components::ParentEntity,
-              gz::sim::components::Name>(
-        [&](const gz::sim::Entity&,
-            const gz::sim::components::Link*,
-            const gz::sim::components::ParentEntity* _parent,
-            const gz::sim::components::Name*) -> bool
-        {
-            if (_parent->Data() != _entity) {
-                return true;
-            }
-            // checks if this link's SDF has a <lotusim_power> tag
-            hasPowerConfig = true;
-            return false;
-        });
+    // bool hasPowerConfig = false;
+    // _ecm.Each<gz::sim::components::Link,
+    //           gz::sim::components::ParentEntity,
+    //           gz::sim::components::Name>(
+    //     [&](const gz::sim::Entity&,
+    //         const gz::sim::components::Link*,
+    //         const gz::sim::components::ParentEntity* _parent,
+    //         const gz::sim::components::Name*) -> bool
+    //     {
+    //         if (_parent->Data() != _entity) {
+    //             return true;
+    //         }
+    //         // checks if this link's SDF has a <lotusim_power> tag
+    //         hasPowerConfig = true;
+    //         return false;
+    //     });
  
     // creates per-vessel node
     auto vesselNode = rclcpp::Node::make_shared(

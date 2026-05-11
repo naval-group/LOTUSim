@@ -92,7 +92,7 @@ public:
     /**
      * @brief Called every Gazebo tick by PowerManager world plugin
      */
-    void update(
+    void Update(
         const gz::sim::UpdateInfo& _info,
         gz::sim::EntityComponentManager& _ecm);
  
@@ -108,13 +108,13 @@ private:
      * @brief Walks links of the vessel and finds <lotusim_power> tag 
      *        SDF order = priority order
      */
-    void parsePowerProviders(gz::sim::EntityComponentManager& _ecm);
+    bool parsePowerProviders(gz::sim::EntityComponentManager& _ecm);
 
     /**
      * @brief for each sensor with a power_type attribute, constructs the
      *        appropriate PowerConsumer subclass
      */
-    void parsePowerConsumers(gz::sim::EntityComponentManager& _ecm);
+    bool parsePowerConsumers(gz::sim::EntityComponentManager& _ecm);
 
     /**
      * @brief Walks m_batteries from m_activeBatteryIndex forward
@@ -135,6 +135,14 @@ private:
     bool matchesEntity(
         const std::string& consumerName,
         const gz::sim::Entity& _entity,
+        gz::sim::EntityComponentManager& _ecm) const;
+
+    /**
+     * @brief Returns true if the link's parent matches the vessel
+     */
+    bool isChildOfVessel(
+        const gz::sim::Entity& /*_entity*/,
+        const gz::sim::Entity& parentEntity,
         gz::sim::EntityComponentManager& _ecm) const;
 
     //
