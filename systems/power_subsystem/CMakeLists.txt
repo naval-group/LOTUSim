@@ -71,16 +71,13 @@ target_include_directories(power_subsystem
 )
 
 target_link_libraries(power_subsystem
-  PUBLIC
     gz-sim8::gz-sim8
+    gz-plugin2::gz-plugin2
     gz-common5::gz-common5
     sdformat14::sdformat14
-    gz-plugin2::gz-plugin2
-    gz-plugin2::register
 )
 
 ament_target_dependencies(power_subsystem 
-  PUBLIC
   rclcpp
   lotusim_common
   std_msgs
@@ -90,16 +87,20 @@ ament_target_dependencies(power_subsystem
 # Install the files for this package
 #============================================================================
 install(
-  TARGETS power_subsystem
-  EXPORT  export_power_subsystem
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION bin
+  DIRECTORY include/
+  DESTINATION include
+  FILES_MATCHING
+  PATTERN "*.hpp"
+  PATTERN "*.h"
 )
 
 install(
-  DIRECTORY include/
-  DESTINATION include
+  TARGETS power_subsystem
+  EXPORT  export_power_subsystem
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
 #============================================================================
@@ -107,12 +108,13 @@ install(
 #============================================================================
 ament_export_targets(export_power_subsystem HAS_LIBRARY_TARGET)
 ament_export_dependencies(
-  gz-cmake3
-  ament_cmake
   rclcpp
   lotusim_common
   gz-sim8
   gz-plugin2
+  gz-transport13
+  sdformat14
+  gz-common5
 )
 
 ament_export_targets(
