@@ -53,13 +53,6 @@ PowerManagerInstance::PowerManagerInstance(
             m_vessel_name);
         return;
     }
-    // TOO EARLY
-    // if (!parsePowerConsumers(_ecm)) {
-    //     m_logger->error(
-    //         "PowerManagerInstance [{}]: failed to parse power consumers",
-    //         m_vessel_name);
-    //     return;
-    // }
  
     m_logger->info(
         "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies]",

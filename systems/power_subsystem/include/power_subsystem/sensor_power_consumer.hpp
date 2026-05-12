@@ -32,8 +32,12 @@ namespace lotusim::gazebo
  * eachDelete() : sensor physically removed from simulation -> deactivates
  *
  * SDF:
- *   <sensor name="ais_sensor" type="custom" gz:type="ais"
- *           power_type="sensor" nominal_w="5.0" priority="3">
+ *   <sensor name="ais_sensor" type="custom" gz:type="ais">
+ *      <lotusim_power>
+ *          <power_type>sensor</power_type>
+ *          <nominal_w>3.0</nominal_w>
+ *          <priority>4</priority>
+ *      </lotusim_power>
  *     ...
  *   </sensor>
  */

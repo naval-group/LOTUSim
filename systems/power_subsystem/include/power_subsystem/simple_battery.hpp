@@ -3,6 +3,8 @@
 #include "power_subsystem/battery.hpp"
 
 #include <gz/common/Console.hh>
+#include "lotusim_common/common.hpp"
+#include "lotusim_common/logger.hpp"
 
 namespace lotusim::gazebo
 {
@@ -42,7 +44,11 @@ public:
             _sdf->Get<float>("initial_soc",      1.0f).first,
             _sdf->Get<float>("voltage_min",     36.0f).first)
         , m_voltage(_sdf->Get<float>("voltage_nominal", 48.0f).first)
-    {}
+    {
+        m_logger = logger::createConsoleAndFileLogger(
+            "simpleBattery_" + Battery::name(),
+            "simpleBattery_" + Battery::name() + ".txt");
+    }
 
     // ----------------------------------------------------------------
     // Battery interface
@@ -73,6 +79,8 @@ private:
 
     // full-charge voltage from SDF voltage_nominal
     float m_voltageNominal{48.0f};
+
+    std::shared_ptr<spdlog::logger> m_logger;
 };
 
 } // namespace lotusim::gazebo

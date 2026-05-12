@@ -15,8 +15,17 @@ GZ_ADD_PLUGIN(
 namespace lotusim::gazebo
 {
 
-PowerManager::PowerManager() = default;
-PowerManager::~PowerManager() = default;
+PowerManager::PowerManager()
+{
+    if (!rclcpp::ok()) {
+        rclcpp::init(0, nullptr);
+    }
+}
+PowerManager::~PowerManager()
+{
+    m_logger->info(
+        "PowerManager::~PowerManager: PowerManager successfully shutdown.");
+}
 
 void PowerManager::Configure(
     const gz::sim::Entity& _entity,
