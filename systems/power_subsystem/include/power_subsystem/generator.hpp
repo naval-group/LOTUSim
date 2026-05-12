@@ -169,6 +169,5 @@ protected:
 
     // stable output voltage from SDF voltage_nominal (V)
     float m_voltageNominal{0.0f};
-}
-
-}
+};
+} // namespace lotusim::gazebo
