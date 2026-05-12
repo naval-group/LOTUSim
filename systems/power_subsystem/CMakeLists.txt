@@ -62,6 +62,7 @@ add_library(power_subsystem
 SHARED
 src/power_manager.cpp
 src/power_manager_instance.cpp
+src/simple_battery.cpp
 )
 target_include_directories(power_subsystem
   PUBLIC

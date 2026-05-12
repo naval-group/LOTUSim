@@ -52,30 +52,19 @@ public:
      * @brief Drains voltage proportionally to current load over dt
      *        stub for FMU call — replace when wrapper is available -----------------
      */
-    void receiveLoad(float currentA, float dt) override
-    {
-        m_voltage -= (currentA * dt) / m_capacityAh;
-        m_voltage  = std::max(m_voltage, m_voltageMin);
-    }
+    void receiveLoad(float currentA, float dt) override;
 
     /**
      * @brief returns last computed voltage (V)
      *        real implementation reads from FMU output.
      */
-    float voltage() const override
-    {
-        return m_voltage;
-    }
+    float voltage() const override;
 
     /**
      * @brief Charges battery by increasing voltage toward nominal
      *        stub for FMU call, replace when wrapper is available     
      */
-    void receiveCharge(float currentA, float dt) override
-    {
-        m_voltage += (currentA * dt) / m_capacityAh;
-        m_voltage  = std::min(m_voltage, m_voltageNominal);
-    }
+    void receiveCharge(float currentA, float dt) override;
 
 private:
     // current battery voltage: starts at voltage_nominal, drains toward

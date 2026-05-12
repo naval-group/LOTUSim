@@ -90,7 +90,6 @@ void PowerManagerInstance::Update(
     // EachNew fires when a CustomSensor component appears in the ECM
     // EachRemoved fires when one is removed
     // Thrusters: no component equivalent yet 
-    //  ---------------- is it the best way??
     _ecm.EachNew<gz::sim::components::CustomSensor,
                  gz::sim::components::ParentEntity>(
         [&](const gz::sim::Entity& _entity,
@@ -196,8 +195,7 @@ void PowerManagerInstance::Update(
  
         if (!updateActiveProvider()) {
             // All batteries depleted -> cut power to all consumers
-            m_logger->warn("PowerManagerInstance [{}]: all batteries depleted ", 
-                           "— cutting power",
+            m_logger->warn("PowerManagerInstance [{}]: all batteries depleted cutting power",
                             m_vessel_name);
             for (auto& consumer : m_consumers) {
                 consumer->deactivate();
@@ -259,8 +257,7 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
 
         if (!powerSdf->HasElement("type")) {
             m_logger->error(
-                "PowerManagerInstance [{}]: link [{}] has <lotusim_power> "
-                "but missing required <type> -> skipping",
+                "PowerManagerInstance [{}]: link [{}] has <lotusim_power> but missing required <type> -> skipping",
                 m_vessel_name, linkName);
                 linkEl = linkEl->GetNextElement("link");
             continue;
@@ -273,8 +270,7 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
                 std::make_unique<SimpleBattery>(linkName, powerSdf, m_node));
         } else {
             m_logger->error(
-                "PowerManagerInstance [{}]: unknown provider type '{}' "
-                "on link [{}] -> skipping",
+                "PowerManagerInstance [{}]: unknown provider type '{}' on link [{}] -> skipping",
                 m_vessel_name, type, linkName);
             linkEl = linkEl->GetNextElement("link");
             continue;
@@ -349,14 +345,12 @@ bool PowerManagerInstance::parsePowerConsumers(
                     name, nominalW, priority, sdfEl, m_node, _ecm));
  
                 m_logger->info(
-                    "PowerManagerInstance [{}]: registered sensor consumer "
-                    "[{}] nominal_w={} priority={}",
+                    "PowerManagerInstance [{}]: registered sensor consumer [{}] nominal_w={} priority={}",
                     m_vessel_name, name, nominalW, priority);
  
             } else {
                 m_logger->warn(
-                    "PowerManagerInstance [{}]: unknown power_type '{}' "
-                    "on sensor [{}] -> skipping",
+                    "PowerManagerInstance [{}]: unknown power_type '{}' on sensor [{}] -> skipping",
                     m_vessel_name, powerType, name);
             }
  

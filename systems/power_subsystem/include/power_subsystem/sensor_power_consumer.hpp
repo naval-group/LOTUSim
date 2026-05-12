@@ -16,14 +16,15 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Sensor.hh>
 #include <gz/common/Console.hh>
+#include "lotusim_common/common.hpp"
 
 namespace lotusim::gazebo
 {
 
 /**
- * @brief PowerConsumer for sensors -> fixed power draw
+ * @brief PowerConsumer for fixed power draw sensors
  *
- * Sensors draw a stable nominal_w regardless of what it is doing
+ * Sensors draw a stable nominal_w regardless of ops
  * drawnCurrent() simply computes I = P / V using the last voltage
  * received from PowerManager
  *
@@ -40,12 +41,12 @@ class SensorPowerConsumer final : public PowerConsumer
 {
 public:
     /**
-     * @param name      sensor name from SDF name attribute
+     * @param name      sensor name from SDF
      * @param nominalW  power draw in Watts from SDF nominal_w
      * @param priority  load shedding priority from SDF priority (default 3)
-     * @param _df       SDF element for this sensor tag 
+     * @param _sdf      SDF element : for future implementation
      * @param node      node from PowerManager
-     * @param _ecm      Gazebo EntityComponentManager
+     * @param _ecm      Gazebo ECM
      */
     SensorPowerConsumer(
         std::string name,
@@ -54,14 +55,19 @@ public:
         const sdf::ElementPtr& /*_sdf*/,
         rclcpp::Node::SharedPtr node,
         gz::sim::EntityComponentManager& /*_ecm*/) 
-        : PowerConsumer(std::move(name), nominalW, priority, std::move(node)){}
+        : PowerConsumer(std::move(name), nominalW, priority, std::move(node))
+    {
+        m_logger = logger::createConsoleAndFileLogger(
+            "sensor_" + this->name(),
+            "sensor_" + this->name() + ".txt");
+    }
 
     // ----------------------------------------------------------------
     // PowerConsumer interface
     // ----------------------------------------------------------------
     /**
      * @brief Returns I = nominalPowerW() / m_voltage
-     *        returns 0.0 if inactive or bus voltage is zero
+     *        returns 0.0 if inactive or voltage is zero
      */
     float drawnCurrent() const override
     {
@@ -74,12 +80,11 @@ public:
     /**
      * @brief No-op for a fixed-draw sensor
      *        override in future if variable duty cycle is needed
-     *        kept ecm as var just for consistency with thruster_power_consumer
      */
     void update(gz::sim::EntityComponentManager& /*_ecm*/) override {}
 
     /**
-     * @brief Deactivates the sensor
+     * @brief Deactivates the sensor -> only its power
      *        calls PowerConsumer::deactivate() to set m_active = false
      *        TODO: publish /vessel_N/sensor_N = OFF so
      *        nodes know this sensor is no longer powered
@@ -87,8 +92,7 @@ public:
     void deactivate() override
     {
         PowerConsumer::deactivate();
-        gzmsg << "[SensorConsumer] " << name()
-              << " deactivated (logical only — entity intact)\n";
+        m_logger->info( "[SensorPowerConsumer] {} deactivated (logic only)", name());
     }
 
     /**
@@ -100,7 +104,7 @@ public:
     void reactivate() override
     {
         PowerConsumer::reactivate();
-        gzmsg << "[SensorConsumer] " << name() << " reactivated\n";
+        m_logger->info( "[SensorPowerConsumer] {} reactivated", name());
     }
 
     /**
@@ -111,7 +115,7 @@ public:
     void eachNew() override
     {
         reactivate();
-        gzmsg << "[SensorConsumer] " << name() << " connected\n";
+        m_logger->info( "[SensorPowerConsumer] {} connected", name());
     }
 
     /**
@@ -122,10 +126,10 @@ public:
     void eachDelete() override
     {
         PowerConsumer::deactivate();
-        gzmsg << "[SensorConsumer] " << name()
-              << " removed from simulation\n";
+        m_logger->info( "[SensorPowerConsumer] {} removed from simulation", name());
     }
 
+private:
+    std::shared_ptr<spdlog::logger> m_logger;
 };
-
 } // namespace lotusim::power_subsystem
