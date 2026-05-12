@@ -31,7 +31,6 @@ public:
     /**
      * @brief returns the current health level based on voltage output
      *        thresholds are computed from voltage_min in SDF
-     *
      *   NORMAL   : voltage > voltage_min * 1.15   (>15% above min)
      *   WARN     : voltage_min * 1.05 < v <= voltage_min * 1.15
      *   CRITICAL : voltage_min < v <= voltage_min * 1.05  (<5% above min)

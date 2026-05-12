@@ -40,9 +40,9 @@ public:
         : Battery(
             std::move(name),
             std::move(node),
-            _sdf->Get<float>("capacity_ah",    100.0f).first,
-            _sdf->Get<float>("initial_soc",      1.0f).first,
-            _sdf->Get<float>("voltage_min",     36.0f).first)
+            _sdf->Get<float>("capacity_ah", 100.0f).first,
+            _sdf->Get<float>("initial_soc", 1.0f).first,
+            _sdf->Get<float>("voltage_min", 36.0f).first)
         , m_voltage(_sdf->Get<float>("voltage_nominal", 48.0f).first)
     {
         m_logger = logger::createConsoleAndFileLogger(
