@@ -33,7 +33,8 @@ namespace lotusim::gazebo
  */
 class PowerManager : public gz::sim::System,
                      public gz::sim::ISystemConfigure,
-                     public gz::sim::ISystemUpdate
+                     public gz::sim::ISystemUpdate,
+                     public gz::sim::ISystemPostUpdate
 {
 public:
     PowerManager();
@@ -47,6 +48,13 @@ public:
         const std::shared_ptr<const sdf::Element>& _sdf,
         gz::sim::EntityComponentManager& _ecm,
         gz::sim::EventManager& _eventMgr) override;
+
+    /**
+     * @brief updates a vessel consumers once loaded in
+     */
+    void PostUpdate(
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm) override;
 
     /**
      * @brief Detects vessel spawns/despawns and act on all instances

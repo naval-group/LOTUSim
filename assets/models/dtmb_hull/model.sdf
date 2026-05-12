@@ -19,7 +19,12 @@
                 <always_on>1</always_on>
                 <update_rate>100</update_rate>
             </sensor>
-            <sensor name="ais" type="custom" gz:type="ais" power_type="sensor" nominal_w="5.0" priority="3">
+            <sensor name="ais" type="custom" gz:type="ais">
+                <lotusim_power>
+                    <power_type>sensor</power_type>
+                    <nominal_w>5.0</nominal_w>
+                    <priority>3</priority>
+                </lotusim_power>
                 <update_rate>1</update_rate>
                 <noise_sigma>0.01</noise_sigma>
                 <noise_amplitude>0.01</noise_amplitude>

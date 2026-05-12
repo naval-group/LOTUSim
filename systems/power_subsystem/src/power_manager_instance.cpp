@@ -53,38 +53,57 @@ PowerManagerInstance::PowerManagerInstance(
             m_vessel_name);
         return;
     }
-
-    if (!parsePowerConsumers(_ecm)) {
-        m_logger->error(
-            "PowerManagerInstance [{}]: failed to parse power consumers",
-            m_vessel_name);
-        return;
-    }
+    // TOO EARLY
+    // if (!parsePowerConsumers(_ecm)) {
+    //     m_logger->error(
+    //         "PowerManagerInstance [{}]: failed to parse power consumers",
+    //         m_vessel_name);
+    //     return;
+    // }
  
     m_logger->info(
-        "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies], {} consumer(s)",
-        m_vessel_name, m_providers.size(), m_batteries.size(), m_consumers.size()
+        "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies]",
+        m_vessel_name, m_providers.size(), m_batteries.size()
     );
 }
 
+void PowerManagerInstance::PostUpdate(
+    const gz::sim::UpdateInfo& /*_info*/,
+    const gz::sim::EntityComponentManager& _ecm)
+{
+    if (!m_consumers_parsed) {
+        parsePowerConsumers(const_cast<gz::sim::EntityComponentManager&>(_ecm));
+        // only mark as done once we actually found consumers
+        if (!m_consumers.empty()) {
+            m_consumers_parsed = true;
+            m_logger->info(
+                "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies], {} consumer(s)",
+                m_vessel_name, m_providers.size(), m_batteries.size(), m_consumers.size()
+            );
+        } else {
+            m_logger->debug(
+                "PowerManagerInstance [{}]: no consumers yet, will retry next tick",
+                m_vessel_name);
+        }
+        return;
+    }
+}
 
 void PowerManagerInstance::Update(
     const gz::sim::UpdateInfo& _info,
     gz::sim::EntityComponentManager& _ecm)
 {
-    // dt in seconds —> needed by receiveLoad() for fuel/soc integration
-    const float dt = static_cast<float>(std::chrono::duration<double>(_info.dt).count());
-
     // ── Guard ─────────────────────────────────────────────────────────
-    // if (m_providers.empty()){
-    //     m_logger->info("PowerManagerInstance: Vessel {} has no power providers configured.", m_vessel_name);
-    //     return;
-    // }
-    // replace once implemented!
+    // wait until consumers and batteries are parsed
 
+    if (!m_consumers_parsed) {
+        return;
+    }
     if (m_batteries.empty()) {
         return;
     }
+
+     const float dt = static_cast<float>(std::chrono::duration<double>(_info.dt).count());
 
     // ── Step 1: topology change callbacks ─────────────────────────────
     // EachNew fires when a CustomSensor component appears in the ECM
@@ -208,7 +227,6 @@ void PowerManagerInstance::Update(
                         m_batteries[m_activeBatteryIndex]->name());
     }
  
-
     // ── Step 5: shed loads based on PowerLevel ───────
     shedLoadsIfNeeded(level);
 
@@ -299,23 +317,54 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
     return true;    
 }
 
+sdf::ElementPtr PowerManagerInstance::findRawSensorElement(
+    const sdf::ElementPtr& modelEl,
+    const std::string& sensorName)
+{
+    auto linkEl = modelEl->GetElement("link");
+    while (linkEl) {
+        auto sensorEl = linkEl->GetElement("sensor");
+        while (sensorEl) {
+            if (sensorEl->GetAttribute("name") &&
+                sensorEl->GetAttribute("name")->GetAsString() == sensorName) {
+                return sensorEl;  // raw element with all custom attributes intact
+            }
+            sensorEl = sensorEl->GetNextElement("sensor");
+        }
+        linkEl = linkEl->GetNextElement("link");
+    }
+    return nullptr;
+}
+
 bool PowerManagerInstance::parsePowerConsumers(
     gz::sim::EntityComponentManager& _ecm)
 {
+    // clear before re-parsing to avoid duplicates on retry
+    m_consumers.clear();
+    // get SDF
+    const auto* modelSdfComp = _ecm.Component<gz::sim::components::ModelSdf>(m_vessel_entity);
+    if (!modelSdfComp) {
+        m_logger->error(
+            "PowerManagerInstance [{}]: no ModelSdf component found",
+            m_vessel_name);
+        return false;
+    }
+    const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
+    if (!modelEl) {
+        m_logger->error(
+            "PowerManagerInstance [{}]: ModelSdf has no element",
+            m_vessel_name);
+        return false;
+    }
     // ── Sensors ───────────────────────────────────────────────────────
     // Walk all CustomSensor entities in the ECM
     // For each one, walk up the parent chain to confirm it belongs to
     // this vessel. If it has a power_type attribute, register as consumer
-    // Priority level: 
-    // 1 = safety critical         - never shed   e.g.: navigation, emergency light
-    // 2 = operationally important - only shed for last resort
-    // 3 = mission systems
-    // 4 = non-essential           - shed first
     _ecm.Each<gz::sim::components::CustomSensor,
               gz::sim::components::ParentEntity,
               gz::sim::components::Name>(
         [&](const gz::sim::Entity& /*_entity*/,
-            const gz::sim::components::CustomSensor* _custom,
+            const gz::sim::components::CustomSensor* /*_custom*/,
             const gz::sim::components::ParentEntity* _parent,
             const gz::sim::components::Name* _name) -> bool
         {
@@ -326,23 +375,38 @@ bool PowerManagerInstance::parsePowerConsumers(
             }
  
             // get power_type attribute from SDF
-            const sdf::Sensor& sdfSensor = _custom->Data();
-            const sdf::ElementPtr sdfEl  = sdfSensor.Element();
- 
-            if (!sdfEl || !sdfEl->HasAttribute("power_type")) {
-                return true; // no power config, skip silently
-            }
- 
-            const std::string powerType = sdfEl->Get<std::string>("power_type");
             const std::string name = _name->Data();
-            const float nominalW = sdfEl->Get<float>("nominal_w", 1.0f).first;
-            const int priority = sdfEl->Get<int>("priority", 3).first;
+            const sdf::ElementPtr rawSensorEl = findRawSensorElement(modelEl, name);
+            if (!rawSensorEl) {
+                m_logger->warn(
+                    "PowerManagerInstance [{}]: could not find raw SDF element for sensor [{}]",
+                    m_vessel_name, name);
+                return true;
+            }
+
+            if (!rawSensorEl->HasElement("lotusim_power")) {
+                m_logger->warn(
+                    "PowerManagerInstance [{}]: sensor [{}] does not have power_type -> skipping",
+                    m_vessel_name, name);
+                return true; // not a power-managed sensor, skip silently
+            }
+
+            const sdf::ElementPtr powerEl = rawSensorEl->GetElement("lotusim_power");
+            const std::string powerType = powerEl->Get<std::string>("power_type", "").first;
+            const float nominalW = powerEl->Get<float>("nominal_w", 1.0f).first;
+            const int priority = powerEl->Get<int>("priority", 3).first;
  
-            // construction 
+            if (powerType.empty()) {
+                m_logger->warn(
+                    "PowerManagerInstance [{}]: sensor [{}] has <lotusim_power> but "
+                    "missing <power_type> -> skipping",
+                    m_vessel_name, name);
+                return true;
+            }
             // add else-if for new consumer type
             if (powerType == "sensor") {
                 m_consumers.push_back(std::make_unique<SensorPowerConsumer>(
-                    name, nominalW, priority, sdfEl, m_node, _ecm));
+                    name, nominalW, priority, rawSensorEl, m_node, _ecm));
  
                 m_logger->info(
                     "PowerManagerInstance [{}]: registered sensor consumer [{}] nominal_w={} priority={}",
@@ -362,20 +426,6 @@ bool PowerManagerInstance::parsePowerConsumers(
     // walk all links belonging to this vessel looking for <thruster> tags
     // that carry power config
     // No dedicated thruster ECM component exists yet 
-    const auto* modelSdfComp = _ecm.Component<gz::sim::components::ModelSdf>(m_vessel_entity);
-    if (!modelSdfComp) {
-        m_logger->error(
-            "PowerManagerInstance [{}]: no ModelSdf component found",
-            m_vessel_name);
-        return false;
-    }
-    const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
-    if (!modelEl) {
-        m_logger->error(
-            "PowerManagerInstance [{}]: ModelSdf has no element, cannot parse thrusters",
-            m_vessel_name);
-        return false;
-    }
 
     // Walk all <link> elements in the model SDF
     auto linkEl = modelEl->GetElement("link");
@@ -396,8 +446,7 @@ bool PowerManagerInstance::parsePowerConsumers(
             const float nominalW = thrusterEl->Get<float>("nominal_w", 1.0f).first;
             const int priority = thrusterEl->Get<int>("priority", 2).first;
  
-            m_consumers.push_back(
-                std::make_unique<ThrusterPowerConsumer>(
+            m_consumers.push_back(std::make_unique<ThrusterPowerConsumer>(
                     thrusterName, nominalW, priority,
                     thrusterEl, m_node, _ecm));
  
@@ -456,6 +505,11 @@ bool PowerManagerInstance::updateActiveProvider(){
 // }
 
 void PowerManagerInstance::shedLoadsIfNeeded(const PowerLevel level){
+    // Priority level: 
+    // 1 = safety critical         - never shed   e.g.: navigation, emergency light
+    // 2 = operationally important - only shed for last resort
+    // 3 = mission systems
+    // 4 = non-essential           - shed first
     // NORMAL -> no shedding needed
     if (level == PowerLevel::NORMAL || level == PowerLevel::DEPLETED) {
         return;

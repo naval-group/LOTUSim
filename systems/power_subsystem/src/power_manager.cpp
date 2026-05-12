@@ -9,7 +9,8 @@ GZ_ADD_PLUGIN(
     lotusim::gazebo::PowerManager,
     gz::sim::System,
     gz::sim::ISystemConfigure,
-    gz::sim::ISystemUpdate)
+    gz::sim::ISystemUpdate,
+    gz::sim::ISystemPostUpdate)
  
 namespace lotusim::gazebo
 {
@@ -38,6 +39,15 @@ void PowerManager::Configure(
         m_world_name);
  
     m_logger->info("PowerManager::Configure: power subsystem started for world [{}]", m_world_name);
+}
+
+void PowerManager::PostUpdate(
+    const gz::sim::UpdateInfo& _info,
+    const gz::sim::EntityComponentManager& _ecm)
+{
+    for (auto& [entity, instance] : m_vessel_instances) {
+        instance->PostUpdate(_info, _ecm);
+    }
 }
 
 void PowerManager::Update(
@@ -133,13 +143,13 @@ bool PowerManager::loadVessel(
     auto vesselNode = rclcpp::Node::make_shared(
         vesselName + "_power",
         m_world_name);
+
+    m_logger->info("PowerManager::loadVessel: registered vessel [{}]", vesselName);
  
     // instance & constructor parses providers and consumers from ECM
     auto instance = std::make_unique<PowerManagerInstance>(_entity, vesselName, vesselNode, _ecm);
  
     m_vessel_instances.emplace(_entity, std::move(instance));
- 
-    m_logger->info("PowerManager::loadVessel: registered vessel [{}]", vesselName);
  
     return true;
 }

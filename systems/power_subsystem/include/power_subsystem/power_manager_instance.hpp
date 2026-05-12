@@ -95,6 +95,13 @@ public:
     void Update(
         const gz::sim::UpdateInfo& _info,
         gz::sim::EntityComponentManager& _ecm);
+
+    /**
+     * @brief read sensors as declared through ECM -> need more time
+     */
+    void PostUpdate(
+        const gz::sim::UpdateInfo& _info,
+        const gz::sim::EntityComponentManager& _ecm);
  
     // for logging and topic
     const std::string& vesselName() const { return m_vessel_name; }
@@ -104,6 +111,13 @@ private:
     // helpers 
     // ----------------------------------------------------------------
 
+    /**
+     * @brief look directly at the SDF
+     */
+    static sdf::ElementPtr findRawSensorElement(
+        const sdf::ElementPtr& modelEl,
+        const std::string& sensorName);
+        
     /**
      * @brief Walks links of the vessel and finds <lotusim_power> tag 
      *        SDF order = priority order
@@ -144,6 +158,11 @@ private:
         const gz::sim::Entity& /*_entity*/,
         const gz::sim::Entity& parentEntity,
         gz::sim::EntityComponentManager& _ecm) const;
+
+    /**
+     * @brief to give time to gazebo to load in the sensors
+     */
+    bool m_consumers_parsed{false};
 
     //
     //
