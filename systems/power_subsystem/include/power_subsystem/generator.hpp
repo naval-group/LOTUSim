@@ -74,7 +74,7 @@ public:
      */
     float availablePowerW() const override
     {
-        return m_ratedOutputW * fuelRatio();
+        return m_rated_output_W * fuelRatio();
     }
 
     /**
@@ -87,7 +87,7 @@ public:
      */
     float voltage() const override
     {
-        return isDepleted() ? 0.0f : m_voltageNominal;
+        return isDepleted() ? 0.0f : m_voltage_nominal;
     }
 
     /**
@@ -102,9 +102,9 @@ public:
     float surplusChargingCurrent(float busCurrentA) const
     {
         if (isDepleted()) { return 0.0f; }
-        const float demandW  = busCurrentA * m_voltageNominal;
-        const float surplusW = m_ratedOutputW - demandW;
-        return surplusW > 0.0f ? (surplusW / m_voltageNominal) : 0.0f;
+        const float demandW  = busCurrentA * m_voltage_nominal;
+        const float surplusW = m_rated_output_W - demandW;
+        return surplusW > 0.0f ? (surplusW / m_voltage_nominal) : 0.0f;
     }
 
     // ----------------------------------------------------------------
@@ -118,7 +118,7 @@ public:
      * @param currentA  total current drawn from this generator (A)
      * @param dt        elapsed simulation time since last tick (s)
      */
-    void receiveLoad(float currentA, float dt) override =
+    void receiveLoad(float currentA, float dt) override = 0;
 
 
 protected:
@@ -136,38 +136,43 @@ protected:
     Generator(
         std::string name,
         rclcpp::Node::SharedPtr node,
-        float fuel_capacity,     
-        float fuel_level_start, 
+        float fuel_level_start,
+        float fuel_capacity,      
         float rated_output_w,
         float efficiency,
-        float voltage_nominal)
+        float voltage_nominal,
+        std::string fuel_type)
         : PowerProvider(std::move(name), std::move(node))
-        , m_fuelCapacity(fuel_capacity)
-        , m_fuelLevel(fuel_level_start)
-        , m_ratedOutputW(rated_output_w)
+        , m_fuel_level(fuel_level_start)
+        , m_fuel_capacity(fuel_capacity)
+        , m_rated_output_W(rated_output_w)
         , m_efficiency(efficiency)
-        , m_voltageNominal(voltage_nominal)
+        , m_voltage_nominal(voltage_nominal)
+        , m_fuel_type(fuel_type)
     {}
 
     float fuelRatio() const
     {
-        if (m_fuelCapacity <= 0.0f) { return 0.0f; }
-        return m_fuelLevel / m_fuelCapacity;  
+        if (m_fuel_capacity <= 0.0f) { return 0.0f; }
+        return m_fuel_level / m_fuel_capacity;  
     }
 
     // current fuel level
-    float m_fuelLevel{0.0f};
+    float m_fuel_level{0.0f};
 
     // full tank capacity
-    float m_fuelCapacity{0.0f};
+    float m_fuel_capacity{0.0f};
 
     // maximum continuous power output from SDF rated_output_w (W)
-    float m_ratedOutputW{0.0f};
+    float m_rated_output_W{0.0f};
 
     // fuel-to-electrical conversion ratio from SDF efficiency (0.0–1.0)
     float m_efficiency{1.0f};
 
     // stable output voltage from SDF voltage_nominal (V)
-    float m_voltageNominal{0.0f};
+    float m_voltage_nominal{0.0f};
+
+    // fuel type -> different consumption
+    std::string m_fuel_type;
 };
 } // namespace lotusim::gazebo

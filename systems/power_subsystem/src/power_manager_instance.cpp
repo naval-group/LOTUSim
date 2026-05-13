@@ -24,6 +24,9 @@
 
 // PowerProvider subclasses
 #include "power_subsystem/simple_battery.hpp"
+#include "power_subsystem/battery.hpp"
+#include "power_subsystem/generator.hpp"
+#include "power_subsystem/simple_generator.hpp"
 
 
 // PowerConsumer subclasses
@@ -70,8 +73,8 @@ void PowerManagerInstance::PostUpdate(
         if (!m_consumers.empty()) {
             m_consumers_parsed = true;
             m_logger->info(
-                "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies], {} consumer(s)",
-                m_vessel_name, m_providers.size(), m_batteries.size(), m_consumers.size()
+                "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies], [{} generator/s], {} consumer(s)",
+                m_vessel_name, m_providers.size(), m_batteries.size(), m_generators.size(), m_consumers.size()
             );
         } else {
             m_logger->debug(
@@ -99,16 +102,12 @@ void PowerManagerInstance::Update(
      const float dt = static_cast<float>(std::chrono::duration<double>(_info.dt).count());
 
     // ── Step 1: topology change callbacks ─────────────────────────────
-    // EachNew fires when a CustomSensor component appears in the ECM
-    // EachRemoved fires when one is removed
-    // Thrusters: no component equivalent yet 
     _ecm.EachNew<gz::sim::components::CustomSensor,
                  gz::sim::components::ParentEntity>(
         [&](const gz::sim::Entity& _entity,
             const gz::sim::components::CustomSensor*,
             const gz::sim::components::ParentEntity* _parent) -> bool
         {
-            // check if this sensor belongs to our vessel
             if (!isChildOfVessel(_entity, _parent->Data(), _ecm)) {
                 return true;
             }
@@ -149,64 +148,110 @@ void PowerManagerInstance::Update(
         }
     }
 
-    // ── Step 3: push total load to active battery ─────────────────────
-    // Battery forwards this so the model can update voltage
-    m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
+    // use active battery voltage as bus voltage reference
+    const float bus_voltage = m_batteries[m_activeBatteryIndex]->voltage();
+    const float safe_voltage = (bus_voltage > 1e-6f) ? bus_voltage : 1.0f;
+    const float total_demand_W = total_current * safe_voltage;
 
+    // ── Step 3: distribute load across generators and battery ────────────
+    // Logic:
+    //   1. generators cover load first
+    //   2. if generator output < demand -> battery covers the shortfall
+    //   3. if generator output > demand -> surplus charges active battery
+    //      if active battery is full -> find a depleted battery to charge
+    //      if all batteries full -> surplus is lost
+    //   4. if depleted -> move to next generator in SDF order
+    //   5. if all generators depleted -> battery covers full demand
 
-    // // ──  sum generator supply ──────────────────────────────────
-    // float gen_supply_W = 0.0f;
-    // for (auto* generator : m_generators) {
-    //     gen_supply_W += generator->availablePowerW();
-    // }
+    // find the first non-depleted generator
+    Generator* activeGen = nullptr;
+    for (auto* generator : m_generators) {
+        if (!generator->isDepleted()) {
+            activeGen = generator;
+            break;
+        }
+    }
 
-    // // ──  generator covers load or battery supplements ──────────
-    // if (!m_generators.empty()){
-    //     if(gen_supply_W >= total_demand_W){
-    //         // generators cover everything - push load to all generators
-    //         for (auto* generator : m_generators){
-    //             generator->receiveLoad(total_current, dt);
-    //         }
-    //         // surplus -> charge target battery
-    //         const float surplus_W = gen_supply_W - total_demand_W;
-    //         const float surplus_current = (bus_voltage > 1e-6f)
-    //                                        ? surplus_W / bus_voltage
-    //                                        : 0.0f;
-    //         PowerProvider* target = selectChargeTarget();
-    //         if(target && surplus_current > 1e-6f){
-    //             target->receiveCharge(surplus_current, dt);
-    //         }
-    //     } else {
-    //         // batteries supplement the shortfall
-    //         for(auto* generator : m_generators){
-    //             generator->receiveLoad(total_current, dt);
-    //         }
-    //         const float shortfall_W = total_demand_W - gen_supply_W;
-    //         const float shortfall_current = (bus_voltage > 1e-6f)
-    //                                        ? shortfall_W / bus_voltage
-    //                                        : total_current;
+    if (activeGen){
+        const float gen_supply_W = activeGen->availablePowerW();
+        if (gen_supply_W >= total_demand_W) {
+            // active generator covers full demand
+            const float gen_current = total_demand_W / safe_voltage;
+            activeGen->receiveLoad(gen_current, dt);
 
-    //         if (!m_batteries.empty()){
-    //             m_batteries[m_activeBatteryIndex]->receiveLoad(shortfall_current, dt);
-    //         }
-    //     } 
-    // } else {
-    //     // battery only -> active battery covers full demand
-    //     if(!m_batteries.empty()){
-    //         m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
-    //     }
-    // }
+            // surplus charges battery
+            const float surplus_W = gen_supply_W - total_demand_W;
+            const float surplus_current = surplus_W / safe_voltage;
+
+            if (surplus_current > 1e-6f) {
+                // try active battery first, then find one that needs charging
+                Battery* chargeTarget = m_batteries[m_activeBatteryIndex];
+
+                if (chargeTarget->getStateOfCharge() >= 1.0f) {
+                    chargeTarget = nullptr;
+                    for (auto& bat : m_batteries) {
+                        if (bat->getStateOfCharge() < 1.0f) {
+                            chargeTarget = bat;
+                            break;
+                        }
+                    }
+                }
+
+                if (chargeTarget) {
+                    chargeTarget->receiveCharge(surplus_current, dt);
+                    m_logger->debug(
+                        "PowerManagerInstance [{}]: generator [{}] surplus "
+                        "{:.3f} A charging battery [{}]",
+                        m_vessel_name, activeGen->name(),
+                        surplus_current, chargeTarget->name());
+                } else {
+                    m_logger->debug(
+                        "PowerManagerInstance [{}]: generator [{}] surplus "
+                        "{:.1f} W lost - all batteries full",
+                        m_vessel_name, activeGen->name(), surplus_W);
+                }
+            }
+
+        } else {
+            // active generator covers partial demand 
+            // generator runs at full capacity, battery covers the shortfall
+            const float gen_current = gen_supply_W / safe_voltage;
+            activeGen->receiveLoad(gen_current, dt);
+
+            const float shortfall_W = total_demand_W - gen_supply_W;
+            const float shortfall_current = shortfall_W / safe_voltage;
+
+            m_batteries[m_activeBatteryIndex]->receiveLoad(shortfall_current, dt);
+
+            m_logger->debug(
+                "PowerManagerInstance [{}]: generator [{}] supplies {:.1f} W, "
+                "battery [{}] covers shortfall {:.1f} W ({:.3f} A)",
+                m_vessel_name, activeGen->name(), gen_supply_W,
+                m_batteries[m_activeBatteryIndex]->name(),
+                shortfall_W, shortfall_current);
+        }
+
+    } else {
+        //  all generators depleted -> battery covers full demand 
+        m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
+
+        m_logger->debug(
+            "PowerManagerInstance [{}]: all generators depleted, "
+            "battery [{}] covering full demand {:.1f} W",
+            m_vessel_name,
+            m_batteries[m_activeBatteryIndex]->name(),
+            total_demand_W);
+    }
 
     // ── Step 4: check active battery PowerLevel and act ───────────────
     const PowerLevel level = m_batteries[m_activeBatteryIndex]->powerLevel();
  
     if (level == PowerLevel::DEPLETED) {
         m_logger->info("PowerManagerInstance [{}]: battery [{}] depleted", 
-                        m_vessel_name,
-                        m_batteries[m_activeBatteryIndex]->name());
+                        m_vessel_name, m_batteries[m_activeBatteryIndex]->name());
  
         if (!updateActiveProvider()) {
-            // All batteries depleted -> cut power to all consumers
+            // all batteries depleted -> cut power to all consumers
             m_logger->warn("PowerManagerInstance [{}]: all batteries depleted cutting power",
                             m_vessel_name);
             for (auto& consumer : m_consumers) {
@@ -246,7 +291,6 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
         return false;
     }
 
-    // Walk <link> elements in the SDF
     const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
     if (!modelEl) {
         m_logger->error(
@@ -277,36 +321,33 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
         const std::string type = powerSdf->Get<std::string>("type");
 
         if (type == "simple_battery") {
-            m_providers.push_back(
-                std::make_unique<SimpleBattery>(linkName, powerSdf, m_node));
+            auto battery = std::make_unique<SimpleBattery>(linkName, powerSdf, m_node);
+            m_batteries.push_back(battery.get());
+            m_providers.push_back(std::move(battery));
+        } else if (type == "simple_generator") {
+            auto generator = std::make_unique<SimpleGenerator>(linkName, powerSdf, m_node);
+            m_generators.push_back(generator.get());
+            m_providers.push_back(std::move(generator));
         } else {
             m_logger->error(
                 "PowerManagerInstance [{}]: unknown provider type '{}' on link [{}] -> skipping",
                 m_vessel_name, type, linkName);
-            linkEl = linkEl->GetNextElement("link");
-            continue;
         }
-        // TODO later
-        // else {
-        //     m_generators.push_back(raw);
-        // }
-
-        PowerProvider* raw = m_providers.back().get();
-        if (raw->canReceiveCharge()) {
-            m_batteries.push_back(raw);
-            m_logger->info(
-                "PowerManagerInstance [{}]: registered battery [{}] ({})",
-                m_vessel_name, linkName, type);
-        }
-
         linkEl = linkEl->GetNextElement("link");
     }
-
     if (m_providers.empty()) {
         m_logger->warn(
             "PowerManagerInstance [{}]: no power providers found",
             m_vessel_name);
-    } 
+    }  else {
+        m_logger->info(
+            "PowerManagerInstance [{}]: {} provider(s) "
+            "[{} battery/ies, {} generator(s)]",
+            m_vessel_name,
+            m_providers.size(),
+            m_batteries.size(),
+            m_generators.size());
+    }
     return true;    
 }
 

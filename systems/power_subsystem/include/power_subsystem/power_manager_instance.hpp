@@ -26,6 +26,8 @@
 #include "lotusim_common/logger.hpp"
 #include "power_subsystem/power_provider.hpp"
 #include "power_subsystem/power_consumer.hpp"
+#include "power_subsystem/battery.hpp"
+#include "power_subsystem/generator.hpp"
 
 namespace lotusim::gazebo{
 
@@ -52,17 +54,9 @@ namespace lotusim::gazebo{
  *   5. Push voltage to all consumers via receiveVoltage() + update()
  * 
  * Battery declared as a <link> with <lotusim_power> tag in vessel SDF
- * Sensors discovered automatically from ECM 
  *
  * SDF format:
  *   <model name="dtmb">
- *     <link name="base_link">
- *       <sensor name="ais" type="custom" gz:type="ais"
- *               power_type="sensor" nominal_w="5.0" priority="3">
- *         ...
- *       </sensor>
- *     </link>
- *
  *     <link name="main_battery">
  *       <lotusim_power>
  *         <type>simple_battery</type>
@@ -178,11 +172,9 @@ private:
     // all consumers
     std::vector<std::unique_ptr<PowerConsumer>> m_consumers;
 
-    // Non-owning filtered view batteries only
-    std::vector<PowerProvider*> m_batteries;
-
-    // std::vector<PowerProvider*> m_generators;
-    // commented out -> generator not yet implemented
+    // Non-owning filtered views
+    std::vector<Battery*> m_batteries;
+    std::vector<Generator*> m_generators;
 
     //std::unordered_map<gz::sim::Entity, std::unique_ptr<PowerManagerInstance>> m_vessels;
 

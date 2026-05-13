@@ -45,9 +45,9 @@ public:
             _sdf->Get<float>("voltage_min", 36.0f).first)
         , m_voltage(_sdf->Get<float>("voltage_nominal", 48.0f).first)
     {
+        const std::string loggerName = "simpleBattery_" + Battery::name();
         m_logger = logger::createConsoleAndFileLogger(
-            "simpleBattery_" + Battery::name(),
-            "simpleBattery_" + Battery::name() + ".txt");
+            loggerName, loggerName + ".txt");
     }
 
     // ----------------------------------------------------------------
@@ -78,7 +78,7 @@ private:
     float m_voltage{48.0f};
 
     // full-charge voltage from SDF voltage_nominal
-    float m_voltageNominal{48.0f};
+    float m_voltage_nominal{48.0f};
 
     std::shared_ptr<spdlog::logger> m_logger;
 };
