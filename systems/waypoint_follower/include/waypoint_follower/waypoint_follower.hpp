@@ -312,10 +312,14 @@ private:
 
     std::shared_ptr<std::thread> m_ros_node_thread;
 
-    std::vector<rclcpp::Service<lotusim_msgs::srv::SetWaypoints>::SharedPtr>
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Service<lotusim_msgs::srv::SetWaypoints>::SharedPtr>
         m_waypoint_services;
 
-    std::vector<rclcpp::Service<std_srvs::srv::Empty>::SharedPtr>
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Service<std_srvs::srv::Empty>::SharedPtr>
         m_waypoint_stop_services;
 
     gz::math::SphericalCoordinates m_origin_spherical;

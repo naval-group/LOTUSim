@@ -341,6 +341,53 @@ void WaypointFollowerPlugin::Update(
         return true;
     });
 
+    // calls from DELETE_CMD
+    _ecm.EachRemoved<gz::sim::components::ModelSdf>(
+        [this](
+            const gz::sim::Entity& _entity,
+            const gz::sim::components::ModelSdf*) -> bool {
+            auto name_it = m_vessel_name.find(_entity);
+            m_logger->info(
+                "WaypointFollowerPlugin::Update: EachRemoved fired for entity {}, {}",
+                _entity,
+                name_it != m_vessel_name.end() ? name_it->second : "unknown");
+
+            std::lock_guard<std::mutex> lock(m_waypoint_mutex);
+
+            m_vessel_name.erase(_entity);
+            m_velocities.erase(_entity);
+            m_linear_accel_limit.erase(_entity);
+            m_angular_accel_limit.erase(_entity);
+            m_linear_velocities_limits.erase(_entity);
+            m_linear_pid.erase(_entity);
+            m_angular_velocities_limits.erase(_entity);
+            m_angular_pid.erase(_entity);
+            m_loop.erase(_entity);
+            m_rangeTolerance.erase(_entity);
+            m_model_load_queue.erase(_entity);
+            m_waypoints.erase(_entity);
+            m_waypoints_geo.erase(_entity);
+            m_waypoint_state.erase(_entity);
+            m_entities_to_remove.erase(_entity);
+            m_distance_error_integral.erase(_entity);
+            m_distance_error_previous.erase(_entity);
+            m_heading_integral.erase(_entity);
+            m_prev_heading_error.erase(_entity);
+            m_prev_yaw.erase(_entity);
+            m_prevGoal.erase(_entity);
+
+            auto pub_it = m_waypoint_pub.find(_entity);
+            if (pub_it != m_waypoint_pub.end()) {
+                pub_it->second.reset();
+                m_waypoint_pub.erase(pub_it);
+            }
+
+            m_waypoint_services.erase(_entity);
+            m_waypoint_stop_services.erase(_entity);
+
+            return true;
+        });
+
     for (auto it = m_model_load_queue.begin();
          it != m_model_load_queue.end();) {
         gz::sim::Entity entity = it->first;
@@ -618,8 +665,8 @@ void WaypointFollowerPlugin::setupRosForModel(
     const gz::sim::Entity& entity,
     const std::string& model_name)
 {
-    m_waypoint_services.push_back(m_ros_node->create_service<
-                                  lotusim_msgs::srv::SetWaypoints>(
+    m_waypoint_services[entity] = m_ros_node->create_service<
+        lotusim_msgs::srv::SetWaypoints>(
         model_name + "/waypoints",
         [this, entity](
             const std::shared_ptr<lotusim_msgs::srv::SetWaypoints::Request>
@@ -646,16 +693,16 @@ void WaypointFollowerPlugin::setupRosForModel(
                     "WaypointFollowerPlugin::SetWaypointCB:: error in setting new waypoint. {}.",
                     e.what());
             }
-        }));
+        });
 
-    m_waypoint_stop_services.push_back(
+    m_waypoint_stop_services[entity] =
         m_ros_node->create_service<std_srvs::srv::Empty>(
             model_name + "/stop",
             [this, entity](
                 const std::shared_ptr<std_srvs::srv::Empty::Request> request,
                 std::shared_ptr<std_srvs::srv::Empty::Response> response) {
                 stopVessel(entity);
-            }));
+            });
 
     // Create publisher for waypoint reached messages
     m_waypoint_pub[entity] =
@@ -682,6 +729,13 @@ bool WaypointFollowerPlugin::stopVessel(const gz::sim::Entity& entity)
     m_waypoint_state.erase(entity);
     m_prev_heading_error.erase(entity);
     m_heading_integral.erase(entity);
+    // destroy the publisher
+    auto pub_it = m_waypoint_pub.find(entity);
+    if (pub_it != m_waypoint_pub.end()) {
+        pub_it->second
+            .reset();  // destroys the publisher so the topic disappears
+        m_waypoint_pub.erase(pub_it);
+    }
     return true;
 }
 
