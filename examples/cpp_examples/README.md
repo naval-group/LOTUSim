@@ -1,20 +1,8 @@
-# Python examples
+# C++ examples
 
-## Using LOTUSim with python
+## Using LOTUSim with c++
 
-0. Make the example script executable
-
-In a first terminal, run:
-   ```shell
-   cd lotusim_ws/src/LOTUSim/examples/python-scripts
-   chmod +x spawn_ships.py
-   chmod +x controlling_ships.py
-   ```
-This only needs to be done **once**, not every time you want to run the script.
-
----
-
-### For spawning_ships example
+### For spawn_ships example
 
 1. Run LOTUSim
 
@@ -34,19 +22,8 @@ In a second terminal, type the following:
 
 In the second terminal, type the following command:
    ```shell
-   python3 spawn_ships.py
+   ros2 run lotusim_cpp_examples spawn_ships
    ```
-
-4. Optional: try other examples
-
-Inside 'spawn_ships.py', you can uncomment other spawn commands:
-   ```shell
-   # future2 = node.spawn_ship_with_dynamics(1)
-   # future3 = node.spawn_aerial_drone(1)
-   # future4 = node.spawn_circling_ship(2)
-   ```
-
-Then re-run the script to experiment with different models.
 
 ---
 
@@ -66,7 +43,7 @@ In a second terminal, run:
    lotusim run
    ```
 
-3. Run LOTUSim UI
+3. Run LOTUSim UI (optional)
 
 In a third terminal, run:
    ```shell
@@ -77,7 +54,7 @@ In a third terminal, run:
 
 In a fourth terminal, run:
    ```shell
-   python3 controlling_ships.py 
+   ros2 run lotusim_cpp_examples controlling_ships
    ```
 
 ---
@@ -103,4 +80,3 @@ In these examples, vessels are spawned underwater, so only the underwater XDyn c
 ⚠️ If your vessel transitions between domains (e.g., from surface at z = 0 to underwater at z = -100), or if you spawn vessels in different domains, you must:
    -  run XDyn instances for each relevant domain, and
    -  ensure each one is listening on the correct URI/port.
-

@@ -30,6 +30,7 @@ endif()
 # Executable
 #============================================================================
 add_executable(spawn_ships src/spawn_ships.cpp)
+add_executable(controlling_ships src/controlling_ships.cpp)
 
 #============================================================================
 # Library
@@ -41,11 +42,19 @@ ament_target_dependencies(spawn_ships
   lotusim_msgs
 )
 
+ament_target_dependencies(controlling_ships
+  rclcpp
+  rclcpp_action
+  geographic_msgs
+  lotusim_msgs
+)
+
 #============================================================================
 # Installation
 #============================================================================
 install(TARGETS
   spawn_ships
+  controlling_ships
   DESTINATION lib/${PROJECT_NAME}
 )
 
