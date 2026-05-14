@@ -1,6 +1,6 @@
 #pragma once
 
-#include "power_provider.hpp"
+#include "power_subsystem/power_provider.hpp"  
 #include <gz/common/Console.hh>
 
 namespace lotusim::gazebo{
@@ -136,8 +136,8 @@ protected:
     Generator(
         std::string name,
         rclcpp::Node::SharedPtr node,
-        float fuel_level_start,
-        float fuel_capacity,      
+        float fuel_level_start,  
+        float fuel_capacity,    
         float rated_output_w,
         float efficiency,
         float voltage_nominal,

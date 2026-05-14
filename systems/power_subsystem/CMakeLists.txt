@@ -64,6 +64,7 @@ src/power_manager.cpp
 src/power_manager_instance.cpp
 src/simple_battery.cpp
 src/simple_generator.cpp
+src/rpm_generator.cpp
 )
 target_include_directories(power_subsystem
   PUBLIC

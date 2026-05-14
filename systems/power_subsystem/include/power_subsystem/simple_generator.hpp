@@ -47,8 +47,8 @@ public:
     ) : Generator(
         std::move(name),
         std::move(node),
-        _sdf->Get<float>("fuel_capacity", 500.0f).first,
         _sdf->Get<float>("fuel_level_start", 500.0f).first,
+        _sdf->Get<float>("fuel_capacity", 500.0f).first,
         _sdf->Get<float>("rated_output_w", 5000.0f).first,
         _sdf->Get<float>("efficiency", 0.35f).first,
         _sdf->Get<float>("voltage_nominal", 48.0f).first,

@@ -27,7 +27,7 @@
 #include "power_subsystem/battery.hpp"
 #include "power_subsystem/generator.hpp"
 #include "power_subsystem/simple_generator.hpp"
-
+#include "power_subsystem/rpm_generator.hpp"
 
 // PowerConsumer subclasses
 #include "power_subsystem/sensor_power_consumer.hpp"
@@ -56,11 +56,6 @@ PowerManagerInstance::PowerManagerInstance(
             m_vessel_name);
         return;
     }
- 
-    m_logger->info(
-        "PowerManagerInstance [{}]: {} provider(s) [{} battery/ies]",
-        m_vessel_name, m_providers.size(), m_batteries.size()
-    );
 }
 
 void PowerManagerInstance::PostUpdate(
@@ -328,6 +323,10 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
             auto generator = std::make_unique<SimpleGenerator>(linkName, powerSdf, m_node);
             m_generators.push_back(generator.get());
             m_providers.push_back(std::move(generator));
+        } else if (type == "rpm_generator") {
+            auto generator = std::make_unique<RpmGenerator>(linkName, powerSdf, m_node, m_vessel_name);
+            m_generators.push_back(generator.get());
+            m_providers.push_back(std::move(generator));
         } else {
             m_logger->error(
                 "PowerManagerInstance [{}]: unknown provider type '{}' on link [{}] -> skipping",
@@ -339,15 +338,7 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
         m_logger->warn(
             "PowerManagerInstance [{}]: no power providers found",
             m_vessel_name);
-    }  else {
-        m_logger->info(
-            "PowerManagerInstance [{}]: {} provider(s) "
-            "[{} battery/ies, {} generator(s)]",
-            m_vessel_name,
-            m_providers.size(),
-            m_batteries.size(),
-            m_generators.size());
-    }
+    }  
     return true;    
 }
 
