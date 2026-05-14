@@ -43,7 +43,7 @@
             <lotusim_power>
                 <type>simple_battery</type>
                 <capacity_ah>100</capacity_ah>
-                <initial_soc>1.0</initial_soc>
+                <initial_soc>0.8</initial_soc>
                 <voltage_min>0.1</voltage_min>
                 <voltage_nominal>0.5</voltage_nominal>
             </lotusim_power>
@@ -52,7 +52,7 @@
             <lotusim_power>
                 <type>simple_battery</type>
                 <capacity_ah>1</capacity_ah>
-                <initial_soc>1.0</initial_soc>
+                <initial_soc>0.6</initial_soc>
                 <voltage_min>0.8</voltage_min>
                 <voltage_nominal>2.0</voltage_nominal>
             </lotusim_power>

@@ -43,8 +43,11 @@ public:
             _sdf->Get<float>("capacity_ah", 100.0f).first,
             _sdf->Get<float>("initial_soc", 1.0f).first,
             _sdf->Get<float>("voltage_min", 36.0f).first)
-        , m_voltage(_sdf->Get<float>("voltage_nominal", 48.0f).first)
+        , m_voltage(0.0f)
+        , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
     {
+        m_voltage = m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
+
         const std::string loggerName = "simpleBattery_" + Battery::name();
         m_logger = logger::createConsoleAndFileLogger(
             loggerName, loggerName + ".txt");
@@ -71,6 +74,8 @@ public:
      *        stub for FMU call, replace when wrapper is available     
      */
     void receiveCharge(float currentA, float dt) override;
+
+    float getStateOfCharge() const override;
 
 private:
     // current battery voltage: starts at voltage_nominal, drains toward

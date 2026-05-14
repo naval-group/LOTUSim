@@ -28,6 +28,19 @@ void SimpleBattery::receiveCharge(float currentA, float dt)
 
     m_logger->info("SimpleBattery [{}]: receiveCharge current={:.3f} A dt={:.4f} s -> voltage={:.3f} V",
         Battery::name(), currentA, dt, m_voltage);
+
+    if (m_voltage >= m_voltage_nominal) {
+        m_logger->info(
+            "SimpleBattery [{}]: fully charged ({:.3f} V)",
+            Battery::name(), m_voltage);
+    }
 }
 
+float SimpleBattery::getStateOfCharge() const
+{
+    if (m_voltage_nominal <= m_voltageMin) { return 0.0f; }
+    const float soc = (m_voltage - m_voltageMin) 
+                    / (m_voltage_nominal - m_voltageMin);
+    return std::clamp(soc, 0.0f, 1.0f);
+}
 } // namespace lotusim::gazebo
