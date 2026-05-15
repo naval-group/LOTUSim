@@ -127,4 +127,31 @@ ament_export_libraries(
 )
 ament_export_include_directories(include)
 
+# ============================================================================
+# unit tests
+# ============================================================================
+ 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_gmock REQUIRED)
+  find_package(fmt REQUIRED)
+  set(TEST_TARGETS
+    test_simple_battery
+  )
+  foreach(test_target IN LISTS TEST_TARGETS)
+    ament_add_gtest(${test_target} unit_tests/${test_target}.cpp)
+    target_include_directories(${test_target} PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    )
+    ament_target_dependencies(${test_target} 
+      rclcpp
+    )
+    target_link_libraries(${test_target}
+      power_subsystem
+      fmt::fmt
+    )
+    #enable_asan_and_coverage(${test_target})
+  endforeach()
+endif()
+
 ament_package()

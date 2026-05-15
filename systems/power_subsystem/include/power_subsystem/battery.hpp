@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 #pragma once
 
 #include "power_provider.hpp"
@@ -25,6 +34,7 @@ namespace lotusim::gazebo{
  */
 class Battery : public PowerProvider{
 public:
+    virtual ~Battery();
     // ----------------------------------------------------------------
     // PowerProvider interface —> implemented here for all batteries
     // ----------------------------------------------------------------
@@ -79,7 +89,7 @@ public:
      /**
      * @brief update current voltage
      */
-    virtual void updateVoltage();
+    virtual void updateVoltage() = 0;
 
     /**
      * @brief battery can receive charge from a generator surplus

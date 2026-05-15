@@ -1,9 +1,19 @@
+/*
+ * Copyright (c) 2025 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 #include "power_subsystem/simple_battery.hpp"
 #include <algorithm>
 #include "lotusim_common/common.hpp" 
 
 namespace lotusim::gazebo
 {
+Battery::~Battery() = default;
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
