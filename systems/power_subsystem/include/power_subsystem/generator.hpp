@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Naval Group
+ * Copyright (c) 2026 Naval Group
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -111,9 +111,15 @@ public:
     float surplusChargingCurrent(float busCurrentA) const
     {
         if (isDepleted()) { return 0.0f; }
-        const float demandW  = busCurrentA * m_voltage_nominal;
-        const float surplusW = m_rated_output_W - demandW;
+        const float demandW = busCurrentA * m_voltage_nominal;
+        const float surplusW = availablePowerW() - demandW;
         return surplusW > 0.0f ? (surplusW / m_voltage_nominal) : 0.0f;
+    }
+
+    float fuelRatio() const
+    {
+        if (m_fuel_capacity <= 0.0f) { return 0.0f; }
+        return m_fuel_level / m_fuel_capacity;  
     }
 
     // ----------------------------------------------------------------
@@ -159,12 +165,6 @@ protected:
         , m_voltage_nominal(voltage_nominal)
         , m_fuel_type(fuel_type)
     {}
-
-    float fuelRatio() const
-    {
-        if (m_fuel_capacity <= 0.0f) { return 0.0f; }
-        return m_fuel_level / m_fuel_capacity;  
-    }
 
     // current fuel level
     float m_fuel_level{0.0f};

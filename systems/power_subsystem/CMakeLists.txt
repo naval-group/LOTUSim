@@ -138,6 +138,7 @@ if(BUILD_TESTING)
   set(TEST_TARGETS
     test_simple_battery
     test_sensor_consumer
+    test_rpm_generator
   )
   foreach(test_target IN LISTS TEST_TARGETS)
     ament_add_gtest(${test_target} unit_tests/${test_target}.cpp)
