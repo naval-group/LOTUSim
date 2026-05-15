@@ -7,12 +7,16 @@ namespace lotusim::gazebo
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
-    // Drain voltage proportionally to current load over elapsed time
-    // Stub for FMU call
-    m_voltage -= (currentA * dt) / m_capacityAh;
-    m_voltage  = std::max(m_voltage, m_voltageMin);
-    m_logger->info("SimpleBattery [{}]: receiveLoad current={:.3f} A dt={:.4f} s -> voltage={:.3f} V",
-        Battery::name(), currentA, dt, m_voltage);
+    m_remainingAh -= currentA * dt;
+    m_remainingAh  = std::max(m_remainingAh, 0.0f);
+    updateVoltage();
+}
+
+void SimpleBattery::updateVoltage()
+{
+    // voltage scales linearly with SOC between voltage_min and voltage_nominal
+    // this is a simplification
+    m_voltage = m_voltageMin + getStateOfCharge() * (m_voltage_nominal - m_voltageMin);
 }
 
 float SimpleBattery::voltage() const
@@ -22,25 +26,20 @@ float SimpleBattery::voltage() const
 
 void SimpleBattery::receiveCharge(float currentA, float dt)
 {
-    // replace when FMU wrapper is available
-    m_voltage += (currentA * dt) / m_capacityAh;
-    m_voltage  = std::min(m_voltage, m_voltage_nominal);
-
-    m_logger->info("SimpleBattery [{}]: receiveCharge current={:.3f} A dt={:.4f} s -> voltage={:.3f} V",
-        Battery::name(), currentA, dt, m_voltage);
-
-    if (m_voltage >= m_voltage_nominal) {
-        m_logger->info(
-            "SimpleBattery [{}]: fully charged ({:.3f} V)",
-            Battery::name(), m_voltage);
-    }
+    m_remainingAh += currentA * dt;
+    m_remainingAh  = std::min(m_remainingAh, m_capacityAh);
+    updateVoltage();
 }
 
 float SimpleBattery::getStateOfCharge() const
 {
-    if (m_voltage_nominal <= m_voltageMin) { return 0.0f; }
-    const float soc = (m_voltage - m_voltageMin) 
-                    / (m_voltage_nominal - m_voltageMin);
-    return std::clamp(soc, 0.0f, 1.0f);
+    if (m_capacityAh <= 0.0f) { return 0.0f; }
+    return std::clamp(m_remainingAh / m_capacityAh, 0.0f, 1.0f);
+}
+
+// for now - energy estimate in Wh 
+float SimpleBattery::availablePowerW() const
+{
+    return voltage() * m_remainingAh;
 }
 } // namespace lotusim::gazebo

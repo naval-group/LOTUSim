@@ -45,6 +45,8 @@ public:
             _sdf->Get<float>("voltage_min", 36.0f).first)
         , m_voltage(0.0f)
         , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
+        , m_remainingAh(_sdf->Get<float>("capacity_ah", 100.0f).first
+                * _sdf->Get<float>("initial_soc", 1.0f).first)
     {
         m_voltage = m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
 
@@ -77,6 +79,10 @@ public:
 
     float getStateOfCharge() const override;
 
+    void updateVoltage() override;
+
+    float availablePowerW() const override;
+
 private:
     // current battery voltage: starts at voltage_nominal, drains toward
     // voltage_min as load is applied. Updated by receiveLoad()
@@ -84,6 +90,9 @@ private:
 
     // full-charge voltage from SDF voltage_nominal
     float m_voltage_nominal{48.0f};
+
+    // tracks remaining charge
+    float m_remainingAh{100.0f};    
 
     std::shared_ptr<spdlog::logger> m_logger;
 };

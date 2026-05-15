@@ -69,12 +69,17 @@ public:
 
     /**
      * @brief approximate remaining energy in Wh
-     *         TODO - will need to update when generators are implemented ------------
+     *         TODO - it should be voltage() * current_capacity_A ------------
      */
     float availablePowerW() const override
     {
         return voltage() * m_capacityAh;
     }
+
+     /**
+     * @brief update current voltage
+     */
+    virtual void updateVoltage();
 
     /**
      * @brief battery can receive charge from a generator surplus
