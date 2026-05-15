@@ -137,6 +137,7 @@ if(BUILD_TESTING)
   find_package(fmt REQUIRED)
   set(TEST_TARGETS
     test_simple_battery
+    test_sensor_consumer
   )
   foreach(test_target IN LISTS TEST_TARGETS)
     ament_add_gtest(${test_target} unit_tests/${test_target}.cpp)
@@ -145,6 +146,7 @@ if(BUILD_TESTING)
     )
     ament_target_dependencies(${test_target} 
       rclcpp
+      lotusim_common
     )
     target_link_libraries(${test_target}
       power_subsystem
