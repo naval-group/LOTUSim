@@ -511,24 +511,6 @@ bool PowerManagerInstance::updateActiveProvider(){
     return false; // all providers are depleted, sad time :'(
 }
 
-// ignoring for now
-// PowerProvider* PowerManager::selectChargeTarget() const
-// {
-//     if (m_batteries.empty()) {
-//         return nullptr;
-//     }
- 
-//     // Priority 1: first depleted battery —> restore it first
-//     for (auto* battery : m_batteries) {
-//         if (battery->isDepleted()) {
-//             return battery;
-//         }
-//     }
- 
-//     // Priority 2: current active battery —> keep it topped up
-//     return m_batteries[m_activeBatteryIndex];
-// }
-
 void PowerManagerInstance::shedLoadsIfNeeded(const PowerLevel level){
     // Priority level: 
     // 1 = safety critical         - never shed   e.g.: navigation, emergency light

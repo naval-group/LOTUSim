@@ -13,6 +13,8 @@
 #include <cmath>
 #include "lotusim_common/common.hpp"
 
+// RpmGenerator: fuel consumption is driven by rpm (vessel_name/voltage)
+
 namespace lotusim::gazebo
 {
 

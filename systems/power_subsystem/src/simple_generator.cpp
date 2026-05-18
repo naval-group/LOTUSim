@@ -13,6 +13,8 @@
 #include <algorithm>
 #include "lotusim_common/common.hpp"
 
+// SimpleGenerator: fuel consumption is driven by bus current (currentA)
+
 namespace lotusim::gazebo
 {
 void SimpleGenerator::receiveLoad(float currentA, float dt){
