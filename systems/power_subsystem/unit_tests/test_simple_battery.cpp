@@ -473,6 +473,43 @@ TEST_F(SimpleBatteryTest, UpdateVoltageConsistency)
     const float v2 = bat->voltage();
     EXPECT_FLOAT_EQ(v1, v2);  // same
 }
+
+// ──────────────────────────────────────────────────────────────
+// Test generator recharging batteries
+// ──────────────────────────────────────────────────────────────
+
+TEST_F(SimpleBatteryTest, LoadThenChargeRestoresState)
+{
+    // battery receives load (consumers draw) then charge (generator tops up)
+    auto b = makeBattery("b", 100.0f, 1.0f, 36.0f, 48.0f);
+
+    const float current = 0.1667f;
+    const float dt = 0.2f;
+
+    const float soc_before = b->getStateOfCharge();
+
+    b->receiveLoad(current, dt);
+    b->receiveCharge(current, dt);
+
+    EXPECT_NEAR(b->getStateOfCharge(), soc_before, 1e-5f);
+    EXPECT_NEAR(b->voltage(), 48.0f, 1e-3f);
+}
+
+TEST_F(SimpleBatteryTest, ChargeDoesNotExceedCapacityAfterLoad)
+{
+    // even if charge exactly equals load, remainingAh must stay within bounds
+    auto b = makeBattery("b", 100.0f, 1.0f, 36.0f, 48.0f);
+
+    for (int i = 0; i < 1000; ++i) {
+        b->receiveLoad(0.1667f, 0.2f);
+        b->receiveCharge(0.1667f, 0.2f);
+    }
+
+    EXPECT_LE(b->remainingAh(), 100.0f);
+    EXPECT_GE(b->remainingAh(), 0.0f);
+    EXPECT_LE(b->getStateOfCharge(), 1.0f);
+    EXPECT_GE(b->getStateOfCharge(), 0.0f);
+}
 } // namespace lotusim::gazebo
 
 int main(int argc, char** argv)
