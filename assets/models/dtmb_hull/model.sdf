@@ -57,9 +57,7 @@
                 <voltage_nominal>48.0</voltage_nominal>
             </lotusim_power>
         </link>
-    </model>
-</sdf>
-        <!-- <link name="test_generator">
+        <link name="test_generator">
             <lotusim_power>
                 <type>simple_generator</type>
                 <fuel_type>hydrogen</fuel_type>
@@ -69,4 +67,6 @@
                 <efficiency>0.85</efficiency>
                 <voltage_nominal>48.0</voltage_nominal>
             </lotusim_power>
-        </link> -->
+        </link>
+    </model>
+</sdf>
