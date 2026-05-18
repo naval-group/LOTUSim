@@ -132,10 +132,26 @@ private:
     bool updateActiveProvider();
 
     /**
-     * @brief Sheds consumers based on PowerLevel
-     *        TODO: add reactivation logic when power margin recovers
+     * @brief Sheds consumers based on PowerLevel, one per tick
      */
     void shedLoadsIfNeeded(PowerLevel level);
+
+    /**
+     * @brief Tries to reactivate one shed consumer per tick
+     *        based on available power budget (generator or battery)
+     *        true if a consumer was reactivated
+     */
+    bool reactivateIfPossible(float available_w);
+
+    /**
+     * @brief Computes generator charge output for this tick
+     *        produces only what the battery needs, capped at availablePowerW()
+     *        returns charging current in Amps
+     * @param gen          active generator
+     * @param bat          battery to charge
+     * @param safe_voltage bus voltage reference
+     */
+    float computeChargeCurrentA(Generator* gen, Battery* bat, float safe_voltage) const;
 
     /**
      * @brief Returns true if the Gazebo entity name matches consumerName
@@ -176,7 +192,8 @@ private:
     std::vector<Battery*> m_batteries;
     std::vector<Generator*> m_generators;
 
-    //std::unordered_map<gz::sim::Entity, std::unique_ptr<PowerManagerInstance>> m_vessels;
+    // used to know when generator fully takes over
+    bool m_all_batteries_depleted{false};
 
     //index into m_batteries of the currently active battery
     int m_activeBatteryIndex{0};

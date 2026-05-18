@@ -87,14 +87,10 @@ void PowerManagerInstance::Update(
     // ── Guard ─────────────────────────────────────────────────────────
     // wait until consumers and batteries are parsed
 
-    if (!m_consumers_parsed) {
-        return;
-    }
-    if (m_batteries.empty()) {
-        return;
-    }
+    if (!m_consumers_parsed) { return; }
+    if (m_batteries.empty()) { return; }
 
-     const float dt = static_cast<float>(std::chrono::duration<double>(_info.dt).count());
+    const float dt = static_cast<float>(std::chrono::duration<double>(_info.dt).count());
 
     // ── Step 1: topology change callbacks ─────────────────────────────
     _ecm.EachNew<gz::sim::components::CustomSensor,
@@ -148,16 +144,6 @@ void PowerManagerInstance::Update(
     const float safe_voltage = (bus_voltage > 1e-6f) ? bus_voltage : 1.0f;
     const float total_demand_W = total_current * safe_voltage;
 
-    // ── Step 3: distribute load across generators and battery ────────────
-    // Logic:
-    //   1. generators cover load first
-    //   2. if generator output < demand -> battery covers the shortfall
-    //   3. if generator output > demand -> surplus charges active battery
-    //      if active battery is full -> find a depleted battery to charge
-    //      if all batteries full -> surplus is lost
-    //   4. if depleted -> move to next generator in SDF order
-    //   5. if all generators depleted -> battery covers full demand
-
     // find the first non-depleted generator
     Generator* activeGen = nullptr;
     for (auto* generator : m_generators) {
@@ -167,75 +153,76 @@ void PowerManagerInstance::Update(
         }
     }
 
-    if (activeGen){
-        const float gen_supply_W = activeGen->availablePowerW();
-        if (gen_supply_W >= total_demand_W) {
-            // active generator covers full demand
-            const float gen_current = total_demand_W / safe_voltage;
-            activeGen->receiveLoad(gen_current, dt);
+    // ── Step 3: load distribution ─────────────────────────────────────
+    //
+    // Normal operation (batteries available):
+    //   battery covers consumer demand
+    //   generator charges the active battery (throttled to what it needs)
+    //   generator does NOT run ahead of battery
+    //
+    // All batteries depleted (emergency):
+    //   generator covers consumer demand directly
+    //   reactivate consumers by priority up to generator capacity
 
-            // surplus charges battery
-            const float surplus_W = gen_supply_W - total_demand_W;
-            const float surplus_current = surplus_W / safe_voltage;
+    if (!m_all_batteries_depleted) {
+        // ── normal: battery covers demand ────────────────────────────
+        m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
 
-            if (surplus_current > 1e-6f) {
-                // try active battery first, then find one that needs charging
-                Battery* chargeTarget = m_batteries[m_activeBatteryIndex];
+        // generator charges battery if available and battery not full
+        if (activeGen) {
+            Battery* chargeTarget = m_batteries[m_activeBatteryIndex];
 
-                if (chargeTarget->getStateOfCharge() >= 1.0f) {
-                    chargeTarget = nullptr;
-                    for (auto& bat : m_batteries) {
-                        if (bat->getStateOfCharge() < 1.0f) {
-                            chargeTarget = bat;
-                            break;
-                        }
+            // if active battery is full, find one that needs charging
+            if (chargeTarget->getStateOfCharge() >= 1.0f) {
+                chargeTarget = nullptr;
+                for (auto* bat : m_batteries) {
+                    if (bat->getStateOfCharge() < 1.0f) {
+                        chargeTarget = bat;
+                        break;
                     }
                 }
-
-                if (chargeTarget) {
-                    chargeTarget->receiveCharge(surplus_current, dt);
-                    m_logger->debug(
-                        "PowerManagerInstance [{}]: generator [{}] surplus "
-                        "{:.3f} A charging battery [{}]",
-                        m_vessel_name, activeGen->name(),
-                        surplus_current, chargeTarget->name());
-                } else {
-                    m_logger->debug(
-                        "PowerManagerInstance [{}]: generator [{}] surplus "
-                        "{:.1f} W lost - all batteries full",
-                        m_vessel_name, activeGen->name(), surplus_W);
-                }
             }
+            if (chargeTarget) {
+                const float charge_current = computeChargeCurrentA(activeGen, chargeTarget, safe_voltage);
 
-        } else {
-            // active generator covers partial demand 
-            // generator runs at full capacity, battery covers the shortfall
-            const float gen_current = gen_supply_W / safe_voltage;
-            activeGen->receiveLoad(gen_current, dt);
+                if (charge_current > 1e-6f) {
+                    activeGen->receiveLoad(charge_current, dt);
+                    chargeTarget->receiveCharge(charge_current, dt);
 
-            const float shortfall_W = total_demand_W - gen_supply_W;
-            const float shortfall_current = shortfall_W / safe_voltage;
-
-            m_batteries[m_activeBatteryIndex]->receiveLoad(shortfall_current, dt);
-
-            m_logger->debug(
-                "PowerManagerInstance [{}]: generator [{}] supplies {:.1f} W, "
-                "battery [{}] covers shortfall {:.1f} W ({:.3f} A)",
-                m_vessel_name, activeGen->name(), gen_supply_W,
-                m_batteries[m_activeBatteryIndex]->name(),
-                shortfall_W, shortfall_current);
+                    m_logger->debug("PowerManagerInstance [{}]: generator [{}] charging "
+                        "battery [{}] at {:.3f} A",
+                        m_vessel_name, activeGen->name(),
+                        chargeTarget->name(), charge_current);
+                }
+                // else battery is full or generator has nothing to give
+            } else {
+                m_logger->debug("PowerManagerInstance [{}]: generator [{}] idle -> "
+                    "all batteries are full",
+                    m_vessel_name, activeGen->name());
+            }
         }
 
     } else {
-        //  all generators depleted -> battery covers full demand 
-        m_batteries[m_activeBatteryIndex]->receiveLoad(total_current, dt);
+        // ── emergency: all batteries depleted, generator covers demand ─
+        if (activeGen) {
+            const float gen_available_W = activeGen->availablePowerW();
+            const float gen_current = std::min(total_current, gen_available_W / safe_voltage);
 
-        m_logger->debug(
-            "PowerManagerInstance [{}]: all generators depleted, "
-            "battery [{}] covering full demand {:.1f} W",
-            m_vessel_name,
-            m_batteries[m_activeBatteryIndex]->name(),
-            total_demand_W);
+            activeGen->receiveLoad(gen_current, dt);
+
+            m_logger->debug("PowerManagerInstance [{}]: emergency mode -> generator [{}] "
+                "covering {:.1f} W of {:.1f} W demand",
+                m_vessel_name, activeGen->name(),
+                gen_current * safe_voltage, total_demand_W);
+
+            // try to reactivate one shed consumer if generator has headroom
+            const float consumed_W = gen_current * safe_voltage;
+            const float headroom_W = gen_available_W - consumed_W;
+            reactivateIfPossible(headroom_W);
+
+        } else {
+            m_logger->debug("PowerManagerInstance [{}]: no power source available", m_vessel_name);
+        }
     }
 
     // ── Step 4: check active battery PowerLevel and act ───────────────
@@ -246,25 +233,83 @@ void PowerManagerInstance::Update(
                         m_vessel_name, m_batteries[m_activeBatteryIndex]->name());
  
         if (!updateActiveProvider()) {
-            // all batteries depleted -> cut power to all consumers
-            m_logger->warn("PowerManagerInstance [{}]: all batteries depleted cutting power",
+            // all batteries depleted 
+            m_all_batteries_depleted = true;
+            m_logger->warn("PowerManagerInstance [{}]: all batteries depleted",
                             m_vessel_name);
-            for (auto& consumer : m_consumers) {
-                consumer->deactivate();
+            if (activeGen) {
+                // generator takes over
+                m_logger->info("PowerManagerInstance [{}]: generator [{}] taking over "
+                "consumer demand", m_vessel_name, activeGen->name());
+
+                // shed consumers if generator cannot cover all of them
+                const float gen_available_W = activeGen->availablePowerW();
+                const float gen_available_A = gen_available_W / safe_voltage;
+
+                float active_demand_A = 0.0f;
+
+                for (const auto& consumer : m_consumers) {
+                    if (consumer->isActive()) {
+                        active_demand_A += consumer->drawnCurrent();
+                    }
+                }
+                if (active_demand_A > gen_available_A) {
+                    m_logger->warn("PowerManagerInstance [{}]: generator [{}] cannot cover "
+                        "all consumers ({:.3f} A demand vs {:.3f} A available) "
+                        " shedding by priority",
+                        m_vessel_name, activeGen->name(),
+                        active_demand_A, gen_available_A);
+
+                    for (int group = 4; group >= 2; --group) {
+                        for (auto it = m_consumers.rbegin();
+                            it != m_consumers.rend(); ++it)
+                        {
+                            if (!(*it)->isActive()) { continue; }
+                            if ((*it)->priority() != group) { continue; }
+
+                            active_demand_A -= (*it)->drawnCurrent();
+                            (*it)->deactivate();
+
+                            m_logger->warn("PowerManagerInstance [{}]: shed consumer [{}] "
+                                "(priority {}) remaining demand {:.3f} A",
+                                m_vessel_name, (*it)->name(), group,
+                                active_demand_A);
+
+                            if (active_demand_A <= gen_available_A) {
+                                goto done_shedding;
+                            }
+                        }
+                    }
+                    done_shedding:;
+                } else {
+                    m_logger->info("PowerManagerInstance [{}]: generator [{}] covers all "
+                        "consumers ({:.3f} A demand vs {:.3f} A available)",
+                        m_vessel_name, activeGen->name(), active_demand_A, gen_available_A);
+                }
+            } else {
+                m_logger->warn("PowerManagerInstance [{}]: no power source - "
+                    "cutting all consumers", m_vessel_name);
+                for (auto& consumer : m_consumers) {
+                    consumer->deactivate();
+                }
             }
             return;
         }
         // Switched to new battery. log info and continue
+        m_all_batteries_depleted = false;
         m_logger->info("PowerManagerInstance [{}]: switched to battery [{}]", 
-                        m_vessel_name,
-                        m_batteries[m_activeBatteryIndex]->name());
+                        m_vessel_name, m_batteries[m_activeBatteryIndex]->name());
     }
  
     // ── Step 5: shed loads based on PowerLevel ───────
-    shedLoadsIfNeeded(level);
+    if (!m_all_batteries_depleted) {
+        shedLoadsIfNeeded(level);
+    }
 
     // ── Step 6: push updated voltage to all active consumers ──────────
-    const float voltage = m_batteries[m_activeBatteryIndex]->voltage();
+    const float voltage = m_all_batteries_depleted
+                        ? (activeGen ? activeGen->voltage() : 0.0f)
+                        : m_batteries[m_activeBatteryIndex]->voltage();
     for (auto& consumer : m_consumers) {
         consumer->receiveVoltage(voltage);
         consumer->update(_ecm);
@@ -511,6 +556,42 @@ bool PowerManagerInstance::updateActiveProvider(){
     return false; // all providers are depleted, sad time :'(
 }
 
+float PowerManagerInstance::computeChargeCurrentA(Generator* gen, Battery* bat, float safe_voltage) const
+{
+    if (!gen || !bat || gen->isDepleted()) { return 0.0f; }
+    if (bat->getStateOfCharge() >= 1.0f) { return 0.0f; }
+
+    // generator generates only what battery needs
+    const float soc = bat->getStateOfCharge();
+    const float deficit = 1.0f - soc;              // 0 when full, 1 when empty
+    const float needed_W = deficit * gen->availablePowerW();
+    const float max_charge_W = gen->availablePowerW() * 0.1f; //cap at 10% of rated output
+    const float charge_W = std::min(needed_W, max_charge_W);
+    return charge_W / safe_voltage;
+}
+
+bool PowerManagerInstance::reactivateIfPossible(float available_w)
+{
+    // find the highest priority (lowest number) inactive consumer
+    // that fits within the available power budget
+    // reactivate one per tick
+    for (int priority = 1; priority <= 4; ++priority) {
+        for (auto& consumer : m_consumers) {
+            if (!consumer->isActive() && consumer->priority() == priority) {
+                if (consumer->nominalPowerW() <= available_w) {
+                    consumer->reactivate();
+                    m_logger->info("PowerManagerInstance [{}]: reactivated consumer [{}] "
+                        "(priority {}) available_w={:.1f}",
+                        m_vessel_name, consumer->name(),
+                        priority, available_w);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 void PowerManagerInstance::shedLoadsIfNeeded(const PowerLevel level){
     // Priority level: 
     // 1 = safety critical         - never shed   e.g.: navigation, emergency light
@@ -533,19 +614,15 @@ void PowerManagerInstance::shedLoadsIfNeeded(const PowerLevel level){
         {
             if ((*it)->isActive() && (*it)->priority() == group) {
                 (*it)->deactivate();
-                m_logger->warn(
-                    "PowerManagerInstance [{}]: shed consumer [{}] "
-                    "(priority {})",
-                    m_vessel_name, (*it)->name(), group);
+                m_logger->warn("PowerManagerInstance [{}]: shed consumer [{}] "
+                    "(priority {})", m_vessel_name, (*it)->name(), group);
                 return; // one per tick
             }
         }
     }
- 
     // Only priority 1 consumers remain 
     m_logger->warn("PowerManagerInstance [{}]: critical -> only safety-critical "
         "consumers remain", m_vessel_name);
-    
 }
 
 bool PowerManagerInstance::matchesEntity(
