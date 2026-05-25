@@ -320,6 +320,39 @@ void PowerManagerInstance::Update(
 // Private helpers
 // ============================================================
 
+void PowerManagerInstance::parseOnePowerProvider(
+    const std::string& providerName,
+    const sdf::ElementPtr& powerSdf)
+{
+    if (!powerSdf->HasElement("type")) {
+        m_logger->error(
+            "PowerManagerInstance [{}]: provider [{}] has <lotusim_power> "
+            "but missing required <type> -> skipping",
+            m_vessel_name, providerName);
+        return;
+    }
+
+    const std::string type = powerSdf->Get<std::string>("type");
+
+    if (type == "simple_battery") {
+        auto battery = std::make_unique<SimpleBattery>(providerName, powerSdf, m_node);
+        m_batteries.push_back(battery.get());
+        m_providers.push_back(std::move(battery));
+    } else if (type == "simple_generator") {
+        auto generator = std::make_unique<SimpleGenerator>(providerName, powerSdf, m_node);
+        m_generators.push_back(generator.get());
+        m_providers.push_back(std::move(generator));
+    } else if (type == "rpm_generator") {
+        auto generator = std::make_unique<RpmGenerator>(providerName, powerSdf, m_node, m_vessel_name);
+        m_generators.push_back(generator.get());
+        m_providers.push_back(std::move(generator));
+    } else {
+        m_logger->error(
+            "PowerManagerInstance [{}]: unknown provider type '{}' for [{}] -> skipping",
+            m_vessel_name, type, providerName);
+    }
+}
+
 bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& _ecm)
 {
     // Get the full model SDF from the ModelSdf component
@@ -331,60 +364,41 @@ bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& 
         return false;
     }
 
-    const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
-    if (!modelEl) {
+    sdf::ElementPtr sdfptr = modelSdfComp->Data().Element();
+    if (!sdfptr) {
         m_logger->error(
             "PowerManagerInstance [{}]: ModelSdf has no element",
             m_vessel_name);
         return false;
     }
 
-    auto linkEl = modelEl->GetElement("link");
-    while (linkEl) {
-        // Check for <lotusim_power> tag
-        if (!linkEl->HasElement("lotusim_power")) {
-            linkEl = linkEl->GetNextElement("link");
-            continue;
+    sdf::ElementPtr rootEl = sdfptr->GetIncludeElement();
+    if (!rootEl) {
+        rootEl = sdfptr;
+    }
+
+    if (rootEl->HasElement("lotusim_power")){
+        auto powerEl = rootEl->GetElement("lotusim_power");
+        
+        while (powerEl) {
+            if (!powerEl->HasElement("name")) {
+                m_logger->error(
+                    "PowerManagerInstance [{}]: <lotusim_power> is missing required <name> -> skipping",
+                    m_vessel_name);
+                powerEl = powerEl->GetNextElement("lotusim_power");
+                continue;
+            }
+            const std::string providerName = powerEl->Get<std::string>("name");
+            parseOnePowerProvider(providerName, powerEl);
+            powerEl = powerEl->GetNextElement("lotusim_power");
         }
-
-        const std::string linkName = linkEl->Get<std::string>("name");
-        const sdf::ElementPtr powerSdf = linkEl->GetElement("lotusim_power");
-
-        if (!powerSdf->HasElement("type")) {
-            m_logger->error(
-                "PowerManagerInstance [{}]: link [{}] has <lotusim_power> but missing required <type> -> skipping",
-                m_vessel_name, linkName);
-                linkEl = linkEl->GetNextElement("link");
-            continue;
-        }
-
-        const std::string type = powerSdf->Get<std::string>("type");
-
-        if (type == "simple_battery") {
-            auto battery = std::make_unique<SimpleBattery>(linkName, powerSdf, m_node);
-            m_batteries.push_back(battery.get());
-            m_providers.push_back(std::move(battery));
-        } else if (type == "simple_generator") {
-            auto generator = std::make_unique<SimpleGenerator>(linkName, powerSdf, m_node);
-            m_generators.push_back(generator.get());
-            m_providers.push_back(std::move(generator));
-        } else if (type == "rpm_generator") {
-            auto generator = std::make_unique<RpmGenerator>(linkName, powerSdf, m_node, m_vessel_name);
-            m_generators.push_back(generator.get());
-            m_providers.push_back(std::move(generator));
-        } else {
-            m_logger->error(
-                "PowerManagerInstance [{}]: unknown provider type '{}' on link [{}] -> skipping",
-                m_vessel_name, type, linkName);
-        }
-        linkEl = linkEl->GetNextElement("link");
     }
     if (m_providers.empty()) {
         m_logger->warn(
             "PowerManagerInstance [{}]: no power providers found",
             m_vessel_name);
-    }  
-    return true;    
+    }
+    return true;
 }
 
 sdf::ElementPtr PowerManagerInstance::findRawSensorElement(

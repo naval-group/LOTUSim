@@ -39,34 +39,23 @@
                 <update_rate>1000.0</update_rate>
             </sensor>
         </link>
-        <link name="main_battery">
-            <lotusim_power>
-                <type>simple_battery</type>
-                <capacity_ah>100</capacity_ah>
-                <initial_soc>0.8</initial_soc>
-                <voltage_min>36.0</voltage_min>
-                <voltage_nominal>48.0</voltage_nominal>
-            </lotusim_power>
-        </link>
-        <link name="2_battery">
-            <lotusim_power>
-                <type>simple_battery</type>
-                <capacity_ah>50</capacity_ah>
-                <initial_soc>0.6</initial_soc>
-                <voltage_min>36.0</voltage_min>
-                <voltage_nominal>48.0</voltage_nominal>
-            </lotusim_power>
-        </link>
-        <link name="test_generator">
-            <lotusim_power>
-                <type>simple_generator</type>
-                <fuel_type>hydrogen</fuel_type>
-                <fuel_capacity>20</fuel_capacity>      <!--full tank size in litres-->
-                <fuel_level_start>20</fuel_level_start>     <!--how much fuel at start-->
-                <rated_output_w>5000</rated_output_w>
-                <efficiency>0.85</efficiency>
-                <voltage_nominal>48.0</voltage_nominal>
-            </lotusim_power>
-        </link>
+        <lotusim_power>
+            <name>main_battery</name>
+            <type>simple_battery</type>
+            <capacity_ah>100</capacity_ah>
+            <initial_soc>0.8</initial_soc>
+            <voltage_min>36.0</voltage_min>
+            <voltage_nominal>48.0</voltage_nominal>
+        </lotusim_power>
+        <lotusim_power>
+            <name>test_generator</name>
+            <type>simple_generator</type>
+            <fuel_type>hydrogen</fuel_type>
+            <fuel_capacity>20</fuel_capacity>
+            <fuel_level_start>20</fuel_level_start>
+            <rated_output_w>5000</rated_output_w>
+            <efficiency>0.85</efficiency>
+            <voltage_nominal>48.0</voltage_nominal>
+        </lotusim_power>
     </model>
 </sdf>

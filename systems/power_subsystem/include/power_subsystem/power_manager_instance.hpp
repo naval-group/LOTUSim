@@ -111,6 +111,12 @@ private:
     static sdf::ElementPtr findRawSensorElement(
         const sdf::ElementPtr& modelEl,
         const std::string& sensorName);
+
+    /**
+     * @brief to parse batteries and generators
+     */
+    void parseOnePowerProvider(const std::string& providerName,
+                           const sdf::ElementPtr& powerSdf);
         
     /**
      * @brief Walks links of the vessel and finds <lotusim_power> tag 

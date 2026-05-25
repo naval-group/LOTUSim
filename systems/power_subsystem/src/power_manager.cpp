@@ -122,8 +122,6 @@ bool PowerManager::loadVessel(
         return false;
     }
  
-    // check vessel has at least one <lotusim_power> link before creating
-    // an instance
     const auto* modelSdfComp = _ecm.Component<gz::sim::components::ModelSdf>(_entity);
     if (!modelSdfComp) {
         m_logger->error(
@@ -132,31 +130,23 @@ bool PowerManager::loadVessel(
     }
 
     // Walk <link> elements in the SDF
-    const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
-    if (!modelEl) {
+    const sdf::ElementPtr sdfptr = modelSdfComp->Data().Element();
+    if (!sdfptr) {
         m_logger->error(
             "PowerManagerInstance [{}]: ModelSdf has no element", vesselName);
         return false;
     }
 
-    bool hasPowerConfig = false;
-    auto linkEl = modelEl->GetElement("link");
-    while (linkEl) {
-        // Check for <lotusim_power> tag
-        if (linkEl->HasElement("lotusim_power")) {
-            hasPowerConfig = true;
-            break;
-        }
-        linkEl = linkEl->GetNextElement("link");
+    sdf::ElementPtr rootEl = sdfptr->GetIncludeElement();
+    if (!rootEl) {
+        rootEl = sdfptr;
     }
-
-    if (!hasPowerConfig) {
+    if (!rootEl->HasElement("lotusim_power")) {
         m_logger->warn(
             "PowerManager::loadVessel [{}]: no <lotusim_power> tag found, skipping PowerManager creation",
             vesselName);
         return false;
-    }
- 
+    } 
     // creates per-vessel node
     auto vesselNode = rclcpp::Node::make_shared(
         vesselName + "_power",
