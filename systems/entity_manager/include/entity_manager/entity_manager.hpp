@@ -214,6 +214,13 @@ private:
         const gz::sim::UpdateInfo& _info,
         const gz::sim::EntityComponentManager& _ecm);
 
+    /**
+     * @brief Pensure the vessel name is valid to avoid crashing the simulation
+     *
+     * @param name
+     */
+    static bool isValidRosName(const std::string& name);
+
 private:
     // MASCmd Array action server functions
     rclcpp_action::GoalResponse handleMASCmdArrayGoal(

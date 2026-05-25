@@ -224,6 +224,11 @@ EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                     result->result = true;
                     result->name = vessel_name;
                     result->entity = entity;
+                } else {
+                    // Explicit failure : downstream plugins should check result
+                    result->result = false;
+                    result->name = "invalid_vessel";
+                    result->entity = 0;
                 }
                 break;
             }
@@ -411,6 +416,19 @@ void EntityManager::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd&)
     return;
 }
 
+
+bool EntityManager::isValidRosName(const std::string& name)
+{
+    if (name.empty()) return false;
+    if (std::isdigit(static_cast<unsigned char>(name.front()))) return false;
+    for (char c : name) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
     const lotusim_msgs::msg::MASCmd& msg)
 {
@@ -527,6 +545,12 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
         desiredName = newName;
     }
     model.SetName(desiredName);
+    if (!isValidRosName(desiredName)) {
+        m_logger->error(
+            "EntityManager::addEntity: Invalid vessel name '{}': names must not start with a number or contain invalid characters. Skipping.",
+            desiredName);
+        return std::nullopt;
+    }
 
     // Creating the entity
     gz::sim::Entity entity{gz::sim::kNullEntity};
