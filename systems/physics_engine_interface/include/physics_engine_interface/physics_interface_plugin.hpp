@@ -75,18 +75,18 @@ namespace lotusim::gazebo {
  *  <lotus_param>
  *   <physics_engine_interface>
  *    <aerial>
- *      <connection_type>XDynWebSocket</connection_type>
+ *      <interface_type>XDynWebSocket</interface_type>
  *      <uri>127.0.0.1:1234</uri>
  *      <thrusters>
  *        <thruster1>propeller1</thruster1>
  *      </thrusters>
  *    </aerial>
  *    <surface>
- *      <connection_type>XDynGRPC</connection_type>
+ *      <interface_type>XDynGRPC</interface_type>
  *      <uri>127.0.0.1:1235</uri>
  *    </surface>
  *    <underwater>
- *      <connection_type>Manual</connection_type>
+ *      <interface_type>Manual</interface_type>
  *      <uri>127.0.0.1:1236</uri>
  *    </underwater>
  *    <init_state>Surface</init_state>

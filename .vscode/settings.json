@@ -95,4 +95,8 @@
         "editor.defaultFormatter": "ms-vscode.cpptools",
         "editor.formatOnSave": true
     },
+    "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+    },
 }

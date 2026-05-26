@@ -21,6 +21,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MASCmdArray.action"
   "action/MASCmd.action"
   "srv/SetWaypoints.srv"
+  "srv/String.srv"
   
   DEPENDENCIES 
     builtin_interfaces

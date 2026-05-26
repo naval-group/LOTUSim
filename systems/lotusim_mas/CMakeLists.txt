@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
-project(entity_manager VERSION 0.0.1 LANGUAGES CXX)
+project(lotusim_mas VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
@@ -47,6 +47,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Gazebo packages
 find_package(gz-cmake3 REQUIRED)
@@ -72,23 +73,27 @@ gz_find_package(gz-common5
 #============================================================================
 # Create library
 #============================================================================
-add_library(entity_manager_plugin 
+add_library(multi_agent_system_plugin 
   SHARED 
-  src/entity_manager.cpp
+  src/entity_spawner.cpp
+  src/scenario_parser.cpp
+  src/scenario_manager.cpp
+  src/multi_agent_system.cpp
 )
 
-target_include_directories(entity_manager_plugin 
+target_include_directories(multi_agent_system_plugin 
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(entity_manager_plugin
+target_link_libraries(multi_agent_system_plugin
   gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+  yaml-cpp
 )
 
-ament_target_dependencies(entity_manager_plugin 
+ament_target_dependencies(multi_agent_system_plugin 
   rclcpp
   rclcpp_action
   geometry_msgs
@@ -101,8 +106,8 @@ ament_target_dependencies(entity_manager_plugin
 # Install
 #============================================================================
 install(
-  TARGETS entity_manager_plugin
-  EXPORT export_entity_manager_plugin
+  TARGETS multi_agent_system_plugin
+  EXPORT export_multi_agent_system_plugin
   ARCHIVE DESTINATION lib 
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -120,7 +125,7 @@ install(
 #============================================================================
 # Export
 #============================================================================
-ament_export_targets(export_entity_manager_plugin HAS_LIBRARY_TARGET)
+ament_export_targets(export_multi_agent_system_plugin HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
   rclcpp_action

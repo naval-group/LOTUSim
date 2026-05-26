@@ -80,7 +80,7 @@ constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
  * <lotusim_param>
  *    <physics_engine_interface>
  *        <surface>
- *            <connection_type>XDynWebSocket</connection_type>
+ *            <interface_type>XDynWebSocket</interface_type>
  *            <uri>ws://127.0.0.1:12345</uri>
  *            <thrusters>
  *                <thruster1>PSPropRudd</thruster1>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>aerial_demo_entity_manager</name>
+  <name>aerial_demo_mas</name>
   <version>1.0.0</version>
   <description>Custom entity manager to showcase custom user needs for Silencieuse demo in SA</description>
 
@@ -12,7 +12,7 @@
   <author email="malcom.neo@fe.naval-group.com">malcom neo</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <depend>entity_manager</depend>
+  <depend>lotusim_mas</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

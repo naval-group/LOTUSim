@@ -73,14 +73,13 @@ std_msgs::msg::Header generateHeaderMessage(
     return msg;
 }
 
-std::optional<std::tuple<double, double>> XYFromLatLong(
+std::optional<std::tuple<double, double, double>> LatLongToXY(
     const gz::sim::EntityComponentManager& _ecm,
     double lat,
-    double lon)
+    double lon,
+    double alt)
 {
-    gz::math::Angle lat0, lon0;
     gz::sim::Entity worldEntity;
-    gz::math::SphericalCoordinates sphCoords;
     _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
         [&](const gz::sim::Entity& _entity,
             const gz::sim::components::Name*,
@@ -88,20 +87,48 @@ std::optional<std::tuple<double, double>> XYFromLatLong(
             worldEntity = _entity;
             return true;
         });
-    if (auto sphComp =
-            _ecm.Component<gz::sim::components::SphericalCoordinates>(
-                worldEntity)) {
-        lat0 = sphComp->Data().LatitudeReference();
-        lon0 = sphComp->Data().LongitudeReference();
+    auto sphComp =
+        _ecm.Component<gz::sim::components::SphericalCoordinates>(worldEntity);
+    if (sphComp == nullptr) {
+        return std::nullopt;
     }
-    sphCoords.SetLatitudeReference(lat0);
-    sphCoords.SetLongitudeReference(lon0);
-    sphCoords.SetElevationReference(0);
+    auto xyz = sphComp->Data().PositionTransform(
+        gz::math::Vector3d(degToRad(lat), degToRad(lon), alt),
+        gz::math::SphericalCoordinates::SPHERICAL,
+        gz::math::SphericalCoordinates::LOCAL2);
 
-    gz::math::Vector3d xyz =
-        sphCoords.LocalFromSphericalPosition(gz::math::Vector3d{lat, lon, 0});
+    return std::make_tuple(xyz.X(), xyz.Y(), xyz.Z());
+}
 
-    return std::make_tuple(xyz.X(), xyz.Y());
+std::optional<std::tuple<double, double, double>> XYToLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
+    double x,
+    double y,
+    double z)
+{
+    gz::sim::Entity worldEntity;
+    _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
+        [&](const gz::sim::Entity& _entity,
+            const gz::sim::components::Name*,
+            const gz::sim::components::World*) -> bool {
+            worldEntity = _entity;
+            return true;
+        });
+    auto sphComp =
+        _ecm.Component<gz::sim::components::SphericalCoordinates>(worldEntity);
+    if (sphComp == nullptr) {
+        return std::nullopt;
+    }
+
+    auto latlon = sphComp->Data().PositionTransform(
+        gz::math::Vector3d(x, y, z),
+        gz::math::SphericalCoordinates::LOCAL2,
+        gz::math::SphericalCoordinates::SPHERICAL);
+
+    return std::make_tuple(
+        radToDeg(latlon.X()),
+        radToDeg(latlon.Y()),
+        latlon.Z());
 }
 
 sdf::ElementPtr getElementCaseInsensitive(
