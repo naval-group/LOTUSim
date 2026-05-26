@@ -11,6 +11,7 @@
 #define LOTUSIM_COMMON_HPP_
 
 #include <algorithm>
+#include <cmath>
 #include <gz/math/Pose3.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/components/Model.hh>
@@ -24,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "gz/math/SphericalCoordinates.hh"
 #include "std_msgs/msg/header.hpp"
 
 namespace lotusim::common {
@@ -92,24 +94,42 @@ std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
 /**
  * @brief Generate ROS2 Header message
  *
- * @param _time 
+ * @param _time
  * @return std_msgs::msg::Header
  */
 std_msgs::msg::Header generateHeaderMessage(
     const std::chrono::steady_clock::duration& _time);
 
 /**
- * @brief Get the X Y from Lat Long
+ * @brief Convert latitude/longitude/altitude to local XYZ (ENU metres).
  *
  * @param _ecm
- * @param lat
- * @param longi
- * @return std::optional<std::tuple<double, double>>
+ * @param lat degrees
+ * @param lon degrees
+ * @param alt altitude in metres (default 0)
+ * @return std::optional<std::tuple<double, double, double>> (x, y, z)
  */
-std::optional<std::tuple<double, double>> XYFromLatLong(
+std::optional<std::tuple<double, double, double>> LatLongToXY(
     const gz::sim::EntityComponentManager& _ecm,
     double lat,
-    double longi);
+    double lon,
+    double alt = 0.0);
+
+/**
+ * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude.
+ *
+ * @param _ecm Entity Component Manager used to retrieve spherical coordinates
+ * @param x Local X coordinate in metres
+ * @param y Local Y coordinate in metres
+ * @param z Local Z coordinate in metres (default 0)
+ * @return std::optional<std::tuple<double, double, double>> (lat deg, lon deg,
+ * alt metres), or std::nullopt if spherical coordinates are unavailable
+ */
+std::optional<std::tuple<double, double, double>> XYToLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
+    double x,
+    double y,
+    double z = 0.0);
 
 /**
  * @brief Get the SDF Element with case insensitive name
@@ -129,6 +149,28 @@ sdf::ElementPtr getElementCaseInsensitive(
  * @return std::string
  */
 std::string toUpper(std::string str);
+
+/**
+ * @brief Convert radians to degrees
+ *
+ * @param rad angle in radians
+ * @return double angle in degrees
+ */
+inline double radToDeg(double rad)
+{
+    return rad * (180.0 / M_PI);
+}
+
+/**
+ * @brief Convert degrees to radians
+ *
+ * @param deg angle in degrees
+ * @return double angle in radians
+ */
+inline double degToRad(double deg)
+{
+    return deg * (M_PI / 180.0);
+}
 
 }  // namespace lotusim::common
 #endif  // COMMON_HPP

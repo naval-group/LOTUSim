@@ -23,26 +23,18 @@
             <elevation>0</elevation>
             <heading_deg>0</heading_deg>
         </spherical_coordinates>
-        <plugin filename="entity_manager_plugin"
-            name="lotusim::gazebo::EntityManager">
+        <plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem">
         </plugin>
-        <plugin filename="physics_interface_plugin"
-            name="lotusim::gazebo::PhysicsInterfacePlugin">
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
-        <plugin
-            filename="gz-sim-imu-system"
-            name="gz::sim::systems::Imu">
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu">
         </plugin>
-        <plugin
-            filename="gz-sim-magnetometer-system"
-            name="gz::sim::systems::Magnetometer">
+        <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
         </plugin>
-        <plugin
-            filename="gz-sim-air-pressure-system"
-            name="gz::sim::systems::AirPressure">
+        <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure">
         </plugin>
         <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
         <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">

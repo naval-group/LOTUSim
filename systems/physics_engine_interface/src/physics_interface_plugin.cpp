@@ -292,16 +292,25 @@ void PhysicsInterfacePlugin::createDomainInterface(
         _interface_map)
 {
     InterfaceType interface_type;
-    if (!_physics_sdf->HasElement("connection_type")) {
+    if (!_physics_sdf->HasElement("connection_type") ||
+        !_physics_sdf->HasElement("interface_type")) {
         m_logger->warn(
             "PhysicsInterfacePlugin::createDomainInterface: {} missing {} interface_type or uri.",
             _vessel_name,
             DomainTypeToStringMap[_domain]);
     }
     try {
-        interface_type = InterfaceTypeMap.at(
-            lotusim::common::toUpper(
-                _physics_sdf->Get<std::string>("connection_type")));
+        // Temp support of legacy type connection_type, changing to
+        // interface_type
+        if (_physics_sdf->HasElement("connection_type")) {
+            interface_type = InterfaceTypeMap.at(
+                lotusim::common::toUpper(
+                    _physics_sdf->Get<std::string>("connection_type")));
+        } else if (_physics_sdf->HasElement("interface_type")) {
+            interface_type = InterfaceTypeMap.at(
+                lotusim::common::toUpper(
+                    _physics_sdf->Get<std::string>("interface_type")));
+        }
         auto interface = PhysicsInterfaceBase::createInterface(
             interface_type,
             m_models_cmd_map_ptr,
@@ -531,6 +540,11 @@ bool PhysicsInterfacePlugin::loadVessel(
                     return true;
                 }
             }
+        } else {
+            m_logger->warn(
+                "PhysicsInterfacePlugin::loadVessel: {}. No params for physics on vessel. Removing physics from vessel.",
+                vessel_name);
+            return true;
         }
     } catch (const std::exception& e) {
         m_logger->error(

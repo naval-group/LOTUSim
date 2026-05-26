@@ -7,39 +7,24 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-#ifndef LOTUSIM_ENTITY_MANAGEMENT_PLUGIN_HH_
-#define LOTUSIM_ENTITY_MANAGEMENT_PLUGIN_HH_
-
+#ifndef LOTUSIM_MULTI_AGENT_PLUGIN_HH_
+#define LOTUSIM_MULTI_AGENT_PLUGIN_HH_
 #include <atomic>
-#include <cstdlib>
-#include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
-#include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/Events.hh>
-#include <gz/sim/Link.hh>
 #include <gz/sim/SdfEntityCreator.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/Link.hh>
-#include <gz/sim/components/Model.hh>
-#include <gz/sim/components/Name.hh>
-#include <gz/sim/components/ParentEntity.hh>
-#include <gz/sim/components/Pose.hh>
-#include <gz/sim/components/PoseCmd.hh>
-#include <gz/sim/components/World.hh>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
-#include <shared_mutex>
 #include <string>
 #include <thread>
-#include <tuple>
-#include <vector>
 
-#include "geometry_msgs/msg/pose.hpp"
-#include "geometry_msgs/msg/pose_array.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "lotusim_mas/entity_spawner.hpp"
+#include "lotusim_mas/scenario_manager.hpp"
 #include "lotusim_msgs/action/mas_cmd.hpp"
 #include "lotusim_msgs/action/mas_cmd_array.hpp"
 #include "lotusim_msgs/msg/mas_cmd.hpp"
@@ -55,7 +40,7 @@ namespace lotusim::gazebo {
 /**
  * @brief Core manager for the Multi-Agent System.
  *
- * The EntityManager is responsible for managing assets, publishing asset poses,
+ * The MAS is responsible for managing assets, publishing asset poses,
  * and handling user model commands.
  *
  * Topics:
@@ -63,15 +48,15 @@ namespace lotusim::gazebo {
  * - Subscriber: `mas_cmd` (<MASCmd>)
  * - Subscriber: `mas_cmd_array` (<MASCmdArray>)
  */
-class EntityManager : public gz::sim::System,
-                      public gz::sim::ISystemConfigure,
-                      public gz::sim::ISystemPreUpdate,
-                      public gz::sim::ISystemUpdate,
-                      public gz::sim::ISystemPostUpdate {
+class MultiAgentSystem : public gz::sim::System,
+                         public gz::sim::ISystemConfigure,
+                         public gz::sim::ISystemPreUpdate,
+                         public gz::sim::ISystemUpdate,
+                         public gz::sim::ISystemPostUpdate {
 public:
-    EntityManager();
+    MultiAgentSystem();
 
-    ~EntityManager();
+    ~MultiAgentSystem();
 
     void shutdown();
 
@@ -177,32 +162,7 @@ protected:
     virtual void customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg);
 
 private:
-    /**
-     * @brief Method to create entity in the simulation
-     * In the msg, only a clean sdf_string is expected. No other changes
-     * will be done to the sdf created.
-     *
-     * @param msg
-     */
-    std::optional<std::tuple<uint16_t, std::string>> addEntity(
-        const lotusim_msgs::msg::MASCmd& msg);
-
-    /**
-     * @brief Move existing entity
-     * In the message, the vessel_name or entity number and vessel_position
-     * is expected.
-     *
-     * @param msg
-     */
-    bool moveEntity(const lotusim_msgs::msg::MASCmd& msg);
-
-    /**
-     * @brief Delete entity
-     * In the message, vessel_name or entity is expected
-     *
-     * @param msg
-     */
-    bool deleteEntity(const lotusim_msgs::msg::MASCmd& msg);
+    bool initROSNode();
 
     /**
      * @brief Publishes pose of all vessels in the system
@@ -280,36 +240,17 @@ protected:
      */
     gz::sim::EntityComponentManager* m_ecm;
 
+    /**
+     * @brief GZ Creator class
+     *
+     */
+    std::shared_ptr<gz::sim::SdfEntityCreator> m_creator;
+
     // MAS cmds and mutex
     std::mutex m_cmds_array_mutex;
     std::vector<std::shared_ptr<GoalHandleMASCmdArray>> m_mas_cmds_array;
     std::mutex m_cmds_mutex;
     std::vector<std::shared_ptr<GoalHandleMASCmd>> m_mas_cmds;
-
-    mutable std::shared_mutex m_variable_mutex;
-
-    /**
-     * @brief Mapping of string to Gz entity of the current vessel in the
-     * system
-     *
-     */
-    std::unordered_map<std::string, gz::sim::Entity> m_vessels_entities;
-
-    /**
-     * @brief Mapping from entity to name of the current vessel in the
-     * system
-     *
-     */
-    std::unordered_map<gz::sim::Entity, std::string> m_vessels_names;
-
-    /**
-     * @brief GZ Creator class
-     *
-     */
-    std::unique_ptr<gz::sim::SdfEntityCreator> m_creator;
-
-private:
-    std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
     /**
      * @brief Atomic flag indicating whether the ROS executor thread is active.
@@ -317,9 +258,16 @@ private:
      */
     std::atomic_bool m_running;
 
+private:
+    std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
+
     std::shared_ptr<std::thread> m_ros_node_thread;
 
     std::vector<rclcpp::CallbackGroup::SharedPtr> m_callback_group;
+
+    std::shared_ptr<lotusim::mas::EntitySpawner> m_entity_spawner;
+
+    std::unique_ptr<lotusim::scenario::ScenarioManager> m_scenario_manager;
 
     rclcpp::Publisher<lotusim_msgs::msg::VesselPositionArray>::SharedPtr
         m_pose_pub;
