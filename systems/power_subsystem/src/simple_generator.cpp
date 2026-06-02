@@ -47,12 +47,6 @@ void SimpleGenerator::receiveLoad(float currentA, float dt){
 
     if (isDepleted()) {
         m_logger->warn("SimpleGenerator [{}]: fuel depleted", Generator::name());
-    } else if (powerLevel() == PowerLevel::CRITICAL) {
-        m_logger->warn("SimpleGenerator [{}]: fuel critical  {:.1f} L remaining ({:.1f}%)",
-            Generator::name(), m_fuel_level, fuelRatio() * 100.0f);
-    } else if (powerLevel() == PowerLevel::WARN) {
-        m_logger->warn("SimpleGenerator [{}]: fuel low {:.1f} L remaining ({:.1f}%)",
-            Generator::name(), m_fuel_level, fuelRatio() * 100.0f);
     }
 }
 } //namespace lotusim::gazebo

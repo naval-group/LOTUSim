@@ -108,14 +108,6 @@ void RpmGenerator::receiveLoad(float /*currentA*/, float dt)
         m_logger->warn(
             "RpmGenerator [{}]: fuel depleted",
             Generator::name());
-    } else if (powerLevel() == PowerLevel::CRITICAL) {
-        m_logger->warn(
-            "RpmGenerator [{}]: fuel critical — {:.1f} L ({:.1f}%)",
-            Generator::name(), m_fuel_level, fuelRatio() * 100.0f);
-    } else if (powerLevel() == PowerLevel::WARN) {
-        m_logger->warn(
-            "RpmGenerator [{}]: fuel low — {:.1f} L ({:.1f}%)",
-            Generator::name(), m_fuel_level, fuelRatio() * 100.0f);
     }
 }
 

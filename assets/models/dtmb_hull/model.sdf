@@ -51,8 +51,8 @@
             <name>test_generator</name>
             <type>simple_generator</type>
             <fuel_type>hydrogen</fuel_type>
-            <fuel_capacity>20</fuel_capacity>
-            <fuel_level_start>20</fuel_level_start>
+            <fuel_capacity>2</fuel_capacity>
+            <fuel_level_start>2</fuel_level_start>
             <rated_output_w>5000</rated_output_w>
             <efficiency>0.85</efficiency>
             <voltage_nominal>48.0</voltage_nominal>

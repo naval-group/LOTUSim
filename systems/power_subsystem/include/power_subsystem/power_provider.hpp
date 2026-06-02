@@ -20,11 +20,23 @@ namespace lotusim::gazebo{
 /**
  * @brief Health level of a power provider
  *
- * Threshold levels (computed from sdf voltage_min) PowerManager behaviour per level:
+ * Computed by each PowerProvider subclass from its own internal state:
+ *   - Battery   : based on output voltage vs voltage_min (from SDF)
+ *   - Generator : based on fuel ratio (fuel_level / fuel_capacity)
+ *
+ * | Level    |    Battery (vs voltage_min)        | Generator (fuel ratio)  |
+ * |----------|------------------------------------|-------------------------|
+ * | NORMAL   | voltage > voltage_min * 1.15       | fuel_ratio > 0.15       |
+ * | WARN     | voltage_min*1.05 < v <= *1.15      | 0.05 < ratio <= 0.15    |
+ * | CRITICAL | voltage_min < v <= voltage_min*1.05| 0.0 < ratio <= 0.05     |
+ * | DEPLETED | voltage <= voltage_min             | fuel_ratio <= 0.0       |
+ *
+ * PowerManagerInstance response per level:
  *   NORMAL   : no action
- *   WARN     : warning log + shed priority 4 consumers
- *   CRITICAL : warning log + shed priority 3 and below
+ *   WARN     : shed priority 4 consumers
+ *   CRITICAL : shed priority 3 and below
  *   DEPLETED : info log + switch to next battery if available
+ *
  */
 enum class PowerLevel
 {
