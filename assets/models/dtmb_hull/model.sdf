@@ -43,7 +43,15 @@
             <name>main_battery</name>
             <type>simple_battery</type>
             <capacity_ah>100</capacity_ah>
-            <initial_soc>0.4</initial_soc>
+            <initial_soc>0.42</initial_soc>
+            <voltage_min>36.0</voltage_min>
+            <voltage_nominal>48.0</voltage_nominal>
+        </lotusim_power>
+        <lotusim_power>
+            <name>backup_battery</name>
+            <type>simple_battery</type>
+            <capacity_ah>100</capacity_ah>
+            <initial_soc>0.42</initial_soc>
             <voltage_min>36.0</voltage_min>
             <voltage_nominal>48.0</voltage_nominal>
         </lotusim_power>

@@ -70,10 +70,7 @@ public:
     void setServiceName(const std::string& vessel_name)
     {
         const std::string service = "/lotusim/" + vessel_name + "/" + name() + "/change_state";
-
         m_activate_client = m_node->create_client<lotusim_sensor_msgs::srv::ActivateSensor>(service);
-
-        m_logger->info("[SensorPowerConsumer] {} will use service {}", name(), service);
     }
 
     // ----------------------------------------------------------------
