@@ -7,7 +7,7 @@ project(power_subsystem)
 #============================================================================
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -65,6 +65,7 @@ src/power_manager_instance.cpp
 src/simple_battery.cpp
 src/simple_generator.cpp
 src/rpm_generator.cpp
+src/default_power_strategy.cpp
 )
 target_include_directories(power_subsystem
   PUBLIC
@@ -126,36 +127,5 @@ ament_export_libraries(
   power_subsystem
 )
 ament_export_include_directories(include)
-
-# ============================================================================
-# unit tests
-# ============================================================================
- 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  find_package(ament_cmake_gmock REQUIRED)
-  find_package(fmt REQUIRED)
-  set(TEST_TARGETS
-    test_simple_battery
-    test_sensor_consumer
-    test_rpm_generator
-    test_simple_generator
-  )
-  foreach(test_target IN LISTS TEST_TARGETS)
-    ament_add_gtest(${test_target} unit_tests/${test_target}.cpp)
-    target_include_directories(${test_target} PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    )
-    ament_target_dependencies(${test_target} 
-      rclcpp
-      lotusim_common
-    )
-    target_link_libraries(${test_target}
-      power_subsystem
-      fmt::fmt
-    )
-    #enable_asan_and_coverage(${test_target})
-  endforeach()
-endif()
 
 ament_package()

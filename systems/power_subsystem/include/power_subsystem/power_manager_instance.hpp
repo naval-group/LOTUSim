@@ -28,6 +28,7 @@
 #include "power_subsystem/power_consumer.hpp"
 #include "power_subsystem/battery.hpp"
 #include "power_subsystem/generator.hpp"
+#include "power_subsystem/power_strategy.hpp"
 
 namespace lotusim::gazebo{
 
@@ -43,15 +44,8 @@ namespace lotusim::gazebo{
  * On each sim tick, Update() runs:
  *   1. EachNew / EachRemoved -> notify consumers 
  *   2. Sum drawCurrent() from all active consumers -> total_current
- *   3. push total_current to active battery via receiveLoad() (generator path to be implemented later)
- *   (3. If genSupply() >= demand:  generators cover load, surplus -> selectChargeTarget()->receiveCharge()
- *      else: shortfall drawn from battery via receiveLoad())
- *   4. Read PowerLevel from active battery:
- *        DEPLETED : log info + switch to next battery, deactivate all if none left
- *        CRITICAL : log warning + shed priority 3 and below
- *        WARN     : log warning + shed priority 4
- *        NORMAL   : no action
- *   5. Push voltage to all consumers via receiveVoltage() + update()
+ *   3. load distribution logic
+ *   4. Push voltage to all consumers via receiveVoltage() + update()
  * 
  * Battery declared as a <link> with <lotusim_power> tag in vessel SDF
  *
@@ -100,6 +94,14 @@ public:
     // for logging and topic
     const std::string& vesselName() const { return m_vessel_name; }
 
+    /**
+     * @brief Replace the load-distribution strategy
+     *        If never called, DefaultPowerStrategy is used
+     */
+    void setStrategy(std::unique_ptr<PowerStrategy> strategy) {
+        m_strategy = std::move(strategy);
+    }
+
 private:
     // ----------------------------------------------------------------
     // helpers 
@@ -138,28 +140,6 @@ private:
     bool updateActiveProvider();
 
     /**
-     * @brief Sheds consumers based on PowerLevel, one per tick
-     */
-    void shedLoadsIfNeeded(PowerLevel level);
-
-    /**
-     * @brief Tries to reactivate one shed consumer per tick
-     *        based on available power budget (generator or battery)
-     *        true if a consumer was reactivated
-     */
-    bool reactivateIfPossible(float available_w);
-
-    /**
-     * @brief Computes generator charge output for this tick
-     *        produces only what the battery needs, capped at availablePowerW()
-     *        returns charging current in Amps
-     * @param gen          active generator
-     * @param bat          battery to charge
-     * @param safe_voltage bus voltage reference
-     */
-    float computeChargeCurrentA(Generator* gen, Battery* bat, float safe_voltage) const;
-
-    /**
      * @brief Returns true if the Gazebo entity name matches consumerName
      */
     bool matchesEntity(
@@ -180,9 +160,6 @@ private:
      */
     bool m_consumers_parsed{false};
 
-    //
-    //
-    //
     gz::sim::Entity m_vessel_entity;
     std::string m_vessel_name;
     rclcpp::Node::SharedPtr m_node;
@@ -203,5 +180,8 @@ private:
 
     //index into m_batteries of the currently active battery
     int m_activeBatteryIndex{0};
+
+    // for load distribution and shedding implementation
+    std::unique_ptr<PowerStrategy> m_strategy;
 };
 } //namespace lotusim::gazebo
