@@ -380,12 +380,18 @@ bool PowerManagerInstance::parsePowerConsumers(
             }
             // add else-if for new consumer type
             if (powerType == "sensor") {
-                m_consumers.push_back(std::make_unique<SensorPowerConsumer>(
-                    name, nominalW, priority, rawSensorEl, m_node, _ecm));
+                // m_consumers.push_back(std::make_unique<SensorPowerConsumer>(
+                //     name, nominalW, priority, rawSensorEl, m_node, _ecm));
+
+                auto consumer = std::make_unique<SensorPowerConsumer>(
+                    name, nominalW, priority, rawSensorEl, m_node, _ecm);
  
                 m_logger->info(
                     "PowerManagerInstance [{}]: registered sensor consumer [{}] nominal_w={} priority={}",
                     m_vessel_name, name, nominalW, priority);
+
+                consumer->setServiceName(m_vessel_name); 
+                m_consumers.push_back(std::move(consumer));
  
             } else {
                 m_logger->warn(

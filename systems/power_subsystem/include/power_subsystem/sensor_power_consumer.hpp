@@ -11,6 +11,7 @@
 #pragma once
 
 #include "power_subsystem/power_consumer.hpp"
+#include "lotusim_sensor_msgs/srv/activate_sensor.hpp"
 
 #include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/components/Name.hh>
@@ -66,6 +67,15 @@ public:
             "sensor_" + this->name() + ".txt");
     }
 
+    void setServiceName(const std::string& vessel_name)
+    {
+        const std::string service = "/lotusim/" + vessel_name + "/" + name() + "/change_state";
+
+        m_activate_client = m_node->create_client<lotusim_sensor_msgs::srv::ActivateSensor>(service);
+
+        m_logger->info("[SensorPowerConsumer] {} will use service {}", name(), service);
+    }
+
     // ----------------------------------------------------------------
     // PowerConsumer interface
     // ----------------------------------------------------------------
@@ -83,7 +93,7 @@ public:
 
     /**
      * @brief No-op for a fixed-draw sensor
-     *        override in future if variable duty cycle is needed
+     *        for sensor active state
      */
     void update(gz::sim::EntityComponentManager& /*_ecm*/) override {}
 
@@ -96,7 +106,8 @@ public:
     void deactivate() override
     {
         PowerConsumer::deactivate();
-        m_logger->info( "[SensorPowerConsumer] {} deactivated (logic only)", name());
+        callService(false);
+        m_logger->info( "[SensorPowerConsumer] {} deactivated", name());
     }
 
     /**
@@ -108,6 +119,7 @@ public:
     void reactivate() override
     {
         PowerConsumer::reactivate();
+        callService(true);
         m_logger->info( "[SensorPowerConsumer] {} reactivated", name());
     }
 
@@ -134,6 +146,24 @@ public:
     }
 
 private:
+    void callService(bool active)
+    {
+        if (!m_activate_client) {
+            m_logger->warn("[SensorPowerConsumer] {} service client not initialised "
+                "— call setServiceName() first", name());
+            return;
+        }
+        if (!m_activate_client->service_is_ready()) {
+            m_logger->warn("[SensorPowerConsumer] {} service not ready", name());
+            return;
+        }
+        auto request =
+            std::make_shared<lotusim_sensor_msgs::srv::ActivateSensor::Request>();
+        request->activate = active;  // confirm field name with ros2 interface show
+        m_activate_client->async_send_request(request);
+    }
+
     std::shared_ptr<spdlog::logger> m_logger;
+    rclcpp::Client<lotusim_sensor_msgs::srv::ActivateSensor>::SharedPtr m_activate_client;
 };
 } // namespace lotusim::power_subsystem

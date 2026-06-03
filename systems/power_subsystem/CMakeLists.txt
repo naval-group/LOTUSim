@@ -47,6 +47,8 @@ find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(lotusim_sensor_msgs REQUIRED)
+find_package(lotusim_msgs REQUIRED)
 
 # Gazebo packages
 find_package(gz-cmake3 REQUIRED)
@@ -84,6 +86,8 @@ ament_target_dependencies(power_subsystem
   rclcpp
   lotusim_common
   std_msgs
+  lotusim_msgs
+  lotusim_sensor_msgs
 )
 
 #============================================================================
