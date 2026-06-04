@@ -236,7 +236,7 @@ void DefaultPowerStrategy::shedLoads(
     }   
     // only priority 1 consumers remain     
     if (logger)
-        logger->warn("DefaultPowerStrategy: critical, only safety-critical consumers remain");
+        logger->debug("DefaultPowerStrategy: critical, only safety-critical consumers remain");
 }
 
 // helpers
