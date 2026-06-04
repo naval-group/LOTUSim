@@ -27,10 +27,10 @@ namespace lotusim::gazebo{
  *   voltage_min  : voltage below which battery is considered depleted (Volts)
  *
  * PowerLevel thresholds (hardcoded):
- *   NORMAL   : voltage > voltage_min * 1.15
- *   WARN     : voltage_min * 1.05 < voltage <= voltage_min * 1.15
- *   CRITICAL : voltage_min        < voltage <= voltage_min * 1.05
- *   DEPLETED : voltage <= voltage_min
+ *   NORMAL   : SOC > 0.20
+ *   WARN     : 0.10 < SOC <= 0.20
+ *   CRITICAL : 0.0  < SOC <= 0.10
+ *   DEPLETED : SOC <= 0.0
  */
 class Battery : public PowerProvider{
 public:
@@ -39,34 +39,33 @@ public:
     // PowerProvider interface —> implemented here for all batteries
     // ----------------------------------------------------------------
     /**
-     * @brief returns the current health level based on voltage output
-     *        thresholds are computed from voltage_min in SDF
-     *   NORMAL   : voltage > voltage_min * 1.15   (>15% above min)
-     *   WARN     : voltage_min * 1.05 < v <= voltage_min * 1.15
-     *   CRITICAL : voltage_min < v <= voltage_min * 1.05  (<5% above min)
-     *   DEPLETED : voltage <= voltage_min
+     * @brief returns the current health level based on state of charge
+     *   NORMAL   : SOC > 0.20
+     *   WARN     : 0.10 < SOC <= 0.20
+     *   CRITICAL : 0.001  < SOC <= 0.10
+     *   DEPLETED : SOC <= 0.001
      */
     PowerLevel powerLevel() const override
     {
-        const float v = voltage();
-        if (v <= m_voltageMin) {
+        const float soc = getStateOfCharge();
+        if (soc <= 0.001f) {
             return PowerLevel::DEPLETED;
         }
-        if (v <= m_voltageMin * 1.05f) {
+        if (soc <= 0.10f) {
             return PowerLevel::CRITICAL;
         }
-        if (v <= m_voltageMin * 1.15f) {
+        if (soc <= 0.20f) {
             return PowerLevel::WARN;
         }
         return PowerLevel::NORMAL;
     }
 
     /**
-     * @brief Returns true when voltage has dropped to or below voltage_min
+     * @brief Returns true when soc is 0
      */
     bool isDepleted() const override
     {
-        return powerLevel() == PowerLevel::DEPLETED;
+        return getStateOfCharge() <= 0.0f;
     }
 
     /**

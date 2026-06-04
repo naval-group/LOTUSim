@@ -49,15 +49,15 @@ public:
      * @brief returns health level based on remaining fuel ratio
      *   NORMAL   : fuel > 25%
      *   WARN     : 10% < fuel <= 25%
-     *   CRITICAL : 5%  < fuel <= 10%
-     *   DEPLETED : fuel <= 5%
+     *   CRITICAL : 1%  < fuel <= 10%
+     *   DEPLETED : fuel <= 1%
      */
     PowerLevel powerLevel() const override
     {
         const float ratio = fuelRatio();
-        if (ratio <= 0.05f) { return PowerLevel::DEPLETED; }
+        if (ratio <= 0.01f) { return PowerLevel::DEPLETED; }
         if (ratio <= 0.10f) { return PowerLevel::CRITICAL; }
-        if (ratio <= 0.25f) { return PowerLevel::WARN; }
+        if (ratio <= 0.20f) { return PowerLevel::WARN; }
         return PowerLevel::NORMAL;
     }
 

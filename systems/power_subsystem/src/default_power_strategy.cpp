@@ -50,6 +50,10 @@ void DefaultPowerStrategy::distributeLoad(
                 }
             }
             if (charge_target) {
+                // don't charge a depleted battery -> let handleDepleted() switch it first
+                if (charge_target->isDepleted()) {
+                    charge_target = nullptr;
+                }
                 const float charge_current = computeChargeCurrentA(active_gen, charge_target, context.busVoltage);
                 if (charge_current > 1e-6f) {
                     active_gen->receiveLoad(charge_current, dt);
@@ -95,8 +99,7 @@ bool DefaultPowerStrategy::handleDepleted(
 {
     // search from activeBatteryIndex forward,
     // advance only if a non-depleted battery is found further along
-    for (int i = context.activeBatteryIndex;
-         i < static_cast<int>(context.batteries.size()); ++i)
+    for (int i = context.activeBatteryIndex; i < static_cast<int>(context.batteries.size()); ++i)
     {
         if (!context.batteries[i]->isDepleted()) {
             if (i != context.activeBatteryIndex){
@@ -182,6 +185,34 @@ void DefaultPowerStrategy::shedLoads(
     if (level == PowerLevel::NORMAL || level == PowerLevel::DEPLETED)
         return;
 
+    // ── check if another battery can take over ────────────────────────
+    for (int i = context.activeBatteryIndex + 1;
+         i < static_cast<int>(context.batteries.size()); ++i)
+    {
+        if (!context.batteries[i]->isDepleted()) {
+            // switch to it, no shedding needed
+            context.activeBatteryIndex = i;
+            context.allBatteriesDepleted = false;
+            if (logger)
+                logger->info("DefaultPowerStrategy: battery low, switching to [{}] "
+                    "before shedding",
+                    context.batteries[i]->name());
+            return;
+        }
+    }
+
+    // ── no spare battery, check generator ────────────────────────────
+    //don't shed if a generator is available to cover the load
+    Generator* activeGen = firstActiveGenerator(context.generators);
+    if (activeGen && !activeGen->isDepleted()) {
+        if (logger)
+            logger->debug("DefaultPowerStrategy: generator [{}] available, skipping shedding",
+                activeGen->name());
+        return;
+    }
+
+    // ── shed by priority ────────────────────────────────────────────
+    // no generator available, proceed with shedding
     const int maxGroup = (level == PowerLevel::WARN) ? 4 : 3;
 
     for (int group = maxGroup; group >= 2; --group){
@@ -205,7 +236,8 @@ float DefaultPowerStrategy::computeChargeCurrentA(
     Generator* gen, Battery* bat, float safe_voltage) const
 {
     if (!gen || !bat || gen->isDepleted()) return 0.0f;
-    if (bat->getStateOfCharge() >= 1.0f) return 0.0f;
+    if (bat->isDepleted())                 return 0.0f;
+    if (bat->getStateOfCharge() >= 1.0f)   return 0.0f;
 
     // generate only what the battery currently needs,
     // capped at 10% of the generator's rated output

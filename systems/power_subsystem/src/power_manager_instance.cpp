@@ -456,7 +456,7 @@ bool PowerManagerInstance::updateActiveProvider(){
     // preserves the priority order
     for (int i = m_activeBatteryIndex; i < static_cast<int>(m_batteries.size()); ++i)
     {
-        if(!m_providers[i]->isDepleted()){
+        if(!m_batteries[i]->isDepleted()){
             if(i != m_activeBatteryIndex){
                 m_logger->info("PowerManager: Vessel {}: switching from provider {}", m_vessel_name, m_activeBatteryIndex);
                 m_activeBatteryIndex = i;
