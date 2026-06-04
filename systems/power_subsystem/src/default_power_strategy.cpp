@@ -35,39 +35,44 @@ void DefaultPowerStrategy::distributeLoad(
     if (!context.allBatteriesDepleted) {
         // normal: battery covers consumer demand
         context.batteries[context.activeBatteryIndex]->receiveLoad(context.totalCurrentA, dt);
+        
+        // charging rules:
+        // - no generator → no charge
+        // - generator available AND batteries still active → charge
+        // - all batteries depleted AND only 1 generator → no charge (generator covers consumers only)
+        // - all batteries depleted AND 2+ generators → charge with spare generator
+        int availableGenCount = 0;
+        for (auto* g : context.generators)
+            if (!g->isDepleted()) availableGenCount++;
 
-        if (active_gen) {
-            // Find a battery that needs charging
+        const bool canCharge = active_gen && (!context.allBatteriesDepleted || availableGenCount > 1);
+
+        if (canCharge) {
             Battery* charge_target = context.batteries[context.activeBatteryIndex];
-            // if active battery is full, find one that needs charging
             if (charge_target->getStateOfCharge() >= 1.0f) {
                 charge_target = nullptr;
                 for (auto* bat : context.batteries) {
-                    if (bat->getStateOfCharge() < 1.0f) { 
+                    if (bat->getStateOfCharge() < 1.0f) {
                         charge_target = bat;
                         break;
                     }
                 }
             }
             if (charge_target) {
-                // don't charge a depleted battery -> let handleDepleted() switch it first
+                // re-check after load was applied this tick
                 if (charge_target->isDepleted()) {
-                    charge_target = nullptr;
+                        if (logger)
+                            logger->debug("DefaultPowerStrategy: charge target [{}] depleted "
+                                "after load, skipping charge", charge_target->name());
+                } else {
+                    const float charge_current =
+                        computeChargeCurrentA(active_gen, charge_target, context.busVoltage);
+
+                    if (charge_current > 1e-6f) {
+                        active_gen->receiveLoad(charge_current, dt);
+                        charge_target->receiveCharge(charge_current, dt);
+                    }
                 }
-                const float charge_current = computeChargeCurrentA(active_gen, charge_target, context.busVoltage);
-                if (charge_current > 1e-6f) {
-                    active_gen->receiveLoad(charge_current, dt);
-                    charge_target->receiveCharge(charge_current, dt);
-                    if (logger)
-                        logger->debug("DefaultPowerStrategy: generator [{}] charging "
-                            "battery [{}] at {:.3f} A",
-                            active_gen->name(), charge_target->name(), charge_current);
-                }
-                // else battery is full or generator has nothing to give
-            } else {
-                if (logger)
-                    logger->debug("DefaultPowerStrategy: generator [{}] idle – "
-                        "all batteries full", active_gen->name());
             }
         }
     } else {
@@ -125,13 +130,18 @@ bool DefaultPowerStrategy::handleDepleted(
             logger->info("DefaultPowerStrategy: generator [{}] taking over consumer demand",
                 active_gen->name());
 
+        // update bus voltage to generator voltage BEFORE computing demand
+        context.busVoltage = active_gen->voltage();
+        if (context.busVoltage <= 1e-6f) context.busVoltage = 1.0f;
+
         const float gen_available_W = active_gen->availablePowerW();
         const float gen_available_A = gen_available_W / context.busVoltage;
-        float demandA = 0.0f;
 
+        //re compute demand at generator voltage
+        float demandA = 0.0f;
         for (const auto& consumer : context.consumers) {
             if (consumer->isActive()){
-                demandA += consumer->drawnCurrent();
+                demandA += consumer->nominalPowerW() / context.busVoltage;
             } 
         }
         if (demandA > gen_available_A) {
@@ -191,11 +201,9 @@ void DefaultPowerStrategy::shedLoads(
     {
         if (!context.batteries[i]->isDepleted()) {
             // switch to it, no shedding needed
-            context.activeBatteryIndex = i;
-            context.allBatteriesDepleted = false;
             if (logger)
-                logger->info("DefaultPowerStrategy: battery low, switching to [{}] "
-                    "before shedding",
+                logger->debug("DefaultPowerStrategy: battery low but [{}] "
+                    "available, skipping shedding",
                     context.batteries[i]->name());
             return;
         }
@@ -206,7 +214,7 @@ void DefaultPowerStrategy::shedLoads(
     Generator* activeGen = firstActiveGenerator(context.generators);
     if (activeGen && !activeGen->isDepleted()) {
         if (logger)
-            logger->debug("DefaultPowerStrategy: generator [{}] available, skipping shedding",
+            logger->debug("DefaultPowerStrategy: battery low, but generator [{}] available, skipping shedding",
                 activeGen->name());
         return;
     }
@@ -254,19 +262,22 @@ void DefaultPowerStrategy::reactivateIfPossible(
     float available_w,
     std::shared_ptr<spdlog::logger> logger)
 {
+    const float available_a = available_w / context.busVoltage;
     // reactivates highest priority first
     for (int priority = 1; priority <= 4; ++priority) {
         for (auto& consumer : context.consumers) {
             if (consumer->isActive()) continue;
             if (consumer->priority() != priority) continue;
-            if (consumer->nominalPowerW() > available_w) continue;
+            const float cost_a = consumer->nominalPowerW() / context.busVoltage; // estimation of current draw
+
+            if (cost_a > available_a) continue;
 
             consumer->reactivate();
             if (logger)
                 logger->info(
                     "DefaultPowerStrategy: reactivated consumer [{}] "
-                    "(priority {}) available_w={:.1f}",
-                    consumer->name(), priority, available_w);
+                    "(priority {}) cost={:.3f} A available={:.3f} A",
+                    consumer->name(), priority, cost_a, available_a);
             return;
         }
     }

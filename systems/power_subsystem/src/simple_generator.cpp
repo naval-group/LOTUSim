@@ -35,10 +35,6 @@ void SimpleGenerator::receiveLoad(float currentA, float dt){
 
     m_fuel_level = std::max(0.0f, m_fuel_level - fuel_consumed);
 
-    // m_logger->info(
-    //         "SimpleGenerator [{}]: fuel level: {}",
-    //         Generator::name(), m_fuel_level);
-
     m_logger->debug(
         "SimpleGenerator [{}]: load={:.3f} A power={:.1f} W "
         "fuel_consumed={:.6f} L remaining={:.3f}/{:.3f} L ratio={:.3f}",

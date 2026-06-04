@@ -20,7 +20,7 @@ void SimpleBattery::receiveLoad(float currentA, float dt)
     m_remainingAh -= currentA * dt;
     m_remainingAh  = std::max(m_remainingAh, 0.0f);
     updateVoltage();
-    m_logger->info("SimpleBattery [{}]: received load {:.3f} A dt={:.4f} s "
+    m_logger->debug("SimpleBattery [{}]: received load {:.3f} A dt={:.4f} s "
         "remaining={:.3f} Ah SOC={:.3f} voltage={:.2f} V",
         m_name, currentA, dt, m_remainingAh, getStateOfCharge(), voltage());
 }
@@ -42,7 +42,7 @@ void SimpleBattery::receiveCharge(float currentA, float dt)
     m_remainingAh += currentA * dt;
     m_remainingAh  = std::min(m_remainingAh, m_capacityAh);
     updateVoltage();
-    m_logger->info("SimpleBattery [{}]: received charge {:.3f} A dt={:.4f} s "
+    m_logger->debug("SimpleBattery [{}]: received charge {:.3f} A dt={:.4f} s "
         "remaining={:.3f} Ah SOC={:.3f}",
         m_name, currentA, dt, m_remainingAh, getStateOfCharge());
 }

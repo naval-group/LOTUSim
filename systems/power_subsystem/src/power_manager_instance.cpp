@@ -173,19 +173,28 @@ void PowerManagerInstance::Update(
     m_strategy->distributeLoad(context, dt, m_logger);
 
     // ── Step 4: check active battery PowerLevel and act ───────────────
-    const PowerLevel level = m_batteries[m_activeBatteryIndex]->powerLevel();
- 
-    if (level == PowerLevel::DEPLETED) {
-        m_logger->info("PowerManagerInstance [{}]: battery [{}] depleted", 
-                        m_vessel_name, m_batteries[m_activeBatteryIndex]->name());
- 
-        m_strategy->handleDepleted(context, dt, m_logger);
-        // ctx.allBatteriesDepleted may have been updated by the strategy
-        if (m_all_batteries_depleted) return;
-    }
-
-    // ── Step 5: shed loads based on PowerLevel ───────
     if (!m_all_batteries_depleted) {
+        const PowerLevel level = m_batteries[m_activeBatteryIndex]->powerLevel();
+
+        if (level == PowerLevel::DEPLETED) {
+            m_logger->info("PowerManagerInstance [{}]: battery [{}] depleted",
+                m_vessel_name, m_batteries[m_activeBatteryIndex]->name());
+
+            m_strategy->handleDepleted(context, dt, m_logger);
+
+            if (m_all_batteries_depleted) {
+                Generator* activeGen = nullptr;
+                for (auto* g : m_generators)
+                    if (!g->isDepleted()) { activeGen = g; break; }
+                context.busVoltage = activeBusVoltage();
+                return;
+            }
+            // switched to new battery
+            context.busVoltage = m_batteries[m_activeBatteryIndex]->voltage();
+            if (context.busVoltage <= 1e-6f) context.busVoltage = activeBusVoltage();
+        }
+
+        // ── Step 5: shed loads ────────────────────────────────────────────
         m_strategy->shedLoads(context, level, m_logger);
     }
 
@@ -242,6 +251,17 @@ void PowerManagerInstance::parseOnePowerProvider(
             "PowerManagerInstance [{}]: unknown provider type '{}' for [{}] -> skipping",
             m_vessel_name, type, providerName);
     }
+}
+
+float PowerManagerInstance::activeBusVoltage() const
+{
+    if (!m_all_batteries_depleted)
+        return m_batteries[m_activeBatteryIndex]->voltage();
+
+    for (auto* g : m_generators)
+        if (!g->isDepleted()) return g->voltage();
+
+    return 1.0f; // no source available
 }
 
 bool PowerManagerInstance::parsePowerProviders(gz::sim::EntityComponentManager& _ecm)

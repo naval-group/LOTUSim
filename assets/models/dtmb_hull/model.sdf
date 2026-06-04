@@ -45,24 +45,24 @@
             <capacity_ah>100</capacity_ah>
             <initial_soc>0.45</initial_soc>
             <voltage_min>4.0</voltage_min>
-            <voltage_nominal>10.0</voltage_nominal>
+            <voltage_nominal>12.0</voltage_nominal>
         </lotusim_power>
         <lotusim_power>
             <name>backup_battery</name>
             <type>simple_battery</type>
             <capacity_ah>100</capacity_ah>
             <initial_soc>0.8</initial_soc>
-            <voltage_min>8.0</voltage_min>
+            <voltage_min>4.0</voltage_min>
             <voltage_nominal>12.0</voltage_nominal>
         </lotusim_power>
         <lotusim_power>
             <name>test_generator</name>
             <type>simple_generator</type>
-            <fuel_type>hydrogen</fuel_type>
-            <fuel_capacity>0.1</fuel_capacity>
-            <fuel_level_start>0.05</fuel_level_start>
-            <rated_output_w>10</rated_output_w>
-            <efficiency>0.85</efficiency>
+            <fuel_type>diesel</fuel_type>
+            <fuel_capacity>0.00001</fuel_capacity>
+            <fuel_level_start>0.00001</fuel_level_start>
+            <rated_output_w>6</rated_output_w>
+            <efficiency>0.15</efficiency>
             <voltage_nominal>48.0</voltage_nominal>
         </lotusim_power>
     </model>

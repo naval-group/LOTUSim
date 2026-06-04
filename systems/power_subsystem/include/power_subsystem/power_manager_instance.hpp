@@ -119,6 +119,8 @@ private:
      */
     void parseOnePowerProvider(const std::string& providerName,
                            const sdf::ElementPtr& powerSdf);
+
+    float activeBusVoltage() const;
         
     /**
      * @brief Walks links of the vessel and finds <lotusim_power> tag 
