@@ -331,6 +331,43 @@ sdf::ElementPtr PowerManagerInstance::findRawSensorElement(
     return nullptr;
 }
 
+void PowerManagerInstance::tryRegisterSensorConsumer(
+    const sdf::ElementPtr& sensorEl,
+    const std::string& sensorName,
+    const std::string& sensorType,
+    gz::sim::EntityComponentManager& _ecm)
+{
+    if (!sensorEl->HasElement("lotusim_power")) {
+        m_logger->debug("PowerManagerInstance [{}]: sensor [{}] has no "
+            "<lotusim_power> -> skipping", m_vessel_name, sensorName);
+        return;
+    }
+
+    const sdf::ElementPtr powerEl = sensorEl->GetElement("lotusim_power");
+    const std::string powerType = powerEl->Get<std::string>("power_type", "").first;
+    const float nominalW        = powerEl->Get<float>("nominal_w", 1.0f).first;
+    const int priority          = powerEl->Get<int>("priority", 3).first;
+
+    if (powerType.empty()) {
+        m_logger->warn("PowerManagerInstance [{}]: sensor [{}] has <lotusim_power> "
+            "but missing <power_type> -> skipping", m_vessel_name, sensorName);
+        return;
+    }
+
+    if (powerType == "sensor") {
+        auto consumer = std::make_unique<SensorPowerConsumer>(
+            sensorName, nominalW, priority, sensorEl, m_node, _ecm);
+        consumer->setServiceName(m_vessel_name);
+        m_logger->info("PowerManagerInstance [{}]: registered sensor consumer "
+            "[{}] (type={}) nominal_w={} priority={}",
+            m_vessel_name, sensorName, sensorType, nominalW, priority);
+        m_consumers.push_back(std::move(consumer));
+    } else {
+        m_logger->warn("PowerManagerInstance [{}]: unknown power_type '{}' on "
+            "sensor [{}] -> skipping", m_vessel_name, powerType, sensorName);
+    }
+}
+
 bool PowerManagerInstance::parsePowerConsumers(
     gz::sim::EntityComponentManager& _ecm)
 {
@@ -339,19 +376,19 @@ bool PowerManagerInstance::parsePowerConsumers(
     // get SDF
     const auto* modelSdfComp = _ecm.Component<gz::sim::components::ModelSdf>(m_vessel_entity);
     if (!modelSdfComp) {
-        m_logger->error(
+        m_logger->debug(
             "PowerManagerInstance [{}]: no ModelSdf component found",
             m_vessel_name);
         return false;
     }
     const sdf::ElementPtr modelEl = modelSdfComp->Data().Element();
     if (!modelEl) {
-        m_logger->error(
+        m_logger->debug(
             "PowerManagerInstance [{}]: ModelSdf has no element",
             m_vessel_name);
         return false;
     }
-    // ── Sensors ───────────────────────────────────────────────────────
+    // ── Custom Sensors ───────────────────────────────────────────────────────
     // Walk all CustomSensor entities in the ECM
     // For each one, walk up the parent chain to confirm it belongs to
     // this vessel. If it has a power_type attribute, register as consumer
@@ -379,59 +416,40 @@ bool PowerManagerInstance::parsePowerConsumers(
                 return true;
             }
 
-            if (!rawSensorEl->HasElement("lotusim_power")) {
-                m_logger->warn(
-                    "PowerManagerInstance [{}]: sensor [{}] does not have power_type -> skipping",
-                    m_vessel_name, name);
-                return true; // not a power-managed sensor, skip silently
-            }
-
-            const sdf::ElementPtr powerEl = rawSensorEl->GetElement("lotusim_power");
-            const std::string powerType = powerEl->Get<std::string>("power_type", "").first;
-            const float nominalW = powerEl->Get<float>("nominal_w", 1.0f).first;
-            const int priority = powerEl->Get<int>("priority", 3).first;
- 
-            if (powerType.empty()) {
-                m_logger->warn(
-                    "PowerManagerInstance [{}]: sensor [{}] has <lotusim_power> but "
-                    "missing <power_type> -> skipping",
-                    m_vessel_name, name);
-                return true;
-            }
-            // add else-if for new consumer type
-            if (powerType == "sensor") {
-                // m_consumers.push_back(std::make_unique<SensorPowerConsumer>(
-                //     name, nominalW, priority, rawSensorEl, m_node, _ecm));
-
-                auto consumer = std::make_unique<SensorPowerConsumer>(
-                    name, nominalW, priority, rawSensorEl, m_node, _ecm);
- 
-                m_logger->info(
-                    "PowerManagerInstance [{}]: registered sensor consumer [{}] nominal_w={} priority={}",
-                    m_vessel_name, name, nominalW, priority);
-
-                consumer->setServiceName(m_vessel_name); 
-                m_consumers.push_back(std::move(consumer));
- 
-            } else {
-                m_logger->warn(
-                    "PowerManagerInstance [{}]: unknown power_type '{}' on sensor [{}] -> skipping",
-                    m_vessel_name, powerType, name);
-            }
- 
+            tryRegisterSensorConsumer(rawSensorEl, name, "custom", _ecm);
             return true;
         });
 
-
-    // ── Thrusters ─────────────────────────────────────────────────────
-    // walk all links belonging to this vessel looking for <thruster> tags
-    // that carry power config
-    // No dedicated thruster ECM component exists yet 
-
-    // Walk all <link> elements in the model SDF
+    // ── Standard sensors (via SDF) ────────────────────────────────────────
+    // Handles type="imu", type="gpu_lidar", ... as these don't get a
+    // CustomSensor ECM component so they must be found directly in the SDF.
+    // Note: standard sensors do not expose the change_state service so
+    // setServiceName() is called for draw accounting only -> the sensor
+    // itself cannot be remotely toggled via this path.
     auto linkEl = modelEl->GetElement("link");
     while (linkEl) {
-        // Walk <thruster> child elements of this link
+        auto sensorEl = linkEl->GetElement("sensor");
+        while (sensorEl) {
+            // skip custom sensors -> already handled above
+            const std::string sensorType =
+                sensorEl->GetAttribute("type")
+                ? sensorEl->GetAttribute("type")->GetAsString()
+                : "";
+            const std::string sensorName =
+                sensorEl->GetAttribute("name")
+                ? sensorEl->GetAttribute("name")->GetAsString() : "";
+
+            // custom sensors already handled above
+            if (sensorType != "custom" && !sensorName.empty())
+                tryRegisterSensorConsumer(sensorEl, sensorName, sensorType, _ecm);
+
+            sensorEl = sensorEl->GetNextElement("sensor");
+        }
+
+        // ── Thrusters ─────────────────────────────────────────────────────
+        // walk all links belonging to this vessel looking for <thruster> tags
+        // that carry power config
+        // No dedicated thruster ECM component exists yet 
         auto thrusterEl = linkEl->GetElement("thruster");
         while (thrusterEl) {
             if (!thrusterEl->HasAttribute("name")) {

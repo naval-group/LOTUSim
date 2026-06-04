@@ -114,6 +114,12 @@ private:
         const sdf::ElementPtr& modelEl,
         const std::string& sensorName);
 
+    void tryRegisterSensorConsumer(
+        const sdf::ElementPtr& sensorEl,
+        const std::string& sensorName,
+        const std::string& sensorType,
+        gz::sim::EntityComponentManager& _ecm);
+
     /**
      * @brief to parse batteries and generators
      */

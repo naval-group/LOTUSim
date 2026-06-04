@@ -50,6 +50,11 @@
             <!-- AIS Sensor (custom)   -->
             <!-- ===================== -->
             <sensor name="ais_sensor" type="custom" gz:type="ais">
+                <lotusim_power>
+                    <power_type>sensor</power_type>
+                    <nominal_w>5.0</nominal_w>
+                    <priority>4</priority>
+                </lotusim_power>
                 <always_on>true</always_on>
                 <update_rate>1</update_rate>
                 <noise_sigma>0.01</noise_sigma>
@@ -60,6 +65,11 @@
             <!-- IMU Sensor (STANDARD) -->
             <!-- ===================== -->
             <sensor name="imu_sensor" type="imu">
+                <lotusim_power>
+                    <power_type>sensor</power_type>
+                    <nominal_w>2.0</nominal_w>
+                    <priority>4</priority>
+                </lotusim_power>
                 <always_on>true</always_on>
                 <update_rate>100</update_rate>
                 <pose>0 0 0 0 0 0</pose>
@@ -113,6 +123,11 @@
             <!-- 2D LIDAR (STANDARD) -->
             <!-- ===================== -->
             <sensor name="lidar_sensor" type="gpu_lidar">
+                <lotusim_power>
+                    <power_type>sensor</power_type>
+                    <nominal_w>5.0</nominal_w>
+                    <priority>3</priority>
+                </lotusim_power>
                 <pose>0 0 0.5 0 0 0</pose>
                 <always_on>true</always_on>
                 <update_rate>10.0</update_rate>
@@ -148,6 +163,11 @@
             <!-- RADAR                 -->
             <!-- ===================== -->
             <sensor name="radar_sensor" type="custom" gz:type="radar">
+                <lotusim_power>
+                    <power_type>sensor</power_type>
+                    <nominal_w>5.0</nominal_w>
+                    <priority>2</priority>
+                </lotusim_power>
                 <always_on>true</always_on>
                 <update_rate>1</update_rate>
                 <is_on>true</is_on>
@@ -167,5 +187,13 @@
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>
         </link>
+        <lotusim_power>
+            <name>main_battery</name>
+            <type>simple_battery</type>
+            <capacity_ah>100</capacity_ah>
+            <initial_soc>0.45</initial_soc>
+            <voltage_min>4.0</voltage_min>
+            <voltage_nominal>12.0</voltage_nominal>
+        </lotusim_power>
     </model>
 </sdf>
