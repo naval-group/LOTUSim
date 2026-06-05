@@ -199,9 +199,9 @@
             <name>backup_battery</name>
             <type>simple_battery</type>
             <capacity_ah>100</capacity_ah>
-            <initial_soc>0.8</initial_soc>
+            <initial_soc>0.9</initial_soc>
             <voltage_min>2.0</voltage_min>
-            <voltage_nominal>12.0</voltage_nominal>
+            <voltage_nominal>16.0</voltage_nominal>
         </lotusim_power>
     </model>
 </sdf>

@@ -144,7 +144,7 @@ def main(args=None):
     # Spawn 30 LRAUVs around it
     future_lrauv = node.spawn_lrauv_circle(n_ships=20, radius_m=50)
     rclpy.spin_until_future_complete(node, future_lrauv)
-    node.get_logger().info("30 LRAUV ships spawned around commando")
+    node.get_logger().info("20 LRAUV ships spawned around commando")
 
     try:
         rclpy.spin(node)
