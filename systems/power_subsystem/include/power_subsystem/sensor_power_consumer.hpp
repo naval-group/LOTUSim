@@ -69,6 +69,7 @@ public:
 
     void setServiceName(const std::string& vessel_name)
     {
+        m_vessel_name = vessel_name;
         const std::string service = "/lotusim/" + vessel_name + "/" + name() + "/change_state";
         m_activate_client = m_node->create_client<lotusim_sensor_msgs::srv::ActivateSensor>(service);
     }
@@ -92,7 +93,10 @@ public:
      * @brief No-op for a fixed-draw sensor
      *        for sensor active state
      */
-    void update(gz::sim::EntityComponentManager& /*_ecm*/) override {}
+    void update(gz::sim::EntityComponentManager& /*_ecm*/) override {
+        common::PowerStateRegistry::instance().set(
+            m_vessel_name + "/" + name(), isActive());
+    }
 
     /**
      * @brief Deactivates the sensor -> only its power
@@ -145,21 +149,21 @@ public:
 private:
     void callService(bool active)
     {
-        if (!m_activate_client) {
-            m_logger->warn("[SensorPowerConsumer] {} service client not initialised "
-                "— call setServiceName() first", name());
+        if (!m_activate_client || !m_activate_client->service_is_ready()) {
+            if (!active)
+                m_logger->warn("[SensorPowerConsumer] {} service not ready, "
+                    "registry set only", name());
             return;
         }
-        if (!m_activate_client->service_is_ready()) {
-            m_logger->warn("[SensorPowerConsumer] {} service not ready", name());
-            return;
-        }
+
+        m_logger->info("[SensorPowerConsumer] {} calling change_state active={}", name(), active);
         auto request =
             std::make_shared<lotusim_sensor_msgs::srv::ActivateSensor::Request>();
         request->activate = active;  // confirm field name with ros2 interface show
         m_activate_client->async_send_request(request);
     }
 
+    std::string m_vessel_name; 
     std::shared_ptr<spdlog::logger> m_logger;
     rclcpp::Client<lotusim_sensor_msgs::srv::ActivateSensor>::SharedPtr m_activate_client;
 };

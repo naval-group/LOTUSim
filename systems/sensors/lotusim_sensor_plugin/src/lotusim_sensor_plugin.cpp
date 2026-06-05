@@ -229,6 +229,13 @@ void LotusimSensorPlugin::PostUpdate(
     if (!_info.paused) {
         m_current_time = _info.simTime;
         for (auto& [entity, sensor] : m_entity_sensor_map) {
+            // check power state registry set by SensorPowerConsumer::update()
+            // which runs in PowerManagerInstance::Update() before PostUpdate()
+            // default true: if no power manager exists, sensor always runs
+            const std::string key = sensor->vesselName() + "/" + sensor->sensorName();
+            if (!common::PowerStateRegistry::instance().get(key, true)) {
+                continue;
+            }
             auto world_pos = gz::sim::worldPose(entity, _ecm);
             sensor->Position(world_pos.Pos());
             sensor->Orientation(world_pos.Rot());

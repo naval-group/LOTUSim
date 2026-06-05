@@ -125,7 +125,7 @@
             <sensor name="lidar_sensor" type="gpu_lidar">
                 <lotusim_power>
                     <power_type>sensor</power_type>
-                    <nominal_w>5.0</nominal_w>
+                    <nominal_w>6.0</nominal_w>
                     <priority>3</priority>
                 </lotusim_power>
                 <pose>0 0 0.5 0 0 0</pose>
@@ -165,7 +165,7 @@
             <sensor name="radar_sensor" type="custom" gz:type="radar">
                 <lotusim_power>
                     <power_type>sensor</power_type>
-                    <nominal_w>5.0</nominal_w>
+                    <nominal_w>7.0</nominal_w>
                     <priority>2</priority>
                 </lotusim_power>
                 <always_on>true</always_on>
@@ -191,8 +191,16 @@
             <name>main_battery</name>
             <type>simple_battery</type>
             <capacity_ah>100</capacity_ah>
-            <initial_soc>0.45</initial_soc>
-            <voltage_min>4.0</voltage_min>
+            <initial_soc>0.8</initial_soc>
+            <voltage_min>2.0</voltage_min>
+            <voltage_nominal>16.0</voltage_nominal>
+        </lotusim_power>
+        <lotusim_power>
+            <name>backup_battery</name>
+            <type>simple_battery</type>
+            <capacity_ah>100</capacity_ah>
+            <initial_soc>0.8</initial_soc>
+            <voltage_min>2.0</voltage_min>
             <voltage_nominal>12.0</voltage_nominal>
         </lotusim_power>
     </model>

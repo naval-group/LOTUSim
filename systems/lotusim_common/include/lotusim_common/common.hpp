@@ -36,6 +36,41 @@ enum class RandomisedType
     RANDOM
 };
 
+class PowerStateRegistry {
+public:
+    /**
+     * @brief Returns the single shared instance of the registry
+     *        Defined in common.cpp so all shared libraries (.so) that link
+     *        against lotusim_common share the same instance
+     */
+    static PowerStateRegistry& instance();
+
+    /**
+     * @brief Sets the power state for a sensor
+     *        Called by SensorPowerConsumer::update() every sim tick from
+     *        PowerManagerInstance::Update(), which runs before PostUpdate().
+     * @param key     vessel_name + "/" + sensor_name
+     * @param powered true = sensor is active, false = sensor is deactivated
+     */
+    void set(const std::string& key, bool powered);
+
+    /**
+     * @brief Returns the power state for a sensor
+     *        Called by LotusimSensorPlugin::PostUpdate() before calling
+     *        UpdateSensor(). if false the sensor update is skipped entirely.
+     * @param key        vessel_name + "/" + sensor_name
+     * @param defaultVal returned when the key is not in the registry
+     *                   defaults to true so sensors without a power manager
+     *                   always run normally.
+     */
+    bool get(const std::string& key, bool defaultVal = true);
+
+private:
+    PowerStateRegistry() = default;
+    std::mutex m_mutex;
+    std::unordered_map<std::string, bool> m_flags;
+};
+
 /**
  * @brief Random shuffle for vector
  *

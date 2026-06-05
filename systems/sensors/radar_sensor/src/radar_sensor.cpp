@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include "lotusim_sensor_base/common.hpp"
+#include "lotusim_common/common.hpp"
 
 namespace lotusim::sensor {
 
@@ -85,6 +86,10 @@ bool RadarSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 // ═══════════════════════════════════════════════════════════════════════════
 void RadarSensor::OnPointCloud(const gz::msgs::PointCloudPacked& _msg)
 {
+    // don't buffer new clouds when powered off
+    if (!common::PowerStateRegistry::instance().get(m_vessel_name + "/" + m_sensor_name))
+        return;
+
     std::lock_guard<std::mutex> lock(m_cloud_mutex);
     m_latest_cloud = _msg;
     m_cloud_received = true;
@@ -99,6 +104,15 @@ bool RadarSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
+    const bool powered = common::PowerStateRegistry::instance().get(
+        m_vessel_name + "/" + m_sensor_name);
+    
+    if (!powered) {
+        std::lock_guard<std::mutex> lock(m_cloud_mutex);
+        m_cloud_received = false;
+        return false;
+    }
+
     // ── One-time setup: subscribe using world name from ECM ───────────────s
     if (!m_subscribed) {
         std::string world_name = lotusim::common::getWorldName(_ecm);
@@ -114,10 +128,6 @@ bool RadarSensor::UpdateSensor(
         m_logger->info("RadarSensor::UpdateSensor: subscribed to [{}]", topic);
         m_subscribed = true;
     }
-    // m_logger->info(
-    //     "RadarSensor::UpdateSensor: tick simTime={} m_is_on={}
-    //     m_cloud_received={}", _info.simTime.count(), m_is_on,
-    //     m_cloud_received);
 
     // ── EnableMeasurement ───────────────────────────────────────────
     if (!EnableMeasurement(_info.simTime))
@@ -144,7 +154,7 @@ bool RadarSensor::UpdateSensor(
         if (f.name() == "y")
             y_offset = static_cast<int>(f.offset());
     }
-    m_logger->info(
+    m_logger->debug(
         "point_step={} total_bytes={} n_points={}",
         point_step,
         cloud_copy.data().size(),
@@ -168,7 +178,7 @@ bool RadarSensor::UpdateSensor(
         float x, y;
         std::memcpy(&x, ptr + x_offset, sizeof(float));
         std::memcpy(&y, ptr + y_offset, sizeof(float));
-        m_logger->info("  first point raw: x={} y={}", x, y);
+        m_logger->debug("  first point raw: x={} y={}", x, y);
     }
 
     for (std::size_t i = 0; i < n; ++i) {

@@ -142,7 +142,7 @@ bool PowerManager::loadVessel(
         rootEl = sdfptr;
     }
     if (!rootEl->HasElement("lotusim_power")) {
-        m_logger->warn(
+        m_logger->debug(
             "PowerManager::loadVessel [{}]: no <lotusim_power> tag found, skipping PowerManager creation",
             vesselName);
         return false;
