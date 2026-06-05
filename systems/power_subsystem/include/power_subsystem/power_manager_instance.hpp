@@ -24,6 +24,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "lotusim_common/logger.hpp"
+#include "lotusim_msgs/msg/power_status.hpp"
 #include "power_subsystem/power_provider.hpp"
 #include "power_subsystem/power_consumer.hpp"
 #include "power_subsystem/battery.hpp"
@@ -191,5 +192,11 @@ private:
 
     // for load distribution and shedding implementation
     std::unique_ptr<PowerStrategy> m_strategy;
+
+    // for graph visualisation
+    bool m_publisher_initialised{false};
+
+    rclcpp::Publisher<lotusim_msgs::msg::PowerStatus>::SharedPtr m_power_status_pub;
+    std::chrono::steady_clock::duration m_last_status_publish{};
 };
 } //namespace lotusim::gazebo

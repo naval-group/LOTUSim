@@ -66,6 +66,13 @@ void PowerManagerInstance::PostUpdate(
     const gz::sim::UpdateInfo& /*_info*/,
     const gz::sim::EntityComponentManager& _ecm)
 {
+    if (!m_publisher_initialised) {
+        m_power_status_pub = m_node->create_publisher<lotusim_msgs::msg::PowerStatus>(
+            "/lotusim/" + m_vessel_name + "/power_status",
+            rclcpp::QoS(rclcpp::KeepLast(10)));
+        m_publisher_initialised = true;
+        m_logger->info("PowerManagerInstance [{}]: publisher created", m_vessel_name);
+    }
     if (!m_consumers_parsed) {
         parsePowerConsumers(const_cast<gz::sim::EntityComponentManager&>(_ecm));
         // only mark as done once we actually found consumers
@@ -213,6 +220,43 @@ void PowerManagerInstance::Update(
     for (auto& consumer : m_consumers) {
         consumer->receiveVoltage(voltage);
         consumer->update(_ecm);
+    }
+
+    // ── Step 7: publish power status every 2 seconds ─────────────────
+    const auto now = _info.simTime;
+    const double elapsed = std::chrono::duration<double>(now - m_last_status_publish).count();
+
+    if (elapsed >= 2.0) {
+        m_last_status_publish = now;
+
+        lotusim_msgs::msg::PowerStatus msg;
+        msg.vessel_name = m_vessel_name;
+        msg.provider_count = static_cast<uint32_t>(m_providers.size());
+
+        if (!m_all_batteries_depleted) {
+            const auto* bat = m_batteries[m_activeBatteryIndex];
+            msg.active_provider_name    = bat->name();
+            msg.active_provider_type    = "battery";
+            msg.active_provider_soc     = bat->getStateOfCharge();
+            msg.active_provider_voltage = bat->voltage();
+        } else {
+            Generator* activeGen = nullptr;
+            for (auto* g : m_generators)
+                if (!g->isDepleted()) { activeGen = g; break; }
+
+            if (activeGen) {
+                msg.active_provider_name    = activeGen->name();
+                msg.active_provider_type    = "generator";
+                msg.active_provider_soc     = activeGen->getStateOfCharge();
+                msg.active_provider_voltage = activeGen->voltage();
+            } else {
+                msg.active_provider_name    = "none";
+                msg.active_provider_type    = "none";
+                msg.active_provider_soc     = 0.0f;
+                msg.active_provider_voltage = 0.0f;
+            }
+        }
+        m_power_status_pub->publish(msg);
     }
 }
 
