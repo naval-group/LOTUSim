@@ -174,7 +174,11 @@ def main(args=None):
     
     future = node.spawn_ship_with_dynamics(vessel_name)
     rclpy.spin_until_future_complete(node, future)
-    node.get_logger().info("Spawn request sent successfully")
+    goal_handle = future.result()
+    result_future = goal_handle.get_result_async()
+    rclpy.spin_until_future_complete(node, result_future)
+    vessel_name = result_future.result().result.name
+    node.get_logger().info(f"Spawn request sent successfully, vessel name: {vessel_name}")
 
     time.sleep(1.0)
     
