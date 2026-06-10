@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "geographic_msgs/msg/geo_point.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "lotusim_msgs/action/mas_cmd.hpp"
 #include "lotusim_msgs/action/mas_cmd_array.hpp"
 #include "lotusim_msgs/msg/mas_cmd.hpp"
@@ -97,14 +98,14 @@ public:
             <lotus_param>
                 <physics_engine_interface>
                 <underwater>
-                    <connection_type>XDynWebSocket</connection_type>
+                    <interface_type>XDynWebSocket</interface_type>
                     <uri>ws://127.0.0.1:12346</uri>
                     <thrusters>
                         <thrusters1>propeller</thrusters1>
                     </thrusters>
                 </underwater>
                 <surface>
-                    <connection_type>XDynWebSocket</connection_type>
+                    <interface_type>XDynWebSocket</interface_type>
                     <uri>ws://127.0.0.1:12345</uri>
                     <thrusters>
                         <thrusters1>propeller</thrusters1>
@@ -115,6 +116,9 @@ public:
             </lotus_param>
             )";
 
+            rpm_publishers_[name] = this->create_publisher<std_msgs::msg::Float64>(
+                "/" + name + "/rpm", 10);
+            RCLCPP_INFO(this->get_logger(), "Created RPM publisher on /%s/rpm", name.c_str());
             vessel_id++;
             goal_msg.cmd.push_back(msg);
         }
@@ -207,6 +211,15 @@ private:
 
         cmd_publisher_->publish(cmd_array);
 
+        for (const auto& name : vessel_names_) {
+            auto it = rpm_publishers_.find(name);
+            if (it != rpm_publishers_.end()) {
+                std_msgs::msg::Float64 rpm_msg;
+                rpm_msg.data = 200.0;
+                it->second->publish(rpm_msg);
+            }
+        }
+
         RCLCPP_INFO(this->get_logger(), "Published propeller commands");
     }
 
@@ -219,7 +232,8 @@ private:
     rclcpp::TimerBase::SharedPtr cmd_timer_;
 
     std::unordered_map<std::string, std::pair<double, double>> vessel_poses_;
-    std::vector<std::string> vessel_names_; // track vessels
+    std::vector<std::string> vessel_names_;
+    std::unordered_map<std::string, rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr> rpm_publishers_;
 };
 
 int main(int argc, char** argv)
