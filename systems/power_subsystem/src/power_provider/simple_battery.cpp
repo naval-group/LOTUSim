@@ -7,7 +7,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-#include "power_subsystem/simple_battery.hpp"
+#include "power_subsystem/power_provider/simple_battery.hpp"
 #include <algorithm>
 #include "lotusim_common/common.hpp" 
 

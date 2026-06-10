@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "power_subsystem/power_consumer.hpp"
+#include "power_subsystem/power_consumer/power_consumer.hpp"
 
 #include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/Entity.hh>

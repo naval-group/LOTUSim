@@ -13,22 +13,21 @@ The `power_subsystem` is a Gazebo world plugin that models the electrical power 
 │                                                             │
 │   EachNew<Model> ──► loadVessel()                           │
 │                          │                                  │
-│              ┌───────────▼────────────┐                     │
-│              │  PowerManagerInstance  │  (one per vessel)   │
-│              │                        │                     │
-│              │  m_providers           │                     │
-│              │    ├── Battery*        │                     │
-│              │    └── Generator*      │                     │
-│              │  m_consumers           │                     │
-│              │    ├── SensorPower...  │                     │
-│              │    └── ThrusterPower.. │                     │
-│              │                        │                     │
-│              │  m_strategy ───────────┼──►  PowerStrategy   │
-│              └────────────────────────┘                     │
+│              ┌───────────▼──────────────────┐               │
+│              │  PlatformPowerManagerBase    │ (one/vessel)  │
+│              │  ◄── DefaultPlatformPower..  │               │
+│              │                              │               │
+│              │  m_providers                 │               │
+│              │    ├── Battery*              │               │
+│              │    └── Generator*            │               │
+│              │  m_consumers                 │               │
+│              │    ├── SensorPowerConsumer   │               │
+│              │    └── ThrusterPowerConsumer │               │
+│              └──────────────────────────────┘               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Each vessel spawned that contains `<lotusim_power>` block in their SDF gets its own `PowerManagerInstance`, isolated by vessel name and ROS 2 node namespace. Vessels without `<lotusim_power>` are ignored bu this plugin.
+Each vessel spawned that contains a `<lotusim_power>` block in their SDF gets its own `PlatformPowerManagerBase` instance, isolated by vessel name and ROS 2 node namespace. Vessels without `<lotusim_power>` are ignored by this plugin.
 
 ---
 
@@ -37,7 +36,10 @@ Each vessel spawned that contains `<lotusim_power>` block in their SDF gets its 
 ```
 PowerManager
         |
-    PowerManagerInstance
+    PlatformPowerManagerBase  (abstract)
+            │   ├── DefaultPlatformPowerManager
+            │   └── users implementation
+            │
             ├── PowerProvider  (abstract)
             |        ├── Battery       (abstract)
             |        │     └── SimpleBattery
@@ -47,13 +49,9 @@ PowerManager
             |            ├── RpmGenerator
             |            └── users implementation
             |
-            ├── PowerConsumer  (abstract)
-            |        ├── SensorPowerConsumer
-            |        ├── ThrusterPowerConsumer
-            |        └── users implementation
-            |
-            └── PowerStrategy  (abstract)
-                     ├── DefaultPowerStrategy
+            └── PowerConsumer  (abstract)
+                     ├── SensorPowerConsumer
+                     ├── ThrusterPowerConsumer
                      └── users implementation
 ```
 
@@ -67,7 +65,7 @@ The top-level Gazebo system plugin. Declared once in `lotusim.world`.
 
 - Runs `EachNew<Model>` every tick to detect newly spawned vessels
 - Checks that the vessel SDF contains at least one `<lotusim_power>` link before creating an instance
-- Creates one `PowerManagerInstance` per vessel, each with its own namespaced ROS 2 node (`vessel_name/power_subsystem`)
+- Creates one `PlatformPowerManagerBase` per vessel via `PlatformPowerManagerBase::create()`
 - Forwards `Update()` and `PostUpdate()` to all registered instances
 
 **World SDF declaration:**
@@ -80,102 +78,70 @@ The top-level Gazebo system plugin. Declared once in `lotusim.world`.
 
 ---
 
-### `PowerManagerInstance` : Per-Vessel Manager
+### `PlatformPowerManagerBase` : Per-Vessel Manager (abstract)
 
-Owns all power providers, consumers, and the active power strategy for one vessel. Created by `PowerManager` when a vessel with a valid power config is spawned.
+Owns all power providers and consumers for one vessel. Created by `PowerManager` when a vessel with a valid power config is spawned.
 
 **Responsibilities each tick (`Update`):**
 
-1. Detect sensor topology changes (`EachNew`, `EachRemoved`)
-2. Sum total current demand from all active consumers
-3. Call `PowerStrategy::distributeLoad()` : load distribution across batteries and generators
-4. Check battery `PowerLevel`; call `PowerStrategy::handleDepleted()` if depleted
-5. Call `PowerStrategy::shedLoads()` : shed non-critical loads if on last provider
-6. Push updated voltage to all consumers
+1. Guard: return early if no batteries are registered
+2. Compute `dt` from `UpdateInfo`
+3. Delegate to `handlePowerUpdate()` — implemented by subclass
 
-**Provider parsing** (`parsePowerProviders`) runs at construction : battery and generator SDF is available from `ModelSdf`.
+**Provider parsing** (`initPowerProvider`) runs at construction: battery and generator SDF is available from `ModelSdf`.
 
-**Consumer parsing** (`parsePowerConsumers`) is deferred to the first `PostUpdate` tick -> Gazebo registers `CustomSensor` components after the model is constructed, so sensors are not yet in the ECM at construction time.
+**Consumer parsing** (`initPowerConsumers`) is deferred to the first `PostUpdate` tick — Gazebo registers `CustomSensor` components after the model is constructed, so sensors are not yet in the ECM at construction time.
 
-**Strategy injection** the default strategy is set at construction. Call `setStrategy()` to replace it before the first sim tick:
- 
+#### Implementing a custom power manager
+
+Subclass `PlatformPowerManagerBase` and override `handlePowerUpdate`:
+
 ```cpp
-instance->setStrategy(std::make_unique<MyCustomStrategy>());
+class MyPowerManager : public PlatformPowerManagerBase {
+    void handlePowerUpdate(
+        float dt,
+        gz::sim::EntityComponentManager& ecm,
+        const gz::sim::UpdateInfo& info) final;
+};
 ```
- 
+
+All providers (`m_batteries`, `m_generators`) and consumers (`m_consumers`) are available as protected members. Use `activeBusVoltage()` to read the current bus voltage reference.
+
 ---
 
+### `DefaultPlatformPowerManager`
 
-### `PowerStrategy` : Abstract Strategy Interface
- 
-Encapsulates steps 3–5 of `PowerManagerInstance::Update()`. Implement this interface to replace the built-in load distribution, battery switching, and load shedding logic without modifying `PowerManagerInstance`.
- 
-All methods receive a `PowerStrategyContext` reference, a view into the vessel's live power state.
- 
-| Method | Step | Description |
-|---|---|---|
-| `distributeLoad(ctx, dt, logger)` | 3 | Decide which sources supply the load; handle battery charging |
-| `handleDepleted(ctx, dt, logger)` | 4 | React to a depleted active battery; switch or go to generator |
-| `shedLoads(ctx, level, logger)` | 5 | Shed or reactivate consumers based on `PowerLevel` |
- 
-#### `PowerStrategyContext`
- 
-Passed by reference to every strategy method. Holds non-owning references into `PowerManagerInstance` state
- 
-| Field | Type | Description |
-|---|---|---|
-| `batteries` | `vector<Battery*>&` | All batteries, priority order |
-| `generators` | `vector<Generator*>&` | All generators, priority order |
-| `consumers` | `vector<unique_ptr<PowerConsumer>>&` | All consumers |
-| `activeBatteryIndex` | `int&` | Index of currently active battery |
-| `allBatteriesDepleted` | `bool&` | True when all batteries are depleted |
-| `totalCurrentA` | `float` | Summed consumer demand this tick (A) |
-| `busVoltage` | `float` | Active source voltage reference (V) |
- 
-> `PowerStrategyContext` holds references so it must not outlive the `Update()` call that created it.
- 
-#### Implementing a custom strategy
- 
-1. Create a subclass of `PowerStrategy`
-2. Implement `distributeLoad()`, `handleDepleted()`, and `shedLoads()`
-3. Inject it into the `PowerManagerInstance` before the first sim tick:
-```cpp
-instance->setStrategy(std::make_unique<MyStrategy>());
-```
- 
-The default `DefaultPowerStrategy` is used if `setStrategy()` is never called.
- 
----
- 
-### `DefaultPowerStrategy`
- 
- 
+The built-in power manager. Implements the default load distribution, battery switching, and load shedding logic directly in `handlePowerUpdate`.
+
 **`distributeLoad()` — normal mode (batteries available):**
- 
+
 - Battery covers all consumer demand
 - Generator charges the active battery if:
   - there is more than one generator available, OR
   - batteries are still active (generator is not the sole power source)
-- Charge current is capped at 10% of the generator's rated output
+- Charge current is capped at 10 % of the generator's rated output
 - Generator does not charge a depleted battery
+
 **`distributeLoad()` — emergency mode (all batteries depleted):**
- 
+
 - Generator covers consumer demand directly
-- If a second generator is available, the active one may also charge batteries
 - `reactivateIfPossible()` tries to restore one shed consumer per tick if headroom allows
+
 **`handleDepleted()`:**
- 
-- Searches forward from `activeBatteryIndex` for the next non-depleted battery
-- If found: advances `activeBatteryIndex`, returns `true`
-- If none found: sets `allBatteriesDepleted = true`, generator takes over
+
+- Searches forward from `m_active_battery_index` for the next non-depleted battery
+- If found: advances `m_active_battery_index`, returns `true`
+- If none found: sets `m_all_batteries_depleted = true`, generator takes over
 - If generator cannot cover all consumers, sheds by priority group (4 → 3 → 2)
+
 **`shedLoads()`:**
- 
+
 - Only called when `PowerLevel` is `WARN` or `CRITICAL`
 - Skips shedding if another battery or a generator is still available — shedding only fires on the **last available provider**
 - Sheds one consumer per tick, highest priority group first (4 → 3 → 2)
 - Priority-1 consumers are never shed
 - Logs a warning when only safety-critical consumers remain
+
 ---
 
 ### `PowerProvider` : Abstract Base (providers)
@@ -401,8 +367,7 @@ Load shedding is priority-based. Lower number = higher priority = shed last.
 
 ## Load Distribution Logic
 
-Each tick, `PowerManagerInstance` distributes load via `PowerStrategy`. Users can inherit from `PowerStrategy` to implement their own logic.
-The default logic uses `DefaultPowerStrategy` and the logic is as follow:
+Each tick, `DefaultPlatformPowerManager::handlePowerUpdate` runs the following sequence:
 
 ```
 1. Sum demand from all active consumers
@@ -420,16 +385,19 @@ The default logic uses `DefaultPowerStrategy` and the logic is as follow:
        WARN     → shed priority 4 consumers, one per tick
        CRITICAL → shed priority 3 and below, one per tick
        never shed priority 1
+5. Push updated voltage to all consumers
+6. Publish power status
 ```
 
 Shedding is skipped as long as another battery or generator is available — the system switches providers first and only sheds when there is truly no alternative.
+
 ---
 
 ## Adding a New Provider Type
 
 1. Create a subclass of `Battery` or `Generator`
 2. Implement `receiveLoad()`, `voltage()`, and any other overrides
-3. Add a new `else if (type == "your_type")` branch in `PowerManagerInstance::parsePowerProviders()`
+3. Add a new `else if (type == "your_type")` branch in `PlatformPowerManagerBase::initPowerProvider()`
 4. Add the new `.cpp` to `CMakeLists.txt`
 
 ---
@@ -438,5 +406,5 @@ Shedding is skipped as long as another battery or generator is available — the
 
 1. Create a subclass of `PowerConsumer`
 2. Implement `drawnCurrent()`, `receiveVoltage()`, `isActive()`, `deactivate()`
-3. Add a new `else if (powerType == "your_type")` branch in `PowerManagerInstance::parsePowerConsumers()`
+3. Add a new `else if (powerType == "your_type")` branch in `PlatformPowerManagerBase::initPowerConsumers()`
 4. Add the `<lotusim_power>` block to the relevant SDF element

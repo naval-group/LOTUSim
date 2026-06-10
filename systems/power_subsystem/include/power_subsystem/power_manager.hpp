@@ -23,7 +23,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "lotusim_common/logger.hpp"
-#include "power_subsystem/power_manager_instance.hpp"
+#include "power_subsystem/platform_power_manager.hpp"
 
 namespace lotusim::gazebo
 {
@@ -33,7 +33,7 @@ namespace lotusim::gazebo
  *
  * Declared once in lotusim.world 
  * Detects vessel spawns via EachNew<Model> and creates
- *  a PowerManagerInstance per vessel
+ *  a PlatformPowerManager per vessel
  *
  * World SDF format (lotusim.world):
  *   <plugin filename="power_subsystem"
@@ -74,7 +74,7 @@ public:
 
 private:
     /**
-     * @brief creates a PowerManagerInstance for a newly spawned vessel
+     * @brief creates a PlatformPowerManager for a newly spawned vessel
      *        only vessels with at least one <lotusim_power> link are
      *        registered
      * @param _entity  model entity
@@ -88,7 +88,7 @@ private:
         gz::sim::EntityComponentManager& _ecm);
 
     /**
-     * @brief destroys the PowerManagerInstance for a removed vessel
+     * @brief destroys the PlatformPowerManager for a removed vessel
      * @param _entity  Model entity of the despawned vessel
      * returns true if instance was found and removed
      */
@@ -101,8 +101,8 @@ private:
     gz::sim::Entity                 m_entity;
     gz::sim::EntityComponentManager* m_ecm{nullptr};
 
-    /// One PowerManagerInstance per vessel, keyed by model entity
-    std::unordered_map<gz::sim::Entity, std::unique_ptr<PowerManagerInstance>> m_vessel_instances;
+    /// One PlatformPowerManager per vessel, keyed by model entity
+    std::unordered_map<gz::sim::Entity, std::unique_ptr<PlatformPowerManager>> m_vessel_instances;
 };
 
 } // namespace lotusim::gazebo

@@ -9,7 +9,7 @@
  */
 #pragma once
 
-#include "power_provider.hpp"
+#include "power_subsystem/power_provider/power_provider.hpp"
 #include <gz/common/Console.hh>
 
 namespace lotusim::gazebo{

@@ -7,9 +7,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-#include "power_subsystem/simple_generator.hpp"
-#include "power_subsystem/generator.hpp"
-#include "power_subsystem/fuel_properties.hpp"
+#include "power_subsystem/power_provider/simple_generator.hpp"
+#include "power_subsystem/power_provider/generator.hpp"
+#include "power_subsystem/power_provider/fuel_properties.hpp"
 #include <algorithm>
 #include "lotusim_common/common.hpp"
 

@@ -9,7 +9,7 @@
  */
 #pragma once
 
-#include "power_subsystem/generator.hpp"
+#include "power_subsystem/power_provider/generator.hpp"
 #include "lotusim_common/logger.hpp"
 #include <spdlog/spdlog.h>
 #include <std_msgs/msg/float64.hpp>

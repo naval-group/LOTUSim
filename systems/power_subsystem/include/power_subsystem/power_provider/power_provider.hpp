@@ -9,14 +9,22 @@
  */
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <atomic>
 #include <memory>
+#include <sdf/Element.hh>
 #include <string>
 
-#include <sdf/Element.hh>
 #include "rclcpp/rclcpp.hpp"
 
-namespace lotusim::gazebo{
+namespace lotusim::gazebo {
+
+enum class ProviderType
+{
+    Battery,
+    Generator
+};
 /**
  * @brief Health level of a power provider
  *
@@ -31,7 +39,7 @@ namespace lotusim::gazebo{
  * | CRITICAL | voltage_min < v <= voltage_min*1.05| 0.0 < ratio <= 0.05     |
  * | DEPLETED | voltage <= voltage_min             | fuel_ratio <= 0.0       |
  *
- * PowerManagerInstance response per level:
+ * PlatformPowerManager response per level:
  *   NORMAL   : no action
  *   WARN     : shed priority 4 consumers
  *   CRITICAL : shed priority 3 and below
@@ -70,18 +78,37 @@ class PowerProvider {
 public:
     virtual ~PowerProvider() = default;
 
-    // ----------------------------------------------------------------
-    // Pure virtual —> every subclass must implement these
-    // ----------------------------------------------------------------
+    struct CreateResult {
+        std::shared_ptr<PowerProvider> provider;  // nullptr on failure
+        ProviderType type;
+    };
 
     /**
-     * @brief Called by PowerManager with the current bus load
-     *        Battery: publishes, integrates SOC over dt
-     *        Generator: computes fuel consumed over dt
-     * @param currentA  total current drawn from this provider (Amperes)
-     * @param dt        elapsed simulation time since last tick (seconds)
+     * @brief Factory: construct the correct PowerProvider subclass from SDF.
+     *        On failure, result.provider is nullptr.
+     *
+     * @param name        provider name from SDF
+     * @param sdf         <lotusim_power> element
+     * @param node        shared node from PowerManager
+     * @param vessel_name vessel name (needed by RPM-driven generators for topic
+     * subscription)
+     * @param logger      spdlog logger for error reporting (may be nullptr)
      */
-    virtual void receiveLoad(float currentA, float dt) = 0;
+    static CreateResult createFromSdf(
+        const std::string& name,
+        const sdf::ElementPtr& sdf,
+        rclcpp::Node::SharedPtr node,
+        const std::string& vessel_name,
+        std::shared_ptr<spdlog::logger> logger);
+
+    /**
+     * @brief name of this provider from SDF
+     *        Used in log messages and topics
+     */
+    const std::string& name() const
+    {
+        return m_name;
+    }
 
     /**
      * @brief Current output voltage of this provider (V)
@@ -119,35 +146,38 @@ public:
      */
     virtual bool isDepleted() const = 0;
 
-    // ----------------------------------------------------------------
-    // Virtual with defaults —> subclasses override only if relevant
-    // ----------------------------------------------------------------
-
     /**
      * @brief if this provider can receive charge from a generator surplus
      *        Battery overrides → true
      *        Generator keeps default
      */
-    virtual bool canReceiveCharge() const { return false; }
+    virtual bool canReceiveCharge() const
+    {
+        return false;
+    }
+
+    /**
+     * @brief Called by PowerManager with the current bus load
+     *        Battery: publishes, integrates SOC over dt
+     *        Generator: computes fuel consumed over dt
+     * @param currentA  total current drawn from this provider (Amperes)
+     * @param dt        elapsed simulation time since last tick (seconds)
+     */
+    virtual void receiveLoad(float currentA, float dt) = 0;
 
     /**
      * @brief push surplus energy into this provider
-     *        Default: no-op. Generators ignore this 
+     *        Default: no-op. Generators ignore this
      *        Battery implements: soc += (currentA * dt) / capacity_ah,
      *        clamped to 1.0
      * @param currentA  Surplus current available for charging (Amperes)
      * @param dt        Elapsed simulation time since last tick (seconds)
      */
-    virtual void receiveCharge(float currentA, float dt) { (void)currentA; (void)dt; }
-
-    // ----------------------------------------------------------------
-    // Non-virtual —> same for all providers
-    // ----------------------------------------------------------------
-    /**
-     * @brief name of this provider from SDF
-     *        Used in log messages and topics
-     */
-    const std::string& name() const { return m_name; }
+    virtual void receiveCharge(float currentA, float dt)
+    {
+        (void)currentA;
+        (void)dt;
+    }
 
 protected:
     /**
@@ -156,14 +186,14 @@ protected:
      * @param node  shared node owned by PowerManager
      */
     PowerProvider(std::string name, rclcpp::Node::SharedPtr node)
-        : m_name(std::move(name))
-        , m_node(std::move(node))
-    {}
- 
+        : m_name(std::move(name)), m_node(std::move(node))
+    {
+    }
+
     // Provider name from SDF name attribute
     std::string m_name;
- 
+
     // Shared node, borrowed from PowerManager
     rclcpp::Node::SharedPtr m_node;
 };
-} // namespace lotusim::gazebo
+}  // namespace lotusim::gazebo

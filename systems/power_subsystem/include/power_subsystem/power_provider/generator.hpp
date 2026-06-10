@@ -9,10 +9,11 @@
  */
 #pragma once
 
-#include "power_subsystem/power_provider.hpp"  
 #include <gz/common/Console.hh>
 
-namespace lotusim::gazebo{
+#include "power_subsystem/power_provider/power_provider.hpp"
+
+namespace lotusim::gazebo {
 
 /**
  * @brief Abstract base class for generators
@@ -39,8 +40,8 @@ namespace lotusim::gazebo{
  *   WARN     : 10% < fuel <= 25%
  *   CRITICAL : 5%  < fuel <= 10%
  *   DEPLETED : fuel <= 5%
- */    
-class Generator : public PowerProvider{
+ */
+class Generator : public PowerProvider {
 public:
     // ----------------------------------------------------------------
     // PowerProvider interface -> implemented here for all generators
@@ -55,9 +56,15 @@ public:
     PowerLevel powerLevel() const override
     {
         const float ratio = fuelRatio();
-        if (ratio <= 0.01f) { return PowerLevel::DEPLETED; }
-        if (ratio <= 0.10f) { return PowerLevel::CRITICAL; }
-        if (ratio <= 0.20f) { return PowerLevel::WARN; }
+        if (ratio <= 0.01f) {
+            return PowerLevel::DEPLETED;
+        }
+        if (ratio <= 0.10f) {
+            return PowerLevel::CRITICAL;
+        }
+        if (ratio <= 0.20f) {
+            return PowerLevel::WARN;
+        }
         return PowerLevel::NORMAL;
     }
 
@@ -68,7 +75,7 @@ public:
     {
         return powerLevel() == PowerLevel::DEPLETED;
     }
-    
+
     /**
      * @brief returns fuel ratio 0.0 - 1.0
      *        fuel_level_start / fuel_capacity
@@ -89,7 +96,10 @@ public:
     /**
      * @brief generators don't accept charge from other sources
      */
-    bool canReceiveCharge() const override { return false; }
+    bool canReceiveCharge() const override
+    {
+        return false;
+    }
 
     /**
      * @brief generators output a stable nominal voltage while fuelled
@@ -108,9 +118,12 @@ public:
      * @param busCurrentA  total current drawn by all active consumers (A)
      * returns surplus current available for charging (A), 0 if none
      */
+    // AHOY merge this with receiving load. no point having this
     float surplusChargingCurrent(float busCurrentA) const
     {
-        if (isDepleted()) { return 0.0f; }
+        if (isDepleted()) {
+            return 0.0f;
+        }
         const float demandW = busCurrentA * m_voltage_nominal;
         const float surplusW = availablePowerW() - demandW;
         return surplusW > 0.0f ? (surplusW / m_voltage_nominal) : 0.0f;
@@ -118,8 +131,10 @@ public:
 
     float fuelRatio() const
     {
-        if (m_fuel_capacity <= 0.0f) { return 0.0f; }
-        return m_fuel_level / m_fuel_capacity;  
+        if (m_fuel_capacity <= 0.0f) {
+            return 0.0f;
+        }
+        return m_fuel_level / m_fuel_capacity;
     }
 
     // ----------------------------------------------------------------
@@ -135,7 +150,6 @@ public:
      */
     void receiveLoad(float currentA, float dt) override = 0;
 
-
 protected:
     /**
      * @brief Subclasses call this constructor
@@ -143,7 +157,7 @@ protected:
      * @param name           generator name from SDF
      * @param node           shared node from PowerManager
      * @param fuel_capacity  full tank size in litres
-     * @param fuel_start     starting fuel 
+     * @param fuel_start     starting fuel
      * @param rated_output_w maximum continuous power output (W)
      * @param efficiency     fuel-to-electrical ratio (0.0–1.0)
      * @param voltage_nominal stable output voltage (V)
@@ -151,8 +165,8 @@ protected:
     Generator(
         std::string name,
         rclcpp::Node::SharedPtr node,
-        float fuel_level_start,  
-        float fuel_capacity,    
+        float fuel_level_start,
+        float fuel_capacity,
         float rated_output_w,
         float efficiency,
         float voltage_nominal,
@@ -164,7 +178,8 @@ protected:
         , m_efficiency(efficiency)
         , m_voltage_nominal(voltage_nominal)
         , m_fuel_type(fuel_type)
-    {}
+    {
+    }
 
     // current fuel level
     float m_fuel_level{0.0f};
@@ -184,4 +199,4 @@ protected:
     // fuel type -> different consumption
     std::string m_fuel_type;
 };
-} // namespace lotusim::gazebo
+}  // namespace lotusim::gazebo

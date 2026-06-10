@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "power_subsystem/power_consumer.hpp"
+#include "power_subsystem/power_consumer/power_consumer.hpp"
 #include "lotusim_sensor_msgs/srv/activate_sensor.hpp"
 
 #include <gz/sim/EntityComponentManager.hh>

@@ -9,7 +9,7 @@
  */
 #pragma once
 
-#include "power_subsystem/battery.hpp"
+#include "power_subsystem/power_provider/battery.hpp"
 
 #include <gz/common/Console.hh>
 #include "lotusim_common/common.hpp"

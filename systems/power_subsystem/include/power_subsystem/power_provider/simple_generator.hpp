@@ -9,8 +9,7 @@
  */
 #pragma once
 
-#include "power_subsystem/generator.hpp"
-#include "power_subsystem/simple_generator.hpp"
+#include "power_subsystem/power_provider/generator.hpp"
 #include <gz/common/Console.hh>
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
