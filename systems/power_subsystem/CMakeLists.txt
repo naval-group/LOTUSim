@@ -66,8 +66,8 @@ src/power_manager.cpp
 src/platform_power_manager_base.cpp
 src/platform_power_manager_factory.cpp
 src/default_platform_power_manager.cpp
-src/power_consumer/power_consumer.cpp
-src/power_provider/power_provider.cpp
+src/power_consumer/power_consumer_factory.cpp
+src/power_provider/power_provider_factory.cpp
 src/power_provider/simple_battery.cpp
 src/power_provider/simple_generator.cpp
 src/power_provider/rpm_generator.cpp

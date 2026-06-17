@@ -24,17 +24,11 @@ enum class ProviderType
 };
 
 /**
- * @brief Abstract base class for all power-consuming components on a vessel
+ * @brief Abstract base class for each power-consuming components on a vessel
  *
- * Defines the contract between any power consumer and PowerManager
  * Subclasses inherit from this and implement:
  *   - drawnCurrent() : their individual current draw at this tick
  *   - update()       : any per-tick internal state update
- *
- * Responsibility split:
- *   PowerConsumer  : individual component draw + on/off state
- *   PowerManager   : summation across all consumers, voltage distribution,
- *                    load shedding decisions
  *
  * Priority groups for consumers:
  *   1 = safety critical        — never shed by PowerManager
@@ -57,10 +51,6 @@ public:
         std::shared_ptr<spdlog::logger> logger);
 
     virtual ~PowerConsumer() = default;
-
-    // ----------------------------------------------------------------
-    // Pure virtual —> every subclass must implement these
-    // ----------------------------------------------------------------
 
     /**
      * @brief Individual current draw of this component (Amp)
@@ -105,10 +95,6 @@ public:
         m_active = true;
     }
 
-    // ----------------------------------------------------------------
-    // Non-virtual —> same for all providers
-    // ----------------------------------------------------------------
-
     /**
      * @brief receives the current bus voltage from PowerManager
      *        Called before drawnCurrent() so the consumer
@@ -127,7 +113,7 @@ public:
         return m_active;
     }
 
-    // priority group for load shedding (1–4)
+    // priority group for load shedding, the larger the number, the less critical the system
     // read from SDF priority attribute. default = 3
     int priority() const
     {
@@ -141,7 +127,6 @@ public:
         return m_nominalPowerW;
     }
 
-    // used in log messages
     const std::string& name() const
     {
         return m_name;

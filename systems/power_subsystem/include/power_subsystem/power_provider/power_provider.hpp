@@ -25,6 +25,8 @@ enum class ProviderType
     Battery,
     Generator
 };
+
+// AHOY to be removed
 /**
  * @brief Health level of a power provider
  *
