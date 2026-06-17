@@ -12,16 +12,38 @@
 
 #include <gz/sim/EntityComponentManager.hh>
 #include <memory>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <sdf/Element.hh>
 #include <string>
+#include <string_view>
 
 namespace lotusim::gazebo {
-enum class ProviderType
+enum class ConsumerType
 {
     Sensor,
-    Actuator
+    Thruster
 };
+
+inline std::string_view toString(ConsumerType type)
+{
+    switch (type) {
+        case ConsumerType::Sensor:
+            return "sensor";
+        case ConsumerType::Thruster:
+            return "thruster";
+    }
+    return "";
+}
+
+inline std::optional<ConsumerType> consumerTypeFromString(std::string_view s)
+{
+    if (s == "sensor")
+        return ConsumerType::Sensor;
+    if (s == "thruster")
+        return ConsumerType::Thruster;
+    return std::nullopt;
+}
 
 /**
  * @brief Abstract base class for each power-consuming components on a vessel
@@ -31,7 +53,7 @@ enum class ProviderType
  *   - update()       : any per-tick internal state update
  *
  * Priority groups for consumers:
- *   1 = safety critical        — never shed by PowerManager
+ *   1 = safety critical        — never shed by Platform Power Manager
  *   2 = operationally important
  *   3 = mission systems        — default if omitted
  *   4 = non-essential          — shed first
@@ -40,7 +62,7 @@ class PowerConsumer {
 public:
     struct CreateResult {
         std::shared_ptr<PowerConsumer> consumer;  // nullptr on failure
-        ProviderType type;
+        ConsumerType type;
     };
 
     static CreateResult createFromSdf(
@@ -54,7 +76,7 @@ public:
 
     /**
      * @brief Individual current draw of this component (Amp)
-     *        Called by PowerManager to sum total bus load
+     *        Called by Platform Power Manager to sum total bus load
      *        returns 0.0 if !isActive() or if m_voltage <= 0.0
      *        Formula: I = P / V
      *        SensorConsumer  : nominalPowerW() / m_voltage
@@ -63,19 +85,18 @@ public:
     virtual float drawnCurrent() const = 0;
 
     /**
-     * @brief called by PowerManager
+     * @brief called by Platform Power Manager
      *        Subclass updates any internal state that changes
      *        SensorConsumer  : nothing (fixed draw, no internal state to
      * update) ThrusterConsumer: reads current RPM, updates m_rpmRatio
      */
-    virtual void update(gz::sim::EntityComponentManager& _ecm) = 0;
+    virtual void update() = 0;
 
     /**
-     * @brief Deactivates this consumer —> called by PowerManager during
-     *        load shedding or full power loss
-     *        Subclass should override to add type-specific shutdown behaviour
-     *        (e.g. ThrusterConsumer sets rpm to zero, SensorConsumer
-     *        publishes a power_state = OFF notification)
+     * @brief Deactivates this consumer —> called by Platform Power Manager
+     * during load shedding or full power loss Subclass should override to add
+     * type-specific shutdown behaviour (e.g. ThrusterConsumer sets rpm to zero,
+     * SensorConsumer publishes a power_state = OFF notification)
      */
     virtual void deactivate()
     {
@@ -83,20 +104,20 @@ public:
     }
 
     /**
-     * @brief Reactivates this consumer after it was deactivated
-     *        Sets m_active = true so drawnCurrent() resumes
-     *        Called by PowerManager when power margin recovers
-     *        TODO: PowerManager currently has no reactivation logic ->
-     *        call reactivate() in shedLoadsIfNeeded() when
-     *        PowerLevel returns to NORMAL
+     * @brief Activates this consumer
+     *        Sets m_active = true
+     *        Called by Platform Power Manager
+     *        TODO: Platform Power Manager currently has no reactivation logic
+     * -> call activate() in shedLoadsIfNeeded() when PowerLevel returns to
+     * NORMAL
      */
-    virtual void reactivate()
+    virtual void activate()
     {
         m_active = true;
     }
 
     /**
-     * @brief receives the current bus voltage from PowerManager
+     * @brief receives the current bus voltage from Platform Power Manager
      *        Called before drawnCurrent() so the consumer
      *        always uses an up-to-date voltage for its I calculation
      *        Guards against zero voltage
@@ -113,15 +134,15 @@ public:
         return m_active;
     }
 
-    // priority group for load shedding, the larger the number, the less critical the system
-    // read from SDF priority attribute. default = 3
+    // priority group for load shedding, the larger the number, the less
+    // critical the system read from SDF priority attribute. default = 3
     int priority() const
     {
         return m_priority;
     }
 
     // Nominal power draw in Watts —> read from SDF nominal_w
-    // used by PowerManager::shedLoadsIfNeeded() for demand estimation
+    // used by Platform Power Manager::shedLoadsIfNeeded() for demand estimation
     float nominalPowerW() const
     {
         return m_nominalPowerW;
@@ -132,40 +153,48 @@ public:
         return m_name;
     }
 
+    void setPriority(const int& priority)
+    {
+        m_priority = priority;
+    }
+
 protected:
     /**
      * @brief only subclasses can instantiate
      *
      * @param name        component name from SDF
-     * @param nominalW    nominal power draw in Watts from SDF nominal_w
-     * @param priority    Load shedding priority from SDF priority (default 3)
-     * @param node        shared node owned by PowerManager
+     * @param node        shared node owned by Platform Power Manager
      */
     PowerConsumer(
         std::string name,
-        float nominalW,
-        int priority,
-        rclcpp::Node::SharedPtr node)
-        : m_nominalPowerW(nominalW)
-        , m_node(std::move(node))
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger,
+        float nominalW = 1.0f,
+        int priority = 3)
+        : m_node(std::move(node))
         , m_name(std::move(name))
-        , m_priority(priority)
+        , m_logger(std::move(logger))
+        , m_nominalPowerW(std::move(nominalW))
+        , m_priority(std::move(priority))
     {
     }
 
-    // last voltage pushed by PowerManager via receiveVoltage()
+    // last voltage pushed by Platform Power Manager via receiveVoltage()
     // used by subclasses in drawnCurrent()
     float m_voltage{0.0f};
 
     // nominal power draw in Watts, from SDF nominal_w
     float m_nominalPowerW{0.0f};
 
+    int m_priority{3};
+
     // Shared node
     rclcpp::Node::SharedPtr m_node;
 
-private:
+    std::shared_ptr<spdlog::logger> m_logger;
+
     std::string m_name;
-    int m_priority{3};
+
     bool m_active{true};
 };
 }  // namespace lotusim::gazebo

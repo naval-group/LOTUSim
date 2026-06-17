@@ -13,8 +13,10 @@
 
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <sdf/Element.hh>
 #include <string>
+#include <string_view>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -26,13 +28,32 @@ enum class ProviderType
     Generator
 };
 
-// AHOY to be removed
+inline std::string_view toString(ProviderType type)
+{
+    switch (type) {
+        case ProviderType::Battery:
+            return "battery";
+        case ProviderType::Generator:
+            return "generator";
+    }
+    return "";
+}
+
+inline std::optional<ProviderType> providerTypeFromString(std::string_view s)
+{
+    if (s == "battery")
+        return ProviderType::Battery;
+    if (s == "generator")
+        return ProviderType::Generator;
+    return std::nullopt;
+}
+
 /**
  * @brief Health level of a power provider
  *
- * Computed by each PowerProvider subclass from its own internal state:
- *   - Battery   : based on output voltage vs voltage_min (from SDF)
- *   - Generator : based on fuel ratio (fuel_level / fuel_capacity)
+ * User should define what is the threshold of each level.
+ *
+ * Below are the defaults
  *
  * | Level    |    Battery (vs voltage_min)        | Generator (fuel ratio)  |
  * |----------|------------------------------------|-------------------------|
@@ -55,6 +76,7 @@ enum class PowerLevel
     CRITICAL,
     DEPLETED
 };
+
 /**
  * @brief Abstract base class for all power sources on a vessel.
  *
@@ -78,8 +100,6 @@ enum class PowerLevel
 
 class PowerProvider {
 public:
-    virtual ~PowerProvider() = default;
-
     struct CreateResult {
         std::shared_ptr<PowerProvider> provider;  // nullptr on failure
         ProviderType type;
@@ -102,6 +122,8 @@ public:
         rclcpp::Node::SharedPtr node,
         const std::string& vessel_name,
         std::shared_ptr<spdlog::logger> logger);
+
+    virtual ~PowerProvider() = default;
 
     /**
      * @brief name of this provider from SDF
@@ -162,24 +184,11 @@ public:
      * @brief Called by PowerManager with the current bus load
      *        Battery: publishes, integrates SOC over dt
      *        Generator: computes fuel consumed over dt
-     * @param currentA  total current drawn from this provider (Amperes)
+     * @param currentA  net current on this provider (Amperes); positive =
+     * discharge, negative = charge
      * @param dt        elapsed simulation time since last tick (seconds)
      */
     virtual void receiveLoad(float currentA, float dt) = 0;
-
-    /**
-     * @brief push surplus energy into this provider
-     *        Default: no-op. Generators ignore this
-     *        Battery implements: soc += (currentA * dt) / capacity_ah,
-     *        clamped to 1.0
-     * @param currentA  Surplus current available for charging (Amperes)
-     * @param dt        Elapsed simulation time since last tick (seconds)
-     */
-    virtual void receiveCharge(float currentA, float dt)
-    {
-        (void)currentA;
-        (void)dt;
-    }
 
 protected:
     /**
@@ -197,5 +206,7 @@ protected:
 
     // Shared node, borrowed from PowerManager
     rclcpp::Node::SharedPtr m_node;
+
+    std::shared_ptr<spdlog::logger> m_logger;
 };
 }  // namespace lotusim::gazebo

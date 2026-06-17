@@ -9,10 +9,11 @@
  */
 #pragma once
 
-#include "power_subsystem/power_provider/power_provider.hpp"
 #include <gz/common/Console.hh>
 
-namespace lotusim::gazebo{
+#include "power_subsystem/power_provider/power_provider.hpp"
+
+namespace lotusim::gazebo {
 /**
  * @brief Abstract base class for batteries
  *
@@ -32,7 +33,7 @@ namespace lotusim::gazebo{
  *   CRITICAL : 0.0  < SOC <= 0.10
  *   DEPLETED : SOC <= 0.0
  */
-class Battery : public PowerProvider{
+class Battery : public PowerProvider {
 public:
     virtual ~Battery();
     // ----------------------------------------------------------------
@@ -85,7 +86,7 @@ public:
         return voltage() * m_capacityAh;
     }
 
-     /**
+    /**
      * @brief update current voltage
      */
     virtual void updateVoltage() = 0;
@@ -93,7 +94,10 @@ public:
     /**
      * @brief battery can receive charge from a generator surplus
      */
-    bool canReceiveCharge() const override { return true; }
+    bool canReceiveCharge() const override
+    {
+        return true;
+    }
 
     // ----------------------------------------------------------------
     // Pure virtual
@@ -106,7 +110,7 @@ public:
     void receiveLoad(float currentA, float dt) override = 0;
 
     /**
-     * @brief current output voltage 
+     * @brief current output voltage
      *        subclass returns the value last received from the FMU
      */
     float voltage() const override = 0;
@@ -139,17 +143,18 @@ protected:
         , m_capacityAh(capacity_ah)
         , m_initialSoc(initial_soc)
         , m_voltageMin(voltage_min)
-    {}
+    {
+    }
 
     // battery capacity in Amp-hour from SDF
     float m_capacityAh{0.0f};
 
-    //Initial state of charge (0 - 1.0) from SDF initial_soc
-    // just returning initial value for now -----------------
+    // Initial state of charge (0 - 1.0) from SDF initial_soc
+    //  just returning initial value for now -----------------
     float m_initialSoc{1.0f};
 
     // min operating voltage from voltage_min
     // PowerLevel thresholds are derived from this value
     float m_voltageMin{0.0f};
 };
-}   // namespace lotusim::gazebo
+}  // namespace lotusim::gazebo

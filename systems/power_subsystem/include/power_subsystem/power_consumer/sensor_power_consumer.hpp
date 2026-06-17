@@ -10,17 +10,16 @@
 
 #pragma once
 
-#include "power_subsystem/power_consumer/power_consumer.hpp"
-#include "lotusim_sensor_msgs/srv/activate_sensor.hpp"
-
+#include <gz/common/Console.hh>
 #include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Sensor.hh>
-#include <gz/common/Console.hh>
-#include "lotusim_common/common.hpp"
 
-namespace lotusim::gazebo
-{
+#include "lotusim_common/common.hpp"
+#include "lotusim_sensor_msgs/srv/activate_sensor.hpp"
+#include "power_subsystem/power_consumer/power_consumer.hpp"
+
+namespace lotusim::gazebo {
 
 /**
  * @brief PowerConsumer for fixed power draw sensors
@@ -42,36 +41,40 @@ namespace lotusim::gazebo
  *     ...
  *   </sensor>
  */
-class SensorPowerConsumer final : public PowerConsumer
-{
+class SensorPowerConsumer final : public PowerConsumer {
 public:
     /**
      * @param name      sensor name from SDF
      * @param nominalW  power draw in Watts from SDF nominal_w
      * @param priority  load shedding priority from SDF priority (default 3)
-     * @param _sdf      SDF element : for future implementation
+     * @param _sdf      lotus_power SDF element : for user custom params
      * @param node      node from PowerManager
      * @param _ecm      Gazebo ECM
      */
     SensorPowerConsumer(
         std::string name,
-        float nominalW,
-        int priority,
-        const sdf::ElementPtr& /*_sdf*/,
+        const sdf::ElementPtr& sdf,
         rclcpp::Node::SharedPtr node,
-        gz::sim::EntityComponentManager& /*_ecm*/) 
-        : PowerConsumer(std::move(name), nominalW, priority, std::move(node))
+        std::shared_ptr<spdlog::logger> logger,
+        float nominalW,
+        int priority)
+        : PowerConsumer(
+              std::move(name),
+              std::move(node),
+              std::move(logger),
+              std::move(nominalW),
+              std::move(priority))
     {
-        m_logger = logger::createConsoleAndFileLogger(
-            "sensor_" + this->name(),
-            "sensor_" + this->name() + ".txt");
     }
 
     void setServiceName(const std::string& vessel_name)
     {
         m_vessel_name = vessel_name;
-        const std::string service = "/lotusim/" + vessel_name + "/" + name() + "/change_state";
-        m_activate_client = m_node->create_client<lotusim_sensor_msgs::srv::ActivateSensor>(service);
+        const std::string service =
+            "/lotusim/" + vessel_name + "/" + name() + "/change_state";
+        m_activate_client =
+            m_node->create_client<lotusim_sensor_msgs::srv::ActivateSensor>(
+                service);
     }
 
     // ----------------------------------------------------------------
@@ -93,9 +96,11 @@ public:
      * @brief No-op for a fixed-draw sensor
      *        for sensor active state
      */
-    void update(gz::sim::EntityComponentManager& /*_ecm*/) override {
+    void update() override
+    {
         common::PowerStateRegistry::instance().set(
-            m_vessel_name + "/" + name(), isActive());
+            m_vessel_name + "/" + name(),
+            isActive());
     }
 
     /**
@@ -108,42 +113,20 @@ public:
     {
         PowerConsumer::deactivate();
         callService(false);
-        m_logger->info( "[SensorPowerConsumer] {} deactivated", name());
+        m_logger->info("[SensorPowerConsumer] {} deactivated", name());
     }
 
     /**
-     * @brief reactivates this sensor 
+     * @brief reactivates this sensor
      *        called by PowerManager when power recovers
      *        TODO: publish /vessel_N/sensor_N = ON so
      *        nodes know this sensor is powered again
      */
-    void reactivate() override
+    void activate() override
     {
-        PowerConsumer::reactivate();
+        PowerConsumer::activate();
         callService(true);
-        m_logger->info( "[SensorPowerConsumer] {} reactivated", name());
-    }
-
-    /**
-     * @brief Sensor appeared in ECM —> called by PowerManager via
-     *        _ecm.EachNew<gz::sim::components::CustomSensor>()
-     *        activate for power draw
-     */
-    void eachNew() override
-    {
-        reactivate();
-        m_logger->info( "[SensorPowerConsumer] {} connected", name());
-    }
-
-    /**
-     * @brief Sensor removed from ECM
-     *        different from deactivate(): this fires when the sensor entity
-     *        is physically gone from the simulation, not just powered off
-     */
-    void eachDelete() override
-    {
-        PowerConsumer::deactivate();
-        m_logger->info( "[SensorPowerConsumer] {} removed from simulation", name());
+        m_logger->info("[SensorPowerConsumer] {} activated", name());
     }
 
 private:
@@ -151,20 +134,26 @@ private:
     {
         if (!m_activate_client || !m_activate_client->service_is_ready()) {
             if (!active)
-                m_logger->warn("[SensorPowerConsumer] {} service not ready, "
-                    "registry set only", name());
+                m_logger->warn(
+                    "[SensorPowerConsumer] {} service not ready, "
+                    "registry set only",
+                    name());
             return;
         }
 
-        m_logger->info("[SensorPowerConsumer] {} calling change_state active={}", name(), active);
-        auto request =
-            std::make_shared<lotusim_sensor_msgs::srv::ActivateSensor::Request>();
-        request->activate = active;  // confirm field name with ros2 interface show
+        m_logger->info(
+            "[SensorPowerConsumer] {} calling change_state active={}",
+            name(),
+            active);
+        auto request = std::make_shared<
+            lotusim_sensor_msgs::srv::ActivateSensor::Request>();
+        request->activate =
+            active;  // confirm field name with ros2 interface show
         m_activate_client->async_send_request(request);
     }
 
-    std::string m_vessel_name; 
-    std::shared_ptr<spdlog::logger> m_logger;
-    rclcpp::Client<lotusim_sensor_msgs::srv::ActivateSensor>::SharedPtr m_activate_client;
+    std::string m_vessel_name;
+    rclcpp::Client<lotusim_sensor_msgs::srv::ActivateSensor>::SharedPtr
+        m_activate_client;
 };
-} // namespace lotusim::power_subsystem
+}  // namespace lotusim::gazebo
