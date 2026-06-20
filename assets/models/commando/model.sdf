@@ -5,53 +5,53 @@
         <static>false</static>
         <link name="base_link">
 
-        <!-- ===================== -->
-        <!-- Inertial (REQUIRED)   -->
-        <!-- ===================== -->
-        <inertial>
-            <pose>0 0 0 0 0 0</pose>
-            <mass>150</mass>
-            <inertia>
-            <ixx>20</ixx>
-            <iyy>20</iyy>
-            <izz>30</izz>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyz>0</iyz>
-            </inertia>
-        </inertial>
+            <!-- ===================== -->
+            <!-- Inertial (REQUIRED)   -->
+            <!-- ===================== -->
+            <inertial>
+                <pose>0 0 0 0 0 0</pose>
+                <mass>150</mass>
+                <inertia>
+                    <ixx>20</ixx>
+                    <iyy>20</iyy>
+                    <izz>30</izz>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyz>0</iyz>
+                </inertia>
+            </inertial>
 
-        <!-- ===================== -->
-        <!-- Visual                -->
-        <!-- ===================== -->
-        <visual name="visual">
-            <pose>0 0 0 0 0 0</pose>
-            <geometry>
-            <mesh>
-                <uri>model://commando/meshes/commando.dae</uri>
-                <scale>1 1 1</scale>
-            </mesh>
-            </geometry>
-        </visual>
+            <!-- ===================== -->
+            <!-- Visual                -->
+            <!-- ===================== -->
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <mesh>
+                        <uri>model://commando/meshes/commando.dae</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </visual>
 
-        <!-- ===================== -->
-        <!-- Collision (required) -->
-        <!-- ===================== -->
-        <collision name="collision">
-            <pose>0 0 0 0 0 0</pose>
-            <geometry>
-            <box>
-                <size>3 1 0.6</size>
-            </box>
-            </geometry>
-        </collision>
+            <!-- ===================== -->
+            <!-- Collision (required) -->
+            <!-- ===================== -->
+            <collision name="collision">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>3 1 0.6</size>
+                    </box>
+                </geometry>
+            </collision>
 
             <!-- ===================== -->
             <!-- AIS Sensor (custom)   -->
             <!-- ===================== -->
             <sensor name="ais_sensor" type="custom" gz:type="ais">
                 <lotusim_power>
-                    <power_type>sensor</power_type>
+                    <type>sensor</type>
                     <nominal_w>5.0</nominal_w>
                     <priority>4</priority>
                 </lotusim_power>
@@ -66,7 +66,7 @@
             <!-- ===================== -->
             <sensor name="imu_sensor" type="imu">
                 <lotusim_power>
-                    <power_type>sensor</power_type>
+                    <type>sensor</type>
                     <nominal_w>2.0</nominal_w>
                     <priority>4</priority>
                 </lotusim_power>
@@ -75,47 +75,47 @@
                 <pose>0 0 0 0 0 0</pose>
 
                 <imu>
-                <angular_velocity>
-                    <x>
-                    <noise type="gaussian">
-                        <mean>0</mean>
-                        <stddev>0.0001</stddev>
-                    </noise>
-                    </x>
-                    <y>
-                    <noise type="gaussian">
-                        <mean>0</mean>
-                        <stddev>0.0001</stddev>
-                    </noise>
-                    </y>
-                    <z>
-                    <noise type="gaussian">
-                        <mean>0</mean>
-                        <stddev>0.0001</stddev>
-                    </noise>
-                    </z>
-                </angular_velocity>
+                    <angular_velocity>
+                        <x>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.0001</stddev>
+                            </noise>
+                        </x>
+                        <y>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.0001</stddev>
+                            </noise>
+                        </y>
+                        <z>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.0001</stddev>
+                            </noise>
+                        </z>
+                    </angular_velocity>
 
-                <linear_acceleration>
-                    <x>
-                    <noise type="gaussian">
-                        <mean>0</mean>
-                        <stddev>0.01</stddev>
-                    </noise>
-                    </x>
-                    <y>
-                    <noise type="gaussian">
-                        <mean>0</mean>
-                        <stddev>0.01</stddev>
-                    </noise>
-                    </y>
-                    <z>
-                    <noise type="gaussian">
-                        <mean>0</mean>
-                        <stddev>0.01</stddev>
-                    </noise>
-                    </z>
-                </linear_acceleration>
+                    <linear_acceleration>
+                        <x>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.01</stddev>
+                            </noise>
+                        </x>
+                        <y>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.01</stddev>
+                            </noise>
+                        </y>
+                        <z>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.01</stddev>
+                            </noise>
+                        </z>
+                    </linear_acceleration>
                 </imu>
             </sensor>
 
@@ -124,7 +124,7 @@
             <!-- ===================== -->
             <sensor name="lidar_sensor" type="gpu_lidar">
                 <lotusim_power>
-                    <power_type>sensor</power_type>
+                    <type>sensor</type>
                     <nominal_w>6.0</nominal_w>
                     <priority>3</priority>
                 </lotusim_power>
@@ -140,7 +140,7 @@
                             <min_angle>-3.14159</min_angle>
                             <max_angle>3.14159</max_angle>
                         </horizontal>
-                    <!-- <vertical>
+                        <!-- <vertical>
                         <samples>1</samples>
                         <min_angle>0</min_angle>
                         <max_angle>0</max_angle>
@@ -164,7 +164,7 @@
             <!-- ===================== -->
             <sensor name="radar_sensor" type="custom" gz:type="radar">
                 <lotusim_power>
-                    <power_type>sensor</power_type>
+                    <type>sensor</type>
                     <nominal_w>7.0</nominal_w>
                     <priority>2</priority>
                 </lotusim_power>

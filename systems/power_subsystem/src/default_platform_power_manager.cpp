@@ -131,7 +131,7 @@ void DefaultPlatformPowerManager::distributeLoad(
                         bus_voltage);
                     if (charge_current > 1e-6f) {
                         active_gen->receiveLoad(charge_current, dt);
-                        charge_target->receiveCharge(charge_current, dt);
+                        charge_target->receiveLoad(charge_current, dt);
                     }
                 }
             }

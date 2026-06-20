@@ -24,27 +24,35 @@ namespace lotusim::gazebo {
 
 enum class ProviderType
 {
-    Battery,
-    Generator
+    SimpleBattery,
+    SimpleGenerator,
+    RPMGenerator,
+    Unknown
 };
 
 inline std::string_view toString(ProviderType type)
 {
     switch (type) {
-        case ProviderType::Battery:
-            return "battery";
-        case ProviderType::Generator:
-            return "generator";
+        case ProviderType::SimpleBattery:
+            return "simple_battery";
+        case ProviderType::SimpleGenerator:
+            return "simple_generator";
+        case ProviderType::RPMGenerator:
+            return "rpm_generator";
+        default:
+            return "unknown";
     }
     return "";
 }
 
 inline std::optional<ProviderType> providerTypeFromString(std::string_view s)
 {
-    if (s == "battery")
-        return ProviderType::Battery;
-    if (s == "generator")
-        return ProviderType::Generator;
+    if (s == "simple_battery")
+        return ProviderType::SimpleBattery;
+    if (s == "simple_generator")
+        return ProviderType::SimpleGenerator;
+    if (s == "rpm_generator")
+        return ProviderType::RPMGenerator;
     return std::nullopt;
 }
 

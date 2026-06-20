@@ -21,6 +21,7 @@
 namespace lotusim::gazebo {
 enum class ConsumerType
 {
+    Unknown,
     Sensor,
     Thruster
 };
@@ -28,6 +29,8 @@ enum class ConsumerType
 inline std::string_view toString(ConsumerType type)
 {
     switch (type) {
+        case ConsumerType::Unknown:
+            return "unknown";
         case ConsumerType::Sensor:
             return "sensor";
         case ConsumerType::Thruster:

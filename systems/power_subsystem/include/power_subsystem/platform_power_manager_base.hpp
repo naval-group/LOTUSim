@@ -146,7 +146,7 @@ private:
     bool initPowerProvider(sdf::ElementPtr sdfptr);
 
     /**
-     * @brief for each sensor with a power_type attribute, constructs the
+     * @brief for each sensor with a type attribute, constructs the
      *        appropriate PowerConsumer subclass
      */
     bool initPowerConsumers(

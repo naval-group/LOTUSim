@@ -324,7 +324,7 @@ The service is registered by `CustomSensor::Load()` in `lotusim_sensor_base`.
 ```xml
 <sensor name="ais" type="custom" gz:type="ais">
     <lotusim_power>
-        <power_type>sensor</power_type>
+        <type>sensor</type>
         <nominal_w>5.0</nominal_w>
         <priority>3</priority>
     </lotusim_power>

@@ -18,7 +18,7 @@
       </collision>
       <sensor name="ais_sensor" type="custom" gz:type="ais">
         <lotusim_power>
-          <power_type>sensor</power_type>
+          <type>sensor</type>
           <nominal_w>3.0</nominal_w>
           <priority>4</priority>
         </lotusim_power>
@@ -26,9 +26,9 @@
         <noise_sigma>0.01</noise_sigma>
         <noise_amplitude>0.01</noise_amplitude>
       </sensor>
-      <sensor name="imu_sensor" type="custom"  gz:type="imu">
+      <sensor name="imu_sensor" type="custom" gz:type="imu">
         <lotusim_power>
-          <power_type>sensor</power_type>
+          <type>sensor</type>
           <nominal_w>3.0</nominal_w>
           <priority>4</priority>
         </lotusim_power>
@@ -40,8 +40,10 @@
       <lotusim_power>
         <type>rpm_generator</type>
         <fuel_type>hydrogen</fuel_type>
-        <fuel_capacity>0.002</fuel_capacity>      <!--full tank size in litres-->
-        <fuel_level_start>0.001</fuel_level_start>     <!--how much fuel at start-->
+        <fuel_capacity>0.002</fuel_capacity>      <!--full
+        tank size in litres-->
+        <fuel_level_start>0.001</fuel_level_start>     <!--how
+        much fuel at start-->
         <rated_output_w>5000</rated_output_w>
         <rated_rpm>2000</rated_rpm>
         <efficiency>0.35</efficiency>

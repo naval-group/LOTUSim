@@ -145,7 +145,8 @@ public:
      * @brief consume fuel proportional to current load over dt
      *        updates m_fuelLevel
      *
-     * @param currentA  total current drawn from this generator (A)
+     * @param currentA  net current on this provider (Amperes); positive =
+     * discharge, negative = charge
      * @param dt        elapsed simulation time since last tick (s)
      */
     void receiveLoad(float currentA, float dt) override = 0;
@@ -164,21 +165,16 @@ protected:
      */
     Generator(
         std::string name,
-        rclcpp::Node::SharedPtr node,
-        float fuel_level_start,
-        float fuel_capacity,
-        float rated_output_w,
-        float efficiency,
-        float voltage_nominal,
-        std::string fuel_type)
+        const sdf::ElementPtr& _sdf,
+        rclcpp::Node::SharedPtr node)
         : PowerProvider(std::move(name), std::move(node))
-        , m_fuel_level(fuel_level_start)
-        , m_fuel_capacity(fuel_capacity)
-        , m_rated_output_W(rated_output_w)
-        , m_efficiency(efficiency)
-        , m_voltage_nominal(voltage_nominal)
-        , m_fuel_type(fuel_type)
     {
+        m_fuel_level = _sdf->Get<float>("fuel_level_start", 400.0f).first;
+        m_fuel_capacity = _sdf->Get<float>("fuel_capacity", 500.0f).first;
+        m_rated_output_W = _sdf->Get<float>("rated_output_w", 5000.0f).first;
+        m_efficiency = _sdf->Get<float>("efficiency", 0.35f).first;
+        m_voltage_nominal = _sdf->Get<float>("voltage_nominal", 48.0f).first;
+        m_fuel_type = _sdf->Get<std::string>("fuel_type", "diesel").first;
     }
 
     // current fuel level

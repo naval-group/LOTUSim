@@ -22,14 +22,14 @@ PowerConsumer::CreateResult PowerConsumer::createFromSdf(
 
     const sdf::ElementPtr powerEl = sdf->GetElement("lotusim_power");
     const std::string powerTypeStr =
-        powerEl->Get<std::string>("power_type", "").first;
+        powerEl->Get<std::string>("type", "").first;
     const float nominalW = powerEl->Get<float>("nominal_w", 1.0f).first;
     const int priority = powerEl->Get<int>("priority", 3).first;
 
     if (powerTypeStr.empty()) {
         logger->warn(
             "PowerConsumer::createFromSdf [{}]: consumer [{}] has <lotusim_power> "
-            "but missing <power_type> -> skipping",
+            "but missing <type> -> skipping",
             vessel_name,
             name);
         return {nullptr, ConsumerType{}};
@@ -38,7 +38,7 @@ PowerConsumer::CreateResult PowerConsumer::createFromSdf(
     const auto typeOpt = consumerTypeFromString(powerTypeStr);
     if (!typeOpt) {
         logger->warn(
-            "PowerConsumer::createFromSdf [{}]: unknown power_type '{}' on "
+            "PowerConsumer::createFromSdf [{}]: unknown type '{}' on "
             "consumer [{}] -> skipping",
             vessel_name,
             powerTypeStr,
@@ -86,6 +86,8 @@ PowerConsumer::CreateResult PowerConsumer::createFromSdf(
                 priority);
             return {std::move(consumer), type};
         }
+        default:
+            return {nullptr, ConsumerType::Unknown};
     }
     return {nullptr, type};
 }

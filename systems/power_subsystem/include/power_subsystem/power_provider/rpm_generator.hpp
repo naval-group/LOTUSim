@@ -9,15 +9,16 @@
  */
 #pragma once
 
-#include "power_subsystem/power_provider/generator.hpp"
-#include "lotusim_common/logger.hpp"
 #include <spdlog/spdlog.h>
-#include <std_msgs/msg/float64.hpp>
-#include <gz/common/Console.hh>
-#include "lotusim_common/common.hpp"
 
-namespace lotusim::gazebo
-{
+#include <gz/common/Console.hh>
+#include <std_msgs/msg/float64.hpp>
+
+#include "lotusim_common/common.hpp"
+#include "lotusim_common/logger.hpp"
+#include "power_subsystem/power_provider/generator.hpp"
+
+namespace lotusim::gazebo {
 
 /**
  * @brief Generator with fuel consumption based on live RPM topic
@@ -42,8 +43,7 @@ namespace lotusim::gazebo
  *   <efficiency>0.35</efficiency>
  *   <voltage_nominal>48.0</voltage_nominal>
  */
-class RpmGenerator : public Generator
-{
+class RpmGenerator : public Generator {
 public:
     /**
      * @param name        generator name
@@ -65,7 +65,7 @@ public:
 
     /**
      * @brief Consume fuel based on current RPM over dt
-     *       
+     *
      * @param currentA  total current drawn from generator (A)
      * @param dt        elapsed time since last tick (s)
      */
@@ -90,4 +90,4 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 
-} // namespace lotusim::gazebo
+}  // namespace lotusim::gazebo

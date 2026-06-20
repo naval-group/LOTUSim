@@ -9,19 +9,19 @@
  */
 #pragma once
 
-#include "power_subsystem/power_provider/battery.hpp"
-
 #include <gz/common/Console.hh>
+
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "power_subsystem/power_provider/battery.hpp"
 
-namespace lotusim::gazebo
-{
+namespace lotusim::gazebo {
 
 /**
  * @brief minimal battery for integration testing
  *
- * For now, testing: stubs out FMU interaction with a simple linear voltage drain:
+ * For now, testing: stubs out FMU interaction with a simple linear voltage
+ * drain:
  *
  *   voltage -= (currentA * dt) / capacity_ah
  *
@@ -33,8 +33,7 @@ namespace lotusim::gazebo
  *             capacity_ah="100" initial_soc="1.0"
  *             voltage_min="36.0" voltage_nominal="48.0"/>
  */
-class SimpleBattery : public Battery
-{
+class SimpleBattery : public Battery {
 public:
     /**
      * @param name   Battery name from SDF
@@ -46,22 +45,19 @@ public:
         std::string name,
         const sdf::ElementPtr& _sdf,
         rclcpp::Node::SharedPtr node)
-        : Battery(
-            std::move(name),
-            std::move(node),
-            _sdf->Get<float>("capacity_ah", 100.0f).first,
-            _sdf->Get<float>("initial_soc", 1.0f).first,
-            _sdf->Get<float>("voltage_min", 36.0f).first)
+        : Battery(std::move(name), _sdf, std::move(node))
         , m_voltage(0.0f)
         , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
-        , m_remainingAh(_sdf->Get<float>("capacity_ah", 100.0f).first
-                * _sdf->Get<float>("initial_soc", 1.0f).first)
+        , m_remainingAh(
+              _sdf->Get<float>("capacity_ah", 100.0f).first *
+              _sdf->Get<float>("initial_soc", 1.0f).first)
     {
-        m_voltage = m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
+        m_voltage =
+            m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
 
         const std::string loggerName = "simpleBattery_" + Battery::name();
-        m_logger = logger::createConsoleAndFileLogger(
-            loggerName, loggerName + ".txt");
+        m_logger =
+            logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
     }
 
     // ----------------------------------------------------------------
@@ -70,7 +66,8 @@ public:
 
     /**
      * @brief Drains voltage proportionally to current load over dt
-     *        stub for FMU call — replace when wrapper is available -----------------
+     *        stub for FMU call — replace when wrapper is available
+     * -----------------
      */
     void receiveLoad(float currentA, float dt) override;
 
@@ -79,12 +76,6 @@ public:
      *        real implementation reads from FMU output.
      */
     float voltage() const override;
-
-    /**
-     * @brief Charges battery by increasing voltage toward nominal
-     *        stub for FMU call, replace when wrapper is available     
-     */
-    void receiveCharge(float currentA, float dt) override;
 
     float getStateOfCharge() const override;
 
@@ -101,9 +92,9 @@ private:
     float m_voltage_nominal{48.0f};
 
     // tracks remaining charge
-    float m_remainingAh{100.0f};    
+    float m_remainingAh{100.0f};
 
     std::shared_ptr<spdlog::logger> m_logger;
 };
 
-} // namespace lotusim::gazebo
+}  // namespace lotusim::gazebo

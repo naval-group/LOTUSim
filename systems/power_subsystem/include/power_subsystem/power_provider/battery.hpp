@@ -104,24 +104,17 @@ public:
     // ----------------------------------------------------------------
     /**
      * @brief push total current draw
-     * @param currentA  total current drawn from this battery (Amp)
+     * @param currentA  net current on this provider (Amperes); positive =
+     * discharge, negative = charge
      * @param dt        elapsed simulation time since last tick (sec)
      */
     void receiveLoad(float currentA, float dt) override = 0;
 
     /**
      * @brief current output voltage
-     *        subclass returns the value last received from the FMU
+     * @returns the value last received from the FMU
      */
     float voltage() const override = 0;
-
-    /**
-     * @brief push surplus current into this battery for charging
-     *
-     * @param currentA  Surplus charging current (Amp)
-     * @param dt        Elapsed simulation time since last tick (sec)
-     */
-    void receiveCharge(float currentA, float dt) override = 0;
 
 protected:
     /**
@@ -135,15 +128,13 @@ protected:
      */
     Battery(
         std::string name,
-        rclcpp::Node::SharedPtr node,
-        float capacity_ah,
-        float initial_soc,
-        float voltage_min)
+        const sdf::ElementPtr& sdf,
+        rclcpp::Node::SharedPtr node)
         : PowerProvider(std::move(name), std::move(node))
-        , m_capacityAh(capacity_ah)
-        , m_initialSoc(initial_soc)
-        , m_voltageMin(voltage_min)
     {
+        m_capacityAh = sdf->Get<float>("capacity_ah", 100.0f).first;
+        m_initialSoc = sdf->Get<float>("initial_soc", 1.0f).first;
+        m_voltageMin = sdf->Get<float>("voltage_min", 36.0f).first;
     }
 
     // battery capacity in Amp-hour from SDF

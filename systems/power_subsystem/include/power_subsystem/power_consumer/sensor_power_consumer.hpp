@@ -34,7 +34,7 @@ namespace lotusim::gazebo {
  * SDF:
  *   <sensor name="ais_sensor" type="custom" gz:type="ais">
  *      <lotusim_power>
- *          <power_type>sensor</power_type>
+ *          <type>sensor</type>
  *          <nominal_w>3.0</nominal_w>
  *          <priority>4</priority>
  *      </lotusim_power>
