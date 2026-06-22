@@ -11,9 +11,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cmath>
-#include <gz/sim/Entity.hh>
-#include <gz/sim/EntityComponentManager.hh>
 #include <std_msgs/msg/float32.hpp>
 
 #include "power_subsystem/power_consumer/power_consumer.hpp"
@@ -40,18 +37,17 @@ public:
      * @param _ecm       Gazebo EntityComponentManager
      */
     ThrusterPowerConsumer(
-        std::string name,
+        const std::string& consumer_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& _sdf,
         rclcpp::Node::SharedPtr node,
-        std::shared_ptr<spdlog::logger> logger,
-        float nominalW,
-        int priority)
+        std::shared_ptr<spdlog::logger> logger)
         : PowerConsumer(
-              std::move(name),
+              std::move(consumer_name),
+              std::move(vessel_name),
+              _sdf,
               std::move(node),
-              logger,
-              nominalW,
-              priority)
+              logger)
     {
         m_maxRpm = _sdf->Get<float>("max_rpm", 1000.0f).first;
         // subscribe to rpm command

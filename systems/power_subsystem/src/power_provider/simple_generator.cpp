@@ -18,12 +18,40 @@
 // SimpleGenerator: fuel consumption is driven by bus current (currentA)
 
 namespace lotusim::gazebo {
+
+SimpleGenerator::SimpleGenerator(
+    const std::string& generator_name,
+    const std::string& vessel_name,
+    const sdf::ElementPtr& _sdf,
+    rclcpp::Node::SharedPtr node,
+    std::shared_ptr<spdlog::logger> logger)
+    : Generator(
+          std::move(generator_name),
+          std::move(vessel_name),
+          _sdf,
+          std::move(node),
+          logger)
+{
+    m_provider_type = ProviderType::SimpleGenerator;
+    m_logger->info(
+        "SimpleGenerator [{},P{}]: initialised with "
+        "type = {} fuel {:.1f}/{:.1f} L, rated {:.0f} W, efficiency {:.2f}, voltage {:.1f} V",
+        m_provider_name,
+        m_vessel_name,
+        m_fuel_type,
+        m_fuel_level,
+        m_fuel_capacity,
+        m_rated_output_W,
+        m_efficiency,
+        m_voltage_nominal);
+}
+
 void SimpleGenerator::receiveLoad(float currentA, float dt)
 {
     if (isDepleted()) {
         m_logger->warn(
             "SimpleGenerator [{}]: no fuel remaining, cannot supply load",
-            Generator::name());
+            m_provider_name);
         return;
     }
 
@@ -40,7 +68,7 @@ void SimpleGenerator::receiveLoad(float currentA, float dt)
     m_logger->debug(
         "SimpleGenerator [{}]: load={:.3f} A power={:.1f} W "
         "fuel_consumed={:.6f} L remaining={:.3f}/{:.3f} L ratio={:.3f}",
-        Generator::name(),
+        m_provider_name,
         currentA,
         powerW,
         fuel_consumed,
@@ -49,9 +77,7 @@ void SimpleGenerator::receiveLoad(float currentA, float dt)
         fuelRatio());
 
     if (isDepleted()) {
-        m_logger->warn(
-            "SimpleGenerator [{}]: fuel depleted",
-            Generator::name());
+        m_logger->warn("SimpleGenerator [{}]: fuel depleted", m_provider_name);
     }
 }
 }  // namespace lotusim::gazebo

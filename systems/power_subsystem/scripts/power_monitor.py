@@ -15,6 +15,7 @@ import time
 from collections import deque
 
 import matplotlib
+
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -27,41 +28,41 @@ from lotusim_msgs.msg import PowerStatus
 # ── constants ────────────────────────────────────────────────────────────────
 
 MAX_VESSELS = 5
-COLORS      = ["#2196F3", "#4CAF50", "#FF5722", "#9C27B0", "#FF9800"]
+COLORS = ["#2196F3", "#4CAF50", "#FF5722", "#9C27B0", "#FF9800"]
 
 
 # ── data store ───────────────────────────────────────────────────────────────
 
+
 class VesselData:
     def __init__(self, max_history: int):
-        self.times:          deque[float] = deque(maxlen=max_history)
-        self.socs:           deque[float] = deque(maxlen=max_history)
-        self.provider_count: int          = 0
-        self.active_name:    str          = ""
-        self.active_type:    str          = ""
-        self.voltage:        float        = 0.0
+        self.times: deque[float] = deque(maxlen=max_history)
+        self.socs: deque[float] = deque(maxlen=max_history)
+        self.active_name: str = ""
+        self.active_type: str = ""
+        self.voltage: float = 0.0
 
     def push(self, t: float, msg: PowerStatus) -> None:
         self.times.append(t)
         self.socs.append(float(msg.active_provider_soc))
-        self.provider_count = msg.provider_count
-        self.active_name    = msg.active_provider_name
-        self.active_type    = msg.active_provider_type
-        self.voltage        = float(msg.active_provider_voltage)
+        self.active_name = msg.active_provider_name
+        self.active_type = msg.active_provider_type
+        self.voltage = float(msg.active_provider_voltage)
 
 
 # ── ROS2 node ────────────────────────────────────────────────────────────────
 
+
 class PowerMonitorNode(Node):
     def __init__(self, max_history: int):
         super().__init__("power_monitor")
-        self._lock         = threading.Lock()
-        self._data:   dict[str, VesselData] = {}
-        self._colors: dict[str, str]        = {}
-        self._t0:     float | None          = None
-        self._max_history  = max_history
+        self._lock = threading.Lock()
+        self._data: dict[str, VesselData] = {}
+        self._colors: dict[str, str] = {}
+        self._t0: float | None = None
+        self._max_history = max_history
         self._known_topics: set[str] = set()
-        self._subs:   dict[str, object] = {}
+        self._subs: dict[str, object] = {}
         self.get_logger().info("PowerMonitorNode started — waiting for vessels...")
 
     def refresh_subscriptions(self) -> None:
@@ -74,12 +75,13 @@ class PowerMonitorNode(Node):
                 continue
             if len(self._subs) >= MAX_VESSELS:
                 self.get_logger().warn(
-                    f"MAX_VESSELS={MAX_VESSELS} reached, ignoring {topic}")
+                    f"MAX_VESSELS={MAX_VESSELS} reached, ignoring {topic}"
+                )
                 continue
             self._known_topics.add(topic)
             self._subs[topic] = self.create_subscription(
-                PowerStatus, topic,
-                lambda msg, t=topic: self._cb(t, msg), 10)
+                PowerStatus, topic, lambda msg, t=topic: self._cb(t, msg), 10
+            )
             self.get_logger().info(f"Subscribed to {topic}")
 
     def _cb(self, _topic: str, msg: PowerStatus) -> None:
@@ -91,7 +93,7 @@ class PowerMonitorNode(Node):
         with self._lock:
             if vessel not in self._data:
                 idx = len(self._data)
-                self._data[vessel]  = VesselData(self._max_history)
+                self._data[vessel] = VesselData(self._max_history)
                 self._colors[vessel] = COLORS[idx % len(COLORS)]
                 self.get_logger().info(f"New vessel tracked: {vessel}")
             self._data[vessel].push(t, msg)
@@ -103,6 +105,7 @@ class PowerMonitorNode(Node):
 
 # ── plot ─────────────────────────────────────────────────────────────────────
 
+
 class PowerMonitorPlot:
     def __init__(self, node: PowerMonitorNode):
         self._node = node
@@ -113,8 +116,8 @@ class PowerMonitorPlot:
         self._ax.set_facecolor("#1e1e2e")
 
         self._ax.set_title(
-            "LOTUSim — Power Monitor",
-            color="white", fontsize=14, pad=12)
+            "LOTUSim — Power Monitor", color="white", fontsize=14, pad=12
+        )
         self._ax.set_xlabel("Time (s)", color="#aaaaaa")
         self._ax.set_ylabel("State of Charge / Fuel ratio (0–1)", color="#aaaaaa")
         self._ax.tick_params(colors="#aaaaaa")
@@ -129,23 +132,35 @@ class PowerMonitorPlot:
 
         # right-side labels for thresholds
         self._warn_label = self._ax.text(
-            1.002, 0.20, "WARN (20%)",
+            1.002,
+            0.20,
+            "WARN (20%)",
             transform=self._ax.get_yaxis_transform(),
-            color="#aaaaaa", fontsize=7.5,
-            verticalalignment="center")
+            color="#aaaaaa",
+            fontsize=7.5,
+            verticalalignment="center",
+        )
         self._crit_label = self._ax.text(
-            1.002, 0.10, "CRITICAL (10%)",
+            1.002,
+            0.10,
+            "CRITICAL (10%)",
             transform=self._ax.get_yaxis_transform(),
-            color="#aaaaaa", fontsize=7.5,
-            verticalalignment="center")
+            color="#aaaaaa",
+            fontsize=7.5,
+            verticalalignment="center",
+        )
 
         # info text bottom-left
         self._info = self._ax.text(
-            0.01, 0.02, "",
+            0.01,
+            0.02,
+            "",
             transform=self._ax.transAxes,
-            color="#aaaaaa", fontsize=8,
+            color="#aaaaaa",
+            fontsize=8,
             verticalalignment="bottom",
-            fontfamily="monospace")
+            fontfamily="monospace",
+        )
 
         plt.tight_layout()
         # leave a small margin on the right for the threshold labels
@@ -171,12 +186,9 @@ class PowerMonitorPlot:
             style = "-" if data.active_type == "battery" else "--"
 
             if vessel not in self._lines:
-                line, = self._ax.plot(
-                    xs, ys,
-                    linestyle=style,
-                    color=color,
-                    linewidth=2,
-                    label=vessel)
+                (line,) = self._ax.plot(
+                    xs, ys, linestyle=style, color=color, linewidth=2, label=vessel
+                )
                 self._lines[vessel] = line
             else:
                 self._lines[vessel].set_data(xs, ys)
@@ -185,7 +197,6 @@ class PowerMonitorPlot:
             icon = "🔋" if data.active_type == "battery" else "⚡"
             info_lines.append(
                 f"{icon} {vessel:<22} "
-                f"providers={data.provider_count}  "
                 f"active={data.active_name} ({data.active_type})  "
                 f"SOC={ys[-1]:.3f}  "
                 f"V={data.voltage:.2f} V"
@@ -200,24 +211,28 @@ class PowerMonitorPlot:
             facecolor="#2a2a3e",
             edgecolor="#444444",
             labelcolor="white",
-            fontsize=9)
+            fontsize=9,
+        )
         self._fig.canvas.draw_idle()
 
     def start(self, interval_ms: int) -> None:
         self._anim = animation.FuncAnimation(
-            self._fig, self.update,
-            interval=interval_ms,
-            cache_frame_data=False)
+            self._fig, self.update, interval=interval_ms, cache_frame_data=False
+        )
         plt.show()
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="LOTUSim power monitor")
     parser.add_argument(
-        "--max-history", type=int, default=150,
-        help="Data points to keep per vessel (default 150 ≈ 5 min at 2 s intervals)")
+        "--max-history",
+        type=int,
+        default=150,
+        help="Data points to keep per vessel (default 150 ≈ 5 min at 2 s intervals)",
+    )
     args = parser.parse_args()
 
     rclpy.init()

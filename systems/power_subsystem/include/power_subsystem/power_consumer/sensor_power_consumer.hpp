@@ -10,11 +10,6 @@
 
 #pragma once
 
-#include <gz/common/Console.hh>
-#include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/components/Name.hh>
-#include <gz/sim/components/Sensor.hh>
-
 #include "lotusim_common/common.hpp"
 #include "lotusim_sensor_msgs/srv/activate_sensor.hpp"
 #include "power_subsystem/power_consumer/power_consumer.hpp"
@@ -49,29 +44,22 @@ public:
      * @param priority  load shedding priority from SDF priority (default 3)
      * @param _sdf      lotus_power SDF element : for user custom params
      * @param node      node from PowerManager
-     * @param _ecm      Gazebo ECM
      */
     SensorPowerConsumer(
-        std::string name,
+        const std::string& consumer_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& sdf,
         rclcpp::Node::SharedPtr node,
-        std::shared_ptr<spdlog::logger> logger,
-        float nominalW,
-        int priority)
+        std::shared_ptr<spdlog::logger> logger)
         : PowerConsumer(
-              std::move(name),
+              std::move(consumer_name),
+              std::move(vessel_name),
+              sdf,
               std::move(node),
-              std::move(logger),
-              std::move(nominalW),
-              std::move(priority))
+              std::move(logger))
     {
-    }
-
-    void setServiceName(const std::string& vessel_name)
-    {
-        m_vessel_name = vessel_name;
         const std::string service =
-            "/lotusim/" + vessel_name + "/" + name() + "/change_state";
+            "/lotusim/" + m_vessel_name + "/" + name() + "/change_state";
         m_activate_client =
             m_node->create_client<lotusim_sensor_msgs::srv::ActivateSensor>(
                 service);
@@ -112,7 +100,7 @@ public:
     void deactivate() override
     {
         PowerConsumer::deactivate();
-        callService(false);
+        callSensorService(false);
         m_logger->info("[SensorPowerConsumer] {} deactivated", name());
     }
 
@@ -125,12 +113,12 @@ public:
     void activate() override
     {
         PowerConsumer::activate();
-        callService(true);
+        callSensorService(true);
         m_logger->info("[SensorPowerConsumer] {} activated", name());
     }
 
 private:
-    void callService(bool active)
+    void callSensorService(bool active)
     {
         if (!m_activate_client || !m_activate_client->service_is_ready()) {
             if (!active)
@@ -152,7 +140,7 @@ private:
         m_activate_client->async_send_request(request);
     }
 
-    std::string m_vessel_name;
+protected:
     rclcpp::Client<lotusim_sensor_msgs::srv::ActivateSensor>::SharedPtr
         m_activate_client;
 };

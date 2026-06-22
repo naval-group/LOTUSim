@@ -9,10 +9,6 @@
  */
 #pragma once
 
-#include <gz/common/Console.hh>
-
-#include "lotusim_common/common.hpp"
-#include "lotusim_common/logger.hpp"
 #include "power_subsystem/power_provider/battery.hpp"
 
 namespace lotusim::gazebo {
@@ -42,23 +38,13 @@ public:
      * @param node   node from PowerManager
      */
     SimpleBattery(
-        std::string name,
-        const sdf::ElementPtr& _sdf,
-        rclcpp::Node::SharedPtr node)
-        : Battery(std::move(name), _sdf, std::move(node))
-        , m_voltage(0.0f)
-        , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
-        , m_remainingAh(
-              _sdf->Get<float>("capacity_ah", 100.0f).first *
-              _sdf->Get<float>("initial_soc", 1.0f).first)
-    {
-        m_voltage =
-            m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
+        const std::string& battery_name,
+        const std::string& vessel_name,
+        const sdf::ElementPtr& sdf,
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger);
 
-        const std::string loggerName = "simpleBattery_" + Battery::name();
-        m_logger =
-            logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
-    }
+    ~SimpleBattery() = default;
 
     // ----------------------------------------------------------------
     // Battery interface
@@ -93,8 +79,6 @@ private:
 
     // tracks remaining charge
     float m_remainingAh{100.0f};
-
-    std::shared_ptr<spdlog::logger> m_logger;
 };
 
 }  // namespace lotusim::gazebo

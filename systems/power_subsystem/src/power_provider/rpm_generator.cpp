@@ -20,15 +20,19 @@
 namespace lotusim::gazebo {
 
 RpmGenerator::RpmGenerator(
-    std::string name,
+    const std::string& generator_name,
+    const std::string& vessel_name,
     const sdf::ElementPtr& _sdf,
     rclcpp::Node::SharedPtr node,
-    const std::string& vessel_name)
-    : Generator(std::move(name), _sdf, std::move(node))
+    std::shared_ptr<spdlog::logger> logger)
+    : Generator(
+          std::move(generator_name),
+          std::move(vessel_name),
+          _sdf,
+          std::move(node),
+          logger)
 {
-    const std::string loggerName = "rpmGenerator_" + Generator::name();
-    m_logger =
-        logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
+    m_provider_type = ProviderType::RPMGenerator;
 
     // subscribe to /<vessel_name>/rpm
     const std::string rpm_topic = "/" + vessel_name + "/rpm";
@@ -41,11 +45,12 @@ RpmGenerator::RpmGenerator(
             });
 
     m_logger->info(
-        "RpmGenerator [{}]: initialised : "
+        "RpmGenerator [{},{}]: initialised : "
         "fuel {:.1f}/{:.1f} L type={} rated {:.0f} W "
         "rated_rpm={:.0f} efficiency={:.2f} voltage={:.1f} V "
         "subscribed to [{}]",
-        Generator::name(),
+        m_provider_name,
+        m_vessel_name,
         m_fuel_level,
         m_fuel_capacity,
         m_fuel_type,
@@ -61,7 +66,7 @@ void RpmGenerator::onRpm(const std_msgs::msg::Float64::SharedPtr msg)
     m_current_rpm.store(static_cast<float>(msg->data));
     m_logger->debug(
         "RpmGenerator [{}]: received rpm={:.1f}",
-        Generator::name(),
+        m_provider_name,
         msg->data);
 }
 
@@ -103,7 +108,7 @@ void RpmGenerator::receiveLoad(float /*currentA*/, float dt)
     m_logger->debug(
         "RpmGenerator [{}]: rpm={:.1f} power={:.1f} W "
         "fuel_consumed={:.6f} L remaining={:.3f}/{:.3f} L ({:.1f}%)",
-        Generator::name(),
+        m_provider_name,
         rpm,
         power_w,
         fuelConsumed,
@@ -112,7 +117,7 @@ void RpmGenerator::receiveLoad(float /*currentA*/, float dt)
         fuelRatio() * 100.0f);
 
     if (isDepleted()) {
-        m_logger->warn("RpmGenerator [{}]: fuel depleted", Generator::name());
+        m_logger->warn("RpmGenerator [{}]: fuel depleted", m_provider_name);
     }
 }
 

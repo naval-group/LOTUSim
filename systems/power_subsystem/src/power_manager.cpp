@@ -15,13 +15,6 @@
 
 #include "lotusim_common/common.hpp"
 
-GZ_ADD_PLUGIN(
-    lotusim::gazebo::PowerManager,
-    gz::sim::System,
-    gz::sim::ISystemConfigure,
-    gz::sim::ISystemUpdate,
-    gz::sim::ISystemPostUpdate)
-
 namespace lotusim::gazebo {
 
 PowerManager::PowerManager()
@@ -66,8 +59,11 @@ void PowerManager::PostUpdate(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
+    const float dt =
+        static_cast<float>(std::chrono::duration<double>(_info.dt).count());
+
     for (auto& [entity, instance] : m_vessel_instances) {
-        instance->PostUpdate(_info, _ecm);
+        instance->PostUpdate(dt);
     }
 }
 
@@ -92,9 +88,12 @@ void PowerManager::Update(
             return true;
         });
 
+    const float dt =
+        static_cast<float>(std::chrono::duration<double>(_info.dt).count());
+
     // ── Tick all active vessel instances ──────────────────────────────
     for (auto& [entity, instance] : m_vessel_instances) {
-        instance->Update(_info, _ecm);
+        instance->Update(dt);
     }
 }
 
@@ -107,6 +106,30 @@ bool PowerManager::loadVessel(
     const gz::sim::components::ModelSdf* _model_sdf,
     gz::sim::EntityComponentManager& _ecm)
 {
+    // get vessel name
+    auto nameOpt = lotusim::common::getModelName(_ecm, _entity);
+    if (!nameOpt) {
+        m_logger->warn(
+            "PowerManager::loadVessel: could not get name for entity [{}]",
+            _entity);
+        return false;
+    }
+    const std::string vesselName = nameOpt->second;
+
+    sdf::Model data = _model_sdf->Data();
+    sdf::ElementPtr sdfptr = data.Element();
+    if (!sdfptr) {
+        m_logger->error(
+            "PlatformPowerManager [{}]: ModelSdf has no element",
+            vesselName);
+        return false;
+    }
+
+    sdf::ElementPtr rootEl = sdfptr->GetIncludeElement();
+    if (!rootEl) {
+        rootEl = sdfptr;
+    }
+
     // skip if already registered
     if (m_vessel_instances.count(_entity)) {
         m_logger->warn(
@@ -121,53 +144,21 @@ bool PowerManager::loadVessel(
         return false;
     }
 
-    // get vessel name
-    auto nameOpt = lotusim::common::getModelName(_ecm, _entity);
-    if (!nameOpt) {
-        m_logger->warn(
-            "PowerManager::loadVessel: could not get name for entity [{}]",
-            _entity);
-        return false;
-    }
-    const std::string vesselName = nameOpt->second;
-
     // Getting power management type for the ship
     PlatformPowerManagerType power_management_type =
         PlatformPowerManagerType::DEFAULT;
-    auto includeptr = _model_sdf->GetIncludeElement();
     // The lotus param will either be include statement or part of the
     // model
-    if (!includeptr) {
-        includeptr = sdfptr;
-    }
-    if (includeptr->HasElement("lotus_param") &&
-        includeptr->GetElement("lotus_param")->HasElement("power_system") &&
-        includeptr->GetElement("lotus_param")
+    if (rootEl->HasElement("lotus_param") &&
+        rootEl->GetElement("lotus_param")->HasElement("power_system") &&
+        rootEl->GetElement("lotus_param")
             ->GetElement("power_system")
-            ->HasElement("power_management_type") &&
-        includeptr->GetElement("lotus_param")
-            ->GetElement("power_system")
-            ->Get<string>("power_management_type")) {
+            ->HasElement("power_management_type")) {
         power_management_type = platformPowerManagerTypeFromString(
-            includeptr->GetElement("lotus_param")
+            rootEl->GetElement("lotus_param")
                 ->GetElement("power_system")
-                ->Get<string>("power_management_type"));
-    }
-
-    // Walk <link> elements in the SDF
-    const sdf::ElementPtr sdfptr = _model_sdf->Data().Element();
-    if (!sdfptr) {
-        m_logger->error(
-            "PlatformPowerManager [{}]: ModelSdf has no element",
-            vesselName);
-        return false;
-    }
-
-    sdf::ElementPtr rootEl = sdfptr->GetIncludeElement();
-    if (!rootEl) {
-        rootEl = sdfptr;
-    }
-    if (!rootEl->HasElement("lotusim_power")) {
+                ->Get<std::string>("power_management_type"));
+    } else {
         m_logger->debug(
             "PowerManager::loadVessel [{}]: no <lotusim_power> tag found, skipping PowerManager creation",
             vesselName);
@@ -181,8 +172,7 @@ bool PowerManager::loadVessel(
         _entity,
         vesselName,
         vesselNode,
-        rootEl,
-        _ecm);
+        rootEl);
 
     m_logger->info(
         "PowerManager::loadVessel: registered vessel [{}]",
@@ -209,3 +199,10 @@ bool PowerManager::deleteVessel(const gz::sim::Entity& _entity)
 }
 
 }  // namespace lotusim::gazebo
+
+GZ_ADD_PLUGIN(
+    lotusim::gazebo::PowerManager,
+    gz::sim::System,
+    lotusim::gazebo::PowerManager::ISystemConfigure,
+    lotusim::gazebo::PowerManager::ISystemUpdate,
+    lotusim::gazebo::PowerManager::ISystemPostUpdate)

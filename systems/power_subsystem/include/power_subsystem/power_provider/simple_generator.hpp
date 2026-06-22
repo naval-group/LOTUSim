@@ -9,10 +9,6 @@
  */
 #pragma once
 
-#include <gz/common/Console.hh>
-
-#include "lotusim_common/common.hpp"
-#include "lotusim_common/logger.hpp"
 #include "power_subsystem/power_provider/generator.hpp"
 
 namespace lotusim::gazebo {
@@ -49,26 +45,11 @@ public:
      * @param node   from PowerManager
      */
     SimpleGenerator(
-        std::string name,
+        const std::string& generator_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& _sdf,
-        rclcpp::Node::SharedPtr node)
-        : Generator(std::move(name), std::move(node))
-    {
-        const std::string loggerName = "simpleGenerator_" + Generator::name();
-        m_logger =
-            logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
-
-        m_logger->info(
-            "SimpleGenerator [{}]: initialised with "
-            "type = {} fuel {:.1f}/{:.1f} L, rated {:.0f} W, efficiency {:.2f}, voltage {:.1f} V",
-            Generator::name(),
-            m_fuel_type,
-            m_fuel_level,
-            m_fuel_capacity,
-            m_rated_output_W,
-            m_efficiency,
-            m_voltage_nominal);
-    }
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger);
 
     // ----------------------------------------------------------------
     // Generator interface
@@ -82,8 +63,5 @@ public:
      *                     (converts Wh -> litres via energy density stub)
      */
     void receiveLoad(float currentA, float dt) override;
-
-private:
-    std::shared_ptr<spdlog::logger> m_logger;
 };
 }  // namespace lotusim::gazebo

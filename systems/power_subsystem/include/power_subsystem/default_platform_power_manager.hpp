@@ -15,11 +15,17 @@
 namespace lotusim::gazebo {
 
 class DefaultPlatformPowerManager : public PlatformPowerManagerBase {
+public:
+    DefaultPlatformPowerManager(
+        const gz::sim::Entity& vessel_entity,
+        const std::string& vessel_name,
+        rclcpp::Node::SharedPtr node,
+        sdf::ElementPtr sdfptr);
+
 private:
-    void handlePowerUpdate(
-        float dt,
-        gz::sim::EntityComponentManager& _ecm,
-        const gz::sim::UpdateInfo& _info) final;
+    std::shared_ptr<Generator> firstActiveGenerator();
+
+    void handlePowerUpdate(float dt) final;
 
     void distributeLoad(float dt, float total_current_a, float bus_voltage);
 

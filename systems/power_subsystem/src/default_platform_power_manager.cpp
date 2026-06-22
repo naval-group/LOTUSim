@@ -13,21 +13,24 @@
 
 namespace lotusim::gazebo {
 
-namespace {
-std::shared_ptr<Generator> firstActiveGenerator(
-    std::vector<std::shared_ptr<Generator>>& gens)
+DefaultPlatformPowerManager::DefaultPlatformPowerManager(
+    const gz::sim::Entity& vessel_entity,
+    const std::string& vessel_name,
+    rclcpp::Node::SharedPtr node,
+    sdf::ElementPtr sdfptr)
+    : PlatformPowerManagerBase(vessel_entity, vessel_name, node, sdfptr)
 {
-    for (auto& g : gens)
+}
+
+std::shared_ptr<Generator> DefaultPlatformPowerManager::firstActiveGenerator()
+{
+    for (auto& g : m_generators)
         if (!g->isDepleted())
             return g;
     return nullptr;
 }
-}  // namespace
 
-void DefaultPlatformPowerManager::handlePowerUpdate(
-    float dt,
-    gz::sim::EntityComponentManager& _ecm,
-    const gz::sim::UpdateInfo& /*_info*/)
+void DefaultPlatformPowerManager::handlePowerUpdate(float dt)
 {
     // Step 1: sum consumer demand
     float total_current = 0.0f;
@@ -57,7 +60,7 @@ void DefaultPlatformPowerManager::handlePowerUpdate(
                 // all batteries depleted — push final voltage and return
                 for (auto& consumer : m_consumers) {
                     consumer->receiveVoltage(bus_voltage);
-                    consumer->update(_ecm);
+                    consumer->update();
                 }
                 return;
             }
@@ -85,7 +88,7 @@ void DefaultPlatformPowerManager::handlePowerUpdate(
 
     for (auto& consumer : m_consumers) {
         consumer->receiveVoltage(voltage);
-        consumer->update(_ecm);
+        consumer->update();
     }
 }
 
@@ -94,7 +97,7 @@ void DefaultPlatformPowerManager::distributeLoad(
     float total_current_a,
     float bus_voltage)
 {
-    auto active_gen = firstActiveGenerator(m_generators);
+    auto active_gen = firstActiveGenerator();
 
     if (!m_all_batteries_depleted) {
         m_batteries[m_active_battery_index]->receiveLoad(total_current_a, dt);
@@ -184,7 +187,7 @@ bool DefaultPlatformPowerManager::handleDepleted(
     m_all_batteries_depleted = true;
     m_logger->warn("DefaultPlatformPowerManager: all batteries depleted");
 
-    auto active_gen = firstActiveGenerator(m_generators);
+    auto active_gen = firstActiveGenerator();
 
     if (active_gen) {
         m_logger->info(
@@ -260,7 +263,7 @@ void DefaultPlatformPowerManager::shedLoads(PowerLevel level)
     }
 
     // if a generator is available to cover the load, no shedding needed
-    auto active_gen = firstActiveGenerator(m_generators);
+    auto active_gen = firstActiveGenerator();
     if (active_gen && !active_gen->isDepleted()) {
         m_logger->debug(
             "DefaultPlatformPowerManager: battery low, but generator [{}] available, "
@@ -318,7 +321,7 @@ void DefaultPlatformPowerManager::reactivateIfPossible(
             const float cost_a = consumer->nominalPowerW() / bus_voltage;
             if (cost_a > available_a)
                 continue;
-            consumer->reactivate();
+            consumer->activate();
             m_logger->info(
                 "DefaultPlatformPowerManager: reactivated consumer [{}] "
                 "(priority {}) cost={:.3f} A available={:.3f} A",

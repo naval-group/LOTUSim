@@ -10,13 +10,14 @@
 
 #pragma once
 
-#include <gz/sim/EntityComponentManager.hh>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
-#include <sdf/Element.hh>
+#include <sdf/sdf.hh>
 #include <string>
 #include <string_view>
+
+#include "lotusim_common/logger.hpp"
 
 namespace lotusim::gazebo {
 enum class ConsumerType
@@ -69,10 +70,10 @@ public:
     };
 
     static CreateResult createFromSdf(
-        const std::string& name,
+        const std::string& consumer_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& sdf,
         rclcpp::Node::SharedPtr node,
-        const std::string& vessel_name,
         std::shared_ptr<spdlog::logger> logger);
 
     virtual ~PowerConsumer() = default;
@@ -153,7 +154,12 @@ public:
 
     const std::string& name() const
     {
-        return m_name;
+        return m_consumer_name;
+    }
+
+    const std::string& vesselName() const
+    {
+        return m_vessel_name;
     }
 
     void setPriority(const int& priority)
@@ -167,19 +173,21 @@ protected:
      *
      * @param name        component name from SDF
      * @param node        shared node owned by Platform Power Manager
+     * @param sdf         lotusim_power sdf pointer
      */
     PowerConsumer(
-        std::string name,
+        const std::string& consumer_name,
+        const std::string& vessel_name,
+        const sdf::ElementPtr& sdf,
         rclcpp::Node::SharedPtr node,
-        std::shared_ptr<spdlog::logger> logger,
-        float nominalW = 1.0f,
-        int priority = 3)
+        std::shared_ptr<spdlog::logger> logger)
         : m_node(std::move(node))
-        , m_name(std::move(name))
         , m_logger(std::move(logger))
-        , m_nominalPowerW(std::move(nominalW))
-        , m_priority(std::move(priority))
+        , m_consumer_name(std::move(consumer_name))
+        , m_vessel_name(std::move(vessel_name))
     {
+        m_nominalPowerW = sdf->Get<float>("nominal_w", 1.0f).first;
+        m_priority = sdf->Get<int>("priority", 3).first;
     }
 
     // last voltage pushed by Platform Power Manager via receiveVoltage()
@@ -196,7 +204,9 @@ protected:
 
     std::shared_ptr<spdlog::logger> m_logger;
 
-    std::string m_name;
+    std::string m_consumer_name;
+
+    std::string m_vessel_name;
 
     bool m_active{true};
 };

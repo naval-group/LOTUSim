@@ -9,8 +9,6 @@
  */
 #pragma once
 
-#include <gz/common/Console.hh>
-
 #include "power_subsystem/power_provider/power_provider.hpp"
 
 namespace lotusim::gazebo {
@@ -164,10 +162,17 @@ protected:
      * @param voltage_nominal stable output voltage (V)
      */
     Generator(
-        std::string name,
+        const std::string& generator_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& _sdf,
-        rclcpp::Node::SharedPtr node)
-        : PowerProvider(std::move(name), std::move(node))
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger)
+        : PowerProvider(
+              std::move(generator_name),
+              std::move(vessel_name),
+              _sdf,
+              std::move(node),
+              logger)
     {
         m_fuel_level = _sdf->Get<float>("fuel_level_start", 400.0f).first;
         m_fuel_capacity = _sdf->Get<float>("fuel_capacity", 500.0f).first;

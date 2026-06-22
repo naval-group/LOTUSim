@@ -14,10 +14,11 @@
 #include <atomic>
 #include <memory>
 #include <optional>
-#include <sdf/Element.hh>
+#include <sdf/sdf.hh>
 #include <string>
 #include <string_view>
 
+#include "lotusim_common/logger.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace lotusim::gazebo {
@@ -125,10 +126,10 @@ public:
      * @param logger      spdlog logger for error reporting (may be nullptr)
      */
     static CreateResult createFromSdf(
-        const std::string& name,
+        const std::string& provider_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& sdf,
         rclcpp::Node::SharedPtr node,
-        const std::string& vessel_name,
         std::shared_ptr<spdlog::logger> logger);
 
     virtual ~PowerProvider() = default;
@@ -139,7 +140,17 @@ public:
      */
     const std::string& name() const
     {
-        return m_name;
+        return m_provider_name;
+    }
+
+    const std::string& vesselName() const
+    {
+        return m_vessel_name;
+    }
+
+    const ProviderType type() const
+    {
+        return m_provider_type;
     }
 
     /**
@@ -204,17 +215,30 @@ protected:
      * @param name  provider name from SDF
      * @param node  shared node owned by PowerManager
      */
-    PowerProvider(std::string name, rclcpp::Node::SharedPtr node)
-        : m_name(std::move(name)), m_node(std::move(node))
+    PowerProvider(
+        const std::string& provider_name,
+        const std::string& vessel_name,
+        const sdf::ElementPtr& sdf,
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger)
+        : m_provider_name(std::move(provider_name))
+        , m_vessel_name(std::move(vessel_name))
+        , m_node(std::move(node))
+        , m_logger(logger)
+        , m_provider_type(ProviderType::Unknown)
     {
     }
 
     // Provider name from SDF name attribute
-    std::string m_name;
+    std::string m_provider_name;
+
+    std::string m_vessel_name;
 
     // Shared node, borrowed from PowerManager
     rclcpp::Node::SharedPtr m_node;
 
     std::shared_ptr<spdlog::logger> m_logger;
+
+    ProviderType m_provider_type;
 };
 }  // namespace lotusim::gazebo

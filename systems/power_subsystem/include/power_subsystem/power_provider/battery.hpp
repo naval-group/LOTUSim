@@ -9,8 +9,6 @@
  */
 #pragma once
 
-#include <gz/common/Console.hh>
-
 #include "power_subsystem/power_provider/power_provider.hpp"
 
 namespace lotusim::gazebo {
@@ -127,10 +125,17 @@ protected:
      * @param voltage_min  depletion voltage from SDF voltage_min (V)
      */
     Battery(
-        std::string name,
+        const std::string& battery_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& sdf,
-        rclcpp::Node::SharedPtr node)
-        : PowerProvider(std::move(name), std::move(node))
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger)
+        : PowerProvider(
+              std::move(battery_name),
+              std::move(vessel_name),
+              sdf,
+              std::move(node),
+              logger)
     {
         m_capacityAh = sdf->Get<float>("capacity_ah", 100.0f).first;
         m_initialSoc = sdf->Get<float>("initial_soc", 1.0f).first;

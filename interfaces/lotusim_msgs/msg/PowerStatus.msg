@@ -1,5 +1,5 @@
 string vessel_name
-string[] active_provider_name
-string[] active_provider_type
-float32[] active_provider_soc
-float32 active_provider_voltage
+string[] providers_name
+string[] providers_type
+float32[] providers_soc
+float32[] providers_voltage

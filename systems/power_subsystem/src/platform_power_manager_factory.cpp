@@ -17,8 +17,7 @@ std::unique_ptr<PlatformPowerManagerBase> PlatformPowerManagerBase::create(
     gz::sim::Entity vessel_entity,
     const std::string& vessel_name,
     rclcpp::Node::SharedPtr node,
-    sdf::ElementPtr sdfptr,
-    gz::sim::EntityComponentManager& ecm)
+    sdf::ElementPtr sdfptr)
 {
     switch (type) {
         case PlatformPowerManagerType::DEFAULT:
@@ -27,8 +26,7 @@ std::unique_ptr<PlatformPowerManagerBase> PlatformPowerManagerBase::create(
                 vessel_entity,
                 vessel_name,
                 std::move(node),
-                sdfptr,
-                ecm);
+                sdfptr);
     }
 }
 

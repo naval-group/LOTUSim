@@ -5,44 +5,42 @@
 namespace lotusim::gazebo {
 
 PowerConsumer::CreateResult PowerConsumer::createFromSdf(
-    const std::string& name,
+    const std::string& consumer_name,
+    const std::string& vessel_name,
     const sdf::ElementPtr& sdf,
     rclcpp::Node::SharedPtr node,
-    const std::string& vessel_name,
     std::shared_ptr<spdlog::logger> logger)
 {
     if (!sdf->HasElement("lotusim_power")) {
         logger->debug(
-            "PowerConsumer::createFromSdf [{}]: consumer [{}] has no "
+            "PowerConsumer::createFromSdf : consumer [{},{}] has no "
             "<lotusim_power> -> skipping",
             vessel_name,
-            name);
+            consumer_name);
         return {nullptr, ConsumerType{}};
     }
 
     const sdf::ElementPtr powerEl = sdf->GetElement("lotusim_power");
     const std::string powerTypeStr =
         powerEl->Get<std::string>("type", "").first;
-    const float nominalW = powerEl->Get<float>("nominal_w", 1.0f).first;
-    const int priority = powerEl->Get<int>("priority", 3).first;
 
     if (powerTypeStr.empty()) {
         logger->warn(
-            "PowerConsumer::createFromSdf [{}]: consumer [{}] has <lotusim_power> "
+            "PowerConsumer::createFromSdf : consumer [{},{}] has <lotusim_power> "
             "but missing <type> -> skipping",
             vessel_name,
-            name);
+            consumer_name);
         return {nullptr, ConsumerType{}};
     }
 
     const auto typeOpt = consumerTypeFromString(powerTypeStr);
     if (!typeOpt) {
         logger->warn(
-            "PowerConsumer::createFromSdf [{}]: unknown type '{}' on "
-            "consumer [{}] -> skipping",
-            vessel_name,
+            "PowerConsumer::createFromSdf : unknown type '{}' on "
+            "consumer [{},{}] -> skipping",
             powerTypeStr,
-            name);
+            vessel_name,
+            consumer_name);
         return {nullptr, ConsumerType{}};
     }
 
@@ -51,39 +49,32 @@ PowerConsumer::CreateResult PowerConsumer::createFromSdf(
     switch (type) {
         case ConsumerType::Sensor: {
             auto consumer = std::make_shared<SensorPowerConsumer>(
-                name,
+                consumer_name,
+                vessel_name,
                 powerEl,
                 node,
-                logger,
-                nominalW,
-                priority);
-            consumer->setServiceName(vessel_name);
+                logger);
             logger->info(
-                "PowerConsumer::createFromSdf [{}]: registered sensor consumer "
-                "[{}] (type={}) nominal_w={} priority={}",
+                "PowerConsumer::createFromSdf: registered sensor consumer "
+                "[{},{}] (type={})",
+                consumer_name,
                 vessel_name,
-                name,
-                toString(type),
-                nominalW,
-                priority);
+                toString(type));
             return {std::move(consumer), type};
         }
         case ConsumerType::Thruster: {
             auto consumer = std::make_shared<ThrusterPowerConsumer>(
-                name,
+                consumer_name,
+                vessel_name,
                 powerEl,
                 node,
-                logger,
-                nominalW,
-                priority);
+                logger);
             logger->info(
-                "PowerConsumer::createFromSdf [{}]: registered thruster consumer "
-                "[{}] (type={}) nominal_w={} priority={}",
+                "PowerConsumer::createFromSdf : registered thruster consumer "
+                "[{},{}] (type={})",
+                consumer_name,
                 vessel_name,
-                name,
-                toString(type),
-                nominalW,
-                priority);
+                toString(type));
             return {std::move(consumer), type};
         }
         default:

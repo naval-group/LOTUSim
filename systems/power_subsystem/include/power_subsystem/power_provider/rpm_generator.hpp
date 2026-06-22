@@ -9,13 +9,8 @@
  */
 #pragma once
 
-#include <spdlog/spdlog.h>
-
-#include <gz/common/Console.hh>
 #include <std_msgs/msg/float64.hpp>
 
-#include "lotusim_common/common.hpp"
-#include "lotusim_common/logger.hpp"
 #include "power_subsystem/power_provider/generator.hpp"
 
 namespace lotusim::gazebo {
@@ -52,10 +47,11 @@ public:
      * @param vessel_name for topic creation
      */
     RpmGenerator(
-        std::string name,
+        const std::string& generator_name,
+        const std::string& vessel_name,
         const sdf::ElementPtr& _sdf,
         rclcpp::Node::SharedPtr node,
-        const std::string& vessel_name);
+        std::shared_ptr<spdlog::logger> logger);
 
     ~RpmGenerator() override = default;
 
@@ -86,8 +82,6 @@ private:
     std::atomic<float> m_current_rpm{0.0f};
 
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr m_rpm_sub;
-
-    std::shared_ptr<spdlog::logger> m_logger;
 };
 
 }  // namespace lotusim::gazebo

@@ -10,18 +10,12 @@
 #pragma once
 
 #include <array>
-#include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/Types.hh>
-#include <gz/sim/components/CustomSensor.hh>
-#include <gz/sim/components/Name.hh>
-#include <gz/sim/components/ParentEntity.hh>
-#include <gz/sim/components/Sensor.hh>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sdf/Element.hh>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include "lotusim_common/logger.hpp"
@@ -97,30 +91,24 @@ public:
      * @param m_vessel_entity  Gazebo model entity for this vessel
      * @param m_vessel_name    vessel name
      * @param node             shared ROS2 node
-     * @param _ecm             Gazebo ECM
      */
-    PlatformPowerManager(
-        gz::sim::Entity m_vessel_entity,
+    PlatformPowerManagerBase(
+        const gz::sim::Entity& m_vessel_entity,
         const std::string& m_vessel_name,
         rclcpp::Node::SharedPtr node,
-        sdf::ElementPtr sdfptr,
-        gz::sim::EntityComponentManager& _ecm);
+        sdf::ElementPtr sdfptr);
 
-    ~PlatformPowerManager();
+    ~PlatformPowerManagerBase();
 
     /**
      * @brief Called every Gazebo tick by PowerManager world plugin
      */
-    void Update(
-        const gz::sim::UpdateInfo& _info,
-        gz::sim::EntityComponentManager& _ecm);
+    void Update(float dt);
 
     /**
      * @brief read sensors as declared through ECM -> need more time
      */
-    void PostUpdate(
-        const gz::sim::UpdateInfo& _info,
-        const gz::sim::EntityComponentManager& _ecm);
+    void PostUpdate(float dt);
 
     // for logging and topic
     const std::string& vesselName() const
@@ -135,8 +123,18 @@ public:
         gz::sim::Entity vessel_entity,
         const std::string& vessel_name,
         rclcpp::Node::SharedPtr node,
-        sdf::ElementPtr sdfptr,
-        gz::sim::EntityComponentManager& ecm);
+        sdf::ElementPtr sdfptr);
+
+    /**
+     * @brief Change current active provider if it is depleted based on priority
+     * order
+     *
+     * Called on PostUpdate loop
+     *
+     * @return true
+     * @return false
+     */
+    bool updateActiveProvider();
 
 private:
     /**
@@ -149,9 +147,7 @@ private:
      * @brief for each sensor with a type attribute, constructs the
      *        appropriate PowerConsumer subclass
      */
-    bool initPowerConsumers(
-        sdf::ElementPtr sdfptr,
-        gz::sim::EntityComponentManager& _ecm);
+    bool initPowerConsumers(sdf::ElementPtr sdfptr);
 
     void publishPowerStatus();
 
@@ -161,10 +157,7 @@ protected:
      *
      * @param dt
      */
-    virtual void handlePowerUpdate(
-        float dt,
-        gz::sim::EntityComponentManager& _ecm,
-        const gz::sim::UpdateInfo& _info) = 0;
+    virtual void handlePowerUpdate(float dt) = 0;
 
 protected:
     gz::sim::Entity m_vessel_entity;

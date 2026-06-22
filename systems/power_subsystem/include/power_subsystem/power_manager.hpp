@@ -9,29 +9,26 @@
  */
 #pragma once
 
-#include <memory>
-#include <string>
-#include <unordered_map>
-
 #include <gz/plugin/Register.hh>
 #include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/components/Model.hh>
-#include <gz/sim/components/Name.hh>
-#include <sdf/Element.hh>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <sdf/sdf.hh>
+#include <string>
+#include <unordered_map>
 
 #include "lotusim_common/logger.hpp"
-#include "power_subsystem/platform_power_manager.hpp"
+#include "power_subsystem/platform_power_manager_base.hpp"
 
-namespace lotusim::gazebo
-{
+namespace lotusim::gazebo {
 
 /**
  * @brief world-level plugin managing power subsystems for all vessels
  *
- * Declared once in lotusim.world 
+ * Declared once in lotusim.world
  * Detects vessel spawns via EachNew<Model> and creates
  *  a PlatformPowerManager per vessel
  *
@@ -43,8 +40,7 @@ namespace lotusim::gazebo
 class PowerManager : public gz::sim::System,
                      public gz::sim::ISystemConfigure,
                      public gz::sim::ISystemUpdate,
-                     public gz::sim::ISystemPostUpdate
-{
+                     public gz::sim::ISystemPostUpdate {
 public:
     PowerManager();
     ~PowerManager() override;
@@ -96,13 +92,16 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> m_logger;
-    std::string                     m_world_name;
-    rclcpp::Node::SharedPtr         m_ros_node;
-    gz::sim::Entity                 m_entity;
+    std::string m_world_name;
+    rclcpp::Node::SharedPtr m_ros_node;
+    gz::sim::Entity m_entity;
     gz::sim::EntityComponentManager* m_ecm{nullptr};
 
     /// One PlatformPowerManager per vessel, keyed by model entity
-    std::unordered_map<gz::sim::Entity, std::unique_ptr<PlatformPowerManager>> m_vessel_instances;
+    std::unordered_map<
+        gz::sim::Entity,
+        std::unique_ptr<PlatformPowerManagerBase>>
+        m_vessel_instances;
 };
 
-} // namespace lotusim::gazebo
+}  // namespace lotusim::gazebo

@@ -14,7 +14,36 @@
 #include "lotusim_common/common.hpp"
 
 namespace lotusim::gazebo {
-Battery::~Battery() = default;
+
+SimpleBattery::SimpleBattery(
+    const std::string& battery_name,
+    const std::string& vessel_name,
+    const sdf::ElementPtr& _sdf,
+    rclcpp::Node::SharedPtr node,
+    std::shared_ptr<spdlog::logger> logger)
+    : Battery(
+          std::move(battery_name),
+          std::move(vessel_name),
+          _sdf,
+          std::move(node),
+          logger)
+    , m_voltage(0.0f)
+    , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
+    , m_remainingAh(
+          _sdf->Get<float>("capacity_ah", 100.0f).first *
+          _sdf->Get<float>("initial_soc", 1.0f).first)
+{
+    m_voltage =
+        m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
+    m_provider_type = ProviderType::SimpleBattery;
+
+    m_logger->info(
+        "SimpleBattery [{},{}]: initialised with voltage {}, initial soc {}.",
+        m_provider_name,
+        m_vessel_name,
+        m_voltage,
+        getStateOfCharge());
+}
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
@@ -27,9 +56,10 @@ void SimpleBattery::receiveLoad(float currentA, float dt)
     }
     updateVoltage();
     m_logger->debug(
-        "SimpleBattery [{}]: received load {:.3f} A dt={:.4f} s "
+        "SimpleBattery [{},{}]: received load {:.3f} A dt={:.4f} s "
         "remaining={:.3f} Ah SOC={:.3f} voltage={:.2f} V",
-        m_name,
+        m_provider_name,
+        m_vessel_name,
         currentA,
         dt,
         m_remainingAh,

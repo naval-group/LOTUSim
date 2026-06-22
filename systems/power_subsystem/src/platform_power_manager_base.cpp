@@ -35,12 +35,11 @@
 
 namespace lotusim::gazebo {
 
-PlatformPowerManagerBase::PlatformPowerManager(
-    gz::sim::Entity m_vessel_entity,
+PlatformPowerManagerBase::PlatformPowerManagerBase(
+    const gz::sim::Entity& m_vessel_entity,
     const std::string& m_vessel_name,
     rclcpp::Node::SharedPtr m_node,
-    sdf::ElementPtr sdfptr,
-    gz::sim::EntityComponentManager& _ecm)
+    sdf::ElementPtr sdfptr)
     : m_vessel_entity(m_vessel_entity)
     , m_vessel_name(m_vessel_name)
     , m_node(std::move(m_node))
@@ -48,13 +47,6 @@ PlatformPowerManagerBase::PlatformPowerManager(
     const std::string loggerName = m_vessel_name + "_power";
     m_logger =
         logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
-
-    if (!initPlatformPowerSystems(sdfptr)) {
-        m_logger->error(
-            "PlatformPowerManager [{}]: failed to initialize platfrom power systems",
-            m_vessel_name);
-        return;
-    }
 
     m_power_status_pub =
         m_node->create_publisher<lotusim_msgs::msg::PowerStatus>(
@@ -70,29 +62,32 @@ PlatformPowerManagerBase::PlatformPowerManager(
         sdfptr = rootEl;
     }
 
-    initPowerProvider(sdfptr);
-    initPowerConsumers(sdfptr);
+    if (!initPowerProvider(sdfptr)) {
+        m_logger->error(
+            "PlatformPowerManagerBase [{}]: failed to initialize platfrom power provider",
+            m_vessel_name);
+    }
+
+    if (!initPowerConsumers(sdfptr)) {
+        m_logger->error(
+            "PlatformPowerManagerBase [{}]: failed to initialize platfrom power consumer",
+            m_vessel_name);
+    }
 
     m_logger->info(
-        "PlatformPowerManagerBase::PlatformPowerManager:  [{}] initialization complete.",
+        "PlatformPowerManagerBase::PlatformPowerManagerBase:  [{}] initialization complete.",
         m_vessel_name);
 }
 
-PlatformPowerManagerBase::~PlatformPowerManager()
-{
-    consumer->eachDelete();
-}
+PlatformPowerManagerBase::~PlatformPowerManagerBase() = default;
 
-void PlatformPowerManagerBase::PostUpdate(
-    const gz::sim::UpdateInfo& /*_info*/,
-    const gz::sim::EntityComponentManager& _ecm)
+void PlatformPowerManagerBase::PostUpdate(float dt)
 {
+    updateActiveProvider();
     return;
 }
 
-void PlatformPowerManagerBase::Update(
-    const gz::sim::UpdateInfo& _info,
-    gz::sim::EntityComponentManager& _ecm)
+void PlatformPowerManagerBase::Update(float dt)
 {
     // ── Guard ─────────────────────────────────────────────────────────
     // I dont think this is needed
@@ -104,10 +99,7 @@ void PlatformPowerManagerBase::Update(
         return;
     }
 
-    const float dt =
-        static_cast<float>(std::chrono::duration<double>(_info.dt).count());
-
-    handlePowerUpdate(dt, _ecm, _info);
+    handlePowerUpdate(dt);
 }
 
 float PlatformPowerManagerBase::activeBusVoltage() const
@@ -137,7 +129,7 @@ bool PlatformPowerManagerBase::initPowerProvider(sdf::ElementPtr sdfptr)
         while (powerEl) {
             if (!powerEl->HasElement("name")) {
                 m_logger->error(
-                    "PlatformPowerManager [{}]: <lotusim_power> is missing required <name> -> skipping",
+                    "PlatformPowerManagerBase [{}]: <lotusim_power> is missing required <name> -> skipping",
                     m_vessel_name);
                 powerEl = powerEl->GetNextElement("lotusim_power");
                 continue;
@@ -145,12 +137,12 @@ bool PlatformPowerManagerBase::initPowerProvider(sdf::ElementPtr sdfptr)
             const std::string providerName = powerEl->Get<std::string>("name");
             auto [provider, type] = PowerProvider::createFromSdf(
                 providerName,
+                m_vessel_name,
                 powerEl,
                 m_node,
-                m_vessel_name,
                 m_logger);
             if (provider) {
-                if (type == ProviderType::Battery)
+                if (provider->canReceiveCharge())
                     m_batteries.push_back(
                         std::static_pointer_cast<Battery>(provider));
                 else
@@ -163,12 +155,12 @@ bool PlatformPowerManagerBase::initPowerProvider(sdf::ElementPtr sdfptr)
     }
     if (m_providers.empty()) {
         m_logger->warn(
-            "PlatformPowerManager [{}]: no power providers found",
+            "PlatformPowerManagerBase [{}]: no power providers found",
             m_vessel_name);
     }
 
     m_logger->info(
-        "PlatformPowerManager [{}]: [{} batteries], [{} generators]",
+        "PlatformPowerManagerBase [{}]: [{} batteries], [{} generators]",
         m_vessel_name,
         m_batteries.size(),
         m_generators.size());
@@ -176,9 +168,7 @@ bool PlatformPowerManagerBase::initPowerProvider(sdf::ElementPtr sdfptr)
     return true;
 }
 
-bool PlatformPowerManagerBase::initPowerConsumers(
-    sdf::ElementPtr sdfptr,
-    gz::sim::EntityComponentManager& _ecm)
+bool PlatformPowerManagerBase::initPowerConsumers(sdf::ElementPtr sdfptr)
 {
     m_consumers.clear();
 
@@ -205,13 +195,13 @@ bool PlatformPowerManagerBase::initPowerConsumers(
                     parent->GetAttribute("name")
                         ? parent->GetAttribute("name")->GetAsString()
                         : "";
-                m_consumers.push_back(
-                    auto [provider, type] = PowerConsumer::createFromSdf(
-                        consumerName,
-                        el,
-                        m_node,
-                        m_vessel_name,
-                        m_logger););
+                auto [consumer, type] = PowerConsumer::createFromSdf(
+                    consumerName,
+                    m_vessel_name,
+                    el,
+                    m_node,
+                    m_logger);
+                m_consumers.push_back(consumer);
                 return;  // do not recurse into <lotusim_power>
             }
 
@@ -220,12 +210,12 @@ bool PlatformPowerManagerBase::initPowerConsumers(
                 dfs(child, el);
                 child = child->GetNextElement();
             }
-        }
+        };
 
     dfs(sdfptr, nullptr);
 
     if (!m_consumers.empty()) {
-        m_logger->infog(
+        m_logger->info(
             "PlatformPowerManagerBase::initPowerConsumers: [{}] found {} power consumers",
             m_vessel_name,
             m_consumers.size());
@@ -262,33 +252,12 @@ void PlatformPowerManagerBase::publishPowerStatus()
 
     lotusim_msgs::msg::PowerStatus msg;
     msg.vessel_name = m_vessel_name;
-    msg.provider_count = static_cast<uint32_t>(m_providers.size());
 
-    if (!m_all_batteries_depleted) {
-        const auto& bat = m_batteries[m_active_battery_index];
-        msg.active_provider_name = bat->name();
-        msg.active_provider_type = "battery";
-        msg.active_provider_soc = bat->getStateOfCharge();
-        msg.active_provider_voltage = bat->voltage();
-    } else {
-        std::shared_ptr<Generator> activeGen;
-        for (auto& g : m_generators)
-            if (!g->isDepleted()) {
-                activeGen = g;
-                break;
-            }
-
-        if (activeGen) {
-            msg.active_provider_name = activeGen->name();
-            msg.active_provider_type = "generator";
-            msg.active_provider_soc = activeGen->getStateOfCharge();
-            msg.active_provider_voltage = activeGen->voltage();
-        } else {
-            msg.active_provider_name = "none";
-            msg.active_provider_type = "none";
-            msg.active_provider_soc = 0.0f;
-            msg.active_provider_voltage = 0.0f;
-        }
+    for (auto&& provider : m_providers) {
+        msg.providers_name.push_back(provider->name());
+        msg.providers_type.push_back(std::string(toString(provider->type())));
+        msg.providers_soc.push_back(provider->getStateOfCharge());
+        msg.providers_voltage.push_back(provider->voltage());
     }
     m_power_status_pub->publish(msg);
 }
