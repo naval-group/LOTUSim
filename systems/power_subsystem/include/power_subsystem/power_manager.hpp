@@ -36,6 +36,38 @@ namespace lotusim::gazebo {
  *   <plugin filename="power_subsystem"
  *           name="lotusim::gazebo::PowerManager">
  *   </plugin>
+ *
+ * For models:
+ * Lotusim param to handle the model's power system management type.
+ * Default power management will be used if this param is not stated.
+ * Check default power manager script for more info.
+ * <lotus_param>
+ *      <power_system>
+ *          <power_management_type>default</power_management_type>
+ *      </power_system>
+ * </lotus_param>
+ *
+ * Power Provider
+ * In models, there is statement for provider,
+ * the type is defined in by interface
+ * <lotusim_power>
+ *    <name>main_battery</name>
+ *    <type>simple_battery</type>
+ *    <capacity_ah>100</capacity_ah>
+ *    <initial_soc>0.8</initial_soc>
+ *    <voltage_min>2.0</voltage_min>
+ *    <voltage_nominal>16.0</voltage_nominal>
+ *  </lotusim_power>
+ *
+ * Power Consumer
+ * such as sensor or anything that takes power.
+ * Type is defined based on interface
+ * <lotusim_power>
+ *   <type>sensor</type>
+ *   <nominal_w>7.0</nominal_w>
+ *   <priority>2</priority>
+ * </lotusim_power>
+ *
  */
 class PowerManager : public gz::sim::System,
                      public gz::sim::ISystemConfigure,
@@ -70,7 +102,7 @@ public:
 
 private:
     /**
-     * @brief creates a PlatformPowerManager for a newly spawned vessel
+     * @brief creates a PlatformPowerManager for a newly spawned ve ssel
      *        only vessels with at least one <lotusim_power> link are
      *        registered
      * @param _entity  model entity

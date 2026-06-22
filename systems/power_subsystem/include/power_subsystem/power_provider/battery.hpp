@@ -33,7 +33,7 @@ namespace lotusim::gazebo {
  */
 class Battery : public PowerProvider {
 public:
-    virtual ~Battery();
+    virtual ~Battery() = default;
     // ----------------------------------------------------------------
     // PowerProvider interface —> implemented here for all batteries
     // ----------------------------------------------------------------

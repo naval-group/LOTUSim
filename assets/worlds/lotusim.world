@@ -43,8 +43,7 @@
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
         </plugin>
 
-        <plugin filename="gz-sim-sensors-system"
-            name="gz::sim::systems::Sensors" />
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
 
         <plugin filename="render_plugin" name="lotusim::gazebo::RenderPlugin">
             <connection_protocol>ROS2</connection_protocol>
@@ -52,8 +51,7 @@
 
         <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin" />
 
-        <plugin filename="power_subsystem" 
-            name="lotusim::gazebo::PowerManager">
+        <plugin filename="power_subsystem" name="lotusim::gazebo::PowerManager">
         </plugin>
 
     </world>
