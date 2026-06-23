@@ -32,22 +32,35 @@ COLORS = ["#2196F3", "#4CAF50", "#FF5722", "#9C27B0", "#FF9800"]
 
 
 # ── data store ───────────────────────────────────────────────────────────────
-
-
-class VesselData:
+class ProviderSeries:
+    """Time-series data for one provider on one vessel."""
     def __init__(self, max_history: int):
         self.times: deque[float] = deque(maxlen=max_history)
         self.socs: deque[float] = deque(maxlen=max_history)
-        self.active_name: str = ""
-        self.active_type: str = ""
+        self.provider_type: str  = ""
         self.voltage: float = 0.0
 
-    def push(self, t: float, msg: PowerStatus) -> None:
+    def push(self, t: float, soc: float, ptype: str, voltage: float) -> None:
         self.times.append(t)
-        self.socs.append(float(msg.active_provider_soc))
-        self.active_name = msg.active_provider_name
-        self.active_type = msg.active_provider_type
-        self.voltage = float(msg.active_provider_voltage)
+        self.socs.append(soc)
+        self.provider_type = ptype
+        self.voltage = voltage
+
+class VesselData:
+    def __init__(self, max_history: int):
+        self._max_history = max_history
+        self.providers: dict[str, ProviderSeries] = {}
+
+    def push(self, t: float, msg: PowerStatus) -> None:
+        for name, ptype, soc, voltage in zip(
+            msg.providers_name,
+            msg.providers_type,
+            msg.providers_soc,
+            msg.providers_voltage,
+        ):
+            if name not in self.providers:
+                self.providers[name] = ProviderSeries(self._max_history)
+            self.providers[name].push(t, float(soc), ptype, float(voltage))
 
 
 # ── ROS2 node ────────────────────────────────────────────────────────────────
@@ -174,33 +187,43 @@ class PowerMonitorPlot:
         info_lines = []
         all_x = []
 
-        for vessel, (data, color) in snapshot.items():
-            if not data.times:
-                continue
+        for vessel, (data, vessel_color) in snapshot.items():
+            vessel_info = []
 
-            xs = list(data.times)
-            ys = list(data.socs)
-            all_x.extend(xs)
+            for p_idx, (p_name, series) in enumerate(data.providers.items()):
+                if not series.times:
+                    continue
 
-            # solid line for battery, dashed for generator
-            style = "-" if data.active_type == "battery" else "--"
+                xs = list(series.times)
+                ys = list(series.socs)
+                all_x.extend(xs)
 
-            if vessel not in self._lines:
-                (line,) = self._ax.plot(
-                    xs, ys, linestyle=style, color=color, linewidth=2, label=vessel
-                )
-                self._lines[vessel] = line
-            else:
-                self._lines[vessel].set_data(xs, ys)
-                self._lines[vessel].set_linestyle(style)
+                style = "-" if "battery" in series.provider_type else "--"
+                alpha = 1.0 if p_idx == 0 else 0.6
 
-            icon = "🔋" if data.active_type == "battery" else "⚡"
-            info_lines.append(
-                f"{icon} {vessel:<22} "
-                f"active={data.active_name} ({data.active_type})  "
-                f"SOC={ys[-1]:.3f}  "
-                f"V={data.voltage:.2f} V"
-            )
+                line_key = f"{vessel}/{p_name}"
+                if line_key not in self._lines:
+                    line, = self._ax.plot(
+                        xs, ys,
+                        linestyle=style,
+                        color=vessel_color,
+                        linewidth=2,
+                        alpha=alpha,
+                        label=f"{vessel} — {p_name}")
+                    self._lines[line_key] = line
+                else:
+                    self._lines[line_key].set_data(xs, ys)
+                    self._lines[line_key].set_linestyle(style)
+
+                icon = "🔋" if "battery" in series.provider_type else "⚡"
+                vessel_info.append(
+                    f"  {icon} {p_name:<20} "
+                    f"SOC={ys[-1]:.3f}  "
+                    f"V={series.voltage:.2f} V")
+        
+            if vessel_info:
+                info_lines.append(f"{vessel}:")
+                info_lines.extend(vessel_info)
 
         if all_x:
             self._ax.set_xlim(max(0.0, min(all_x) - 1), max(all_x) + 2)
