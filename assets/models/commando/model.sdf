@@ -187,6 +187,11 @@
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>
         </link>
+        <lotus_param>
+            <power_system>
+                <power_management_type>default</power_management_type>
+            </power_system>
+        </lotus_param>
         <lotusim_power>
             <name>main_battery</name>
             <type>simple_battery</type>

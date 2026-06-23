@@ -39,6 +39,11 @@
                 <update_rate>1000.0</update_rate>
             </sensor>
         </link>
+        <lotus_param>
+            <power_system>
+                <power_management_type>default</power_management_type>
+            </power_system>
+        </lotus_param>
         <lotusim_power>
             <name>main_battery</name>
             <type>simple_battery</type>

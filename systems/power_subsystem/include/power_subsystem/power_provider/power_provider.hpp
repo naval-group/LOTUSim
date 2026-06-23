@@ -148,7 +148,7 @@ public:
         return m_vessel_name;
     }
 
-    const ProviderType type() const
+    ProviderType type() const
     {
         return m_provider_type;
     }

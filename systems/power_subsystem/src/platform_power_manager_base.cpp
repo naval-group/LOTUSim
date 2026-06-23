@@ -36,29 +36,20 @@
 namespace lotusim::gazebo {
 
 PlatformPowerManagerBase::PlatformPowerManagerBase(
-    const gz::sim::Entity& m_vessel_entity,
-    const std::string& m_vessel_name,
-    rclcpp::Node::SharedPtr m_node,
+    const gz::sim::Entity& vessel_entity,
+    const std::string& vessel_name,
+    rclcpp::Node::SharedPtr node,
     sdf::ElementPtr sdfptr)
-    : m_vessel_entity(m_vessel_entity)
-    , m_vessel_name(m_vessel_name)
-    , m_node(std::move(m_node))
+    : m_vessel_entity(vessel_entity)
+    , m_vessel_name(vessel_name)
+    , m_node(std::move(node))
 {
     const std::string loggerName = m_vessel_name + "_power";
     m_logger =
         logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
 
-    m_power_status_pub =
-        m_node->create_publisher<lotusim_msgs::msg::PowerStatus>(
-            "/lotusim/" + m_vessel_name + "/power_status",
-            rclcpp::QoS(rclcpp::KeepLast(10)));
-
-    m_power_status_timer = m_node->create_wall_timer(
-        std::chrono::seconds(2),
-        [this]() { publishPowerStatus(); });
-
     sdf::ElementPtr rootEl = sdfptr->GetIncludeElement();
-    if (!rootEl) {
+    if (rootEl) {
         sdfptr = rootEl;
     }
 
@@ -73,6 +64,21 @@ PlatformPowerManagerBase::PlatformPowerManagerBase(
             "PlatformPowerManagerBase [{}]: failed to initialize platfrom power consumer",
             m_vessel_name);
     }
+
+    if (!updateActiveProvider()) {
+        m_logger->warn(
+            "PlatformPowerManagerBase [{}]: no non-depleted battery at startup",
+            m_vessel_name);
+    }
+
+    m_power_status_pub =
+        m_node->create_publisher<lotusim_msgs::msg::PowerStatus>(
+            "/lotusim/" + m_vessel_name + "/power_status",
+            rclcpp::QoS(rclcpp::KeepLast(10)));
+
+    m_power_status_timer = m_node->create_wall_timer(
+        std::chrono::seconds(2),
+        [this]() { publishPowerStatus(); });
 
     m_logger->info(
         "PlatformPowerManagerBase::PlatformPowerManagerBase:  [{}] initialization complete.",
@@ -95,7 +101,7 @@ void PlatformPowerManagerBase::Update(float dt)
     //     return;
     // }
 
-    if (m_batteries.empty()) {
+    if (m_batteries.empty() || m_active_battery_index < 0) {
         return;
     }
 
@@ -191,6 +197,11 @@ bool PlatformPowerManagerBase::initPowerConsumers(sdf::ElementPtr sdfptr)
             if (el->GetName() == "lotusim_power") {
                 if (!parent)
                     return;
+
+                const std::string parentName = parent->GetName();
+                if (parentName == "model")
+                    return;  // skip -> this is a provider definition
+
                 const std::string consumerName =
                     parent->GetAttribute("name")
                         ? parent->GetAttribute("name")->GetAsString()
@@ -198,10 +209,16 @@ bool PlatformPowerManagerBase::initPowerConsumers(sdf::ElementPtr sdfptr)
                 auto [consumer, type] = PowerConsumer::createFromSdf(
                     consumerName,
                     m_vessel_name,
-                    el,
+                    parent,
                     m_node,
                     m_logger);
-                m_consumers.push_back(consumer);
+                if (consumer) {      
+                    m_consumers.push_back(consumer);
+                } else {
+                    m_logger->warn(
+                        "PlatformPowerManagerBase [{}]: failed to create consumer [{}], skipping",
+                        m_vessel_name, consumerName);
+                }
                 return;  // do not recurse into <lotusim_power>
             }
 
@@ -225,17 +242,20 @@ bool PlatformPowerManagerBase::initPowerConsumers(sdf::ElementPtr sdfptr)
 
 bool PlatformPowerManagerBase::updateActiveProvider()
 {
+    const int startIndex = (m_active_battery_index < 0) ? 0 : m_active_battery_index; // at the start when init at -1
     // find the next non-depleted provider
     // preserves the priority order
-    for (int i = m_active_battery_index;
+    for (int i = startIndex;
          i < static_cast<int>(m_batteries.size());
          ++i) {
         if (!m_batteries[i]->isDepleted()) {
             if (i != m_active_battery_index) {
-                m_logger->info(
-                    "PowerManager: Vessel {}: switching from provider {}",
-                    m_vessel_name,
-                    m_active_battery_index);
+                if (m_active_battery_index >= 0) {
+                    m_logger->info(
+                        "PowerManager: Vessel {}: switching from provider {}",
+                        m_vessel_name,
+                        m_active_battery_index);
+                }
                 m_active_battery_index = i;
             }
             return true;

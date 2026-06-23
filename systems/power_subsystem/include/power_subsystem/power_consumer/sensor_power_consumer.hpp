@@ -42,7 +42,7 @@ public:
      * @param name      sensor name from SDF
      * @param nominalW  power draw in Watts from SDF nominal_w
      * @param priority  load shedding priority from SDF priority (default 3)
-     * @param _sdf      lotus_power SDF element : for user custom params
+     * @param _sdf      lotusim_power SDF element : for user custom params
      * @param node      node from PowerManager
      */
     SensorPowerConsumer(
