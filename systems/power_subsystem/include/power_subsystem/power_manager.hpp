@@ -19,6 +19,8 @@
 #include <sdf/sdf.hh>
 #include <string>
 #include <unordered_map>
+#include <rclcpp/executors.hpp>
+#include <thread>
 
 #include "lotusim_common/logger.hpp"
 #include "power_subsystem/platform_power_manager_base.hpp"
@@ -128,6 +130,8 @@ private:
     rclcpp::Node::SharedPtr m_ros_node;
     gz::sim::Entity m_entity;
     gz::sim::EntityComponentManager* m_ecm{nullptr};
+    rclcpp::executors::MultiThreadedExecutor m_executor;
+    std::thread m_spin_thread;
 
     /// One PlatformPowerManager per vessel, keyed by model entity
     std::unordered_map<

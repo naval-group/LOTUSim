@@ -25,6 +25,10 @@ PowerManager::PowerManager()
 }
 PowerManager::~PowerManager()
 {
+    m_executor.cancel();
+    if (m_spin_thread.joinable()) {
+        m_spin_thread.join();
+    }
     m_logger->info(
         "PowerManager::~PowerManager: PowerManager successfully shutdown.");
 }
@@ -53,6 +57,9 @@ void PowerManager::Configure(
     m_logger->info(
         "PowerManager::Configure: power subsystem started for world [{}]",
         m_world_name);
+
+    m_executor.add_node(m_ros_node);
+    m_spin_thread = std::thread([this]() { m_executor.spin(); });
 }
 
 void PowerManager::PostUpdate(
