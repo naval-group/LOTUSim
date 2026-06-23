@@ -15,7 +15,6 @@ import time
 from collections import deque
 
 import matplotlib
-
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -24,20 +23,15 @@ import rclpy
 from rclpy.node import Node
 from lotusim_msgs.msg import PowerStatus
 
-
-# ── constants ────────────────────────────────────────────────────────────────
-
 MAX_VESSELS = 5
 COLORS = ["#2196F3", "#4CAF50", "#FF5722", "#9C27B0", "#FF9800"]
 
 
-# ── data store ───────────────────────────────────────────────────────────────
 class ProviderSeries:
-    """Time-series data for one provider on one vessel."""
     def __init__(self, max_history: int):
         self.times: deque[float] = deque(maxlen=max_history)
         self.socs: deque[float] = deque(maxlen=max_history)
-        self.provider_type: str  = ""
+        self.provider_type: str = ""
         self.voltage: float = 0.0
 
     def push(self, t: float, soc: float, ptype: str, voltage: float) -> None:
@@ -46,12 +40,15 @@ class ProviderSeries:
         self.provider_type = ptype
         self.voltage = voltage
 
+
 class VesselData:
     def __init__(self, max_history: int):
         self._max_history = max_history
         self.providers: dict[str, ProviderSeries] = {}
+        self.active_provider: str = ""
 
     def push(self, t: float, msg: PowerStatus) -> None:
+        self.active_provider = msg.active_provider  # <-- was missing
         for name, ptype, soc, voltage in zip(
             msg.providers_name,
             msg.providers_type,
@@ -61,9 +58,6 @@ class VesselData:
             if name not in self.providers:
                 self.providers[name] = ProviderSeries(self._max_history)
             self.providers[name].push(t, float(soc), ptype, float(voltage))
-
-
-# ── ROS2 node ────────────────────────────────────────────────────────────────
 
 
 class PowerMonitorNode(Node):
@@ -87,9 +81,7 @@ class PowerMonitorNode(Node):
             if "PowerStatus" not in str(types):
                 continue
             if len(self._subs) >= MAX_VESSELS:
-                self.get_logger().warn(
-                    f"MAX_VESSELS={MAX_VESSELS} reached, ignoring {topic}"
-                )
+                self.get_logger().warn(f"MAX_VESSELS={MAX_VESSELS} reached, ignoring {topic}")
                 continue
             self._known_topics.add(topic)
             self._subs[topic] = self.create_subscription(
@@ -116,9 +108,6 @@ class PowerMonitorNode(Node):
             return {v: (d, self._colors[v]) for v, d in self._data.items()}
 
 
-# ── plot ─────────────────────────────────────────────────────────────────────
-
-
 class PowerMonitorPlot:
     def __init__(self, node: PowerMonitorNode):
         self._node = node
@@ -127,56 +116,31 @@ class PowerMonitorPlot:
         self._fig, self._ax = plt.subplots(figsize=(13, 5))
         self._fig.patch.set_facecolor("#1e1e2e")
         self._ax.set_facecolor("#1e1e2e")
-
-        self._ax.set_title(
-            "LOTUSim — Power Monitor", color="white", fontsize=14, pad=12
-        )
+        self._ax.set_title("LOTUSim — Power Monitor", color="white", fontsize=14, pad=12)
         self._ax.set_xlabel("Time (s)", color="#aaaaaa")
-        self._ax.set_ylabel("State of Charge / Fuel ratio (0–1)", color="#aaaaaa")
+        self._ax.set_ylabel("State of Charge (0–1)", color="#aaaaaa")
         self._ax.tick_params(colors="#aaaaaa")
         for spine in self._ax.spines.values():
             spine.set_edgecolor("#444444")
         self._ax.set_ylim(-0.05, 1.10)
         self._ax.grid(True, color="#333344", linewidth=0.5)
 
-        # threshold lines — plain grey, labelled on the right side
         self._ax.axhline(0.20, color="#888888", linewidth=0.7, linestyle=":")
         self._ax.axhline(0.10, color="#888888", linewidth=0.7, linestyle=":")
-
-        # right-side labels for thresholds
-        self._warn_label = self._ax.text(
-            1.002,
-            0.20,
-            "WARN (20%)",
+        self._ax.text(1.002, 0.20, "WARN (20%)",
             transform=self._ax.get_yaxis_transform(),
-            color="#aaaaaa",
-            fontsize=7.5,
-            verticalalignment="center",
-        )
-        self._crit_label = self._ax.text(
-            1.002,
-            0.10,
-            "CRITICAL (10%)",
+            color="#aaaaaa", fontsize=7.5, verticalalignment="center")
+        self._ax.text(1.002, 0.10, "CRITICAL (10%)",
             transform=self._ax.get_yaxis_transform(),
-            color="#aaaaaa",
-            fontsize=7.5,
-            verticalalignment="center",
-        )
+            color="#aaaaaa", fontsize=7.5, verticalalignment="center")
 
-        # info text bottom-left
         self._info = self._ax.text(
-            0.01,
-            0.02,
-            "",
+            0.01, 0.02, "",
             transform=self._ax.transAxes,
-            color="#aaaaaa",
-            fontsize=8,
-            verticalalignment="bottom",
-            fontfamily="monospace",
-        )
+            color="#aaaaaa", fontsize=8,
+            verticalalignment="bottom", fontfamily="monospace")
 
         plt.tight_layout()
-        # leave a small margin on the right for the threshold labels
         self._fig.subplots_adjust(right=0.85)
 
     def update(self, _frame) -> None:
@@ -188,54 +152,42 @@ class PowerMonitorPlot:
         all_x = []
 
         for vessel, (data, vessel_color) in snapshot.items():
-            vessel_info = []
+            active = data.active_provider
+            if not active or active not in data.providers:
+                continue
 
-            for p_idx, (p_name, series) in enumerate(data.providers.items()):
-                if not series.times:
-                    continue
+            series = data.providers[active]
+            if not series.times:
+                continue
 
-                xs = list(series.times)
-                ys = list(series.socs)
-                all_x.extend(xs)
+            xs = list(series.times)
+            ys = list(series.socs)
+            all_x.extend(xs)
 
-                style = "-" if "battery" in series.provider_type else "--"
-                alpha = 1.0 if p_idx == 0 else 0.6
+            if vessel not in self._lines:
+                line, = self._ax.plot(
+                    xs, ys,
+                    linestyle="-",
+                    color=vessel_color,
+                    linewidth=2,
+                    label=f"{vessel} — {active}")
+                self._lines[vessel] = line
+            else:
+                self._lines[vessel].set_data(xs, ys)
+                self._lines[vessel].set_label(f"{vessel} — {active}")
 
-                line_key = f"{vessel}/{p_name}"
-                if line_key not in self._lines:
-                    line, = self._ax.plot(
-                        xs, ys,
-                        linestyle=style,
-                        color=vessel_color,
-                        linewidth=2,
-                        alpha=alpha,
-                        label=f"{vessel} — {p_name}")
-                    self._lines[line_key] = line
-                else:
-                    self._lines[line_key].set_data(xs, ys)
-                    self._lines[line_key].set_linestyle(style)
-
-                icon = "🔋" if "battery" in series.provider_type else "⚡"
-                vessel_info.append(
-                    f"  {icon} {p_name:<20} "
-                    f"SOC={ys[-1]:.3f}  "
-                    f"V={series.voltage:.2f} V")
-        
-            if vessel_info:
-                info_lines.append(f"{vessel}:")
-                info_lines.extend(vessel_info)
+            info_lines.append(
+                f"{vessel}:  [BAT] {active:<20} "
+                f"SOC={ys[-1]:.3f}  "
+                f"V={series.voltage:.2f} V")
 
         if all_x:
             self._ax.set_xlim(max(0.0, min(all_x) - 1), max(all_x) + 2)
 
         self._info.set_text("\n".join(info_lines))
         self._ax.legend(
-            loc="upper right",
-            facecolor="#2a2a3e",
-            edgecolor="#444444",
-            labelcolor="white",
-            fontsize=9,
-        )
+            loc="upper right", facecolor="#2a2a3e",
+            edgecolor="#444444", labelcolor="white", fontsize=9)
         self._fig.canvas.draw_idle()
 
     def start(self, interval_ms: int) -> None:
@@ -245,17 +197,9 @@ class PowerMonitorPlot:
         plt.show()
 
 
-# ── main ─────────────────────────────────────────────────────────────────────
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="LOTUSim power monitor")
-    parser.add_argument(
-        "--max-history",
-        type=int,
-        default=150,
-        help="Data points to keep per vessel (default 150 ≈ 5 min at 2 s intervals)",
-    )
+    parser.add_argument("--max-history", type=int, default=150)
     args = parser.parse_args()
 
     rclpy.init()

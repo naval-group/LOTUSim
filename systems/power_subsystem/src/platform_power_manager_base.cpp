@@ -278,6 +278,7 @@ void PlatformPowerManagerBase::publishPowerStatus()
         msg.providers_type.push_back(std::string(toString(provider->type())));
         msg.providers_soc.push_back(provider->getStateOfCharge());
         msg.providers_voltage.push_back(provider->voltage());
+        msg.active_provider = m_batteries[m_active_battery_index]->name();
     }
     m_power_status_pub->publish(msg);
 }
