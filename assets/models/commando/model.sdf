@@ -50,11 +50,6 @@
             <!-- AIS Sensor (custom)   -->
             <!-- ===================== -->
             <sensor name="ais_sensor" type="custom" gz:type="ais">
-                <lotusim_power>
-                    <type>sensor</type>
-                    <nominal_w>5.0</nominal_w>
-                    <priority>4</priority>
-                </lotusim_power>
                 <always_on>true</always_on>
                 <update_rate>1</update_rate>
                 <noise_sigma>0.01</noise_sigma>
@@ -65,11 +60,6 @@
             <!-- IMU Sensor (STANDARD) -->
             <!-- ===================== -->
             <sensor name="imu_sensor" type="imu">
-                <lotusim_power>
-                    <type>sensor</type>
-                    <nominal_w>2.0</nominal_w>
-                    <priority>4</priority>
-                </lotusim_power>
                 <always_on>true</always_on>
                 <update_rate>100</update_rate>
                 <pose>0 0 0 0 0 0</pose>
@@ -123,12 +113,7 @@
             <!-- 2D LIDAR (STANDARD) -->
             <!-- ===================== -->
             <sensor name="lidar_sensor" type="gpu_lidar">
-                <lotusim_power>
-                    <type>sensor</type>
-                    <nominal_w>6.0</nominal_w>
-                    <priority>3</priority>
-                </lotusim_power>
-                <pose>0 0 0.5 0 0 0</pose>
+                <pose>0 0 0 0 0 0</pose>
                 <always_on>true</always_on>
                 <update_rate>10.0</update_rate>
                 <visualize>true</visualize>
@@ -140,14 +125,14 @@
                             <min_angle>-3.14159</min_angle>
                             <max_angle>3.14159</max_angle>
                         </horizontal>
-                        <!-- <vertical>
-                        <samples>1</samples>
-                        <min_angle>0</min_angle>
-                        <max_angle>0</max_angle>
-                    </vertical> -->
+                        <vertical>
+                            <samples>1</samples>
+                            <min_angle>0.2618</min_angle>
+                            <max_angle>0.2618</max_angle>
+                        </vertical>
                     </scan>
                     <range>
-                        <min>1.0</min>
+                        <min>5.0</min>
                         <max>100.0</max>
                         <resolution>0.01</resolution>
                     </range>
@@ -163,11 +148,6 @@
             <!-- RADAR                 -->
             <!-- ===================== -->
             <sensor name="radar_sensor" type="custom" gz:type="radar">
-                <lotusim_power>
-                    <type>sensor</type>
-                    <nominal_w>7.0</nominal_w>
-                    <priority>2</priority>
-                </lotusim_power>
                 <always_on>true</always_on>
                 <update_rate>1</update_rate>
                 <is_on>true</is_on>
@@ -176,7 +156,7 @@
                     world/lotusim/model/commando_center/link/base_link/sensor/lidar_sensor/scan/points
                 </lidar_gz_topic>
 
-                <min_range>1.0</min_range>
+                <min_range>5.0</min_range>
                 <max_range>100.0</max_range>
 
                 <psf_ellipse_width>15000</psf_ellipse_width>
@@ -187,26 +167,5 @@
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>
         </link>
-        <lotus_param>
-            <power_system>
-                <power_management_type>default</power_management_type>
-            </power_system>
-        </lotus_param>
-        <lotusim_power>
-            <name>main_battery</name>
-            <type>simple_battery</type>
-            <capacity_ah>100</capacity_ah>
-            <initial_soc>0.8</initial_soc>
-            <voltage_min>2.0</voltage_min>
-            <voltage_nominal>16.0</voltage_nominal>
-        </lotusim_power>
-        <lotusim_power>
-            <name>backup_battery</name>
-            <type>simple_battery</type>
-            <capacity_ah>100</capacity_ah>
-            <initial_soc>0.9</initial_soc>
-            <voltage_min>2.0</voltage_min>
-            <voltage_nominal>16.0</voltage_nominal>
-        </lotusim_power>
     </model>
 </sdf>

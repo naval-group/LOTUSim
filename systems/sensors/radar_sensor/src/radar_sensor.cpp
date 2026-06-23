@@ -280,8 +280,8 @@ RadarSensor::PSFResult RadarSensor::SimulatePSF(
     std::vector<GridPt> gpts;
     gpts.reserve(points.size());
     for (const auto& p : points) {
-        float gx = std::round(p[0] * scale + Gf * 0.5f);
-        float gy = std::round(p[1] * scale + Gf * 0.5f);
+        float gx = std::round(-p[1] * scale + Gf * 0.5f);
+        float gy = std::round(p[0] * scale + Gf * 0.5f);
         gpts.push_back({gx, gy});
     }
 

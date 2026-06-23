@@ -14,7 +14,7 @@ SPAWN_ALTITUDE = 0.0
 
 class RadarTestSpawner(Node):
     def __init__(self):
-        super().__init__('radar_test_spawner')
+        super().__init__('demo_test_spawner')
 
         self.pose_subscription = self.create_subscription(
             VesselPositionArray,
@@ -33,6 +33,7 @@ class RadarTestSpawner(Node):
             '/lotusim/mas_cmd_array'
         )
         self.vessel_poses = {}
+        self.vessel_id = 0
 
     def poses_callback(self, msg):
         for vessel_position in msg.vessels:
@@ -40,13 +41,13 @@ class RadarTestSpawner(Node):
             lon = vessel_position.geo_point.longitude
             self.vessel_poses[vessel_position.vessel_name] = (lat, lon)
 
-    def spawn_static_commando(self):
-        """Spawn a single commando ship at the center"""
+    def spawn_static_dtmb(self):
+        """Spawn a single dtmb ship at the center"""
         msg = MASCmdMsg()
         msg.cmd_type = MASCmdMsg.CREATE_CMD
         
-        msg.model_name = "commando"
-        msg.vessel_name = "commando_center"
+        msg.model_name = "dtmb_hull"  
+        msg.vessel_name = "dtmb_0" 
 
         geo = GeoPoint()
         geo.latitude = SPAWN_LATITUDE
@@ -69,8 +70,8 @@ class RadarTestSpawner(Node):
         self.mas_action_client.wait_for_server()
         return self.mas_action_client.send_goal_async(goal_msg)
 
-    def spawn_lrauv_circle(self, n_ships=30, radius_m=30):
-        """Spawn n_ships LRAUVs in a circle around the DTMB"""
+    def spawn_fremm_circle(self, n_ships=5, radius_m=60):
+        """Spawn n_ships fremm in a circle around the DTMB"""
         goal_msg = MASCmdArray.Goal()
 
         for i in range(n_ships):
@@ -80,8 +81,8 @@ class RadarTestSpawner(Node):
 
             msg = MASCmdMsg()
             msg.cmd_type = MASCmdMsg.CREATE_CMD
-            msg.model_name = "lrauv"
-            msg.vessel_name = f"lrauv_{i}"
+            msg.model_name = "fremm"
+            msg.vessel_name = f"fremm_{i}"
 
             geo = GeoPoint()
             geo.latitude = SPAWN_LATITUDE + lat_offset
@@ -102,49 +103,20 @@ class RadarTestSpawner(Node):
         self.mas_array_action_client.wait_for_server()
         return self.mas_array_action_client.send_goal_async(goal_msg)
 
-    def spawn_front_target(self):
-        msg = MASCmdMsg()
-        msg.cmd_type = MASCmdMsg.CREATE_CMD
-        msg.model_name = "lrauv"
-        msg.vessel_name = "radar_target"
-
-        geo = GeoPoint()
-
-        # ~10 meters north of DTMB
-        geo.latitude = SPAWN_LATITUDE
-        geo.longitude = SPAWN_LONGITUDE + 0.00009
-        geo.altitude = SPAWN_ALTITUDE
-
-        msg.geo_point = geo
-
-        msg.sdf_string = """
-        <lotus_param>
-            <render_interface>
-                <publish_render>false</publish_render>
-            </render_interface>
-        </lotus_param>
-        """
-
-        goal_msg = MASCmd.Goal()
-        goal_msg.cmd = msg
-
-        self.mas_action_client.wait_for_server()
-        return self.mas_action_client.send_goal_async(goal_msg)
-
 
 def main(args=None):
     rclpy.init(args=args)
     node = RadarTestSpawner()
 
-    # Spawn central Commando ship
-    future_commando = node.spawn_static_commando()
-    rclpy.spin_until_future_complete(node, future_commando)
-    node.get_logger().info("Commando ship spawned")
+    # Spawn central dtmb ship
+    future_dtmb = node.spawn_static_dtmb()
+    rclpy.spin_until_future_complete(node, future_dtmb)
+    node.get_logger().info("DTMB ship spawned")
 
-    # Spawn 30 LRAUVs around it
-    future_lrauv = node.spawn_lrauv_circle(n_ships=20, radius_m=50)
-    rclpy.spin_until_future_complete(node, future_lrauv)
-    node.get_logger().info("20 LRAUV ships spawned around commando")
+    # Spawn 10 LRAUVs around it
+    future_fremm= node.spawn_fremm_circle(n_ships=5, radius_m=60)
+    rclpy.spin_until_future_complete(node, future_fremm)
+    node.get_logger().info("5 fremm ships spawned around dtmb")
 
     try:
         rclpy.spin(node)

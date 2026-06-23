@@ -189,45 +189,49 @@ bool PlatformPowerManagerBase::initPowerConsumers(sdf::ElementPtr sdfptr)
     // When a <lotusim_power> node is found, dispatch to the appropriate
     // consumer factory using the parent element for context, then stop
     // descending that branch.
-    std::function<void(sdf::ElementPtr, sdf::ElementPtr)> dfs =
-        [&](sdf::ElementPtr el, sdf::ElementPtr parent) {
-            if (!el)
+    std::function<void(sdf::ElementPtr, sdf::ElementPtr)> dfs = [&](sdf::
+                                                                        ElementPtr
+                                                                            el,
+                                                                    sdf::ElementPtr
+                                                                        parent) {
+        if (!el)
+            return;
+
+        if (el->GetName() == "lotusim_power") {
+            if (!parent)
                 return;
 
-            if (el->GetName() == "lotusim_power") {
-                if (!parent)
-                    return;
+            const std::string parentName = parent->GetName();
+            if (parentName == "model")
+                return;  // skip -> this is a provider definition
 
-                const std::string parentName = parent->GetName();
-                if (parentName == "model")
-                    return;  // skip -> this is a provider definition
-
-                const std::string consumerName =
-                    parent->GetAttribute("name")
-                        ? parent->GetAttribute("name")->GetAsString()
-                        : "";
-                auto [consumer, type] = PowerConsumer::createFromSdf(
-                    consumerName,
+            const std::string consumerName =
+                parent->GetAttribute("name")
+                    ? parent->GetAttribute("name")->GetAsString()
+                    : "";
+            auto [consumer, type] = PowerConsumer::createFromSdf(
+                consumerName,
+                m_vessel_name,
+                parent,
+                m_node,
+                m_logger);
+            if (consumer) {
+                m_consumers.push_back(consumer);
+            } else {
+                m_logger->warn(
+                    "PlatformPowerManagerBase [{}]: failed to create consumer [{}], skipping",
                     m_vessel_name,
-                    parent,
-                    m_node,
-                    m_logger);
-                if (consumer) {      
-                    m_consumers.push_back(consumer);
-                } else {
-                    m_logger->warn(
-                        "PlatformPowerManagerBase [{}]: failed to create consumer [{}], skipping",
-                        m_vessel_name, consumerName);
-                }
-                return;  // do not recurse into <lotusim_power>
+                    consumerName);
             }
+            return;  // do not recurse into <lotusim_power>
+        }
 
-            auto child = el->GetFirstElement();
-            while (child) {
-                dfs(child, el);
-                child = child->GetNextElement();
-            }
-        };
+        auto child = el->GetFirstElement();
+        while (child) {
+            dfs(child, el);
+            child = child->GetNextElement();
+        }
+    };
 
     dfs(sdfptr, nullptr);
 
@@ -242,12 +246,13 @@ bool PlatformPowerManagerBase::initPowerConsumers(sdf::ElementPtr sdfptr)
 
 bool PlatformPowerManagerBase::updateActiveProvider()
 {
-    const int startIndex = (m_active_battery_index < 0) ? 0 : m_active_battery_index; // at the start when init at -1
+    const int startIndex =
+        (m_active_battery_index < 0)
+            ? 0
+            : m_active_battery_index;  // at the start when init at -1
     // find the next non-depleted provider
     // preserves the priority order
-    for (int i = startIndex;
-         i < static_cast<int>(m_batteries.size());
-         ++i) {
+    for (int i = startIndex; i < static_cast<int>(m_batteries.size()); ++i) {
         if (!m_batteries[i]->isDepleted()) {
             if (i != m_active_battery_index) {
                 if (m_active_battery_index >= 0) {

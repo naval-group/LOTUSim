@@ -15,12 +15,12 @@
 #include <gz/sim/System.hh>
 #include <gz/sim/components/Model.hh>
 #include <memory>
+#include <rclcpp/executors.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sdf/sdf.hh>
 #include <string>
-#include <unordered_map>
-#include <rclcpp/executors.hpp>
 #include <thread>
+#include <unordered_map>
 
 #include "lotusim_common/logger.hpp"
 #include "power_subsystem/platform_power_manager_base.hpp"
