@@ -14,8 +14,8 @@
 #include <cmath>
 #include <cstring>
 
-#include "lotusim_sensor_base/common.hpp"
 #include "lotusim_common/common.hpp"
+#include "lotusim_sensor_base/common.hpp"
 
 namespace lotusim::sensor {
 
@@ -87,7 +87,8 @@ bool RadarSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 void RadarSensor::OnPointCloud(const gz::msgs::PointCloudPacked& _msg)
 {
     // don't buffer new clouds when powered off
-    if (!common::PowerStateRegistry::instance().get(m_vessel_name + "/" + m_sensor_name))
+    if (!common::PowerStateRegistry::instance().get(
+            m_vessel_name + "/" + m_sensor_name))
         return;
 
     std::lock_guard<std::mutex> lock(m_cloud_mutex);
@@ -106,7 +107,7 @@ bool RadarSensor::UpdateSensor(
 {
     const bool powered = common::PowerStateRegistry::instance().get(
         m_vessel_name + "/" + m_sensor_name);
-    
+
     if (!powered) {
         std::lock_guard<std::mutex> lock(m_cloud_mutex);
         m_cloud_received = false;

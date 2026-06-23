@@ -232,7 +232,8 @@ void LotusimSensorPlugin::PostUpdate(
             // check power state registry set by SensorPowerConsumer::update()
             // which runs in PowerManagerInstance::Update() before PostUpdate()
             // default true: if no power manager exists, sensor always runs
-            const std::string key = sensor->vesselName() + "/" + sensor->sensorName();
+            const std::string key =
+                sensor->vesselName() + "/" + sensor->sensorName();
             if (!common::PowerStateRegistry::instance().get(key, true)) {
                 continue;
             }

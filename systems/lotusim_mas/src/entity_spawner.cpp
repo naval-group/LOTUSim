@@ -98,9 +98,8 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
                 return std::nullopt;
             }
 
-            model_elem->InsertEndChild(
-                static_cast<tinyxml2::XMLElement*>(
-                    lotus_elem->DeepClone(&sdf_doc)));
+            model_elem->InsertEndChild(static_cast<tinyxml2::XMLElement*>(
+                lotus_elem->DeepClone(&sdf_doc)));
 
             tinyxml2::XMLPrinter printer;
             sdf_doc.Print(&printer);
