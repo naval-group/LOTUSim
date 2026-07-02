@@ -23,6 +23,23 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           build-args: |
             ROS_DISTRO=${{ matrix.ros }}
           tags: lotusim:${{ matrix.ros }}
+
+      # Advisory: runs the unit tests but does not gate the build while the
+      # project has no established test culture. Promote to a required check
+      # once test coverage is expected on logic PRs.
+      - name: Unit tests (advisory)
+        continue-on-error: true
+        run: |
+          docker run --rm lotusim:${{ matrix.ros }} bash -c '
+            source /opt/ros/${{ matrix.ros }}/setup.bash &&
+            source "$LOTUSIM_WS/install/setup.bash" &&
+            cd "$LOTUSIM_WS" &&
+            colcon build --packages-select physics_engine_interface \
+              --merge-install --cmake-args -DBUILD_TESTING=ON &&
+            colcon test --packages-select physics_engine_interface \
+              --merge-install --event-handlers console_direct+ &&
+            colcon test-result --verbose'
