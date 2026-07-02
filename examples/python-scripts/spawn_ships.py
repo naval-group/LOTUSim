@@ -284,7 +284,8 @@ def main(args=None):
     node = ExampleNode()
 
     # Spawn 1 cyrcling ship
-    future = node.spawn_multiple_circling_ship(1)
+    future = node.spawn_multiple_circling_ship(2)
+    
     rclpy.spin_until_future_complete(node,future)
     node.get_logger().info("Spawn request sent successfully")
 

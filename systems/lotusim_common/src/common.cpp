@@ -155,4 +155,23 @@ std::string toUpper(std::string str)
     return str;
 }
 
+PowerStateRegistry& PowerStateRegistry::instance()
+{
+    static PowerStateRegistry reg;
+    return reg;
+}
+
+void PowerStateRegistry::set(const std::string& key, bool powered)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_flags[key] = powered;
+}
+
+bool PowerStateRegistry::get(const std::string& key, bool defaultVal)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_flags.find(key);
+    return it != m_flags.end() ? it->second : defaultVal;
+}
+
 }  // namespace lotusim::common

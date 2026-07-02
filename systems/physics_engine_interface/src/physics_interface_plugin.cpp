@@ -122,14 +122,13 @@ void PhysicsInterfacePlugin::Update(
             continue;
         }
 
-        futures.push_back(
-            std::async(
-                std::launch::async,
-                &PhysicsInterfacePlugin::updateVesselState,
-                this,
-                vessel_entity,
-                _info,
-                std::ref(_ecm)));
+        futures.push_back(std::async(
+            std::launch::async,
+            &PhysicsInterfacePlugin::updateVesselState,
+            this,
+            vessel_entity,
+            _info,
+            std::ref(_ecm)));
     }
     for (auto& fut : futures) {
         fut.get();
@@ -303,13 +302,11 @@ void PhysicsInterfacePlugin::createDomainInterface(
         // Temp support of legacy type connection_type, changing to
         // interface_type
         if (_physics_sdf->HasElement("connection_type")) {
-            interface_type = InterfaceTypeMap.at(
-                lotusim::common::toUpper(
-                    _physics_sdf->Get<std::string>("connection_type")));
+            interface_type = InterfaceTypeMap.at(lotusim::common::toUpper(
+                _physics_sdf->Get<std::string>("connection_type")));
         } else if (_physics_sdf->HasElement("interface_type")) {
-            interface_type = InterfaceTypeMap.at(
-                lotusim::common::toUpper(
-                    _physics_sdf->Get<std::string>("interface_type")));
+            interface_type = InterfaceTypeMap.at(lotusim::common::toUpper(
+                _physics_sdf->Get<std::string>("interface_type")));
         }
         auto interface = PhysicsInterfaceBase::createInterface(
             interface_type,
@@ -520,9 +517,8 @@ bool PhysicsInterfacePlugin::loadVessel(
             // Add warning that the init is not found
             if (physics_sdf_ptr->HasElement("init_state")) {
                 DomainType init_domain;
-                auto domain_it = DomainTypeMap.find(
-                    common::toUpper(
-                        physics_sdf_ptr->Get<std::string>("init_state")));
+                auto domain_it = DomainTypeMap.find(common::toUpper(
+                    physics_sdf_ptr->Get<std::string>("init_state")));
                 if (domain_it != DomainTypeMap.end()) {
                     init_domain = domain_it->second;
                 } else {

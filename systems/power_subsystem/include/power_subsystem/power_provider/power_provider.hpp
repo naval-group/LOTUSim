@@ -1,0 +1,244 @@
+/*
+ * Copyright (c) 2026 Naval Group
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+#pragma once
+
+#include <spdlog/spdlog.h>
+
+#include <atomic>
+#include <memory>
+#include <optional>
+#include <sdf/sdf.hh>
+#include <string>
+#include <string_view>
+
+#include "lotusim_common/logger.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+namespace lotusim::gazebo {
+
+enum class ProviderType
+{
+    SimpleBattery,
+    SimpleGenerator,
+    RPMGenerator,
+    Unknown
+};
+
+inline std::string_view toString(ProviderType type)
+{
+    switch (type) {
+        case ProviderType::SimpleBattery:
+            return "simple_battery";
+        case ProviderType::SimpleGenerator:
+            return "simple_generator";
+        case ProviderType::RPMGenerator:
+            return "rpm_generator";
+        default:
+            return "unknown";
+    }
+    return "";
+}
+
+inline std::optional<ProviderType> providerTypeFromString(std::string_view s)
+{
+    if (s == "simple_battery")
+        return ProviderType::SimpleBattery;
+    if (s == "simple_generator")
+        return ProviderType::SimpleGenerator;
+    if (s == "rpm_generator")
+        return ProviderType::RPMGenerator;
+    return std::nullopt;
+}
+
+/**
+ * @brief Health level of a power provider
+ *
+ * User should define what is the threshold of each level.
+ *
+ * Below are the defaults
+ *
+ * | Level    |    Battery (vs voltage_min)        | Generator (fuel ratio)  |
+ * |----------|------------------------------------|-------------------------|
+ * | NORMAL   | voltage > voltage_min * 1.15       | fuel_ratio > 0.15       |
+ * | WARN     | voltage_min*1.05 < v <= *1.15      | 0.05 < ratio <= 0.15    |
+ * | CRITICAL | voltage_min < v <= voltage_min*1.05| 0.0 < ratio <= 0.05     |
+ * | DEPLETED | voltage <= voltage_min             | fuel_ratio <= 0.0       |
+ *
+ * PlatformPowerManager response per level:
+ *   NORMAL   : no action
+ *   WARN     : shed priority 4 consumers
+ *   CRITICAL : shed priority 3 and below
+ *   DEPLETED : info log + switch to next battery if available
+ *
+ */
+enum class PowerLevel
+{
+    NORMAL,
+    WARN,
+    CRITICAL,
+    DEPLETED
+};
+
+/**
+ * @brief Abstract base class for all power sources on a vessel.
+ *
+ * Defines the contract between any power source and PowerManager.
+ * PowerManager only ever calls these methods, it has no knowledge
+ * of whether the provider is a battery, a generator, or anything else.
+ *
+ * Two concrete abstract subclasses inherit from this:
+ *   - Battery   : stores electrical energy, interfaces with FMU,
+ *                 can receive charge from a generator surplus
+ *   - Generator : converts fuel to electrical energy, cannot receive charge
+ *
+ * Concrete implementations (NuclearBattery, DieselGenerator, ...) inherit
+ * from those subclasses and implement type-specific behaviour.
+ *
+ * receiveLoad() takes dt (seconds) because providers need to integrate
+ * over time to compute physically correct SOC and fuel consumption:
+ *   Battery   : soc -= (currentA * dt) / capacity_ah
+ *   Generator : fuel -= (power * dt) / (efficiency * 3600)
+ */
+
+class PowerProvider {
+public:
+    struct CreateResult {
+        std::shared_ptr<PowerProvider> provider;  // nullptr on failure
+        ProviderType type;
+    };
+
+    /**
+     * @brief Factory: construct the correct PowerProvider subclass from SDF.
+     *        On failure, result.provider is nullptr.
+     *
+     * @param name        provider name from SDF
+     * @param sdf         <lotusim_power> element
+     * @param node        shared node from PowerManager
+     * @param vessel_name vessel name (needed by RPM-driven generators for topic
+     * subscription)
+     * @param logger      spdlog logger for error reporting (may be nullptr)
+     */
+    static CreateResult createFromSdf(
+        const std::string& provider_name,
+        const std::string& vessel_name,
+        const sdf::ElementPtr& sdf,
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger);
+
+    virtual ~PowerProvider() = default;
+
+    /**
+     * @brief name of this provider from SDF
+     *        Used in log messages and topics
+     */
+    const std::string& name() const
+    {
+        return m_provider_name;
+    }
+
+    const std::string& vesselName() const
+    {
+        return m_vessel_name;
+    }
+
+    ProviderType type() const
+    {
+        return m_provider_type;
+    }
+
+    /**
+     * @brief Current output voltage of this provider (V)
+     *        Battery:   last value received from FMU topic callback
+     *        Generator: stable nominal voltage (simplified)
+     */
+    virtual float voltage() const = 0;
+
+    /**
+     * @brief normalised remaining capacity (0.0 to 1.0)
+     *        Battery:   remaining charge ratio (SOC)
+     *        Generator: remaining fuel ratio
+     */
+    virtual float getStateOfCharge() const = 0;
+
+    /**
+     * @brief approximate power the provider can sustain right now (W)
+     *        Used by PowerManager for load shedding decisions
+     *        battery:   voltage * soc * capacity_ah  (remaining Wh estimate)
+     *        generator: rated_output_w * fuel_ratio
+     */
+    virtual float availablePowerW() const = 0;
+
+    /**
+     * @brief Returns the current health level of this provider
+     *        computed internally from voltage vs voltage_min thresholds
+     *        PowerManager uses this to decide shedding and switching
+     */
+    virtual PowerLevel powerLevel() const = 0;
+
+    /**
+     * @brief if this provider can no longer supply power
+     *        battery:   soc <= 0.0
+     *        generator: fuel_level <= 0.0
+     */
+    virtual bool isDepleted() const = 0;
+
+    /**
+     * @brief if this provider can receive charge from a generator surplus
+     *        Battery overrides → true
+     *        Generator keeps default
+     */
+    virtual bool canReceiveCharge() const
+    {
+        return false;
+    }
+
+    /**
+     * @brief Called by PowerManager with the current bus load
+     *        Battery: publishes, integrates SOC over dt
+     *        Generator: computes fuel consumed over dt
+     * @param currentA  net current on this provider (Amperes); positive =
+     * discharge, negative = charge
+     * @param dt        elapsed simulation time since last tick (seconds)
+     */
+    virtual void receiveLoad(float currentA, float dt) = 0;
+
+protected:
+    /**
+     * @brief only subclasses can instantiate
+     * @param name  provider name from SDF
+     * @param node  shared node owned by PowerManager
+     */
+    PowerProvider(
+        const std::string& provider_name,
+        const std::string& vessel_name,
+        const sdf::ElementPtr& sdf,
+        rclcpp::Node::SharedPtr node,
+        std::shared_ptr<spdlog::logger> logger)
+        : m_provider_name(std::move(provider_name))
+        , m_vessel_name(std::move(vessel_name))
+        , m_node(std::move(node))
+        , m_logger(logger)
+        , m_provider_type(ProviderType::Unknown)
+    {
+    }
+
+    // Provider name from SDF name attribute
+    std::string m_provider_name;
+
+    std::string m_vessel_name;
+
+    // Shared node, borrowed from PowerManager
+    rclcpp::Node::SharedPtr m_node;
+
+    std::shared_ptr<spdlog::logger> m_logger;
+
+    ProviderType m_provider_type;
+};
+}  // namespace lotusim::gazebo

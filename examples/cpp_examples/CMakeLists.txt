@@ -13,6 +13,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(geographic_msgs REQUIRED)
 find_package(lotusim_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -31,6 +32,7 @@ endif()
 #============================================================================
 add_executable(spawn_ships src/spawn_ships.cpp)
 add_executable(controlling_ships src/controlling_ships.cpp)
+add_executable(detection_radar src/detection_radar.cpp)
 
 #============================================================================
 # Library
@@ -47,6 +49,14 @@ ament_target_dependencies(controlling_ships
   rclcpp_action
   geographic_msgs
   lotusim_msgs
+  std_msgs
+)
+
+ament_target_dependencies(detection_radar
+  rclcpp
+  rclcpp_action
+  geographic_msgs
+  lotusim_msgs
 )
 
 #============================================================================
@@ -55,6 +65,7 @@ ament_target_dependencies(controlling_ships
 install(TARGETS
   spawn_ships
   controlling_ships
+  detection_radar
   DESTINATION lib/${PROJECT_NAME}
 )
 
