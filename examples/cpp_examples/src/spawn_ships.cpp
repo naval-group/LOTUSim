@@ -1,9 +1,9 @@
+#include <csignal>
 #include <memory>
 #include <random>
 #include <sstream>
 #include <string>
 #include <unordered_map>
-#include <csignal> 
 
 #include "geographic_msgs/msg/geo_point.hpp"
 #include "lotusim_msgs/action/mas_cmd.hpp"
@@ -16,11 +16,11 @@
 
 using namespace std::chrono_literals;
 
-static std::atomic<bool> g_shutdown_requested{false}; // global flag
+static std::atomic<bool> g_shutdown_requested{false};  // global flag
 
 static constexpr double SPAWN_LATITUDE = 1.2605794416293148;
 static constexpr double SPAWN_LONGITUDE = 103.7516212463379;
-static constexpr double SPAWN_ALTITUDE = -30.0;
+static constexpr double SPAWN_ALTITUDE = 0.0;
 static constexpr double OFFSET = 0.0001;
 int vessel_id = 0;
 
@@ -36,6 +36,7 @@ class ExampleNode : public rclcpp::Node {
 public:
     using VesselPositionArray = lotusim_msgs::msg::VesselPositionArray;
     using MASCmd = lotusim_msgs::action::MASCmd;
+    using GoalHandleMASCmd = rclcpp_action::ClientGoalHandle<MASCmd>;
     using MASCmdArray = lotusim_msgs::action::MASCmdArray;
     using GoalHandleMASCmdArray = rclcpp_action::ClientGoalHandle<MASCmdArray>;
     using SetWaypoints = lotusim_msgs::srv::SetWaypoints;
@@ -49,6 +50,9 @@ public:
             [this](const VesselPositionArray::SharedPtr msg) {
                 this->poses_callback(msg);
             });
+
+        mas_action_client_ =
+            rclcpp_action::create_client<MASCmd>(this, "mas_cmd");
 
         mas_array_action_client_ =
             rclcpp_action::create_client<MASCmdArray>(this, "mas_cmd_array");
@@ -130,6 +134,155 @@ public:
         }
     }
 
+    void spawn_ship_with_dynamics()
+    {
+        if (!mas_action_client_->wait_for_action_server(5s)) {
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "MASCmd action server not available");
+            return;
+        }
+
+        lotusim_msgs::msg::MASCmd msg;
+        msg.cmd_type = lotusim_msgs::msg::MASCmd::CREATE_CMD;
+        msg.model_name = "lrauv";
+        std::string name = "lrauv_" + std::to_string(vessel_id);
+        msg.vessel_name = name;
+        spawned_vessels_.push_back(name);
+
+        geographic_msgs::msg::GeoPoint geo;
+        geo.latitude =
+            SPAWN_LATITUDE + vessel_id * OFFSET * random_choice<int>({-1, 1});
+        geo.longitude =
+            SPAWN_LONGITUDE + vessel_id * OFFSET * random_choice<int>({-1, 1});
+        geo.altitude = SPAWN_ALTITUDE;
+        msg.geo_point = geo;
+
+        msg.sdf_string = R"(
+        <lotus_param>
+            <render_interface>
+                <publish_render>true</publish_render>
+                <renderer_type_name>lrauv</renderer_type_name>
+            </render_interface>
+            <physics_engine_interface>
+            <underwater>
+                <interface_type>XDynWebSocket</interface_type>
+                <uri>ws://127.0.0.1:12346</uri>
+                <thrusters>
+                    <thrusters1>thruster1</thrusters1>
+                </thrusters>
+            </underwater>
+            <surface>
+                <interface_type>XDynWebSocket</interface_type>
+                <uri>ws://127.0.0.1:12345</uri>
+                <thrusters>
+                    <thrusters1>thruster1</thrusters1>
+                </thrusters>
+            </surface>
+            <init_state>Underwater</init_state>
+            </physics_engine_interface>
+        </lotus_param>
+        )";
+
+        vessel_id++;
+        auto goal_msg = MASCmd::Goal();
+        goal_msg.cmd = msg;
+        mas_action_client_->async_send_goal(goal_msg);
+    }
+
+    void spawn_aerial_drone()
+    {
+        if (!mas_action_client_->wait_for_action_server(5s)) {
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "MASCmd action server not available");
+            return;
+        }
+
+        lotusim_msgs::msg::MASCmd msg;
+        msg.cmd_type = lotusim_msgs::msg::MASCmd::CREATE_CMD;
+        msg.model_name = "x500";
+        std::string name = "x500_" + std::to_string(vessel_id);
+        msg.vessel_name = name;
+        spawned_vessels_.push_back(name);
+
+        geographic_msgs::msg::GeoPoint geo;
+        geo.latitude =
+            SPAWN_LATITUDE + vessel_id * OFFSET * random_choice<int>({-1, 1});
+        geo.longitude =
+            SPAWN_LONGITUDE + vessel_id * OFFSET * random_choice<int>({-1, 1});
+        geo.altitude = 10.0;
+        msg.geo_point = geo;
+
+        msg.sdf_string = R"(
+        <lotus_param>
+            <render_interface>
+                <publish_render>true</publish_render>
+                <renderer_type_name>lrauv</renderer_type_name>
+            </render_interface>
+            <physics_engine_interface>
+                  <aerial>
+                    <interface_type>ROS2</interface_type>
+                    <namespace>aerialWorld</namespace>
+                  </aerial>
+                  <init_state>Aerial</init_state>
+            </physics_engine_interface>
+        </lotus_param>
+        )";
+
+        vessel_id++;
+        auto goal_msg = MASCmd::Goal();
+        goal_msg.cmd = msg;
+        mas_action_client_->async_send_goal(goal_msg);
+    }
+
+    void spawn_circling_ship()
+    {
+        if (!mas_action_client_->wait_for_action_server(5s)) {
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "MASCmd action server not available");
+            return;
+        }
+
+        lotusim_msgs::msg::MASCmd msg;
+        msg.cmd_type = lotusim_msgs::msg::MASCmd::CREATE_CMD;
+        msg.model_name = "dtmb_hull";
+        std::string name = "dtmb_" + std::to_string(vessel_id);
+        msg.vessel_name = name;
+        spawned_vessels_.push_back(name);
+
+        geographic_msgs::msg::GeoPoint geo;
+        geo.latitude =
+            SPAWN_LATITUDE + vessel_id * OFFSET * random_choice<int>({-1, 1});
+        geo.longitude =
+            SPAWN_LONGITUDE + vessel_id * OFFSET * random_choice<int>({-1, 1});
+        geo.altitude = SPAWN_ALTITUDE;
+        msg.geo_point = geo;
+
+        msg.sdf_string = R"(
+        <lotus_param>
+            <waypoint_follower>
+                <follower>
+                    <loop>true</loop>
+                    <linear_accel_limit>0.5</linear_accel_limit>
+                    <angular_accel_limit>0.005</angular_accel_limit>
+                    <angular_velocities_limits>0.01</angular_velocities_limits>
+                    <range_tolerance>2</range_tolerance>
+                    <circle>
+                        <radius>10</radius>
+                    </circle>
+                </follower>
+            </waypoint_follower>
+        </lotus_param>
+        )";
+
+        vessel_id++;
+        auto goal_msg = MASCmd::Goal();
+        goal_msg.cmd = msg;
+        mas_action_client_->async_send_goal(goal_msg);
+    }
+
     void spawn_multiple_circling_ship(int number_of_ships)
     {
         if (!mas_array_action_client_->wait_for_action_server(5s)) {
@@ -204,23 +357,27 @@ public:
     void delete_all_vessels(rclcpp::Executor& exec)
     {
         if (!mas_array_action_client_->wait_for_action_server(2s)) {
-            RCLCPP_WARN(this->get_logger(), "Action server not available for cleanup");
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Action server not available for cleanup");
             return;
         }
 
         MASCmdArray::Goal goal_msg;
         for (const auto& name : spawned_vessels_) {
             lotusim_msgs::msg::MASCmd msg;
-            msg.cmd_type = lotusim_msgs::msg::MASCmd::DELETE_CMD; 
+            msg.cmd_type = lotusim_msgs::msg::MASCmd::DELETE_CMD;
             msg.vessel_name = name;
             goal_msg.cmd.push_back(msg);
         }
 
-        if (goal_msg.cmd.empty()) return;
-        exec.spin_some(200ms); // some time
+        if (goal_msg.cmd.empty())
+            return;
+        exec.spin_some(200ms);  // some time
 
         // leave some time
-        auto goal_handle_future = mas_array_action_client_->async_send_goal(goal_msg);
+        auto goal_handle_future =
+            mas_array_action_client_->async_send_goal(goal_msg);
         exec.spin_until_future_complete(goal_handle_future);
 
         auto goal_handle = goal_handle_future.get();
@@ -229,7 +386,8 @@ public:
             return;
         }
 
-        auto result_future = mas_array_action_client_->async_get_result(goal_handle);
+        auto result_future =
+            mas_array_action_client_->async_get_result(goal_handle);
         exec.spin_until_future_complete(result_future);
 
         RCLCPP_INFO(this->get_logger(), "All vessels deleted");
@@ -260,6 +418,7 @@ private:
     }
 
     rclcpp::Subscription<VesselPositionArray>::SharedPtr pose_subscription_;
+    rclcpp_action::Client<MASCmd>::SharedPtr mas_action_client_;
     rclcpp_action::Client<MASCmdArray>::SharedPtr mas_array_action_client_;
     rclcpp::TimerBase::SharedPtr timer_;
 
@@ -282,25 +441,21 @@ int main(int argc, char** argv)
     exec.add_node(node);
 
     // install signal handler after init
-    std::signal(SIGINT, [](int) {
-        g_shutdown_requested = true;
-    });
-    std::signal(SIGTERM, [](int) {
-        g_shutdown_requested = true;
-    });
+    std::signal(SIGINT, [](int) { g_shutdown_requested = true; });
+    std::signal(SIGTERM, [](int) { g_shutdown_requested = true; });
 
     // Spin manually so we can break on signal
     while (rclcpp::ok() && !g_shutdown_requested) {
         exec.spin_some(100ms);
     }
-    
+
     // ROS is still up here — cleanup works
     RCLCPP_INFO(node->get_logger(), "Shutting down, deleting vessels...");
     node->delete_all_vessels(exec);
 
     exec.remove_node(node);
     node.reset();
-    
-    rclcpp::shutdown();    
+
+    rclcpp::shutdown();
     return 0;
 }

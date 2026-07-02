@@ -11,13 +11,13 @@
 #include "lotusim_msgs/msg/vessel_cmd.hpp"
 #include "lotusim_msgs/msg/vessel_cmd_array.hpp"
 #include "lotusim_msgs/msg/vessel_position_array.hpp"
-
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 using namespace std::chrono_literals;
 
-static std::atomic<bool> g_shutdown_requested{false}; // global flag
+static std::atomic<bool> g_shutdown_requested{false};  // global flag
 
 static constexpr double SPAWN_LATITUDE = 1.2605794416293148;
 static constexpr double SPAWN_LONGITUDE = 103.7516212463379;
@@ -45,14 +45,18 @@ public:
         pose_subscription_ = this->create_subscription<VesselPositionArray>(
             "lotusim/poses",
             rclcpp::QoS(10),
-            std::bind(&ExampleNode::poses_callback, this, std::placeholders::_1));
+            std::bind(
+                &ExampleNode::poses_callback,
+                this,
+                std::placeholders::_1));
 
         cmd_publisher_ = this->create_publisher<VesselCmdArray>(
-            "/lotusim/vessel_cmd_array", 10);
+            "/lotusim/vessel_cmd_array",
+            10);
 
-        mas_array_action_client_ =
-            rclcpp_action::create_client<MASCmdArray>(
-                this, "lotusim/mas_cmd_array");
+        mas_array_action_client_ = rclcpp_action::create_client<MASCmdArray>(
+            this,
+            "lotusim/mas_cmd_array");
 
         // Print positions
         timer_ = this->create_wall_timer(
@@ -68,7 +72,9 @@ public:
     void spawn_multiple_ships(int number_of_ships)
     {
         if (!mas_array_action_client_->wait_for_action_server(5s)) {
-            RCLCPP_ERROR(this->get_logger(), "MASCmdArray server not available");
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "MASCmdArray server not available");
             return;
         }
 
@@ -81,15 +87,15 @@ public:
             msg.model_name = "lrauv";
             std::string name = "lrauv_" + std::to_string(vessel_id);
             msg.vessel_name = name;
-            vessel_names_.push_back(name); // store for control
+            vessel_names_.push_back(name);  // store for control
 
             geographic_msgs::msg::GeoPoint geo;
             double offset = 0.0001;
 
             geo.latitude = SPAWN_LATITUDE +
-                vessel_id * offset * random_choice<int>({-1, 1});
+                           vessel_id * offset * random_choice<int>({-1, 1});
             geo.longitude = SPAWN_LONGITUDE +
-                vessel_id * offset * random_choice<int>({-1, 1});
+                            vessel_id * offset * random_choice<int>({-1, 1});
             geo.altitude = SPAWN_ALTITUDE;
             msg.geo_point = geo;
 
@@ -97,14 +103,14 @@ public:
             <lotus_param>
                 <physics_engine_interface>
                 <underwater>
-                    <connection_type>XDynWebSocket</connection_type>
+                    <interface_type>XDynWebSocket</interface_type>
                     <uri>ws://127.0.0.1:12346</uri>
                     <thrusters>
                         <thrusters1>propeller</thrusters1>
                     </thrusters>
                 </underwater>
                 <surface>
-                    <connection_type>XDynWebSocket</connection_type>
+                    <interface_type>XDynWebSocket</interface_type>
                     <uri>ws://127.0.0.1:12345</uri>
                     <thrusters>
                         <thrusters1>propeller</thrusters1>
@@ -115,6 +121,14 @@ public:
             </lotus_param>
             )";
 
+            rpm_publishers_[name] =
+                this->create_publisher<std_msgs::msg::Float64>(
+                    "/" + name + "/rpm",
+                    10);
+            RCLCPP_INFO(
+                this->get_logger(),
+                "Created RPM publisher on /%s/rpm",
+                name.c_str());
             vessel_id++;
             goal_msg.cmd.push_back(msg);
         }
@@ -130,23 +144,27 @@ public:
     void delete_all_vessels(rclcpp::Executor& exec)
     {
         if (!mas_array_action_client_->wait_for_action_server(2s)) {
-            RCLCPP_WARN(this->get_logger(), "Action server not available for cleanup");
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Action server not available for cleanup");
             return;
         }
 
         MASCmdArray::Goal goal_msg;
         for (const auto& name : vessel_names_) {
             lotusim_msgs::msg::MASCmd msg;
-            msg.cmd_type = lotusim_msgs::msg::MASCmd::DELETE_CMD; 
+            msg.cmd_type = lotusim_msgs::msg::MASCmd::DELETE_CMD;
             msg.vessel_name = name;
             goal_msg.cmd.push_back(msg);
         }
 
-        if (goal_msg.cmd.empty()) return;
-        exec.spin_some(200ms); // some time
+        if (goal_msg.cmd.empty())
+            return;
+        exec.spin_some(200ms);  // some time
 
         // leave some time
-        auto goal_handle_future = mas_array_action_client_->async_send_goal(goal_msg);
+        auto goal_handle_future =
+            mas_array_action_client_->async_send_goal(goal_msg);
         exec.spin_until_future_complete(goal_handle_future);
 
         auto goal_handle = goal_handle_future.get();
@@ -155,7 +173,8 @@ public:
             return;
         }
 
-        auto result_future = mas_array_action_client_->async_get_result(goal_handle);
+        auto result_future =
+            mas_array_action_client_->async_get_result(goal_handle);
         exec.spin_until_future_complete(result_future);
 
         RCLCPP_INFO(this->get_logger(), "All vessels deleted");
@@ -166,9 +185,9 @@ private:
     void poses_callback(const VesselPositionArray::SharedPtr msg)
     {
         for (const auto& vessel : msg->vessels) {
-            vessel_poses_[vessel.vessel_name] =
-                std::make_pair(vessel.geo_point.latitude,
-                               vessel.geo_point.longitude);
+            vessel_poses_[vessel.vessel_name] = std::make_pair(
+                vessel.geo_point.latitude,
+                vessel.geo_point.longitude);
         }
     }
 
@@ -181,8 +200,8 @@ private:
 
         std::stringstream ss;
         for (const auto& pair : vessel_poses_) {
-            ss << pair.first << ": (" << pair.second.first
-               << ", " << pair.second.second << ") ";
+            ss << pair.first << ": (" << pair.second.first << ", "
+               << pair.second.second << ") ";
         }
 
         RCLCPP_INFO(this->get_logger(), "%s", ss.str().c_str());
@@ -191,21 +210,29 @@ private:
     // send RPM commands
     void send_commands()
     {
-        if (vessel_names_.empty()){
+        if (vessel_names_.empty()) {
             return;
         }
-        
+
         VesselCmdArray cmd_array;
         for (const auto& name : vessel_names_) {
             VesselCmd cmd;
             cmd.vessel_name = name;
             // MATCH EXACT STRING FORMAT
-            cmd.cmd_string =
-                "{\"propeller(rpm)\":200,\"propeller(P/D)\":0.88}";
+            cmd.cmd_string = "{\"propeller(rpm)\":200,\"propeller(P/D)\":0.88}";
             cmd_array.cmds.push_back(cmd);
         }
 
         cmd_publisher_->publish(cmd_array);
+
+        for (const auto& name : vessel_names_) {
+            auto it = rpm_publishers_.find(name);
+            if (it != rpm_publishers_.end()) {
+                std_msgs::msg::Float64 rpm_msg;
+                rpm_msg.data = 200.0;
+                it->second->publish(rpm_msg);
+            }
+        }
 
         RCLCPP_INFO(this->get_logger(), "Published propeller commands");
     }
@@ -219,7 +246,11 @@ private:
     rclcpp::TimerBase::SharedPtr cmd_timer_;
 
     std::unordered_map<std::string, std::pair<double, double>> vessel_poses_;
-    std::vector<std::string> vessel_names_; // track vessels
+    std::vector<std::string> vessel_names_;
+    std::unordered_map<
+        std::string,
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr>
+        rpm_publishers_;
 };
 
 int main(int argc, char** argv)
@@ -234,22 +265,18 @@ int main(int argc, char** argv)
     exec.add_node(node);
 
     // install signal handler after init
-    std::signal(SIGINT, [](int) {
-        g_shutdown_requested = true;
-    });
-    std::signal(SIGTERM, [](int) {
-        g_shutdown_requested = true;
-    });
+    std::signal(SIGINT, [](int) { g_shutdown_requested = true; });
+    std::signal(SIGTERM, [](int) { g_shutdown_requested = true; });
 
     // Spin manually so we can break on signal
     while (rclcpp::ok() && !g_shutdown_requested) {
         exec.spin_some(100ms);
     }
-    
+
     // ROS is still up here — cleanup works
     RCLCPP_INFO(node->get_logger(), "Shutting down, deleting vessels...");
     node->delete_all_vessels(exec);
-    
+
     rclcpp::shutdown();
     return 0;
 }

@@ -39,6 +39,8 @@ struct RadarPSFParams {
                                ///< targets → bigger ellipse
     int grid_size{
         900};  ///< Image resolution in pixels (NxN). Python default: 900
+    double max_range{100.0};  ///< Minimum half-extent of the image in metres;
+                              ///< set larger to fix the scale
 };
 
 /**
@@ -163,6 +165,7 @@ private:
     RadarPSFParams m_psf;
 
     // ── ROS 2 publishers ─────────────────────────────────────────────────
+    rclcpp::Node::SharedPtr m_node;
 
     /// PSF-smeared radar display image → <vessel>/<sensor>/radar/image
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr m_radar_img_pub;

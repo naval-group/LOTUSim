@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "lotusim_common/common.hpp"
 #include "lotusim_sensor_base/common.hpp"
 
 namespace lotusim::sensor {
@@ -36,6 +37,7 @@ RadarSensor::RadarSensor(
           parent_name,
           sensor_name)
 {
+    m_node = node;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -57,6 +59,7 @@ bool RadarSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
         5000.0);
     GetSDFParam<double>(elem, "psf_range_factor", m_psf.range_factor, 0.2);
     GetSDFParam<int>(elem, "psf_grid_size", m_psf.grid_size, 900);
+    GetSDFParam<double>(elem, "psf_max_range", m_psf.max_range, 100.0);
 
     const std::string base = m_vessel_name + "/" + m_sensor_name;
 
@@ -85,6 +88,11 @@ bool RadarSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 // ═══════════════════════════════════════════════════════════════════════════
 void RadarSensor::OnPointCloud(const gz::msgs::PointCloudPacked& _msg)
 {
+    // don't buffer new clouds when powered off
+    if (!common::PowerStateRegistry::instance().get(
+            m_vessel_name + "/" + m_sensor_name))
+        return;
+
     std::lock_guard<std::mutex> lock(m_cloud_mutex);
     m_latest_cloud = _msg;
     m_cloud_received = true;
@@ -99,10 +107,19 @@ bool RadarSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
+    const bool powered = common::PowerStateRegistry::instance().get(
+        m_vessel_name + "/" + m_sensor_name);
+
+    if (!powered) {
+        std::lock_guard<std::mutex> lock(m_cloud_mutex);
+        m_cloud_received = false;
+        return false;
+    }
+
     // ── One-time setup: subscribe using world name from ECM ───────────────s
     if (!m_subscribed) {
         std::string world_name = lotusim::common::getWorldName(_ecm);
-        std::string topic = "world/" + world_name + "/model/" + m_vessel_name +
+        std::string topic = "/world/" + world_name + "/model/" + m_vessel_name +
                             "/link/base_link/sensor/lidar_sensor/scan/points";
 
         if (!m_gz_node.Subscribe(topic, &RadarSensor::OnPointCloud, this)) {
@@ -114,10 +131,6 @@ bool RadarSensor::UpdateSensor(
         m_logger->info("RadarSensor::UpdateSensor: subscribed to [{}]", topic);
         m_subscribed = true;
     }
-    // m_logger->info(
-    //     "RadarSensor::UpdateSensor: tick simTime={} m_is_on={}
-    //     m_cloud_received={}", _info.simTime.count(), m_is_on,
-    //     m_cloud_received);
 
     // ── EnableMeasurement ───────────────────────────────────────────
     if (!EnableMeasurement(_info.simTime))
@@ -144,7 +157,7 @@ bool RadarSensor::UpdateSensor(
         if (f.name() == "y")
             y_offset = static_cast<int>(f.offset());
     }
-    m_logger->info(
+    m_logger->debug(
         "point_step={} total_bytes={} n_points={}",
         point_step,
         cloud_copy.data().size(),
@@ -168,7 +181,7 @@ bool RadarSensor::UpdateSensor(
         float x, y;
         std::memcpy(&x, ptr + x_offset, sizeof(float));
         std::memcpy(&y, ptr + y_offset, sizeof(float));
-        m_logger->info("  first point raw: x={} y={}", x, y);
+        m_logger->debug("  first point raw: x={} y={}", x, y);
     }
 
     for (std::size_t i = 0; i < n; ++i) {
@@ -183,17 +196,17 @@ bool RadarSensor::UpdateSensor(
     }
 
     if (points.empty()) {
-        m_logger->warn("RadarSensor [{}]: no valid points", m_sensor_name);
+        m_logger->debug("RadarSensor [{}]: no valid points", m_sensor_name);
         return true;
     }
-
-    // ── Apply PSF ─────────────────────────────────────────────────────────
-    PSFResult result = SimulatePSF(points);
 
     // ── Build header ──────────────────────────────────────────────────────
     std_msgs::msg::Header header =
         lotusim::common::generateHeaderMessage(_info.simTime);
     header.frame_id = m_vessel_name + "/" + m_sensor_name;
+
+    // ── Apply PSF ─────────────────────────────────────────────────────────
+    PSFResult result = SimulatePSF(points);
 
     // ── Publish images  ────────────────────────────────────────────────────
     PublishImage(
@@ -250,19 +263,15 @@ RadarSensor::PSFResult RadarSensor::SimulatePSF(
         return result;
     }
 
-    // ── Normalisation  ────────────────────────────────────────────────────
-    float min_x = points[0][0], min_y = points[0][1];
-    float max_x = min_x, max_y = min_y;
-    for (auto& p : points) {
-        min_x = std::min(min_x, p[0]);
-        min_y = std::min(min_y, p[1]);
-        max_x = std::max(max_x, p[0]);
-        max_y = std::max(max_y, p[1]);
-    }
-    const float range_x = std::max(max_x - min_x, 1e-6f);
-    const float range_y = std::max(max_y - min_y, 1e-6f);
+    // ── Normalisation: sensor origin (0,0) → grid centre ─────────────────
+    float max_dist_sq = 1e-12f;
+    for (const auto& p : points)
+        max_dist_sq = std::max(max_dist_sq, p[0] * p[0] + p[1] * p[1]);
+    const float effective_max_range =
+        std::max(std::sqrt(max_dist_sq), static_cast<float>(m_psf.max_range));
+    const float scale = (Gf * 0.5f - 1.0f) / effective_max_range;
 
-    const float radar_raw_x = Gf * 0.5f;  // = 450 for G=900
+    const float radar_raw_x = Gf * 0.5f;
     const float radar_raw_y = Gf * 0.5f;
 
     struct GridPt {
@@ -270,9 +279,9 @@ RadarSensor::PSFResult RadarSensor::SimulatePSF(
     };
     std::vector<GridPt> gpts;
     gpts.reserve(points.size());
-    for (auto& p : points) {
-        float gx = std::round(((p[0] - min_x) / range_x) * (Gf - 1.0f)) + 1.0f;
-        float gy = std::round(((p[1] - min_y) / range_y) * (Gf - 1.0f)) + 1.0f;
+    for (const auto& p : points) {
+        float gx = std::round(-p[1] * scale + Gf * 0.5f);
+        float gy = std::round(p[0] * scale + Gf * 0.5f);
         gpts.push_back({gx, gy});
     }
 
@@ -352,8 +361,9 @@ RadarSensor::PSFResult RadarSensor::SimulatePSF(
                 buf[i * 3 + 2] = c;  // R
             }
         };
-        write(result.radar_bgr, i, radar_grid[i]);
-        write(result.lidar_bgr, i, lidar_grid[i]);
+        const int src = (G - 1 - i / G) * G + (i % G);  // flip y only
+        write(result.radar_bgr, i, radar_grid[src]);
+        write(result.lidar_bgr, i, lidar_grid[src]);
     }
 
     return result;

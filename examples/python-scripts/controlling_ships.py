@@ -6,6 +6,7 @@ import signal
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from std_msgs.msg import Float64
 from geographic_msgs.msg import GeoPoint
 from lotusim_msgs.msg import VesselCmd, VesselCmdArray, VesselPositionArray
 from lotusim_msgs.msg import MASCmd as MASCmdMsg
@@ -34,7 +35,8 @@ class ExampleNode(Node):
             10
         )
         self.mas_action_client = ActionClient(self, MASCmd, '/lotusim/mas_cmd')
-        self.mas_array_action_client = ActionClient(self, MASCmdArray, '/lotusim/mas_cmd_array')
+
+        self.rpm_publisher = {}
         self.position_timer = self.create_timer(1.0, self.print_vessel_positions)
         self.vessel_id = 0 # id number for the number of model in the simulation. Used in randomizing location spawned
 
@@ -52,7 +54,7 @@ class ExampleNode(Node):
         for name, (lat, lon) in self.vessel_poses.items():
             self.get_logger().info(f"{name}: latitude={lat:.6f}, longitude={lon:.6f}")
 
-    def spawn_ship_with_dynamics(self):
+    def spawn_ship_with_dynamics(self, vessel_name:str):
         msg = MASCmdMsg()
         msg.cmd_type =  MASCmdMsg.CREATE_CMD
         msg.model_name =  "lrauv"
@@ -90,6 +92,12 @@ class ExampleNode(Node):
             </physics_engine_interface>
         </lotus_param>
         """
+
+        self.rpm_publisher[vessel_name] = self.create_publisher(
+            Float64,
+            f'/{vessel_name}/rpm',
+            10)
+        self.get_logger().info(f"Created RPM publisher on /{vessel_name}/rpm")
         self.vessel_id += 1
         self.spawned_vessels.append(vessel_name)
 
@@ -146,23 +154,36 @@ class ExampleNode(Node):
         cmd_array.cmds.append(cmd)
         # Publish the message
         self.cmd_publisher.publish(cmd_array)
-        # Also log with ROS logger
-        print(f"{cmd.vessel_name} - propeller command published: rpm={rpm}, P/D={pd}")
-        return True
+
+        if vessel_name in self.rpm_publisher:
+            rpm_msg = Float64()
+            rpm_msg.data = rpm
+            self.rpm_publisher[vessel_name].publish(rpm_msg)
+        else:
+            self.get_logger().warn(f"No RPM publisher found for vessel [{vessel_name}]")
+
+        self.get_logger().info(
+            f"{vessel_name} - propeller command: rpm={rpm}, P/D={pd}")
+        #eturn True
 
 def main(args=None):
     rclpy.init(args=args)
-
     node = ExampleNode()
+
+    vessel_name = "lrauv_0"
     
-    future = node.spawn_ship_with_dynamics()
+    future = node.spawn_ship_with_dynamics(vessel_name)
     rclpy.spin_until_future_complete(node, future)
-    node.get_logger().info("Spawn request sent successfully")
+    goal_handle = future.result()
+    result_future = goal_handle.get_result_async()
+    rclpy.spin_until_future_complete(node, result_future)
+    vessel_name = result_future.result().result.name
+    node.get_logger().info(f"Spawn request sent successfully, vessel name: {vessel_name}")
 
     time.sleep(1.0)
     
     def send_timer_callback():
-        node.send_propeller_command("lrauv_0", "propeller", 200, 0.88)
+        node.send_propeller_command(vessel_name, "propeller", 200.0, 0.88)
 
     node.create_timer(0.5, send_timer_callback)
     rclpy.spin_once(node)

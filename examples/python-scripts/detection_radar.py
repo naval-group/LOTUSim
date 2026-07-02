@@ -69,65 +69,75 @@ class RadarTestSpawner(Node):
         self.mas_action_client.wait_for_server()
         return self.mas_action_client.send_goal_async(goal_msg)
 
-    def spawn_lrauv_circle(self, n_ships=30, radius_m=30):
-        """Spawn n_ships LRAUVs in a circle around the DTMB"""
+    def spawn_circling_fremm(self, n_ships=1, circle_radius_m=80):
+        """Spawn n_ships fremm in a circle around the commando"""
         goal_msg = MASCmdArray.Goal()
 
         for i in range(n_ships):
-            angle = (2 * math.pi / n_ships) * i
-            lat_offset = (radius_m / 111111.0) * math.cos(angle)  # approx conversion: 1 deg lat ~ 111km
-            lon_offset = (radius_m / (111111.0 * math.cos(math.radians(SPAWN_LATITUDE)))) * math.sin(angle)
 
             msg = MASCmdMsg()
             msg.cmd_type = MASCmdMsg.CREATE_CMD
-            msg.model_name = "lrauv"
-            msg.vessel_name = f"lrauv_{i}"
+            msg.model_name = "fremm"
+            msg.vessel_name = f"fremm_{i}"
 
             geo = GeoPoint()
-            geo.latitude = SPAWN_LATITUDE + lat_offset
-            geo.longitude = SPAWN_LONGITUDE + lon_offset
+            geo.latitude = SPAWN_LATITUDE
+            geo.longitude = SPAWN_LONGITUDE
             geo.altitude = SPAWN_ALTITUDE
             msg.geo_point = geo
 
             # Static LRAUV (no physics)
-            msg.sdf_string = """
+            msg.sdf_string = f"""
             <lotus_param>
-                <render_interface>
-                    <publish_render>false</publish_render>
-                </render_interface>
+                <waypoint_follower>
+                    <follower>
+                        <loop>true</loop>
+                        <linear_accel_limit>0.5</linear_accel_limit>
+                        <angular_accel_limit>0.005</angular_accel_limit>
+                        <angular_velocities_limits>0.01</angular_velocities_limits>
+                        <range_tolerance>2</range_tolerance>
+                        <circle>
+                            <radius>{circle_radius_m}</radius>
+                        </circle>
+                    </follower>
+                </waypoint_follower>
             </lotus_param>
             """
             goal_msg.cmd.append(msg)
 
         self.mas_array_action_client.wait_for_server()
         return self.mas_array_action_client.send_goal_async(goal_msg)
+    
 
-    def spawn_front_target(self):
+    def spawn_static_fremm(self):
         msg = MASCmdMsg()
         msg.cmd_type = MASCmdMsg.CREATE_CMD
-        msg.model_name = "lrauv"
-        msg.vessel_name = "radar_target"
+        
+        msg.model_name = "fremm"
+        msg.vessel_name = "fremm_fixed"
+
+        angle = (2 * math.pi)
+        lat_offset = (65 / 111111.0) * math.cos(angle)  # approx conversion: 1 deg lat ~ 111km
+        lon_offset = (65 / (111111.0 * math.cos(math.radians(SPAWN_LATITUDE)))) * math.sin(angle)
 
         geo = GeoPoint()
-
-        # ~10 meters north of DTMB
-        geo.latitude = SPAWN_LATITUDE
-        geo.longitude = SPAWN_LONGITUDE + 0.00009
+        geo.latitude = SPAWN_LATITUDE + lat_offset
+        geo.longitude = SPAWN_LONGITUDE + lon_offset
         geo.altitude = SPAWN_ALTITUDE
-
         msg.geo_point = geo
 
         msg.sdf_string = """
         <lotus_param>
-            <render_interface>
-                <publish_render>false</publish_render>
-            </render_interface>
+            <waypoint_follower>
+                <follower>
+                    <loop>false</loop>
+                </follower>
+            </waypoint_follower>
         </lotus_param>
         """
 
         goal_msg = MASCmd.Goal()
         goal_msg.cmd = msg
-
         self.mas_action_client.wait_for_server()
         return self.mas_action_client.send_goal_async(goal_msg)
 
@@ -141,14 +151,11 @@ def main(args=None):
     rclpy.spin_until_future_complete(node, future_commando)
     node.get_logger().info("Commando ship spawned")
 
-    future_target = node.spawn_front_target()
-    rclpy.spin_until_future_complete(node, future_target)
-    node.get_logger().info("lrauv target spawned")
+    future_circling = node.spawn_circling_fremm(n_ships=1, circle_radius_m=80)
+    rclpy.spin_until_future_complete(node, future_circling)
 
-    # Spawn 30 LRAUVs around it
-    future_lrauv = node.spawn_lrauv_circle(n_ships=30, radius_m=50)
-    rclpy.spin_until_future_complete(node, future_lrauv)
-    node.get_logger().info("30 LRAUV ships spawned around commando")
+    future_fremm = node.spawn_static_fremm()
+    rclpy.spin_until_future_complete(node, future_fremm)
 
     try:
         rclpy.spin(node)

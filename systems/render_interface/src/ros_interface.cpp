@@ -38,11 +38,13 @@ bool ROSInterface::configureInterface(
 
     m_renderer_cmd_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::RendererCmd>(
-            "renderer_cmd", qos_profile);
+            "renderer_cmd",
+            qos_profile);
 
     m_pose_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
-            "renderer_poses", qos_profile);
+            "renderer_poses",
+            qos_profile);
     return true;
 }
 
