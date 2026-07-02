@@ -96,6 +96,24 @@ install(
 )
 
 #============================================================================
+# Testing
+#============================================================================
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # Unit tests on the NED<->ENU conversions (pure functions living in the
+  # plugin library). The test forward-declares them and links the library, so
+  # it does not need the plugin's websocketpp/json include chain.
+  ament_add_gtest(test_ned_enu_conversions test/test_ned_enu_conversions.cpp)
+  if(TARGET test_ned_enu_conversions)
+    target_link_libraries(test_ned_enu_conversions
+      physics_interface_plugin
+      gz-sim8::gz-sim8
+    )
+  endif()
+endif()
+
+#============================================================================
 # Export
 #============================================================================
 ament_export_targets(export_physics_interface_plugin HAS_LIBRARY_TARGET)
