@@ -318,8 +318,8 @@ void XdynWebsocket::onMessage(
     auto ned_quad = gz::math::Quaterniond(
         reply["qr"].back().get<double>(),
         reply["qi"].back().get<double>(),
-        reply["qk"].back().get<double>(),
-        reply["qj"].back().get<double>());
+        reply["qj"].back().get<double>(),
+        reply["qk"].back().get<double>());
 
     auto gz_position = vecNedToEnu(ned_position);
     auto gz_quad = quatNedToEnu(ned_quad);
