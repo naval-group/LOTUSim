@@ -11,14 +11,21 @@
 
 namespace lotusim::gazebo {
 
+// An attitude quaternion maps body axes to world axes, so converting it
+// between conventions changes BOTH frames: world swap (ENU<->NED) on the
+// left, body swap (FLU<->FRD) on the right. A similarity transform
+// (q_swap * q * q_swap^-1) only relabels the world frame and yields
+// yaw_ned = -yaw_enu instead of the correct yaw_ned = pi/2 - yaw_enu.
+// Both swap factors are 180-deg rotations (involutive up to sign), so the
+// same product converts in either direction.
 gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned)
 {
-    return q_ned_to_enu * q_ned * q_ned_to_enu.Inverse();
+    return q_ned_to_enu * q_ned * q_flu_to_frd;
 }
 
 gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu)
 {
-    return q_ned_to_enu.Inverse() * q_enu * q_ned_to_enu;
+    return q_ned_to_enu * q_enu * q_flu_to_frd;
 }
 
 gz::math::Vector3d vecNedToEnu(const gz::math::Vector3d& v_ned)
