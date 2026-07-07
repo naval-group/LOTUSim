@@ -313,7 +313,11 @@ XdynWebsocket::getNewState(
     data["Dt"] = time_diff / 1000.0;
     data["states"] = json::array();
     json previous_state_json = {
-        {"t", time_diff},
+        // Absolute sim time in seconds: xdyn uses states.back().t as the
+        // integration start time, and time-dependent forcings (waves) need the
+        // true clock. The raw step duration in ms sent here previously froze
+        // xdyn's clock at ~Dt, which is only harmless on calm water.
+        {"t", previous_state.time},
         {"x", ned_position.X()},
         {"y", ned_position.Y()},
         {"z", ned_position.Z()},
