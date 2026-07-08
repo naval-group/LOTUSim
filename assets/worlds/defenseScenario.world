@@ -57,7 +57,7 @@
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin">
         </plugin>
 
-        <plugin filename="aerial_demo_entity_manager" name="lotusim::gazebo::AerialEntityManager">
+        <plugin filename="aerial_demo_mas" name="lotusim::gazebo::AerialMAS">
             <aerial_namespace>aerialWorld</aerial_namespace>
         </plugin>
 

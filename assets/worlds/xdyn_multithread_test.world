@@ -8,7 +8,7 @@
             <grid>1</grid>
         </scene>
 
-        <physics type="ode"> <!-- This is <10fps  -->
+        <physics type="ode">            <!-- This is <10fps  -->
             <max_step_size>0.2</max_step_size>
             <real_time_factor>1</real_time_factor>
             <real_time_update_rate>1</real_time_update_rate>
@@ -26,12 +26,10 @@
 
         <gravity>0 0 0</gravity>
 
-        <plugin filename="physics_interface_plugin"
-            name="lotusim::gazebo::PhysicsInterfacePlugin">
+        <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>
 
-        <plugin filename="entity_manager_plugin"
-            name="lotusim::gazebo::EntityManager">
+        <plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem">
         </plugin>
 
         <!-- The rendering application interface, default to ROS2 connection -->
@@ -49,8 +47,7 @@
             <connection_protocol>ROS2</connection_protocol>
         </plugin>
 
-        <plugin filename="waypoint_plugin"
-            name="lotusim::gazebo::WaypointFollowerPlugin" />
+        <plugin filename="waypoint_plugin" name="lotusim::gazebo::WaypointFollowerPlugin" />
 
         <include>
             <uri>model://dtmb_hull</uri>
@@ -60,7 +57,7 @@
             <lotus_param>
                 <physics_engine_interface>
                     <surface>
-                        <connection_type>XDynWebSocket</connection_type>
+                        <interface_type>XDynWebSocket</interface_type>
                         <uri>ws://127.0.0.1:12345</uri>
                         <thrusters>
                             <thruster1>PSPropRudd</thruster1>
@@ -80,7 +77,7 @@
             <lotus_param>
                 <physics_engine_interface>
                     <surface>
-                        <connection_type>XDynWebSocket</connection_type>
+                        <interface_type>XDynWebSocket</interface_type>
                         <uri>ws://127.0.0.1:12346</uri>
                         <thrusters>
                             <thruster1>PSPropRudd</thruster1>

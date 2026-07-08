@@ -10,6 +10,7 @@
 #ifndef WAYPOINT_FOLLOWER_PLUGIN_HPP_
 #define WAYPOINT_FOLLOWER_PLUGIN_HPP_
 
+#include <atomic>
 #include <functional>
 #include <gz/math/Pose3.hh>
 #include <gz/math/SphericalCoordinates.hh>
@@ -155,7 +156,15 @@ public:
         gz::sim::EntityComponentManager& _ecm) override;
 
 private:
-    // TODO changing the returns to handle error
+    /**
+     * @brief Setup waypoint_follower subsystem for newly spawned models
+     *
+     * @param _entity
+     * @param _lotus_param
+     * @param _ecm
+     * @return true Success in setup
+     * @return false Failure in setup
+     */
     bool load(
         const gz::sim::Entity& _entity,
         sdf::ElementPtr _lotus_param,
@@ -186,14 +195,6 @@ private:
      *
      */
     std::unordered_map<gz::sim::Entity, gz::math::Vector2d> m_velocities;
-
-    /**
-     * @brief Guidance mode (controller type) for each entity
-     *
-     * - "bang_bang": On/off velocity controller using stopping distance and heading
-     * - "pid": PID controller for smooth linear and angular motion
-     */
-    std::unordered_map<gz::sim::Entity, std::string> m_guidance_mode;
 
     /**
      * @brief Linear accel limit for each vessel
@@ -307,12 +308,18 @@ private:
      */
     rclcpp::Node::SharedPtr m_ros_node;
 
+    std::atomic_bool m_running;
+
     std::shared_ptr<std::thread> m_ros_node_thread;
 
-    std::vector<rclcpp::Service<lotusim_msgs::srv::SetWaypoints>::SharedPtr>
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Service<lotusim_msgs::srv::SetWaypoints>::SharedPtr>
         m_waypoint_services;
 
-    std::vector<rclcpp::Service<std_srvs::srv::Empty>::SharedPtr>
+    std::unordered_map<
+        gz::sim::Entity,
+        rclcpp::Service<std_srvs::srv::Empty>::SharedPtr>
         m_waypoint_stop_services;
 
     gz::math::SphericalCoordinates m_origin_spherical;
