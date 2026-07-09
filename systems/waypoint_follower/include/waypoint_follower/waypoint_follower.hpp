@@ -190,7 +190,8 @@ private:
     /**
      * @brief Guidance mode (controller type) for each entity
      *
-     * - "bang_bang": On/off velocity controller using stopping distance and heading
+     * - "bang_bang": On/off velocity controller using stopping distance and
+     * heading
      * - "pid": PID controller for smooth linear and angular motion
      */
     std::unordered_map<gz::sim::Entity, std::string> m_guidance_mode;

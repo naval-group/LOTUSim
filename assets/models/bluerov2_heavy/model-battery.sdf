@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sdf version="1.6">
+  <model name="bluerov2">
+    <link name="base_link">
+      <collision name="base_link_collision">
+        <geometry>
+          <mesh>
+            <uri>model://bluerov/meshes/bluerov2_heavy.dae</uri>
+            <scale>0.025 0.025 0.025</scale>
+          </mesh>
+        </geometry>
+      </collision>
+      <!-- Battery status "LED": a sphere whose emissive colour is driven by the
+           light_actuator plugin below via VisualCmd — emissive RED when the
+           battery is OK, black (base grey) when low. Emissive glows on its own,
+           so it is visible regardless of scene lighting/ambient. Doubles as a
+           visible body since the mesh above may not load. -->
+      <visual name="led_body_visual">
+        <geometry>
+          <sphere>
+            <radius>0.3</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <ambient>0.25 0.25 0.25 1</ambient>
+          <diffuse>0.5 0.5 0.5 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+        </material>
+      </visual>
+      <sensor name="ais_sensor" type="custom" gz:type="ais">
+        <update_rate>1</update_rate>
+        <noise_sigma>0.01</noise_sigma>
+        <noise_amplitude>0.01</noise_amplitude>
+      </sensor>
+      <sensor name="battery_sensor" type="custom" gz:type="battery">
+        <battery_name>linear_battery</battery_name>
+        <voltage>48.0</voltage>
+        <open_circuit_voltage_constant_coef>50.4</open_circuit_voltage_constant_coef>
+        <open_circuit_voltage_linear_coef>-3.1</open_circuit_voltage_linear_coef>
+        <capacity>1.0</capacity>
+        <resistance>0.05</resistance>
+        <smooth_current_tau>2.0</smooth_current_tau>
+        <power_load>200.0</power_load>
+        <start_draining>true</start_draining>
+        <fix_issue_225>true</fix_issue_225>
+      </sensor>
+    </link>
+    <!-- Drives the led_body_visual emissive (red=ON / black=OFF) from
+         /<world>/<model>/light/cmd (std_msgs/Bool). -->
+    <plugin filename="light_actuator"
+            name="lotusim::actuator::LightActuatorPlugin">
+      <visual_name>led_body_visual</visual_name>
+    </plugin>
+  </model>
+</sdf>

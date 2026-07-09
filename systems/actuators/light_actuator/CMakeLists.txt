@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
-project(physics_engine_interface VERSION 0.0.1 LANGUAGES CXX)
+project(light_actuator VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
@@ -12,68 +12,47 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Werror=format-security -Wpedantic)
 endif()
 
-if(LOTUS_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY 
-    "clang-tidy;-checks=-*,clang-analyzer-*,modernize-*,performance-*,hicpp-*,concurrency-*,bugprone-*,portability-*,cppcoreguidelines-*;-header-filter=.*")
-endif()
-
-if(DEBUG)
-  message(STATUS "Building ${PROJECT_NAME} with debug options")
-  add_compile_options(-g -Og)
-  find_package(backward_ros)
-  add_definitions(-DDEBUG=${DEBUG})
-endif()
-
-if(BUILD_PROFILING)
-  add_compile_options(-pg -g -Og)
-endif()
-
 #============================================================================
-# Dependencies
+# Find dependencies
 #============================================================================
+# ROS 2 packages
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
-find_package(lotusim_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(yaml-cpp REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
-find_package(websocketpp REQUIRED)
 
-find_package(gz-cmake3 REQUIRED)
-
-gz_find_package(sdformat14 REQUIRED)
+# Gazebo packages
+find_package(sdformat14 REQUIRED)
 find_package(gz-sim8 REQUIRED)
-gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
+find_package(gz-msgs10 REQUIRED)
+find_package(gz-transport13 REQUIRED COMPONENTS log)
+find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
+find_package(gz-common5 REQUIRED)
 
 #============================================================================
-# Library
+# Create library
 #============================================================================
-add_library(physics_interface_plugin SHARED
-src/physics_interface_plugin.cpp
-  src/xdyn_websocket.cpp
-  src/ros2_interface.cpp
-  src/kinematic_interface.cpp
+add_library(light_actuator SHARED
+  src/light_actuator.cpp
 )
 
-target_include_directories(physics_interface_plugin PUBLIC
+target_include_directories(light_actuator PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(physics_interface_plugin
+target_link_libraries(light_actuator
   gz-sim8::gz-sim8
   gz-plugin2::gz-plugin2
-  websocketpp::websocketpp
-  Boost::system
-  yaml-cpp
+  gz-msgs10::gz-msgs10
+  gz-transport13::gz-transport13
+  gz-common5::gz-common5
 )
 
-ament_target_dependencies(physics_interface_plugin
+ament_target_dependencies(light_actuator
   rclcpp
-  geometry_msgs
+  std_msgs
   lotusim_common
-  lotusim_msgs
 )
 
 #============================================================================
@@ -88,8 +67,8 @@ install(
 )
 
 install(
-  TARGETS physics_interface_plugin
-  EXPORT export_physics_interface_plugin
+  TARGETS light_actuator
+  EXPORT export_light_actuator
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
@@ -99,17 +78,17 @@ install(
 #============================================================================
 # Export
 #============================================================================
-ament_export_targets(export_physics_interface_plugin HAS_LIBRARY_TARGET)
+ament_export_targets(export_light_actuator HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
-  geometry_msgs
+  std_msgs
   lotusim_common
-  lotusim_msgs
-  yaml-cpp
-  Boost
-  websocketpp
   gz-sim8
   gz-plugin2
+  gz-msgs10
+  gz-transport13
+  sdformat14
+  gz-common5
 )
 
 ament_package()

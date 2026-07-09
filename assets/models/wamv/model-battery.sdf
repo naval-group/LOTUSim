@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="wamv">
+    <!-- Base -->
+    <link name="base_link">
+      <collision name="base_collision">
+        <geometry>
+          <mesh>
+            <uri>model://wamv/meshes/WAM-V-Base.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <sensor name="ais_sensor" type="custom" gz:type="ais">
+        <update_rate>1</update_rate>
+        <noise_sigma>0.01</noise_sigma>
+        <noise_amplitude>0.01</noise_amplitude>
+      </sensor>
+      <sensor name="battery_sensor" type="custom" gz:type="battery">
+        <battery_name>linear_battery</battery_name>
+        <voltage>48.0</voltage>
+        <open_circuit_voltage_constant_coef>50.4</open_circuit_voltage_constant_coef>
+        <open_circuit_voltage_linear_coef>-3.1</open_circuit_voltage_linear_coef>
+        <capacity>1.0</capacity>
+        <resistance>0.05</resistance>
+        <smooth_current_tau>2.0</smooth_current_tau>
+        <power_load>200.0</power_load>
+        <start_draining>true</start_draining>
+        <fix_issue_225>true</fix_issue_225>
+      </sensor>
+    </link>
+  </model>
+</sdf>

@@ -1,7 +1,5 @@
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-
+.vscode
+.config
 docs/doxygen
 lotus_logs/*
 .ipynb_checkpoints

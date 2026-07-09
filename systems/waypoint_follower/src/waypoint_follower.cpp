@@ -62,9 +62,9 @@ bool WaypointFollowerPlugin::load(
     m_loop[_entity] = false;
     m_rangeTolerance[_entity] = 0.5;
     m_linear_accel_limit[_entity] = 0.5;
-    m_angular_accel_limit[_entity] = 0.5; 
-    m_linear_velocities_limits[_entity] = gz::math::Vector2d(0.0, 5); 
-    m_angular_velocities_limits[_entity] = 1.0; 
+    m_angular_accel_limit[_entity] = 0.5;
+    m_linear_velocities_limits[_entity] = gz::math::Vector2d(0.0, 5);
+    m_angular_velocities_limits[_entity] = 1.0;
     m_velocities[_entity] = {0, 0};
     m_linear_pid[_entity] = {0.5, 0.05, 0.1};
     m_angular_pid[_entity] = {0.8, 0.05, 0.4};
@@ -314,10 +314,11 @@ void WaypointFollowerPlugin::Update(
     const gz::sim::UpdateInfo& _info,
     gz::sim::EntityComponentManager& _ecm)
 {
-    _ecm.EachNew<gz::sim::components::ModelSdf>(
-        [this, &_ecm](
+    _ecm.EachNew<
+        gz::sim::components::ModelSdf>([this, &_ecm](
                                            const gz::sim::Entity& _entity,
-            const gz::sim::components::ModelSdf* _model) {
+                                           const gz::sim::components::ModelSdf*
+                                               _model) {
         if (!_model)
             return true;
         auto name_comp = _ecm.Component<gz::sim::components::Name>(_entity);
@@ -328,8 +329,7 @@ void WaypointFollowerPlugin::Update(
             _sdf = _sdf->GetIncludeElement();
         }
         if (_sdf->HasElement("lotus_param") &&
-                _sdf->GetElement("lotus_param")
-                    ->HasElement("waypoint_follower")) {
+            _sdf->GetElement("lotus_param")->HasElement("waypoint_follower")) {
             lotus_param_sdf = _sdf->GetElement("lotus_param")
                                   ->GetElement("waypoint_follower");
         } else {
@@ -417,21 +417,22 @@ void WaypointFollowerPlugin::Update(
         // ----------------------------------------------------------------
         if (m_guidance_mode[_entity] == "bang_bang") {
             // Bang_bang: use stopping distance to decide when to decelerate
-            double stopping_distance =
-                std::pow(current_velocity, 2) / 2.0 / m_linear_accel_limit[_entity];
+            double stopping_distance = std::pow(current_velocity, 2) / 2.0 /
+                                       m_linear_accel_limit[_entity];
 
             /**
-            * @brief Bang Bang controller for linear velocity
-            *
-            * Flag for linear velocity
-            * 0: Slow down to min speed
-            * 1: Fully stop
-            * 2: Speed up
-            *
-            */
+             * @brief Bang Bang controller for linear velocity
+             *
+             * Flag for linear velocity
+             * 0: Slow down to min speed
+             * 1: Fully stop
+             * 2: Speed up
+             *
+             */
             int linear_veloctiy_flag = 0;
             if (stopping_distance >= distance_to_goal) {
-                if (m_waypoint_state[_entity] == m_waypoints[_entity].size() - 1 &&
+                if (m_waypoint_state[_entity] ==
+                        m_waypoints[_entity].size() - 1 &&
                     !m_loop[_entity]) {
                     linear_veloctiy_flag = 1;
                 } else {
@@ -510,8 +511,8 @@ void WaypointFollowerPlugin::Update(
 
             // Calculate desired velocity from PID
             double desired_velocity = kp * distance_error +
-                                    ki * m_distance_error_integral[_entity] +
-                                    kd * distance_error_derivative;
+                                      ki * m_distance_error_integral[_entity] +
+                                      kd * distance_error_derivative;
 
             // Modify based on angle to goal (reduce speed when turning)
             double angle_factor = std::cos(angle_to_goal);
@@ -533,7 +534,8 @@ void WaypointFollowerPlugin::Update(
             // Calculate velocity change with acceleration limits
             double velocity_change = desired_velocity - current_velocity;
             double max_accel = m_linear_accel_limit[_entity] * dt_s;
-            velocity_change = std::clamp(velocity_change, -max_accel, max_accel);
+            velocity_change =
+                std::clamp(velocity_change, -max_accel, max_accel);
 
             // Update velocity
             m_velocities[_entity][0] = current_velocity + velocity_change;
@@ -566,7 +568,8 @@ void WaypointFollowerPlugin::Update(
             double Kd_heading = m_angular_pid[_entity][2];
 
             // heading error in global frame
-            double desired_yaw = atan2(goal.Y() - pose.Y(), goal.X() - pose.X());
+            double desired_yaw =
+                atan2(goal.Y() - pose.Y(), goal.X() - pose.X());
             double heading_error = desired_yaw - pose.Yaw();
 
             // normalize to [-pi, pi]
@@ -579,7 +582,8 @@ void WaypointFollowerPlugin::Update(
             m_heading_integral[_entity] += heading_error * dt_s;
 
             // derivative term
-            double d_error = (heading_error - m_prev_heading_error[_entity]) / dt_s;
+            double d_error =
+                (heading_error - m_prev_heading_error[_entity]) / dt_s;
             m_prev_heading_error[_entity] = heading_error;
 
             // PID output
@@ -603,7 +607,8 @@ void WaypointFollowerPlugin::Update(
             }
 
             // integrate error
-            double max_integral_contribution = 0.2 * m_angular_velocities_limits[_entity];
+            double max_integral_contribution =
+                0.2 * m_angular_velocities_limits[_entity];
             m_heading_integral[_entity] += heading_error * dt_s;
 
             // Clamp integral (avoid division by zero)
@@ -629,8 +634,8 @@ void WaypointFollowerPlugin::Update(
 
             // PID output
             desired_w = Kp_heading * heading_error +
-                            Ki_heading * m_heading_integral[_entity] +
-                            derivative_term;
+                        Ki_heading * m_heading_integral[_entity] +
+                        derivative_term;
 
             // clamp to angular velocity limits
             double unclamped_w = desired_w;

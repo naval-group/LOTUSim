@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
-
-project(lotusim_sensor_plugin VERSION 0.0.1 LANGUAGES CXX)
+project(radar_sensor VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
 #============================================================================
 include(GNUInstallDirs)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -21,16 +19,13 @@ endif()
 #============================================================================
 # Set project-specific options
 #============================================================================
-# For debugging
 if(DEBUG)
   message("Building ${PROJECT_NAME} with debug options ${DEBUG}")
   add_compile_options(-g -Og)
   find_package(backward_ros)
-  # Used to define the logger level
-  add_definitions(-DDEBUG=${DEBUG} )
+  add_definitions(-DDEBUG=${DEBUG})
 endif()
 
-# For profiling
 if(BUILD_PROFILING)
   add_compile_options(-pg -g -Og)
 endif()
@@ -40,73 +35,74 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
 endif()
 
 #============================================================================
-# Search for project-specific dependencies
+# Search for dependencies
 #============================================================================
+# ROS 2 packages
 find_package(ament_cmake REQUIRED)
-find_package(Eigen3 REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_sensor_base REQUIRED)
-find_package(subsea_pressure_sensor REQUIRED)
-find_package(ais_sensor REQUIRED)
-find_package(imu_sensor REQUIRED)
-find_package(battery_sensor REQUIRED)
-find_package(radar_sensor REQUIRED)
-find_package(gz-rendering8 REQUIRED)
-find_package(gz-sensors8 REQUIRED)
+find_package(lotusim_msgs REQUIRED)
+find_package(lotusim_sensor_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+# Gazebo packages — exact same pattern as entity_manager
+find_package(gz-cmake3 REQUIRED)
+set(GZ_CMAKE_VER ${gz-cmake3_VERSION_MAJOR})
+
+find_package(gz-sim8 REQUIRED)
+set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
+
+find_package(gz-msgs10 REQUIRED)
+set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
+
+find_package(gz-transport13 REQUIRED)
+set(GZ_TRANSPORT_VER ${gz-transport13_VERSION_MAJOR})
+
+gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
+set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
 
 #============================================================================
-# Create and install project files
+# Create library
 #============================================================================
-
-add_library(lotusim_sensor_plugin
-SHARED
-src/lotusim_sensor_plugin.cpp
+add_library(radar_sensor
+  SHARED
+  src/radar_sensor.cpp
 )
-target_include_directories(lotusim_sensor_plugin
+
+target_include_directories(radar_sensor
   PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR} include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${EIGEN3_INCLUDE_DIRS}
 )
-target_link_libraries(lotusim_sensor_plugin
-  gz-rendering8::gz-rendering8
-  gz-sensors8::lidar
-  gz-sensors8::gpu_lidar
-  gz-sensors8::rendering   
+
+# target_link_libraries BEFORE ament_target_dependencies — same as entity_manager
+target_link_libraries(radar_sensor
+  PUBLIC
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
+  gz-msgs${GZ_MSGS_VER}::gz-msgs${GZ_MSGS_VER}
+  gz-transport${GZ_TRANSPORT_VER}::gz-transport${GZ_TRANSPORT_VER}
+  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
 )
-ament_target_dependencies(lotusim_sensor_plugin
-  ament_cmake
+
+ament_target_dependencies(radar_sensor
+  PUBLIC
+  rclcpp
   lotusim_common
   lotusim_sensor_base
-  subsea_pressure_sensor
-  ais_sensor
-  imu_sensor
-  radar_sensor
-  battery_sensor
+  lotusim_msgs
+  lotusim_sensor_msgs
+  sensor_msgs
 )
-ament_export_include_directories(include)
-ament_export_dependencies(
-  ament_cmake
-  lotusim_common
-  lotusim_sensor_base
-  subsea_pressure_sensor
-  ais_sensor
-  imu_sensor
-  radar_sensor
-  battery_sensor
-)
-ament_export_targets(
-  export_lotusim_sensor_plugin
-)
-ament_export_libraries(
-  lotusim_sensor_plugin
-)
+
 #============================================================================
-# Install the files for this package
+# Install
 #============================================================================
 install(
-  TARGETS lotusim_sensor_plugin
-  EXPORT  export_lotusim_sensor_plugin
+  TARGETS radar_sensor
+  EXPORT  export_radar_sensor
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -114,11 +110,29 @@ install(
 
 install(
   DIRECTORY include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  DESTINATION include
   FILES_MATCHING
   PATTERN "*.hpp"
   PATTERN "*.h"
+  PATTERN ".~" EXCLUDE
 )
+
+#============================================================================
+# Export
+#============================================================================
+ament_export_targets(export_radar_sensor HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+  rclcpp
+  lotusim_common
+  lotusim_sensor_base
+  lotusim_msgs
+  lotusim_sensor_msgs
+  sensor_msgs
+  gz-sim8
+  gz-msgs10
+  gz-transport13
+  gz-plugin2
+)
+ament_export_include_directories(include)
 ament_package()
 gz_create_packages()
- 

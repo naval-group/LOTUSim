@@ -1,0 +1,9 @@
+std_msgs/Header header
+float32 lcoe_aud_mwh
+float32 energy_produced_kwh
+float32 cost_total_aud
+float32 cost_maintenance_aud
+float32 cost_robot_time_aud
+float32 cost_robot_energy_aud
+float32 robot_operation_time_h
+float32 robot_energy_wh

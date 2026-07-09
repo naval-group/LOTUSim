@@ -13,7 +13,6 @@ jobs:
       matrix:
         ros:
           - jazzy
-          - humble
 
     steps:
       - uses: actions/checkout@v4

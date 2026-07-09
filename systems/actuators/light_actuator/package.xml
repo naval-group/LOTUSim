@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
+  <name>light_actuator</name>
+  <version>0.0.1</version>
+  <description>Model-attached actuator that drives a Gazebo light on/off from a ROS 2 std_msgs/Bool topic.</description>
+
+  <maintainer email="loris.cazaux@gmail.com">loris</maintainer>
+  <author email="loris.cazaux@gmail.com">loris</author>
+
+  <license>EPL-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>gz-cmake3</depend>
+  <depend>lotusim_common</depend>
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

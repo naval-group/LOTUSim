@@ -37,6 +37,7 @@
 
 #include "lotusim_msgs/msg/vessel_cmd.hpp"
 #include "lotusim_msgs/msg/vessel_cmd_array.hpp"
+#include "physics_engine_interface/kinematic_interface.hpp"
 #include "physics_engine_interface/physics_interface_base.hpp"
 #include "physics_engine_interface/ros2_interface.hpp"
 #include "physics_engine_interface/xdyn_websocket.hpp"
@@ -229,6 +230,17 @@ private:
      *
      */
     mutable std::shared_mutex m_mutex;
+
+    /**
+     * @brief Mutex serialising EntityComponentManager access.
+     *
+     * The vessel updates run concurrently (std::async per vessel) to overlap
+     * slow physics back-ends (e.g. XDyn websocket). The gz-sim ECM is NOT
+     * thread-safe for concurrent reads/writes, so every ECM read and write must
+     * be serialised through this mutex. Only the back-end getNewState() call —
+     * which works on a local copy and does not touch the ECM — runs in parallel.
+     */
+    std::mutex m_ecm_mutex;
 
     /**
      * @brief List of the vessel entities

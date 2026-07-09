@@ -13,6 +13,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PressureDepth.msg"
   "msg/Collision.msg"
   "msg/Collisions.msg"
+  "msg/RadarDetection.msg"
+  "msg/RadarScan.msg"
   "srv/ActivateSensor.srv"
   
   DEPENDENCIES 

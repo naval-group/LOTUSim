@@ -21,10 +21,7 @@ WORLD=""
 
 # Detect Ubuntu codename
 export VERSION_CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
-if [[ "$VERSION_CODENAME" == "jammy" ]]; then
-  export ROS_DISTRO="humble"
-  export GAZEBO_VERSION="harmonic"
-elif [[ "$VERSION_CODENAME" == "noble" ]]; then
+if [[ "$VERSION_CODENAME" == "noble" ]]; then
   export ROS_DISTRO="jazzy"
   export GAZEBO_VERSION="harmonic"
 else

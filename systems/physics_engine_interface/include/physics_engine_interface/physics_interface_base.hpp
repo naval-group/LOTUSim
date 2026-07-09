@@ -27,12 +27,14 @@ enum class ConnectionType
 {
     XDynWebSocket,
     ROS2Interface,
+    Kinematic,
     Unknown
 };
 
 static std::unordered_map<std::string, ConnectionType> ConnectionTypeMap{
     {"XDYNWEBSOCKET", ConnectionType::XDynWebSocket},
     {"ROS2", ConnectionType::ROS2Interface},
+    {"KINEMATIC", ConnectionType::Kinematic},
     {"UNKNOWN", ConnectionType::Unknown}};
 
 enum class DomainType

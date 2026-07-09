@@ -36,12 +36,14 @@
 #include <utility>
 
 #include "ais_sensor/ais_sensor.hpp"
+#include "battery_sensor/battery_sensor.hpp"
 #include "imu_sensor/imu_sensor.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/entity_group.hpp"
 #include "lotusim_common/logger.hpp"
 #include "lotusim_sensor_base/custom_sensor.hpp"
 #include "lotusim_sensor_msgs/msg/collisions.hpp"
+#include "radar_sensor/radar_sensor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
