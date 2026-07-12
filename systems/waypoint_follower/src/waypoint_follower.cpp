@@ -216,24 +216,24 @@ bool WaypointFollowerPlugin::load(
 
     if (_sdf->HasElement("linear_accel_limit")) {
         double val = _sdf->Get<double>("linear_accel_limit");
-        m_linear_accel_limit[_entity] = (val <= 0.0) ? val : 999.0;
+        m_linear_accel_limit[_entity] = (val >= 0.0) ? val : 999.0;
     }
 
     if (_sdf->HasElement("angular_accel_limit")) {
         double val = _sdf->Get<double>("angular_accel_limit");
-        m_angular_accel_limit[_entity] = (val <= 0.0) ? val : 999.0;
+        m_angular_accel_limit[_entity] = (val >= 0.0) ? val : 999.0;
     }
 
     if (_sdf->HasElement("linear_velocities_limits")) {
         auto val = _sdf->Get<gz::math::Vector2d>("linear_velocities_limits");
-        double min = (val.X() <= 0.0) ? val.X() : 999.0;
-        double max = (val.Y() <= 0.0) ? val.Y() : 999.0;
+        double min = (val.X() >= 0.0) ? val.X() : 999.0;
+        double max = (val.Y() >= 0.0) ? val.Y() : 999.0;
         m_linear_velocities_limits[_entity] = gz::math::Vector2d(min, max);
     }
 
     if (_sdf->HasElement("angular_velocities_limits")) {
         double val = _sdf->Get<double>("angular_velocities_limits");
-        m_angular_velocities_limits[_entity] = (val <= 0.0) ? val : 999.0;
+        m_angular_velocities_limits[_entity] = (val >= 0.0) ? val : 999.0;
     }
 
     if (_sdf->HasElement("linear_pid")) {
