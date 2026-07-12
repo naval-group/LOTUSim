@@ -34,7 +34,7 @@
                 <pose>0 0 0 0 0 0</pose>
                 <geometry>
                     <mesh>
-                        <uri>model://commando/meshes/commando.dae</uri>
+                        <uri>model://dtmb_hull/meshes/dtmb_cdg_enu.dae</uri>
                         <scale>1 1 1</scale>
                     </mesh>
                 </geometry>
