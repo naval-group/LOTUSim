@@ -63,7 +63,7 @@ XdynWebsocket::XdynWebsocket() : PhysicsInterfaceBase("XdynWebsocket")
 
     m_thread = Weblib::make_shared<Weblib::thread>(&Client::run, &m_client);
 
-    m_engine_logger->debug("t,model_name,X,Y,Z,U,V,W,qi,qj,qk,qr,p,q,r");
+    m_engine_logger->debug("t,model_name,X,Y,Z,U,V,W,qi,qj,qk,qr,P,Q,R");
 }
 
 XdynWebsocket::~XdynWebsocket()
@@ -97,7 +97,7 @@ bool XdynWebsocket::configureInterface(
 
     if (domain_type == DomainType::Unknown) {
         m_logger->error(
-            "XdynWebsocket::createInterface: Model {} Called create interface without a domain specified. There will not be physics update for this domain",
+            "XdynWebsocket::configureInterface: Model {} Called configure interface without a domain specified. There will not be physics update for this domain",
             _name);
         return false;
     }
@@ -106,7 +106,7 @@ bool XdynWebsocket::configureInterface(
     if (_sdf->HasElement("uri")) {
         uri = _sdf->Get<std::string>("uri");
     } else {
-        m_logger->error("XdynWebsocket::createInterface: No uri for {}", _name);
+        m_logger->error("XdynWebsocket::configureInterface: No uri for {}", _name);
         return false;
     }
     m_uri[_entity][domain_type] = uri;
