@@ -47,7 +47,7 @@ static std::unordered_map<std::string, DomainType> DomainTypeMap{
     {"AERIAL", DomainType::Aerial},
     {"SURFACE", DomainType::Surface},
     {"UNDERWATER", DomainType::Underwater},
-    {"UKNOWN", DomainType::Unknown}};
+    {"UNKNOWN", DomainType::Unknown}};
 
 static std::unordered_map<DomainType, std::string> DomainTypeToStringMap{
     {DomainType::Aerial, "Aerial"},
