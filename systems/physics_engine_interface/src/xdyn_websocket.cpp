@@ -161,7 +161,7 @@ bool XdynWebsocket::activateInterface(
             return true;
         }
 
-        if (m_uri.find(_entity) == m_uri.end() &&
+        if (m_uri.find(_entity) == m_uri.end() ||
             m_uri[_entity].find(domain_type) == m_uri[_entity].end()) {
             m_logger->error(
                 "XdynWebsocket::activateInterface: Called for vessel entity {} and domain {} but no uri found.",
