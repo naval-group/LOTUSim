@@ -12,7 +12,8 @@
 namespace lotusim::gazebo {
 
 // Convert a quaternion from the NED frame to the ENU frame by conjugating it
-// with the basis-change quaternion that maps [N, E, D] coordinates to [E, N, -D].
+// with the basis-change quaternion that maps [N, E, D] coordinates to [E, N,
+// -D].
 gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned)
 {
     return q_ned_to_enu * q_ned * q_ned_to_enu.Inverse();
@@ -109,7 +110,9 @@ bool XdynWebsocket::configureInterface(
     if (_sdf->HasElement("uri")) {
         uri = _sdf->Get<std::string>("uri");
     } else {
-        m_logger->error("XdynWebsocket::configureInterface: No uri for {}", _name);
+        m_logger->error(
+            "XdynWebsocket::configureInterface: No uri for {}",
+            _name);
         return false;
     }
     m_uri[_entity][domain_type] = uri;
@@ -135,7 +138,9 @@ bool XdynWebsocket::removeInterface(
     const DomainType& domain_type)
 {
     deactivateInterface(_entity);
-    m_models_cmd_map_ptr->at(_entity);
+    if (m_models_cmd_map_ptr->find(_entity) != m_models_cmd_map_ptr->end()) {
+        m_models_cmd_map_ptr->erase(_entity);
+    }
     m_uri.erase(_entity);
     return true;
 }
