@@ -236,7 +236,7 @@ EntityManager::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 break;
             }
         }
-    } catch (std::runtime_error &e) {
+    } catch (std::runtime_error& e) {
         m_logger->error(
             "EntityManager::PreUpdate:ERROR Vessel: {}, Entity: {}, \n{}",
             cmd.vessel_name,
@@ -423,8 +423,12 @@ std::optional<std::tuple<uint16_t, std::string>> EntityManager::addEntity(
 
             // Use the provided sdf_file inside the model folder.
             // If empty, default to "model.sdf".
-            std::string sdf_filename = msg.sdf_file.empty() ? "model.sdf" : msg.sdf_file;
-            m_logger->info("EntityManager::addEntity: using sdf_file='{}' for model='{}'", sdf_filename, msg.model_name);
+            std::string sdf_filename =
+                msg.sdf_file.empty() ? "model.sdf" : msg.sdf_file;
+            m_logger->info(
+                "EntityManager::addEntity: using sdf_file='{}' for model='{}'",
+                sdf_filename,
+                msg.model_name);
 
             tinyxml2::XMLError loadResult =
                 sdfDoc.LoadFile((file_path + "/" + sdf_filename).c_str());
@@ -570,14 +574,14 @@ bool EntityManager::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             msg.vessel_position.orientation.z);
 
         if (msg.geo_point.latitude != 0 || msg.geo_point.longitude != 0) {
-            auto xy_opt = lotusim::common::XYFromLatLong(
+            auto xyz_opt = lotusim::common::LatLongToXY(
                 *m_ecm,
                 msg.geo_point.latitude,
                 msg.geo_point.longitude);
 
-            if (xy_opt) {
-                pose.Pos().X() = std::get<0>(xy_opt.value());
-                pose.Pos().Y() = std::get<1>(xy_opt.value());
+            if (xyz_opt) {
+                pose.Pos().X() = std::get<0>(xyz_opt.value());
+                pose.Pos().Y() = std::get<1>(xyz_opt.value());
             }
         }
 
