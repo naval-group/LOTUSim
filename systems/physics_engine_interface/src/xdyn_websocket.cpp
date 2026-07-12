@@ -102,6 +102,9 @@ bool XdynWebsocket::configureInterface(
         return false;
     }
 
+    m_name_mapping[_entity] = _name;
+    m_entity_mapping[_name] = _entity;
+
     std::string uri;
     if (_sdf->HasElement("uri")) {
         uri = _sdf->Get<std::string>("uri");
