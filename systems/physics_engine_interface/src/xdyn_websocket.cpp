@@ -11,11 +11,14 @@
 
 namespace lotusim::gazebo {
 
+// Convert a quaternion from the NED frame to the ENU frame by conjugating it
+// with the basis-change quaternion that maps [N, E, D] coordinates to [E, N, -D].
 gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned)
 {
     return q_ned_to_enu * q_ned * q_ned_to_enu.Inverse();
 }
 
+// Convert a quaternion from the ENU frame back to the NED frame.
 gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu)
 {
     return q_ned_to_enu.Inverse() * q_enu * q_ned_to_enu;
