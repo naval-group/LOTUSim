@@ -10,6 +10,7 @@
 #ifndef LOTUSIM_XDYN_WEBSOCKET_HH_
 #define LOTUSIM_XDYN_WEBSOCKET_HH_
 
+#include <cmath>
 #include <future>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -30,7 +31,7 @@ using Client = websocketpp::client<websocketpp::config::asio_client>;
 using json = nlohmann::json;
 
 static const gz::math::Quaterniond
-    q_ned_to_enu(0.0, 0.70710678118, 0.70710678118, 0.0);
+    q_ned_to_enu(0.0, 0.5 * sqrt(2.0), 0.5 * sqrt(2.0), 0.0);
 
 gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned);
 gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu);
