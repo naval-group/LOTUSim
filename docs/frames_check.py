@@ -92,6 +92,29 @@ class VehicleState:
             1.0 - 2.0 * (self.qj**2 + self.qk**2)
         )
 
+    @property
+    def x_dot(self) -> float:
+        """Fixed-frame velocity along X, derived from quaternion and body velocities."""
+        return self._body_to_fixed()[0]
+
+    @property
+    def y_dot(self) -> float:
+        """Fixed-frame velocity along Y, derived from quaternion and body velocities."""
+        return self._body_to_fixed()[1]
+
+    @property
+    def z_dot(self) -> float:
+        """Fixed-frame velocity along Z, derived from quaternion and body velocities."""
+        return self._body_to_fixed()[2]
+
+    def _body_to_fixed(self) -> tuple:
+        """Rotate body velocities (u,v,w) to fixed frame via q ⊗ v_body ⊗ q*."""
+        q = (self.qr, self.qi, self.qj, self.qk)
+        v_body = (0.0, self.u, self.v, self.w)  # pure quaternion
+        v_fixed = quat_mult(quat_mult(q, v_body), quat_conj(q))
+        # v_fixed is a pure quaternion: (0, x_dot, y_dot, z_dot)
+        return v_fixed[1], v_fixed[2], v_fixed[3]
+
     def convert(self) -> "VehicleState":
         """Return a new VehicleState with the opposite convention (ENU <-> NED)."""
 
@@ -133,6 +156,7 @@ class VehicleState:
             f"VehicleState [{self.convention.value}]\n"
             f"  Position      : x={self.x:.4f},  y={self.y:.4f},  z={self.z:.4f}\n"
             f"  Lin. velocity : u={self.u:.4f},  v={self.v:.4f},  w={self.w:.4f}\n"
+            f"  Fixed velocity: x_dot={self.x_dot:.4f}, y_dot={self.y_dot:.4f}, z_dot={self.z_dot:.4f}\n"
             f"  Ang. velocity : p={self.p:.4f},  q={self.q:.4f},  r={self.r:.4f}\n"
             f"  Quaternion    : qr={self.qr:.4f}, qi={self.qi:.4f}, qj={self.qj:.4f}, qk={self.qk:.4f}\n"
             f"  Euler (rad)   : phi={self.phi:.4f}, theta={self.theta:.4f}, psi={self.psi:.4f}\n"
@@ -140,7 +164,24 @@ class VehicleState:
         )
 
 
-if __name__ == "__main__":
+def demo00():
+    ned_state = VehicleState(
+        convention=Convention.NED,
+        x=1.0, y=2.0, z=3.0,
+        u=1.0, v=0.5, w=0.2,
+        p=0.1, q=0.05, r=0.02,
+        qr=1.0, qi=0.0, qj=0.0, qk=0.0,
+    )
+
+    enu_state = ned_state.convert()
+    ned_back  = enu_state.convert()
+
+    print(ned_state)
+    print(enu_state)
+    print("Round-trip back to NED:")
+    print(ned_back)
+
+def demo01():
     ned_state = VehicleState(
         convention=Convention.NED,
         x=1.0, y=2.0, z=3.0,
@@ -156,3 +197,7 @@ if __name__ == "__main__":
     print(enu_state)
     print("Round-trip back to NED:")
     print(ned_back)
+
+if __name__ == "__main__":
+    demo00()
+    demo01()
