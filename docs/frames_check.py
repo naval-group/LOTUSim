@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 import math
+import random
 
 
 class Convention(Enum):
@@ -32,6 +33,35 @@ def normalize_quat(q):
     if qr < 0:
         qr, qi, qj, qk = -qr, -qi, -qj, -qk
     return qr, qi, qj, qk
+
+def quat_from_rot_x(angle: float) -> tuple:
+    """Quaternion for a rotation of `angle` (rad) about the X axis."""
+    return (
+        math.cos(angle / 2),
+        math.sin(angle / 2),
+        0.0,
+        0.0,
+    )
+
+
+def quat_from_rot_y(angle: float) -> tuple:
+    """Quaternion for a rotation of `angle` (rad) about the Y axis."""
+    return (
+        math.cos(angle / 2),
+        0.0,
+        math.sin(angle / 2),
+        0.0,
+    )
+
+
+def quat_from_rot_z(angle: float) -> tuple:
+    """Quaternion for a rotation of `angle` (rad) about the Z axis."""
+    return (
+        math.cos(angle / 2),
+        0.0,
+        0.0,
+        math.sin(angle / 2),
+    )
 
 
 # q_R: 180° rotation about (X+Y)/√2 axis — the ENU<->NED frame rotation
@@ -133,12 +163,11 @@ class VehicleState:
         new_q = -self.q
         new_r = -self.r
 
-        # Quaternion frame change: q_new = q_R ⊗ q ⊗ q_R*
+        # Quaternion frame change
         q = (self.qr, self.qi, self.qj, self.qk)
-        # new_q_tuple = quat_mult(quat_mult(Q_R, q), Q_R_CONJ)
         new_q_tuple = quat_mult(quat_mult(Q_R, q), Q_FLU_FRD)
         
-        # new_q_tuple = quat_mult(Q_R, q)
+        new_q_tuple = quat_mult(Q_R, q)
         new_qr, new_qi, new_qj, new_qk = normalize_quat(new_q_tuple)
 
         new_convention = Convention.NED if self.convention == Convention.ENU else Convention.ENU
@@ -186,6 +215,42 @@ class VehicleState:
             (self.qk, other.qk),
         ])
 
+
+
+def random_vehicle_state(convention: Convention = Convention.ENU, seed: int = None) -> VehicleState:
+    """Generate a random VehicleState with realistic vehicle ranges."""
+    if seed is not None:
+        random.seed(seed)
+
+    def rand(lo, hi):
+        return random.uniform(lo, hi)
+
+    # Random Euler angles then build quaternion via ZYX composition
+    phi   = rand(-math.pi,      math.pi)       # roll   [-180°, 180°]
+    theta = rand(-math.pi / 2,  math.pi / 2)   # pitch  [ -90°,  90°]
+    psi   = rand(-math.pi,      math.pi)       # yaw    [-180°, 180°]
+
+    q = quat_mult(
+            quat_mult(quat_from_rot_z(psi), quat_from_rot_y(theta)),
+            quat_from_rot_x(phi)
+        )
+
+    return VehicleState(
+        convention=convention,
+        x = rand(-1000.0,  1000.0),   # m
+        y = rand(-1000.0,  1000.0),   # m
+        z = rand(    0.0,  1000.0),   # m  (positive up in ENU)
+        u = rand(  -50.0,    50.0),   # m/s
+        v = rand(  -10.0,    10.0),   # m/s
+        w = rand(   -5.0,     5.0),   # m/s
+        p = rand(-math.pi, math.pi),  # rad/s
+        q = rand(-math.pi, math.pi),  # rad/s
+        r = rand(-math.pi, math.pi),  # rad/s
+        qr=q[0], qi=q[1], qj=q[2], qk=q[3],
+    )
+
+
+
 def demo00():
     ned_state = VehicleState(
         convention=Convention.NED,
@@ -202,6 +267,7 @@ def demo00():
     print(enu_state)
     print("Round-trip back to NED:")
     print(ned_back)
+    print(ned_state == ned_back)
 
 def demo01():
     ned_state = VehicleState(
@@ -219,7 +285,23 @@ def demo01():
     print(enu_state)
     print("Round-trip back to NED:")
     print(ned_back)
+    print(ned_state == ned_back)
+
+
+
+def demo03():
+    state_enu = random_vehicle_state(Convention.ENU, seed=42)
+    state_ned = state_enu.convert()
+    assert abs(state_enu.z - (-state_ned.z)) < 1e-10 
+    assert abs(state_enu.x - (+state_ned.y)) < 1e-10 
+    assert abs(state_enu.y - (+state_ned.x)) < 1e-10 
+    assert abs(state_enu.z_dot - (-state_ned.z_dot)) < 1e-10 
+    assert abs(state_enu.x_dot - (+state_ned.y_dot)) < 1e-10 
+    assert abs(state_enu.y_dot - (+state_ned.x_dot)) < 1e-10 
 
 if __name__ == "__main__":
     demo00()
-    # demo01()
+    demo01()
+    demo03()
+    quat_ned2enu = quat_mult(quat_from_rot_z(math.pi/2), quat_from_rot_x(math.pi))
+    print(quat_ned2enu)
