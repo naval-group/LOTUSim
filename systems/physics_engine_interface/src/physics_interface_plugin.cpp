@@ -290,13 +290,14 @@ void PhysicsInterfacePlugin::createDomainInterface(
     std::unordered_map<gz::sim::Entity, std::shared_ptr<PhysicsInterfaceBase>>&
         _interface_map)
 {
-    InterfaceType interface_type;
-    if (!_physics_sdf->HasElement("connection_type") ||
+    InterfaceType interface_type = InterfaceType::Unknown;
+    if (!_physics_sdf->HasElement("connection_type") &&
         !_physics_sdf->HasElement("interface_type")) {
-        m_logger->warn(
-            "PhysicsInterfacePlugin::createDomainInterface: {} missing {} interface_type or uri.",
+        m_logger->error(
+            "PhysicsInterfacePlugin::createDomainInterface: {} missing {} interface_type. Removing physics calculation.",
             _vessel_name,
             DomainTypeToStringMap[_domain]);
+        return;
     }
     try {
         // Temp support of legacy type connection_type, changing to
