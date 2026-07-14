@@ -136,9 +136,9 @@ class VehicleState:
         # Quaternion frame change: q_new = q_R ⊗ q ⊗ q_R*
         q = (self.qr, self.qi, self.qj, self.qk)
         # new_q_tuple = quat_mult(quat_mult(Q_R, q), Q_R_CONJ)
-        # new_q_tuple = quat_mult(quat_mult(Q_R, q), Q_FLU_FRD)
+        new_q_tuple = quat_mult(quat_mult(Q_R, q), Q_FLU_FRD)
         
-        new_q_tuple = quat_mult(Q_R, q)
+        # new_q_tuple = quat_mult(Q_R, q)
         new_qr, new_qi, new_qj, new_qk = normalize_quat(new_q_tuple)
 
         new_convention = Convention.NED if self.convention == Convention.ENU else Convention.ENU
@@ -163,6 +163,28 @@ class VehicleState:
             f"  Euler (deg)   : phi={self.phi*180/math.pi:.4f}, theta={self.theta*180/math.pi:.4f}, psi={self.psi*180/math.pi:.4f}\n"
         )
 
+    def __eq__(self, other: object) -> bool:
+        """Compare two VehicleState instances for equality within a numerical tolerance."""
+        if not isinstance(other, VehicleState):
+            return NotImplemented
+        if self.convention != other.convention:
+            return False
+        tol = 1e-6
+        return all(abs(a - b) < tol for a, b in [
+            (self.x,  other.x),
+            (self.y,  other.y),
+            (self.z,  other.z),
+            (self.u,  other.u),
+            (self.v,  other.v),
+            (self.w,  other.w),
+            (self.p,  other.p),
+            (self.q,  other.q),
+            (self.r,  other.r),
+            (self.qr, other.qr),
+            (self.qi, other.qi),
+            (self.qj, other.qj),
+            (self.qk, other.qk),
+        ])
 
 def demo00():
     ned_state = VehicleState(
@@ -200,4 +222,4 @@ def demo01():
 
 if __name__ == "__main__":
     demo00()
-    demo01()
+    # demo01()
