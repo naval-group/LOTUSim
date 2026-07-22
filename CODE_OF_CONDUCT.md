@@ -11,4 +11,8 @@ Diversity is one of our huge strengths, but it can also lead to communication is
 - **Be careful in the words that you choose.** We are a community of professionals, and we conduct ourselves professionally. Be kind to others. Do not insult or put down other participants. Harassment and other exclusionary behavior aren't acceptable. Treat others like you want to be treated.
 - **When we disagree, try to understand why.** Disagreements, both social and technical, happen all the time and LOTUSim is no exception. It is important that we resolve disagreements and differing views constructively. Remember that we're different. The strength of LOTUSim comes from its varied community, people from a wide range of backgrounds. Different people have different perspectives on issues. Being unable to understand why someone holds a viewpoint doesn't mean that they're wrong. Don't forget that blaming each other doesn't get us anywhere. Instead, focus on helping to resolve issues and learning from mistakes.
 
+<<<<<<< HEAD
 Original text courtesy of the [Django](https://www.djangoproject.com/conduct/) project.
+=======
+Original text courtesy of the [Django](https://www.djangoproject.com/conduct/) project.
+>>>>>>> a712a4b (Create CODE_OF_CONDUCT.md)
