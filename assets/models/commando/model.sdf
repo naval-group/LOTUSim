@@ -1,8 +1,31 @@
 <?xml version="1.0"?>
 <sdf version="1.10">
     <model name="commando">
+        <!-- Allow dynamics -->
+        <static>false</static>
         <link name="base_link">
+
+            <!-- ===================== -->
+            <!-- Inertial (REQUIRED)   -->
+            <!-- ===================== -->
+            <inertial>
+                <pose>0 0 0 0 0 0</pose>
+                <mass>150</mass>
+                <inertia>
+                    <ixx>20</ixx>
+                    <iyy>20</iyy>
+                    <izz>30</izz>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyz>0</iyz>
+                </inertia>
+            </inertial>
+
+            <!-- ===================== -->
+            <!-- Visual                -->
+            <!-- ===================== -->
             <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
                 <geometry>
                     <mesh>
                         <uri>model://commando/meshes/commando.dae</uri>
@@ -10,8 +33,136 @@
                     </mesh>
                 </geometry>
             </visual>
+
+            <!-- ===================== -->
+            <!-- Collision (required) -->
+            <!-- ===================== -->
+            <collision name="collision">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>3 1 0.6</size>
+                    </box>
+                </geometry>
+            </collision>
+
+            <!-- ===================== -->
+            <!-- AIS Sensor (custom)   -->
+            <!-- ===================== -->
             <sensor name="ais_sensor" type="custom" gz:type="ais">
+                <always_on>true</always_on>
                 <update_rate>1</update_rate>
+                <noise_sigma>0.01</noise_sigma>
+                <noise_amplitude>0.01</noise_amplitude>
+            </sensor>
+
+            <!-- ===================== -->
+            <!-- IMU Sensor (STANDARD) -->
+            <!-- ===================== -->
+            <sensor name="imu_sensor" type="imu">
+                <always_on>true</always_on>
+                <update_rate>100</update_rate>
+                <pose>0 0 0 0 0 0</pose>
+
+                <imu>
+                    <angular_velocity>
+                        <x>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.0001</stddev>
+                            </noise>
+                        </x>
+                        <y>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.0001</stddev>
+                            </noise>
+                        </y>
+                        <z>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.0001</stddev>
+                            </noise>
+                        </z>
+                    </angular_velocity>
+
+                    <linear_acceleration>
+                        <x>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.01</stddev>
+                            </noise>
+                        </x>
+                        <y>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.01</stddev>
+                            </noise>
+                        </y>
+                        <z>
+                            <noise type="gaussian">
+                                <mean>0</mean>
+                                <stddev>0.01</stddev>
+                            </noise>
+                        </z>
+                    </linear_acceleration>
+                </imu>
+            </sensor>
+
+            <!-- ===================== -->
+            <!-- 2D LIDAR (STANDARD) -->
+            <!-- ===================== -->
+            <sensor name="lidar_sensor" type="gpu_lidar">
+                <pose>0 0 0 0 0 0</pose>
+                <always_on>true</always_on>
+                <update_rate>10.0</update_rate>
+                <visualize>true</visualize>
+                <ray>
+                    <scan>
+                        <horizontal>
+                            <samples>360</samples>
+                            <resolution>1</resolution>
+                            <min_angle>-3.14159</min_angle>
+                            <max_angle>3.14159</max_angle>
+                        </horizontal>
+                        <vertical>
+                            <samples>1</samples>
+                            <min_angle>0.2618</min_angle>
+                            <max_angle>0.2618</max_angle>
+                        </vertical>
+                    </scan>
+                    <range>
+                        <min>5.0</min>
+                        <max>100.0</max>
+                        <resolution>0.01</resolution>
+                    </range>
+                    <noise>
+                        <type>gaussian</type>
+                        <mean>0.0</mean>
+                        <stddev>0.01</stddev>
+                    </noise>
+                </ray>
+            </sensor>
+
+            <!-- ===================== -->
+            <!-- RADAR                 -->
+            <!-- ===================== -->
+            <sensor name="radar_sensor" type="custom" gz:type="radar">
+                <always_on>true</always_on>
+                <update_rate>1</update_rate>
+                <is_on>true</is_on>
+
+                <lidar_gz_topic>
+                    world/lotusim/model/commando_center/link/base_link/sensor/lidar_sensor/scan/points
+                </lidar_gz_topic>
+
+                <min_range>5.0</min_range>
+                <max_range>100.0</max_range>
+
+                <psf_ellipse_width>15000</psf_ellipse_width>
+                <psf_ellipse_height>5000</psf_ellipse_height>
+                <psf_range_factor>0.2</psf_range_factor>
+
                 <noise_sigma>0.01</noise_sigma>
                 <noise_amplitude>0.01</noise_amplitude>
             </sensor>

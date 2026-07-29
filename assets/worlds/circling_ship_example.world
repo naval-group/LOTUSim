@@ -28,7 +28,7 @@
 
         <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin"/>
 
-        <plugin filename="entity_manager_plugin" name="lotusim::gazebo::EntityManager"/>
+        <plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem"/>
 
         <plugin filename="lotusim_sensor_plugin" name="lotusim::sensor::LotusimSensorPlugin"/>
 
