@@ -13,38 +13,21 @@ namespace lotusim::gazebo {
 
 std::shared_ptr<ROS2Interface> ROS2Interface::m_instance = nullptr;
 
-std::shared_ptr<ROS2Interface> ROS2Interface::getInstance(
-    std::shared_ptr<const sdf::Element> _sdf)
+std::shared_ptr<ROS2Interface> ROS2Interface::createInterface()
 {
     if (m_instance == nullptr) {
-        m_instance = std::make_shared<ROS2Interface>(_sdf);
+        m_instance = std::make_shared<ROS2Interface>();
     }
     return m_instance;
 }
 
-ROS2Interface::ROS2Interface(std::shared_ptr<const sdf::Element> _sdf)
-    : PhysicsInterfaceBase("Ros2Interface")
+ROS2Interface::ROS2Interface() : PhysicsInterfaceBase("Ros2Interface")
 {
     if (!rclcpp::ok()) {
         rclcpp::init(0, nullptr);
     }
-    if (_sdf->HasElement("namespace")) {
-        m_namespace = _sdf->Get<std::string>("namespace");
-    } else {
-        m_namespace = "";
-    }
 
-    m_ros_node =
-        rclcpp::Node::make_shared("physics_aerial_linker", m_namespace);
-
-    m_pose_sub =
-        m_ros_node->create_subscription<lotusim_msgs::msg::VesselPositionArray>(
-            "poses",
-            1,
-            std::bind(
-                &ROS2Interface::aerialPosesCB,
-                this,
-                std::placeholders::_1));
+    m_ros_node = rclcpp::Node::make_shared("physics_aerial_linker");
     if (rclcpp::ok()) {
         m_executor =
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
@@ -54,17 +37,41 @@ ROS2Interface::ROS2Interface(std::shared_ptr<const sdf::Element> _sdf)
     }
 }
 
-bool ROS2Interface::createConnection(
+bool ROS2Interface::configureInterface(
     const gz::sim::Entity& _entity,
     const std::string& _name,
-    const sdf::ElementPtr)
+    const sdf::ElementPtr _sdf,
+    const DomainType& /*domain_type*/)
 {
     std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
+
+    std::string _namespace;
+    if (_sdf->HasElement("namespace")) {
+        _namespace = _sdf->Get<std::string>("namespace");
+    } else {
+        _namespace = "";
+    }
+
+    if (m_namespace.find(_namespace) == m_namespace.end()) {
+        auto pose_sub =
+            m_ros_node
+                ->create_subscription<lotusim_msgs::msg::VesselPositionArray>(
+                    _namespace + "/poses",
+                    1,
+                    std::bind(
+                        &ROS2Interface::aerialPosesCB,
+                        this,
+                        std::placeholders::_1));
+        m_pose_sub.push_back(pose_sub);
+    }
+    m_namespace[_namespace].insert(_entity);
     m_entity_name_map[_entity] = _name;
     return true;
 }
 
-bool ROS2Interface::removeConnection(const gz::sim::Entity& _entity)
+bool ROS2Interface::removeInterface(
+    const gz::sim::Entity& _entity,
+    const DomainType& domain_type)
 {
     std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
     m_entity_name_map.erase(_entity);
@@ -122,17 +129,19 @@ ROS2Interface::getNewState(
     return std::make_optional(std::make_tuple(vessel_info, DomainType::Aerial));
 }
 
-bool ROS2Interface::activateConnection(const gz::sim::Entity&)
+bool ROS2Interface::activateInterface(const gz::sim::Entity&, const DomainType&)
 {
     return true;
 }
 
-bool ROS2Interface::deactivateConnection(const gz::sim::Entity&)
+bool ROS2Interface::deactivateInterface(
+    const gz::sim::Entity&,
+    const DomainType&)
 {
     return true;
 }
 
-std::string ROS2Interface::getURI(const gz::sim::Entity&)
+std::string ROS2Interface::getURI(const gz::sim::Entity&, const DomainType&)
 {
     return "ros2";
 }

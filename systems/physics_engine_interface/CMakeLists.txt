@@ -50,7 +50,8 @@ gz_find_package(gz-plugin2 REQUIRED COMPONENTS loader register)
 # Library
 #============================================================================
 add_library(physics_interface_plugin SHARED
-src/physics_interface_plugin.cpp
+  src/physics_interface_base.cpp
+  src/physics_interface_plugin.cpp
   src/xdyn_websocket.cpp
   src/ros2_interface.cpp
 )

@@ -47,6 +47,9 @@ constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
  * It allows reuse of the WebSocket client to send requests and receive
  * responses.
  *
+ * As this is a Singleton class, it has to be aware of different domain the
+ * model is in too
+ *
  * Upon sending a request to XDyn and receiving a message, a frame conversion
  * is performed. XDyn uses the NED (North-East-Down) coordinate convention and
  * the right-hand axis convention.
@@ -77,7 +80,7 @@ constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
  * <lotusim_param>
  *    <physics_engine_interface>
  *        <surface>
- *            <connection_type>XDynWebSocket</connection_type>
+ *            <interface_type>XDynWebSocket</interface_type>
  *            <uri>ws://127.0.0.1:12345</uri>
  *            <thrusters>
  *                <thruster1>PSPropRudd</thruster1>
@@ -90,7 +93,7 @@ constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
  * ```
  *
  * ### Example Command Map
- * The `m_vessels_cmd_map_ptr` string is formatted as:
+ * The `m_models_cmd_map_ptr` string is formatted as:
  * ```json
  * {
  *   "PSPropRudd(P/D)": 0.79,
@@ -115,9 +118,13 @@ public:
 
     XdynWebsocket(XdynWebsocket& other) = delete;
 
-    static std::shared_ptr<XdynWebsocket> getInstance(
-        const gz::sim::Entity& _entity,
-        const std::string& _name);
+    static std::shared_ptr<XdynWebsocket> createInterface();
+
+    bool configureInterface(
+        const gz::sim::Entity& entity,
+        const std::string& model_name,
+        const sdf::ElementPtr sdf,
+        const DomainType& domain_type = DomainType::Unknown) override final;
 
     /**
      * @brief Get the New State object using given vessel state
@@ -132,27 +139,21 @@ public:
         const VesselInformation& previous_state,
         float time_diff) override final;
 
-    /**
-     * @brief Create a Connection object
-     *
-     * @param _entity
-     * @param uri
-     * @param thrusters_name
-     * @return true
-     * @return false
-     */
-    bool createConnection(
+    bool removeInterface(
         const gz::sim::Entity& _entity,
-        const std::string& _name,
-        const sdf::ElementPtr _sdf) override final;
+        const DomainType& domain_type = DomainType::Unknown) override final;
 
-    bool removeConnection(const gz::sim::Entity& _entity) override final;
+    bool activateInterface(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override final;
 
-    bool activateConnection(const gz::sim::Entity& _entity) override final;
+    bool deactivateInterface(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override final;
 
-    bool deactivateConnection(const gz::sim::Entity& _entity) override final;
-
-    std::string getURI(const gz::sim::Entity& _entity) override final;
+    std::string getURI(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override final;
 
 protected:
     static std::shared_ptr<XdynWebsocket> m_instance;
@@ -184,6 +185,10 @@ private:
      */
     Weblib::shared_ptr<Weblib::thread> m_thread;
 
+    /**
+     * @brief Mutex to change any of the class variables
+     *
+     */
     static std::mutex m_variable_mutex;
 
     /**
@@ -199,13 +204,16 @@ private:
     static std::unordered_map<std::string, gz::sim::Entity> m_entity_mapping;
 
     /**
-     * @brief Mapping of entity to URI of the physics engine
+     * @brief Mapping of entity to URI of the physics engine,
      *
      */
-    static std::unordered_map<gz::sim::Entity, std::string> m_uri;
+    static std::unordered_map<
+        gz::sim::Entity,
+        std::unordered_map<DomainType, std::string>>
+        m_uri;
 
     /**
-     * @brief Connection mapping
+     * @brief Connection mapping for existing connection for the entity
      *
      */
     static std::unordered_map<gz::sim::Entity, Client::connection_ptr>
@@ -223,6 +231,12 @@ private:
      *
      */
     static std::unordered_map<gz::sim::Entity, std::string> m_status;
+
+    /**
+     * @brief Current domain type mapping
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, DomainType> m_current_domain;
 
     /**
      * @brief Msg saving

@@ -38,8 +38,6 @@
 #include "lotusim_msgs/msg/vessel_cmd.hpp"
 #include "lotusim_msgs/msg/vessel_cmd_array.hpp"
 #include "physics_engine_interface/physics_interface_base.hpp"
-#include "physics_engine_interface/ros2_interface.hpp"
-#include "physics_engine_interface/xdyn_websocket.hpp"
 
 namespace lotusim::gazebo {
 
@@ -77,18 +75,18 @@ namespace lotusim::gazebo {
  *  <lotus_param>
  *   <physics_engine_interface>
  *    <aerial>
- *      <connection_type>XDynWebSocket</connection_type>
+ *      <interface_type>XDynWebSocket</interface_type>
  *      <uri>127.0.0.1:1234</uri>
  *      <thrusters>
  *        <thruster1>propeller1</thruster1>
  *      </thrusters>
  *    </aerial>
  *    <surface>
- *      <connection_type>XDynGRPC</connection_type>
+ *      <interface_type>XDynGRPC</interface_type>
  *      <uri>127.0.0.1:1235</uri>
  *    </surface>
  *    <underwater>
- *      <connection_type>Manual</connection_type>
+ *      <interface_type>Manual</interface_type>
  *      <uri>127.0.0.1:1236</uri>
  *    </underwater>
  *    <init_state>Surface</init_state>
@@ -124,7 +122,7 @@ private:
      * @param domain
      * @param interface_map
      */
-    void createDomainConnection(
+    void createDomainInterface(
         const gz::sim::Entity& entity,
         const std::string& vessel_name,
         sdf::ElementPtr physics_sdf,
@@ -139,14 +137,14 @@ private:
      *
      * @param entity Entity ID
      * @param name Vessel name
-     * @param protocol_type Connection protocol type
+     * @param protocol_type Interface protocol type
      * @param sdf SDF configuration element
      * @return std::shared_ptr<PhysicsInterfaceBase>
      */
-    std::shared_ptr<PhysicsInterfaceBase> createConnection(
+    std::shared_ptr<PhysicsInterfaceBase> createInterface(
         const gz::sim::Entity& entity,
         const std::string& name,
-        const ConnectionType& protocol_type,
+        const InterfaceType& protocol_type,
         const sdf::ElementPtr sdf);
 
     /**
@@ -169,7 +167,7 @@ private:
      * @return true if transition successful
      * @return false otherwise
      */
-    bool vesselTransition(gz::sim::Entity _vessel, DomainType _new_mode);
+    bool vesselDomainTransition(gz::sim::Entity _vessel, DomainType _new_mode);
 
     /**
      * @brief Handle vessel creation
@@ -266,7 +264,7 @@ private:
      *
      */
     std::shared_ptr<std::unordered_map<gz::sim::Entity, std::string>>
-        m_vessels_cmd_map_ptr;
+        m_models_cmd_map_ptr;
 
     /**
      * @brief Current vessel interface connected

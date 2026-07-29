@@ -30,7 +30,7 @@ namespace lotusim::gazebo {
  */
 class ROS2Interface : public PhysicsInterfaceBase {
 public:
-    ROS2Interface(std::shared_ptr<const sdf::Element> _sdf);
+    ROS2Interface();
 
     /**
      * @brief Static function to get static instance
@@ -38,26 +38,34 @@ public:
      * @param _sdf SDF of the plugin
      * @return std::shared_ptr<ROS2Interface>
      */
-    static std::shared_ptr<ROS2Interface> getInstance(
-        std::shared_ptr<const sdf::Element> _sdf);
+    static std::shared_ptr<ROS2Interface> createInterface();
 
     std::optional<std::tuple<VesselInformation, DomainType>> getNewState(
         const gz::sim::Entity& _entity,
         const VesselInformation& previous_state,
         float time_dif) override;
 
-    bool createConnection(
+    bool configureInterface(
         const gz::sim::Entity& _entity,
         const std::string& _name,
-        const sdf::ElementPtr _sdf) override;
+        const sdf::ElementPtr _sdf,
+        const DomainType& domain_type = DomainType::Unknown) override;
 
-    bool removeConnection(const gz::sim::Entity& _entity) override;
+    bool removeInterface(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override;
 
-    bool activateConnection(const gz::sim::Entity& _entity) override;
+    bool activateInterface(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override;
 
-    bool deactivateConnection(const gz::sim::Entity& _entity) override;
+    bool deactivateInterface(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override;
 
-    std::string getURI(const gz::sim::Entity& _entity) override;
+    std::string getURI(
+        const gz::sim::Entity& _entity,
+        const DomainType& domain_type = DomainType::Unknown) override;
 
 private:
     void aerialPosesCB(
@@ -66,15 +74,25 @@ private:
 private:
     static std::shared_ptr<ROS2Interface> m_instance;
 
-    std::string m_namespace;
+    /**
+     * @brief Mapping namespace of ROS topic to entity
+     *
+     */
+    std::unordered_map<std::string, std::unordered_set<gz::sim::Entity>>
+        m_namespace;
+
     /**
      * @brief ROS node
      *
      */
     rclcpp::Node::SharedPtr m_ros_node;
+
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
+
     std::shared_ptr<std::thread> m_ros_node_thread;
-    rclcpp::Subscription<lotusim_msgs::msg::VesselPositionArray>::SharedPtr
+
+    std::vector<
+        rclcpp::Subscription<lotusim_msgs::msg::VesselPositionArray>::SharedPtr>
         m_pose_sub;
 
     mutable std::shared_mutex m_variable_mutex;
