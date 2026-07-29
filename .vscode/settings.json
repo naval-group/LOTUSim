@@ -95,5 +95,8 @@
         "editor.defaultFormatter": "ms-vscode.cpptools",
         "editor.formatOnSave": true
     },
-    "cmake.sourceDirectory": "/home/malcom/lotusim_ws/src/lotusim/systems/sensors/lotusim_sensor_base"
+    "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+    },
 }
