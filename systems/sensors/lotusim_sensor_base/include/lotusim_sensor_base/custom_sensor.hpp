@@ -80,6 +80,16 @@ public:
 
     void Orientation(const gz::math::Quaterniond& _quad);
 
+    // getters for power manager to turn sensor off
+    const std::string& vesselName() const
+    {
+        return m_vessel_name;
+    }
+    const std::string& sensorName() const
+    {
+        return m_sensor_name;
+    }
+
 protected:
     virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) = 0;
 

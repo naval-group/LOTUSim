@@ -58,12 +58,12 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
                 std::placeholders::_2));
 
     GetSDFParam<double>(_sdfptr, "noise_sigma", m_noise_sigma, 0.0);
-    if (m_noise_sigma >= 0.0) {
+    if (m_noise_sigma < 0.0) {
         m_logger->warn("Signal noise sigma must be greater or equal to zero");
     }
 
     GetSDFParam<double>(_sdfptr, "noise_amplitude", m_noise_amp, 0.0);
-    if (m_noise_amp >= 0.0) {
+    if (m_noise_amp < 0.0) {
         m_logger->warn(
             "Signal noise amplitude must be greater or equal to zero");
     }
