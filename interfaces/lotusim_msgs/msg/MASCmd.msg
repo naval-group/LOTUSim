@@ -11,12 +11,7 @@ string sdf_string
 # Lotusim param will be retrieved from sdf_string
 string model_name
 
-# Optional SDF file name inside the model folder.
-# If not specified, the default file `model.sdf` will be used.
-# Only applicable when the model exists in `assets/models`.
-string sdf_file
-
-# Name of vessel in gazebo
+# Name of vessel in gazebo. Names must not start with number of special character
 string vessel_name
 
 # ID of vessel in gazebo. 
@@ -25,5 +20,7 @@ uint16 entity
 
 # vessel position if create or modify cmd
 geometry_msgs/Pose vessel_position
+
+# Having geographic coordinate system or heading replace Pose
 geographic_msgs/GeoPoint geo_point
 float32 heading
