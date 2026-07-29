@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
-project(aerial_demo_entity_manager VERSION 0.0.1 LANGUAGES CXX)
+project(aerial_demo_mas VERSION 0.0.1 LANGUAGES CXX)
 
 #============================================================================
 # Configure the project
@@ -35,22 +35,22 @@ endif()
 # Search for dependencies
 #============================================================================
 find_package(ament_cmake REQUIRED)
-find_package(entity_manager REQUIRED)
+find_package(lotusim_mas REQUIRED)
 
 #============================================================================
 # Create library
 #============================================================================
-add_library(aerial_demo_entity_manager SHARED 
-  src/aerial_entity_manager.cpp
+add_library(aerial_demo_mas SHARED 
+  src/aerial_mas.cpp
 )
 
-target_include_directories(aerial_demo_entity_manager PUBLIC
+target_include_directories(aerial_demo_mas PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-ament_target_dependencies(aerial_demo_entity_manager
-  entity_manager
+ament_target_dependencies(aerial_demo_mas
+  lotusim_mas
 )
 
 
@@ -66,8 +66,8 @@ install(
 )
 
 install(
-  TARGETS aerial_demo_entity_manager
-  EXPORT export_aerial_demo_entity_manager
+  TARGETS aerial_demo_mas
+  EXPORT export_aerial_demo_mas
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
@@ -77,7 +77,7 @@ install(
 #============================================================================
 # Export
 #============================================================================
-ament_export_targets(export_aerial_demo_entity_manager HAS_LIBRARY_TARGET)
-ament_export_dependencies(entity_manager)
+ament_export_targets(export_aerial_demo_mas HAS_LIBRARY_TARGET)
+ament_export_dependencies(lotusim_mas)
 
 ament_package()
