@@ -1,0 +1,81 @@
+name: Demo
+description: |
+  A demonstration scenario in realistic environmental conditions.
+version: "0.1"
+author: NGFE
+tags:
+  - demo
+  - multi-domain
+
+time_of_day: "14:00" # ISO-8601 time format (HH:MM)
+date: "2024-01-15" # YYYY-MM-DD
+reference_position: # WGS84
+  latitude: 48.8566
+  longitude: 2.3522
+  altitude: 0.0
+
+environment:
+  atmosphere:
+    wind_speed: 5.0 # m/s
+    wind_direction: 45.0 # degrees, true north = 0°, clockwise
+    temperature: 15.0 # °C
+    pressure: 101325.0 # Pa (standard atmospheric)
+    humidity: 65.0 # percentage
+
+  ocean:
+    sea_state: 2 # Douglas Sea Scale (0-9), to take sea state when wave params are not provided
+    
+    wave_height: 0.5 # meters (significant wave height)
+    wave_direction: 90.0 # degrees, true north reference
+    wave_period: 5.0 # seconds
+    wave_spectrum: JONSWAP # PM, JONSWAP - clutter modeling
+
+    current_speed: 0.3 # m/s (knots * 0.514444)
+    current_direction: 180.0 # degrees, true north reference
+    
+    water_temperature: 12.0 # °C of surface    
+    salinity: 35.0 # PSU (Practical Salinity Units)
+
+  visibility:
+    horizontal: 10000.0 # meters
+    vertical: 1000.0 # meters (cloud ceiling)
+      
+  weather: clear # clear, cloudy, overcast,  light_rain, heavy_rain, storm, snow, fog, 
+
+
+agents:
+  lrauv1:
+    model: lrauv
+    position:
+      latitude: 48.8566
+      longitude: 2.3522
+      altitude: -30.0
+    heading: 30 # Relative to East
+    
+    waypoint_interface:
+      enabled: true
+      loop: true
+      mode: circle
+      circle:
+        radius: 9
+      
+    # physics_interface:
+    #   init_domain: underwater
+    #   domains:
+    #     - domain: surface
+    #       interface_type: XDynWebsocket
+    #       interface_params: 
+    #         uri: ws://127.0.0.1:12345
+    #         thrusters:
+    #           - name: propeller
+        
+    #     - domain: underwater
+    #       interface_type: XDynWebsocket
+    #       interface_params: 
+    #         uri: ws://127.0.0.1:12346
+    #         thrusters:
+    #           - name: propeller 
+    
+    # render_interface:
+    #   enabled: true
+    #   renderer_type: lrauv
