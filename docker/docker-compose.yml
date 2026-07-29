@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  backend:
+    image: lotusim:latest
+    working_dir: /home/lotusim_ws/src/LOTUSim-UI-backend
+    command:
+      - /bin/bash
+      - -c
+      - npx ts-node src/main.ts
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  frontend:
+    image: lotusim-frontend:latest
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  lotusim:
+    image: lotusim:latest
+    command: ["lotusim", "run"]
+    restart: unless-stopped
