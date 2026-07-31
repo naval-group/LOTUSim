@@ -2,7 +2,7 @@
 
 ## Using LOTUSim with python
 
-0. Make the example script executable
+**0. Make the example script executable**
 
 In a first terminal, run:
    ```shell
@@ -16,28 +16,28 @@ This only needs to be done **once**, not every time you want to run the script.
 
 ### For spawning_ships example
 
-1. Run LOTUSim
+**1. Run LOTUSim**
 
 In a first terminal, run:
    ```shell
    lotusim run
    ```
 
-2. Source environment
+**2. Source environment**
 
 In a second terminal, type the following:
    ```shell
    source ${LOTUSIM_WS}/install/setup.bash
    ```
 
-3. Run the example script
+**3. Run the example script**
 
 In the second terminal, type the following command:
    ```shell
    python3 spawn_ships.py
    ```
 
-4. Optional: try other examples
+**4. Optional: try other examples**
 
 Inside 'spawn_ships.py', you can uncomment other spawn commands:
    ```shell
@@ -52,28 +52,28 @@ Then re-run the script to experiment with different models.
 
 ### For controlling_ships example
 
-1. Run XDYN
+**1. Run XDYN**
 
 In a first terminal, run:
    ```shell
    xdyn-for-cs $HOME/lotusim_ws/src/LOTUSim/assets/models/lrauv/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
    ```
 
-2. Run LOTUSim
+**2. Run LOTUSim**
 
 In a second terminal, run:
    ```shell
    lotusim run
    ```
 
-3. Run LOTUSim UI
+**3. Run LOTUSim UI**
 
 In a third terminal, run:
    ```shell
    lotusim ui
    ```
 
-4. Spawn the ship & send commands
+**4. Spawn the ship & send commands**
 
 In a fourth terminal, run:
    ```shell
@@ -87,11 +87,13 @@ In a fourth terminal, run:
 When building your own examples, keep the following in mind:
 
 **Vessel naming convention**
+
 When entities are spawned, their names are automatically assigned in the format `model_name_0`, `model_name_1`, ...
 The index increments for each new instance.
 👉 Make sure you use the correct vessel name when sending commands, otherwise they will not be applied.
 
 **Underwater vs surface behavior (important for XDyn connections)**
+
 XDyn determines whether a vessel is underwater or surface based on its z position:
     z <= -10 → underwater
     z >= 10 → aerial
