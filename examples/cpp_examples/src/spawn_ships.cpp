@@ -96,6 +96,13 @@ public:
             setupRosForModel(model_name);
             it = waypoint_clients_.find(model_name);
         }
+        if (it == waypoint_clients_.end()) {
+            RCLCPP_ERROR(
+                this->get_logger(),
+                "Cannot send waypoint request: no service client for %s",
+                model_name.c_str());
+            return;
+        }
 
         auto request = std::make_shared<SetWaypoints::Request>();
         request->header.stamp = this->get_clock()->now();
@@ -314,9 +321,9 @@ public:
                     <waypoint_follower>
                         <follower>
                             <loop>true</loop>
-                            <linear_accel_limit>0.5</linear_accel_limit>
-                            <angular_accel_limit>0.005</angular_accel_limit>
-                            <angular_velocities_limits>0.01</angular_velocities_limits>
+                            <linear_accel_limit>0.8</linear_accel_limit>
+                            <angular_accel_limit>0.5</angular_accel_limit>
+                            <angular_velocities_limits>0.1</angular_velocities_limits>
                             <range_tolerance>2</range_tolerance>
                             <circle>
                                 <radius>100</radius>
@@ -435,6 +442,13 @@ int main(int argc, char** argv)
 
     // create ships
     node->spawn_multiple_circling_ship(2);
+    rclcpp::executors::SingleThreadedExecutor spawn_wait_exec;
+    spawn_wait_exec.add_node(node);
+    auto start = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start < 3s) {
+        spawn_wait_exec.spin_some(100ms);
+    }
+    spawn_wait_exec.remove_node(node);
     node->send_random_waypoint_request("dtmb_0");
 
     rclcpp::executors::SingleThreadedExecutor exec;

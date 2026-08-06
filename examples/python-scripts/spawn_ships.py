@@ -194,9 +194,9 @@ class ExampleNode(Node):
                 <waypoint_follower>
                     <follower>
                         <loop>true</loop>
-                        <linear_accel_limit>0.5</linear_accel_limit>
-                        <angular_accel_limit>0.005</angular_accel_limit>
-                        <angular_velocities_limits>0.01</angular_velocities_limits>
+                        <linear_accel_limit>0.8</linear_accel_limit>
+                        <angular_accel_limit>0.5</angular_accel_limit>
+                        <angular_velocities_limits>0.1</angular_velocities_limits>
                         <range_tolerance>2</range_tolerance>
                         <circle>
                             <radius>100</radius>
@@ -254,12 +254,11 @@ class ExampleNode(Node):
             print(f'Failed to connect to waypoint service for {model_name}')
         
     def send_random_waypoint_request(self, model_name:str):
-        if not model_name in self.waypoint_client:
-            try:
-                self.setupRosForModel(model_name)
-            except ValueError as e:
-                print("Sending waypoint failed. Try again.")
-                return 
+        if model_name not in self.waypoint_client:
+            self.setupRosForModel(model_name)
+        if model_name not in self.waypoint_client:
+            print(f"Cannot send waypoint request: no service client for {model_name}")
+            return
         request = SetWaypoints.Request()
 
         latitude  = SPAWN_LATITUDE  + OFFSET * self.vessel_id * random.choice([-1, 1])
@@ -287,6 +286,11 @@ def main(args=None):
     future = node.spawn_multiple_circling_ship(2)
     
     rclpy.spin_until_future_complete(node,future)
+    goal_handle = future.result()
+    if goal_handle and goal_handle.accepted:
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(node, result_future)
+        
     node.get_logger().info("Spawn request sent successfully")
 
     # Send a random waypoint to the ship
