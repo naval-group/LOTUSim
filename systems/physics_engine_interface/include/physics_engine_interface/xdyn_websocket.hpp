@@ -121,6 +121,12 @@ public:
 
     static std::shared_ptr<XdynWebsocket> createInterface();
 
+    static void resetInstance()
+    {
+        std::scoped_lock lock(m_instance_mutex);
+        m_instance.reset();
+    }
+
     bool configureInterface(
         const gz::sim::Entity& entity,
         const std::string& model_name,

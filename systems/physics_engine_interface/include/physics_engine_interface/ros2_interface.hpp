@@ -31,6 +31,7 @@ namespace lotusim::gazebo {
 class ROS2Interface : public PhysicsInterfaceBase {
 public:
     ROS2Interface();
+    ~ROS2Interface();
 
     /**
      * @brief Static function to get static instance
@@ -39,6 +40,8 @@ public:
      * @return std::shared_ptr<ROS2Interface>
      */
     static std::shared_ptr<ROS2Interface> createInterface();
+    
+    static void resetInstance() { m_instance.reset(); }
 
     std::optional<std::tuple<VesselInformation, DomainType>> getNewState(
         const gz::sim::Entity& _entity,

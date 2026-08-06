@@ -20,8 +20,13 @@ EntityManager::EntityManager()
 
 EntityManager::~EntityManager()
 {
-    rclcpp::shutdown();
-    m_ros_node_thread->join();
+    if (m_executor) {
+        m_executor->cancel();
+    }
+    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
+        m_ros_node_thread->join();
+    }
+    m_executor.reset();
     m_logger->info(
         "EntityManager::~EntityManager: EntityManager successfully shutdown.");
 }

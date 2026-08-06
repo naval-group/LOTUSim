@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "physics_engine_interface/physics_interface_plugin.hpp"
+#include "physics_engine_interface/ros2_interface.hpp"
+#include "physics_engine_interface/xdyn_websocket.hpp"
 
 namespace lotusim::gazebo {
 using namespace std::placeholders;
@@ -24,6 +26,8 @@ PhysicsInterfacePlugin::PhysicsInterfacePlugin()
 
 PhysicsInterfacePlugin::~PhysicsInterfacePlugin()
 {
+    ROS2Interface::resetInstance();
+    XdynWebsocket::resetInstance();
     m_logger->info(
         "PhysicsInterfacePlugin::~PhysicsInterfacePlugin: PhysicsInterfacePlugin successfully shutdown.");
 }

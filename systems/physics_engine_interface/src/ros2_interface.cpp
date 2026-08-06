@@ -37,6 +37,17 @@ ROS2Interface::ROS2Interface() : PhysicsInterfaceBase("Ros2Interface")
     }
 }
 
+ROS2Interface::~ROS2Interface()
+{
+    if (m_executor) {
+        m_executor->cancel();
+    }
+    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
+        m_ros_node_thread->join();
+    }
+    m_executor.reset();
+}
+
 bool ROS2Interface::configureInterface(
     const gz::sim::Entity& _entity,
     const std::string& _name,
