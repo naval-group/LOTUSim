@@ -133,10 +133,42 @@ Minimal water-track-only DVL (no seafloor needed):
 </sensor>
 ```
 
-Subscribe from ROS 2:
+1. Run XDYN
+
+In a first terminal, run:
+   ```shell
+   xdyn-for-cs $HOME/lotusim_ws/src/LOTUSim/assets/models/lrauv/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
+   ```
+
+2. Run LOTUSim
+
+In a second terminal, run:
+   ```shell
+   lotusim run
+   ```
+
+3. Spawn the ship & send commands
+
+In a third terminal, run:
+   ```shell
+   python3 controlling_ships.py 
+   ```
+
+4. Start the viewer
+
+In a fourth terminal, run:
+
+   ```shell
+python3 systems/sensors/doppler_vel_log/scripts/seafloor_viewer.py \
+    --seafloor $HOME/lotusim_ws/src/LOTUSim/assets/models/seabed/seabed.png \
+    --size-x 1000 --size-y 1000 \
+    --vessels lrauv_0
+   ```
+
+5. Subscribe from ROS 2:
 
 ```bash
-ros2 topic echo /dtmb_0/dvl_sensor/dvl
+ros2 topic echo /lrauv_0/dvl_sensor/dvl
 ```
 
 ## Known limitations
