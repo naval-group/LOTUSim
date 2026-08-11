@@ -326,7 +326,7 @@ bool LotusimSensorPlugin::EachNew(
                 _entity,
                 model_name,
                 sensor_name);
-        } else if (type == "doppler_vel_log") {
+        } else if (type == "dvl") {
             m_logger->info(
                 "LotusimSensorPlugin::DopplerVelocityLog: Creating sensor [{}/{}]",
                 model_name,

@@ -200,6 +200,32 @@
                 <always_on>1</always_on>
                 <update_rate>100</update_rate>
             </sensor>
+
+            <!-- ===================== -->
+            <!-- DVL                 -->
+            <!-- ===================== -->
+            <sensor name="dvl_sensor" type="custom" gz:type="dvl">
+
+                <always_on>true</always_on>
+                <update_rate>5</update_rate>
+                <beam_angle_deg>30</beam_angle_deg>
+
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.01</stddev>
+                </noise>
+
+                <lotusim_seafloor>
+                    <png_path>model://seabed/seabed.png</png_path>
+                    <size_x>1000</size_x>
+                    <size_y>1000</size_y>
+                    <min_depth>-50</min_depth>
+                    <max_depth>0</max_depth>
+                </lotusim_seafloor>
+
+                <max_altitude>1000</max_altitude>
+            </sensor>
         </link>
         <lotusim_power>
             <name>main_battery</name>

@@ -15,11 +15,9 @@
 #include <vector>
  
 #include <gz/common/Image.hh>
-#include <gz/math/Pose3.hh>
 #include <gz/math/Vector3.hh>
 #include <gz/sensors/Noise.hh>
 #include <gz/sim/Link.hh>
-#include <gz/sim/Util.hh>
 #include <gz/sim/components/Link.hh>
 #include <gz/sim/components/Name.hh>
 
@@ -34,7 +32,7 @@ namespace lotusim::sensor {
  *
  * Reports vessel velocity relative to the world frame, projected onto 4 beams. 
  * Can also samples a grayscale heightmap ("lotusim_seafloor") to estimate altitude 
- * and per-beam range for bottom-lock state.
+ * and per-beam range for bottom-lock state. Currently, example is default to max 350m elevation from seafloor.
  *
  * LIMITATIONS (intentional, for now):
  *  - No water current simulation: "velocity relative to world" is used as a
@@ -66,7 +64,7 @@ public:
 private:
     /**
     * @brief Load the grayscale seafloor from the <lotusim_seafloor>
-    * SDF if present.
+    * SDF if present
     *
     * @param _elem
     * @return true if a valid seafloor was configured
@@ -78,7 +76,7 @@ private:
      * on the heightmap
      *
      * @return seafloor z in world frame, or nullopt if (x, y) no
-     * seafloor is configured.
+     * seafloor is configured
      */
     std::optional<double> SeafloorElevation(double world_x, double world_y) const;
 
@@ -88,7 +86,7 @@ private:
     };
     std::vector<Beam> m_beams;
     double m_beam_angle_rad{0.0};
-    double m_max_altitude{50.0};
+    double m_max_altitude{350.0};
     gz::sensors::NoisePtr m_noise;
  
     // ── Seafloor heightmap ──────────────────────────────────────────────────
@@ -100,6 +98,9 @@ private:
     double m_origin_y{0.0};
     double m_min_depth{0.0};
     double m_max_depth{0.0};
+
+    bool m_seafloor_origin_explicit{false};
+    bool m_seafloor_centered{false};
 
     gz::sim::Entity m_base_link_entity{gz::sim::kNullEntity};
 

@@ -50,10 +50,11 @@ bool DopplerVelocityLog::CustomSensorLoad(const sdf::Sensor& _sdf)
     GetSDFParam<double>(elem, "beam_angle_deg", beam_angle_deg, 30);
     m_beam_angle_rad = beam_angle_deg * M_PI / 180.0;
     
-    GetSDFParam<double>(elem, "max_altitude", m_max_altitude, 50.0);
+    GetSDFParam<double>(elem, "max_altitude", m_max_altitude, 350.0);
     
     // Janus config: 4 beams, 90 deg apart in azimuth
     // m_beam_angle_rad off the vertical (-Z in body frame)
+    // spherical to cartesian
     m_beams.clear();
     for (int i = 0; i < 4; ++i) {
         const double az = i * M_PI / 2.0;
@@ -123,10 +124,22 @@ bool DopplerVelocityLog::LoadSeafloor(sdf::ElementPtr _elem)
 
     GetSDFParam<double>(seafloor_elem, "size_x", m_size_x, 1000.0);
     GetSDFParam<double>(seafloor_elem, "size_y", m_size_y, 1000.0);
-    GetSDFParam<double>(seafloor_elem, "origin_x", m_origin_x, 0.0);
-    GetSDFParam<double>(seafloor_elem, "origin_y", m_origin_y, 0.0);
     GetSDFParam<double>(seafloor_elem, "min_depth", m_min_depth, -50.0);
     GetSDFParam<double>(seafloor_elem, "max_depth", m_max_depth, 0.0);
+
+    if (seafloor_elem->HasElement("origin_x") && seafloor_elem->HasElement("origin_y")) {
+        m_seafloor_origin_explicit = true;
+        m_origin_x = seafloor_elem->Get<double>("origin_x");
+        m_origin_y = seafloor_elem->Get<double>("origin_y");
+        m_logger->info(
+        "DopplerVelocityLog::LoadSeafloor: using explicit origin ({}, {}).",
+        m_origin_x, m_origin_y);
+    } else {
+        m_seafloor_origin_explicit = false;
+        m_logger->info(
+        "DopplerVelocityLog::LoadSeafloor: no explicit origin -> will "
+        "auto-center on vessel spawn position at first update.");
+    }
 
     m_logger->info(
         "DopplerVelocityLog::LoadSeafloor: loaded [{}] ({}x{} px), "
@@ -223,6 +236,16 @@ bool DopplerVelocityLog::UpdateSensor(
     // used directly as a stand-in for velocity-relative-to-water
     const gz::math::Vector3d body_vel =
         world_pose.Rot().RotateVectorReverse(*world_lin_vel);
+
+    if (m_has_seafloor && !m_seafloor_origin_explicit && !m_seafloor_centered) {
+        m_origin_x = world_pose.Pos().X() - m_size_x / 2.0;
+        m_origin_y = world_pose.Pos().Y() - m_size_y / 2.0;
+        m_seafloor_centered = true;
+        m_logger->info(
+            "DopplerVelocityLog [{}]: auto-centered seafloor heightmap on "
+            "spawn position, origin=({}, {}).",
+            m_sensor_name, m_origin_x, m_origin_y);
+    }
  
     // ── Altitude / bottom lock (if seafloor is configured) ──
     bool bottom_lock = false;
