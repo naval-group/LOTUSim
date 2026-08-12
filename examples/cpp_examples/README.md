@@ -2,25 +2,21 @@
 
 ## Using LOTUSim with c++
 
+Every terminal below runs inside `nix develop`, which puts the workspace, the
+LOTUSIM_* paths and `xdyn-for-cs` in scope.
+
 ### For spawn_ships example
 
 1. Run LOTUSim
 
 In a first terminal, run:
    ```shell
-   lotusim run
+   mise run sim
    ```
 
-2. Source environment
+2. Run the example script
 
-In a second terminal, type the following:
-   ```shell
-   source ${LOTUSIM_WS}/install/setup.bash
-   ```
-
-3. Run the example script
-
-In the second terminal, type the following command:
+In a second terminal, type the following command:
    ```shell
    ros2 run lotusim_cpp_examples spawn_ships
    ```
@@ -33,21 +29,21 @@ In the second terminal, type the following command:
 
 In a first terminal, run:
    ```shell
-   xdyn-for-cs $HOME/lotusim_ws/src/LOTUSim/assets/models/lrauv/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
+   xdyn-for-cs $LOTUSIM_MODELS_PATH/lrauv/lrauv.yml --verbose --address 127.0.0.1 --dt 0.2 --port 12346
    ```
 
 2. Run LOTUSim
 
 In a second terminal, run:
    ```shell
-   lotusim run
+   mise run sim
    ```
 
 3. Run LOTUSim UI (optional)
 
 In a third terminal, run:
    ```shell
-   lotusim ui
+   nix run .#ui        # http://localhost:8080
    ```
 
 4. Spawn the ship & send commands
