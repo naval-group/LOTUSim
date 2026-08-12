@@ -81,8 +81,8 @@ class RadarTestSpawner(Node):
 
             msg = MASCmdMsg()
             msg.cmd_type = MASCmdMsg.CREATE_CMD
-            msg.model_name = "fremm"
-            msg.vessel_name = f"fremm_{i}"
+            msg.model_name = "lrauv"
+            msg.vessel_name = f"lrauv_{i}"
 
             geo = GeoPoint()
             geo.latitude = SPAWN_LATITUDE + lat_offset
@@ -113,8 +113,7 @@ def main(args=None):
     rclpy.spin_until_future_complete(node, future_dtmb)
     node.get_logger().info("DTMB ship spawned")
 
-    # Spawn 10 LRAUVs around it
-    future_fremm= node.spawn_fremm_circle(n_ships=5, radius_m=60)
+    future_fremm= node.spawn_fremm_circle(n_ships=5, radius_m=50)
     rclpy.spin_until_future_complete(node, future_fremm)
     node.get_logger().info("5 fremm ships spawned around dtmb")
 
