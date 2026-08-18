@@ -33,7 +33,9 @@
 
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
 
-    <plugin filename="aerial_demo_mas" name="lotusim::gazebo::AerialMAS" />
+    <plugin filename="aerial_demo_mas" name="lotusim::gazebo::AerialMAS">
+            <aerial_namespace>aerialWorld</aerial_namespace>
+    </plugin>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 
     <!-- Wind Plugin -->
