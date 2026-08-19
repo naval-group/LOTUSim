@@ -9,6 +9,7 @@
 ##
 lotusim_script_completion() {
     local cur prev opts commands
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//:/}
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD - 1]}"
 
