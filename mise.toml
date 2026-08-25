@@ -26,9 +26,11 @@ usage = 'flag "--debug" help="Build with DEBUG=ON and a symlinked install"'
 run = '''
 if [ "${usage_debug:-false}" = "true" ]; then
   colcon build --merge-install --symlink-install \
-    --event-handlers compile_commands+ --cmake-args -DDEBUG=ON
+    --event-handlers compile_commands+ \
+    --cmake-args -DDEBUG=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 else
-  colcon build --merge-install --event-handlers compile_commands+
+  colcon build --merge-install --event-handlers compile_commands+ \
+    --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 fi
 '''
 
@@ -153,6 +155,18 @@ else
 fi
 
 exec $glwrap gz sim $verbosity $headless -r "$world_file"
+'''
+
+[tasks."lint:tidy"]
+description = "Run clang-tidy over the workspace sources"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = '''
+if [ ! -f build/compile_commands.json ]; then
+  echo "No compile_commands.json — run 'mise run build' first." >&2
+  exit 1
+fi
+run-clang-tidy -p build "systems/" "interfaces/" "examples/"
 '''
 
 [tasks.doc]

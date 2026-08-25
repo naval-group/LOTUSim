@@ -109,6 +109,7 @@
           pkgs.mise
           pkgs.nodejs_22
           pkgs.doxygen
+          pkgs.clang-tools
           # docs/Doxyfile sets HAVE_DOT with an empty DOT_PATH, so doxygen
           # resolves graphviz's dot from PATH.
           pkgs.graphviz
@@ -130,7 +131,7 @@
               rel = pkgs.lib.removePrefix "${self}/" path;
               top = builtins.head (pkgs.lib.splitString "/" rel);
             in
-            !(builtins.elem top [ "assets" "physics" "docs" ".github" ".vscode" ])
+            !(builtins.elem top [ "assets" "physics" "docs" ".github" ])
             && !(pkgs.lib.hasSuffix ".md" rel)
             && !(builtins.elem rel [ "flake.nix" "flake.lock" "mise.toml" ]);
         };
