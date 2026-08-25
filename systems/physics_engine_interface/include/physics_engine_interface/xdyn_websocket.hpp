@@ -37,8 +37,10 @@ static const gz::math::Quaterniond q_flu_to_frd(0.0, 1.0, 0.0, 0.0);
 
 gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned);
 gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu);
-gz::math::Vector3d vecNedToEnu(const gz::math::Vector3d& v_ned);
-gz::math::Vector3d vecEnuToNed(const gz::math::Vector3d& v_enu);
+gz::math::Vector3d vecNedToEnuFixedFrame(const gz::math::Vector3d& v_ned);
+gz::math::Vector3d vecNedToEnuBodyFrame(const gz::math::Vector3d& v_ned);
+gz::math::Vector3d vecEnuToNedFixedFrame(const gz::math::Vector3d& v_enu);
+gz::math::Vector3d vecEnuToNedBodyFrame(const gz::math::Vector3d& v_ned);
 
 constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
 

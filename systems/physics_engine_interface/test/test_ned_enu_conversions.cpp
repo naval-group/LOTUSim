@@ -9,10 +9,9 @@
  */
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <gz/math/Quaternion.hh>
 #include <gz/math/Vector3.hh>
-
-#include <cmath>
 
 // These free functions are defined in physics_interface_plugin
 // (src/xdyn_websocket.cpp) and declared in xdyn_websocket.hpp. They are
@@ -22,23 +21,26 @@
 namespace lotusim::gazebo {
 gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned);
 gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu);
-gz::math::Vector3d vecNedToEnu(const gz::math::Vector3d& v_ned);
-gz::math::Vector3d vecEnuToNed(const gz::math::Vector3d& v_enu);
+gz::math::Vector3d vecNedToEnuFixedFrame(const gz::math::Vector3d& v_ned);
+gz::math::Vector3d vecEnuToNedFixedFrame(const gz::math::Vector3d& v_enu);
 }  // namespace lotusim::gazebo
 
 using gz::math::Quaterniond;
 using gz::math::Vector3d;
 using lotusim::gazebo::quatEnuToNed;
 using lotusim::gazebo::quatNedToEnu;
-using lotusim::gazebo::vecEnuToNed;
-using lotusim::gazebo::vecNedToEnu;
+using lotusim::gazebo::vecEnuToNedFixedFrame;
+using lotusim::gazebo::vecNedToEnuFixedFrame;
 
 namespace {
 constexpr double kTol = 1e-9;
 
 const Quaterniond kIdentity(1.0, 0.0, 0.0, 0.0);
 
-void expectQuatNear(const Quaterniond& a, const Quaterniond& b, double tol = kTol)
+void expectQuatNear(
+    const Quaterniond& a,
+    const Quaterniond& b,
+    double tol = kTol)
 {
     EXPECT_NEAR(a.W(), b.W(), tol);
     EXPECT_NEAR(a.X(), b.X(), tol);
@@ -51,19 +53,20 @@ void expectQuatNear(const Quaterniond& a, const Quaterniond& b, double tol = kTo
 // swap X/Y, flip Z.
 TEST(NedEnuConversions, VecNedToEnuKnownValue)
 {
-    const Vector3d enu = vecNedToEnu({1.0, 2.0, 3.0});
+    const Vector3d enu = vecNedToEnuFixedFrame({1.0, 2.0, 3.0});
     EXPECT_NEAR(enu.X(), 2.0, kTol);
     EXPECT_NEAR(enu.Y(), 1.0, kTol);
     EXPECT_NEAR(enu.Z(), -3.0, kTol);
 }
 
 // The axis permutation is its own inverse: NED->ENU->NED is the identity.
-// vecNedToEnu and vecEnuToNed share the same body on purpose (the swap is an
-// involution) — this guards that from being "fixed" into a real bug.
+// vecNedToEnuFixedFrame and vecEnuToNedFixedFrame share the same body on
+// purpose (the swap is an involution) — this guards that from being "fixed"
+// into a real bug.
 TEST(NedEnuConversions, VecRoundTripIsIdentity)
 {
     const Vector3d v{1.0, 2.0, 3.0};
-    const Vector3d back = vecEnuToNed(vecNedToEnu(v));
+    const Vector3d back = vecEnuToNedFixedFrame(vecNedToEnuFixedFrame(v));
     EXPECT_NEAR(back.X(), v.X(), kTol);
     EXPECT_NEAR(back.Y(), v.Y(), kTol);
     EXPECT_NEAR(back.Z(), v.Z(), kTol);
@@ -73,7 +76,10 @@ TEST(NedEnuConversions, VecRoundTripIsIdentity)
 TEST(NedEnuConversions, QuatRoundTripIsIdentity)
 {
     const double d2r = M_PI / 180.0;
-    const Quaterniond q(12.0 * d2r, -8.0 * d2r, 30.0 * d2r);  // roll, pitch, yaw
+    const Quaterniond q(
+        12.0 * d2r,
+        -8.0 * d2r,
+        30.0 * d2r);  // roll, pitch, yaw
     expectQuatNear(q, quatEnuToNed(quatNedToEnu(q)));
 }
 

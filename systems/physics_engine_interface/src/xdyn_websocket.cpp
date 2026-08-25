@@ -31,14 +31,24 @@ gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu)
     return q_ned_to_enu * q_enu * q_flu_to_frd;
 }
 
-gz::math::Vector3d vecNedToEnu(const gz::math::Vector3d& v_ned)
+gz::math::Vector3d vecNedToEnuFixedFrame(const gz::math::Vector3d& v_ned)
 {
     return {v_ned.Y(), v_ned.X(), -v_ned.Z()};
 }
 
-gz::math::Vector3d vecEnuToNed(const gz::math::Vector3d& v_enu)
+gz::math::Vector3d vecNedToEnuBodyFrame(const gz::math::Vector3d& v_ned)
+{
+    return {v_ned.X(), -v_ned.Y(), -v_ned.Z()};
+}
+
+gz::math::Vector3d vecEnuToNedFixedFrame(const gz::math::Vector3d& v_enu)
 {
     return {v_enu.Y(), v_enu.X(), -v_enu.Z()};
+}
+
+gz::math::Vector3d vecEnuToNedBodyFrame(const gz::math::Vector3d& v_enu)
+{
+    return {v_enu.X(), -v_enu.Y(), -v_enu.Z()};
 }
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::m_instance = nullptr;
@@ -352,7 +362,7 @@ void XdynWebsocket::onMessage(
         reply["qj"].back().get<double>(),
         reply["qk"].back().get<double>());
 
-    auto gz_position = vecNedToEnu(ned_position);
+    auto gz_position = vecNedToEnuFixedFrame(ned_position);
     auto gz_quad = quatNedToEnu(ned_quad);
 
     auto ned_lin_vel = gz::math::Vector3d{
@@ -365,8 +375,8 @@ void XdynWebsocket::onMessage(
         reply["q"].back().get<double>(),
         reply["r"].back().get<double>());
 
-    auto gz_lin_vel = vecNedToEnu(ned_lin_vel);
-    auto gz_angular_vel = vecNedToEnu(ned_angular_vel);
+    auto gz_lin_vel = vecNedToEnuBodyFrame(ned_lin_vel);
+    auto gz_angular_vel = vecNedToEnuBodyFrame(ned_angular_vel);
 
     VesselInformation new_state;
     new_state.time = reply["t"].back().get<double>();
@@ -385,10 +395,14 @@ XdynWebsocket::getNewState(
     const VesselInformation& previous_state,
     float time_diff)
 {
-    gz::math::Vector3d ned_position = vecEnuToNed(previous_state.pose.Pos());
-    gz::math::Quaterniond ned_quad = quatEnuToNed(previous_state.pose.Rot());
-    gz::math::Vector3d ned_lin_vel = vecEnuToNed(previous_state.lin_vel);
-    gz::math::Vector3d ned_angular_vel = vecEnuToNed(previous_state.ang_vel);
+    const gz::math::Vector3d ned_position =
+        vecEnuToNedFixedFrame(previous_state.pose.Pos());
+    const gz::math::Quaterniond ned_quad =
+        quatEnuToNed(previous_state.pose.Rot());
+    const gz::math::Vector3d ned_lin_vel =
+        vecEnuToNedBodyFrame(previous_state.lin_vel);
+    const gz::math::Vector3d ned_angular_vel =
+        vecEnuToNedBodyFrame(previous_state.ang_vel);
 
     json data = json::object();
     data["Dt"] = time_diff / 1000.0;
