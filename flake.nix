@@ -119,7 +119,7 @@
         # derivation per ROS package: the 17 packages share a single CMake
         # invocation order that colcon already knows how to compute.
         # What actually reaches CMake is ~1 MB of sources under systems/,
-        # interfaces/, examples/ and launch/. Feeding the whole tree in would
+        # interfaces/ and examples/. Feeding the whole tree in would
         # copy assets/ (160 MB) and physics/ (42 MB) into the store and make a
         # README edit invalidate a four-minute build. Deny-list rather than
         # allow-list, so a new package directory still builds by default.
@@ -131,7 +131,7 @@
               rel = pkgs.lib.removePrefix "${self}/" path;
               top = builtins.head (pkgs.lib.splitString "/" rel);
             in
-            !(builtins.elem top [ "assets" "physics" "docs" ".github" ])
+            !(builtins.elem top [ "assets" "physics" "docs" "scripts" ".github" ])
             && !(pkgs.lib.hasSuffix ".md" rel)
             && !(builtins.elem rel [ "flake.nix" "flake.lock" "mise.toml" ]);
         };
@@ -199,28 +199,215 @@
         # packages holds derivations only; a symlink keeps .#assets checkable without a second 160 MB copy.
         assetsPackage = pkgs.runCommand "lotusim-assets" { } "ln -s ${assets} $out";
 
+        # Store assets are an immutable seed; the UI writes scenarios and uploaded models at runtime.
+        seedState = pkgs.writeShellScript "lotusim-seed-state" ''
+          set -eu
+          export PATH="${pkgs.coreutils}/bin:$PATH"
+          state="$1"
+          mkdir -p "$state/models" "$state/scenarios" "$state/worlds"
+
+          # A real directory per model with its contents symlinked: uploads need a writable dir, and
+          # the UI lists models with a readdir isDirectory() filter that a bare symlink would fail.
+          for src in ${assets}/models/*/; do
+            dst="$state/models/$(basename "$src")"
+            mkdir -p "$dst"
+            for child in "$src"*; do
+              if [ ! -e "$child" ]; then continue; fi
+              link="$dst/$(basename "$child")"
+              # Replace only our own symlink, so an uploaded file of the same name survives.
+              if [ -L "$link" ] || [ ! -e "$link" ]; then ln -sfn "$child" "$link"; fi
+            done
+            # An assets bump moves the store path, so drop links this revision no longer provides.
+            for link in "$dst"/*; do
+              if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
+            done
+          done
+
+          # Real copies: the UI rewrites scenarios in place, and a copied store file keeps mode 444 without the chmod.
+          for kind in scenarios worlds; do
+            for src in ${assets}/"$kind"/*; do
+              if [ ! -e "$src" ]; then continue; fi
+              dst="$state/$kind/$(basename "$src")"
+              if [ -e "$dst" ]; then continue; fi
+              cp -r "$src" "$dst"
+              chmod -R u+w "$dst"
+            done
+          done
+        '';
+
+        # Every wrapper that touches assets runs this, so the sim and the UI agree on one location.
+        stateHook = ''
+          LOTUSIM_STATE_HOME="''${LOTUSIM_STATE_HOME:-''${XDG_DATA_HOME:-$HOME/.local/share}/lotusim}"
+          export LOTUSIM_STATE_HOME
+          ${seedState} "$LOTUSIM_STATE_HOME"
+          export LOTUSIM_MODELS_PATH="''${LOTUSIM_MODELS_PATH:-$LOTUSIM_STATE_HOME/models/}"
+          export LOTUSIM_SCENARIOS_PATH="''${LOTUSIM_SCENARIOS_PATH:-$LOTUSIM_STATE_HOME/scenarios}"
+          export GZ_SIM_RESOURCE_PATH="$LOTUSIM_STATE_HOME:$LOTUSIM_STATE_HOME/models:${assets}:${assets}/models''${GZ_SIM_RESOURCE_PATH:+:$GZ_SIM_RESOURCE_PATH}"
+        '';
+
+        # mkBackend defaults its two paths to the store, so the hook exports over them before the server starts.
+        withState = name: program: pkgs.runCommand name { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
+          makeWrapper ${program} $out/bin/${name} --run ${pkgs.lib.escapeShellArg stateHook}
+        '';
+
+        # One implementation of the GPU-driver lookup, shared with the mise task.
+        glWrapper = builtins.path {
+          path = self + "/scripts/gl-wrapper.sh";
+          name = "lotusim-gl-wrapper.sh";
+        };
+
         # The ROS and Gazebo setup hooks assemble GZ_CONFIG_PATH,
         # AMENT_PREFIX_PATH, LD_LIBRARY_PATH and PYTHONPATH out of 11 to 133
         # store paths each. Capturing them from a derivation that has the same
         # inputs is exact; writing them out by hand would drift on every bump.
-        lotusim = pkgs.runCommand "lotusim"
+        lotusim-env = pkgs.runCommand "lotusim-env"
           {
             nativeBuildInputs = [ pkgs.makeWrapper ];
             buildInputs = rosDeps ++ gazeboHarmonic ++ thirdParty;
             dontWrapQtApps = true;
           } ''
-          makeWrapper ${ros.gz-tools-vendor}/bin/gz $out/bin/lotusim \
+          makeWrapper ${ros.gz-tools-vendor}/bin/gz $out/bin/lotusim-env \
             --add-flags sim \
             --set GZ_CONFIG_PATH "$GZ_CONFIG_PATH" \
             --set PYTHONPATH "$PYTHONPATH" \
             --set AMENT_PREFIX_PATH "${workspace}:$AMENT_PREFIX_PATH" \
             --set LD_LIBRARY_PATH "${workspace}/lib:$LD_LIBRARY_PATH" \
             --set GZ_SIM_SYSTEM_PLUGIN_PATH "${workspace}/lib" \
-            --prefix GZ_SIM_RESOURCE_PATH : "${assets}:${assets}/models" \
-            --set-default LOTUSIM_MODELS_PATH "${assets}/models/" \
-            --set-default LOTUSIM_SCENARIOS_PATH "${assets}/scenarios" \
             --set FASTDDS_BUILTIN_TRANSPORTS UDPv4
         '';
+
+        # `run` is the shape the old shell script had, kept because it says what it
+        # means; anything starting with a dash still goes straight to gz sim, which
+        # is what the container's default command relies on.
+        lotusim = pkgs.writeShellApplication {
+          name = "lotusim";
+          runtimeInputs = [ pkgs.coreutils ];
+          text = ''
+            ${stateHook}
+
+            usage() {
+              cat <<USAGE
+            lotusim — the LOTUSim simulation server (Gazebo Harmonic)
+
+            Usage:
+              lotusim run [--gui] [--debug] [<world>]    world defaults to lotusim.world
+              lotusim --help
+
+            Worlds are taken from $LOTUSIM_STATE_HOME/worlds first, then from this build:
+            $(for w in ${assets}/worlds/*.world; do echo "  $(basename "$w")"; done)
+
+            Scenarios you create and models you upload are written to
+              $LOTUSIM_STATE_HOME
+            LOTUSIM_STATE_HOME moves all of it; GZ_SIM_RESOURCE_PATH,
+            LOTUSIM_MODELS_PATH and LOTUSIM_SCENARIOS_PATH override one at a time.
+
+            The web UI is its own entry point:
+              nix run github:naval-group/LOTUSim#ui      http://localhost:8080
+
+            An argument starting with a dash goes straight to gz sim, options and all.
+            USAGE
+            }
+
+            # A nix-built binary cannot reach a non-NixOS host's GPU driver. The
+            # window needs it, and so does every rendering sensor — camera,
+            # gpu_lidar — which gz implements by rendering the scene.
+            glwrap=()
+            gl_bridge() {
+              glwrap=()
+              local wrapper
+              if wrapper=$(${pkgs.bash}/bin/bash ${glWrapper}); then
+                if [ -n "$wrapper" ]; then glwrap=("$wrapper"); fi
+                return 0
+              fi
+              return 1
+            }
+
+            no_bridge_warning="warning: no GPU driver bridge — camera and gpu_lidar sensors will not render."
+
+            case "''${1:-}" in
+              "" | -h | --help)
+                usage
+                exit 0
+                ;;
+              ui)
+                echo "The UI is its own entry point, and is not in this command's closure:" >&2
+                echo "  nix run github:naval-group/LOTUSim#ui" >&2
+                exit 1
+                ;;
+              build)
+                echo "Building needs a clone: nix develop, then mise run build." >&2
+                exit 1
+                ;;
+              run)
+                shift
+                ;;
+              -*)
+                gl_bridge || echo "$no_bridge_warning" >&2
+                exec "''${glwrap[@]}" ${lotusim-env}/bin/lotusim-env "$@"
+                ;;
+              *)
+                echo "lotusim: unknown command '$1'" >&2
+                usage >&2
+                exit 1
+                ;;
+            esac
+
+            gui=false
+            debug=false
+            while [ $# -gt 0 ]; do
+              case "$1" in
+                --gui) gui=true; shift ;;
+                --debug) debug=true; shift ;;
+                -*) echo "lotusim run: unknown option '$1'" >&2; exit 1 ;;
+                *) break ;;
+              esac
+            done
+
+            world="''${1:-lotusim.world}"
+            world_file=""
+            for root in "$LOTUSIM_STATE_HOME" "${assets}"; do
+              if [ -f "$root/worlds/$world" ]; then
+                world_file="$root/worlds/$world"
+                break
+              fi
+            done
+            if [ -z "$world_file" ]; then
+              echo "lotusim: world '$world' is in neither $LOTUSIM_STATE_HOME/worlds nor this build." >&2
+              exit 1
+            fi
+
+            if [ "$gui" = true ]; then
+              if [ -z "''${WAYLAND_DISPLAY:-}" ] && [ -z "''${DISPLAY:-}" ]; then
+                echo "--gui needs a graphical session: neither WAYLAND_DISPLAY nor DISPLAY is set." >&2
+                exit 1
+              fi
+              headless=()
+            else
+              # gz sim -s is server-only; dropping it is what opens the window.
+              headless=(-s)
+            fi
+
+            if [ "$debug" = true ]; then
+              verbosity=-v4
+              export LOTUSIM_SPDLOG_LEVEL=debug
+            else
+              verbosity=-v1
+            fi
+
+            if ! gl_bridge; then
+              if [ "$gui" = true ]; then
+                # gz exits 0 when the GUI aborts, so refuse now.
+                echo "No GPU driver bridge — the GUI cannot reach a driver." >&2
+                echo "  nix profile add github:nix-community/nixGL#nixGLIntel" >&2
+                exit 1
+              fi
+              echo "$no_bridge_warning" >&2
+            fi
+
+            exec "''${glwrap[@]}" ${lotusim-env}/bin/lotusim-env \
+              "$verbosity" "''${headless[@]}" -r "$world_file"
+          '';
+        };
 
         # streamLayeredImage builds a script that writes the image to stdout,
         # so the ~1 GB archive is never materialised on disk — `./result | docker
@@ -235,14 +422,16 @@
             Env = [ "HOME=/tmp" ];
             WorkingDir = "/tmp";
             Entrypoint = [ "/bin/lotusim" ];
-            Cmd = [ "-s" "-r" "${assets}/worlds/lotusim.world" ];
+            Cmd = [ "run" ];
           };
         };
 
-        ui-backend = lotusim-ui-backend.lib.mkBackend {
+        ui-backend-unwrapped = lotusim-ui-backend.lib.mkBackend {
           inherit pkgs assets;
           rosMessages = messages;
         };
+
+        ui-backend = withState "lotusim-ui-backend" "${ui-backend-unwrapped}/bin/lotusim-ui-backend";
 
         ui-frontend = lotusim-ui-frontend.packages.${system}.default;
 
@@ -250,6 +439,9 @@
         ui = pkgs.writeShellApplication {
           name = "lotusim-ui";
           text = ''
+            # The backend announces its own :5000; say which half to open first.
+            echo "LOTUSim UI"
+            echo "  open http://localhost:8080   (the backend serves the API on :5000)"
             "${ui-backend}/bin/lotusim-ui-backend" &
             backend=$!
             "${ui-frontend}/bin/lotusim-ui-frontend" &
@@ -301,6 +493,27 @@
           # colcon defaults to make; ninja is what gets the workspace to ~2 min.
           shellHook = ''
             export CMAKE_GENERATOR=Ninja
+
+            # mise.toml is the one definition of the project environment; the
+            # shell evaluates it so `nix develop` and `mise run` agree, and so
+            # the examples find LOTUSIM_* and xdyn-for-cs without a mise prefix.
+            mise trust >/dev/null 2>&1 || true
+            eval "$(mise env -s bash)"
+            LOTUSIM_PATH="''${LOTUSIM_PATH:-$PWD}"
+
+            # What `source install/setup.bash` sets, exported up front so the
+            # examples run straight after `mise run build`. A directory that
+            # does not exist yet is harmless on any of these.
+            export COLCON_PREFIX_PATH="$LOTUSIM_PATH/install"
+            export AMENT_PREFIX_PATH="$LOTUSIM_PATH/install''${AMENT_PREFIX_PATH:+:$AMENT_PREFIX_PATH}"
+            export CMAKE_PREFIX_PATH="$LOTUSIM_PATH/install''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+            export LD_LIBRARY_PATH="$LOTUSIM_PATH/install/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            export PYTHONPATH="$LOTUSIM_PATH/install/${pkgs.python3.sitePackages}''${PYTHONPATH:+:$PYTHONPATH}"
+
+            # xdyn-for-cs ships a dead RUNPATH. Not in mise.toml: an [env] entry
+            # replaces this variable instead of composing onto nix's Gazebo paths.
+            export LD_LIBRARY_PATH="$LOTUSIM_PATH/physics''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
             echo "LOTUSim devShell — ROS 2 jazzy / Gazebo Harmonic"
           '';
         };

@@ -13,7 +13,6 @@ GZ_SIM_RESOURCE_PATH = "{{config_root}}/assets:{{config_root}}/assets/models"
 
 # Prebuilt xdyn; moves to the lxdyn flake input when physics/ goes.
 _.path = ["{{config_root}}/physics"]
-LD_LIBRARY_PATH = "{{config_root}}/physics{% if env.LD_LIBRARY_PATH %}:{{ env.LD_LIBRARY_PATH }}{% endif %}"
 
 # Fast DDS multicast discovery does not survive most container network setups.
 FASTDDS_BUILTIN_TRANSPORTS = "UDPv4"
