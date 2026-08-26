@@ -66,7 +66,6 @@ This is a guardrail for a project that means to stay open and modular, not an ex
 ## References
 
 - Contribution rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- Architecture and core development: [LOTUSim Wiki](https://github.com/naval-group/LOTUSim/wiki/core-development#overview)
 - License: EPL-2.0 - every contribution is made under this license.
 - Repository: [`naval-group/LOTUSim`](https://github.com/naval-group/LOTUSim/)
 - Roadmap and product questions: the Product Owner - lotusim_support@naval-group.com
