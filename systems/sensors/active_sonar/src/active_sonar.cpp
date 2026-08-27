@@ -70,7 +70,16 @@ bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
             m_sensor_name, m_sector_width_deg);
         m_sector_width_deg = 45.0;
     }
-    m_num_sectors = static_cast<int>(std::round(360.0 / m_sector_width_deg));
+    m_num_sectors = std::max(1, static_cast<int>(std::round(360.0 / m_sector_width_deg)));
+    const double requested_width_deg = m_sector_width_deg;
+    m_sector_width_deg = 360.0 / m_num_sectors;
+
+    if (std::abs(m_sector_width_deg - requested_width_deg) > 1e-6) {
+        m_logger->warn(
+            "ActiveSonar [{}]: sector_width_deg={} does not evenly divide 360; "
+            "using {} sectors of {:.3f}deg each to avoid a coverage gap",
+            m_sensor_name, requested_width_deg, m_num_sectors, m_sector_width_deg);
+    }
 
     m_power_managed = elem->HasElement("lotusim_power");
 
@@ -131,8 +140,8 @@ bool ActiveSonar::UpdateSensor(
     // scans every model entity in the world as a potential target
     auto model_entities = _ecm.EntitiesByComponents(gz::sim::components::Model());
     for (auto&& entity : model_entities) {
-        if (entity == m_vessel_entity) {
-            continue;  // skip self
+        if (gz::sim::topLevelModel(entity, _ecm) == m_vessel_entity) {
+            continue;
         }
 
         auto name_comp = _ecm.Component<gz::sim::components::Name>(entity);
