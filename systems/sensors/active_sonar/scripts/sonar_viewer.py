@@ -2,23 +2,18 @@
 """
 sonar_viewer.py
 
-Classic PPI-style sector scan active sonar
+Sector scan style active sonar
 Shows:
   - the active 45-deg sector, shaded
   - a sweep line at the sector's center bearing
   - contact blips at (bearing, range), with name shown on hover
   - a short fade trail of recent contacts
 
-Bearing convention matches the sensor: nautical, clockwise from bow
-(0 deg = straight ahead, 90 deg = to starboard/right)
+Bearing convention matches the sensor: nautical, clockwise from bow (0 deg = straight ahead, 90 deg = to starboard/right)
 
 Usage:
-    python3 sonar_viewer.py --vessel lrauv_0 --sensor sonar_0
+    python3 sonar_viewer.py --topic /lotusim/lrauv_0/active_sonar/scan
 
-    # or give the full topic directly:
-    python3 sonar_viewer.py --topic /lrauv_0/sonar_0/scan
-
-Requires: rclpy, matplotlib, numpy
 """
 
 import argparse
@@ -30,6 +25,7 @@ from matplotlib.animation import FuncAnimation
 
 import rclpy
 from rclpy.node import Node
+import threading
 
 from lotusim_sensor_msgs.msg import SonarScan
 
@@ -41,24 +37,29 @@ BG_COLOR =  "#001233"
 FG_COLOR = "white"
 NEAR_COLOR = np.array([1.0, 0.0, 0.0])  # red, range < RANGE_THRESHOLD_M
 FAR_COLOR = np.array([0.0, 1.0, 0.0])   # green, range >= RANGE_THRESHOLD_M
-RANGE_THRESHOLD_M = 200.0
+RANGE_THRESHOLD_M = 80.0
 
 
 class SonarScanSource(Node):
-    """Subscribes to a SonarScan topic and keeps a short history of scans"""
-
     def __init__(self, topic):
         super().__init__("sonar_viewer")
         self.history = deque(maxlen=TRAIL_LENGTH)
         self.latest_sector_info = None  # (current_sector, center_deg, width_deg, max_range)
+        self.vessel_name = None
+        self.sensor_name = None
+        self.lock = threading.Lock()
         self.create_subscription(SonarScan, topic, self._callback, 10)
 
     def _callback(self, msg):
         contacts = [(c.bearing_deg, c.range, c.target_name) for c in msg.contacts]
-        self.history.appendleft(contacts)
-        self.latest_sector_info = (
-            msg.current_sector, msg.sector_center_deg,
-            msg.sector_width_deg, msg.max_range)
+        frame_parts = msg.header.frame_id.split("/", 1)
+        with self.lock:
+            self.history.appendleft(contacts)
+            self.latest_sector_info = (
+                msg.current_sector, msg.sector_center_deg,
+                msg.sector_width_deg, msg.max_range)
+            self.vessel_name = frame_parts[0] if frame_parts else msg.header.frame_id
+            self.sensor_name = frame_parts[1] if len(frame_parts) > 1 else ""
 
 
 def main():
@@ -85,6 +86,9 @@ def main():
     rclpy.init()
     source = SonarScanSource(topic)
 
+    spin_thread = threading.Thread(target=rclpy.spin, args=(source,), daemon=True)
+    spin_thread.start()
+
     fig = plt.figure(figsize=(7, 7))
     fig.patch.set_facecolor(BG_COLOR)
     ax = fig.add_subplot(projection="polar")
@@ -99,11 +103,11 @@ def main():
 
     max_range_guess = 500.0  # placeholder until first scan arrives
     ax.set_ylim(0, max_range_guess)
-    ax.set_title("Active sonar - sector scan", color=FG_COLOR)
+    fig.suptitle("Active sonar - sector scan", color=FG_COLOR, fontsize=13, y=0.98)
+    fig.text(0.5, 0.94, topic, color=FG_COLOR, ha="center", fontsize=9, alpha=0.75)
 
     sector_wedge, = ax.fill([0, 0], [0, 0], color=FG_COLOR, alpha=0.15, zorder=1)
-    sweep_line, = ax.plot([0, 0], [0, max_range_guess], color=FG_COLOR,
-                           linewidth=2, zorder=3)
+    sweep_line, = ax.plot([0, 0], [0, max_range_guess], color=FG_COLOR, linewidth=2, zorder=3)
     scatter = ax.scatter([], [], c="red", s=50, zorder=5, edgecolors=FG_COLOR)
     annot = ax.annotate(
         "", xy=(0, 0), xytext=(12, 12), textcoords="offset points",
@@ -115,11 +119,14 @@ def main():
     state = {"theta": np.empty(0), "r": np.empty(0), "names": []}
 
     def update(_frame):
-        rclpy.spin_once(source, timeout_sec=0.0)
-        if source.latest_sector_info is None:
-            return sector_wedge, sweep_line, scatter
+        with source.lock:
+            if source.latest_sector_info is None:
+                return sector_wedge, sweep_line, scatter
+            sector_info = source.latest_sector_info
+            history_snapshot = list(source.history)
+            vessel_name = source.vessel_name
 
-        _, center_deg, width_deg, max_range = source.latest_sector_info
+        _, center_deg, width_deg, max_range = sector_info
         ax.set_ylim(0, max_range)
 
         # Sector
@@ -136,8 +143,8 @@ def main():
 
         # contacts with fade trail
         all_theta, all_r, all_colors, names = [], [], [], []
-        n = len(source.history)
-        for age, contacts in enumerate(source.history):
+        n = len(history_snapshot)
+        for age, contacts in enumerate(history_snapshot):
             alpha = 1.0 - age / max(n, 1)
             for bearing_deg, rng, name in contacts:
                 base_color = NEAR_COLOR if rng < RANGE_THRESHOLD_M else FAR_COLOR
@@ -156,6 +163,7 @@ def main():
         state["theta"] = np.array(all_theta)
         state["r"] = np.array(all_r)
         state["names"] = names
+        state["vessel"] = vessel_name 
 
         return sector_wedge, sweep_line, scatter
 
@@ -173,10 +181,12 @@ def main():
 
         if dists[idx] <= HOVER_RADIUS_PX:
             annot.xy = (state["theta"][idx], state["r"][idx])
+            vessel_label = state["vessel"] or "?" 
             annot.set_text(
                 f"{state['names'][idx]}\n"
                 f"{np.degrees(state['theta'][idx]):.0f}\u00b0, "
-                f"{state['r'][idx]:.1f} m")
+                f"{state['r'][idx]:.1f} m\n"
+                f"sensor: {vessel_label}")
             annot.set_visible(True)
         else:
             annot.set_visible(False)
