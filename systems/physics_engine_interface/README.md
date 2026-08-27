@@ -81,7 +81,7 @@ Recognised `interface_type`/`connection_type` values: `XDYNWEBSOCKET` → `XdynW
 
 A **singleton** WebSocket client connecting to xdyn - one shared client instance handles every vessel's connections, keyed internally by Gazebo entity.
 
-**Coordinate conversion:** xdyn communicates in NED; Gazebo uses ENU. Every message is converted both ways (`vecNedToEnu`/`vecEnuToNed`, `quatNedToEnu`/`quatEnuToNed`) using a fixed basis-change quaternion.
+**Coordinate conversion:** xdyn communicates in NED; Gazebo uses ENU. Every message is converted both ways (`vecNedToEnu*`/`vecEnuToNed*`, `quatNedToEnu`/`quatEnuToNed`) using a fixed basis-change quaternion.
 
 **Per-tick protocol** (`getNewState`): builds a co-simulation request - `Dt` (converted from milliseconds to seconds), one `states` entry (the vessel's current pose/velocity converted to NED), and `commands` (pulled from the shared command map, populated by `<thrusters>` config or later overridden via ROS commands). The reply's `z` value is used to infer which domain the vessel *should* be in next: `z ≥ 10` → Aerial, `z ≤ -10` → Underwater, otherwise Surface (`z` is NED, so positive is down - this is why deep values map to Underwater and negative/high values map to Aerial).
 
