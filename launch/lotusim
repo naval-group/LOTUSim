@@ -5,9 +5,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-ASSETS_PATH="${LOTUSIM_PATH}/assets"
-MODEL_PATH="${ASSETS_PATH}/models"
-WORLD_PATH="${ASSETS_PATH}/worlds"
+# Assets roots, searched in order. The core one is always first; --assets-path
+# adds to it, so a consumer project composes its own models and worlds with the
+# core catalogue instead of having to choose between them.
+ASSETS_PATHS=("${LOTUSIM_PATH}/assets")
 BACKEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-backend"
 FRONTEND_DIR="${LOTUSIM_WS}/src/LOTUSim-UI-frontend"
 
@@ -39,7 +40,10 @@ print_help() {
     echo -e "${GREEN}Usage:${NC} lotusim [OPTIONS] <command> [arguments]"
     echo -e "${GREEN}Options (can be placed anywhere):${NC}"
     echo -e "  --ws-path PATH          Path to the lotusim workspace (default: $LOTUSIM_WS)"
-    echo -e "  --assets-path PATH      Path to the assets directory (default: $ASSETS_PATH)"
+    echo -e "  --assets-path PATH[:PATH...]"
+    echo -e "                          Extra assets directories, searched after the core"
+    echo -e "                          one (${ASSETS_PATHS[0]}). Colon-separated and"
+    echo -e "                          repeatable; both forms append."
     echo -e "  --debug                 Enable debug mode"
     echo -e "  --gui                   Run gz sim GUI (for run command)"
     echo -e "  --help                  Display this help message"
@@ -78,9 +82,10 @@ parse_all_arguments() {
                 echo -e "${RED}Error:${NC} --assets-path requires a path argument"
                 exit 1
             fi
-            ASSETS_PATH="$2"
-            MODEL_PATH="${ASSETS_PATH}/models"
-            WORLD_PATH="${ASSETS_PATH}/worlds"
+            # Colon-separated like GZ_SIM_RESOURCE_PATH, which this feeds; the
+            # option is also repeatable. Both forms simply append.
+            IFS=':' read -ra extra_assets_paths <<< "$2"
+            ASSETS_PATHS+=("${extra_assets_paths[@]}")
             shift 2
             ;;
         --debug)
@@ -306,13 +311,34 @@ validate_ui_setup() {
 }
 
 
+# Colon-joined model roots, in search order: GZ_SIM_RESOURCE_PATH is a list.
+model_search_path() {
+    local path joined=""
+    for path in "${ASSETS_PATHS[@]}"; do
+        joined="${joined:+${joined}:}${path}/models"
+    done
+    printf '%s' "$joined"
+}
+
+# Print the first assets root that actually holds the requested world file.
+resolve_world_file() {
+    local world_file="$1" path
+    for path in "${ASSETS_PATHS[@]}"; do
+        if [[ -f "${path}/worlds/${world_file}" ]]; then
+            printf '%s' "${path}/worlds/${world_file}"
+            return 0
+        fi
+    done
+    return 1
+}
+
 source_environment() {
     source "/opt/ros/$ROS_DISTRO/setup.bash"
     source "${LOTUSIM_WS}/install/setup.bash"
 
     export GZ_SIM_SYSTEM_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
     export GZ_GUI_PLUGIN_PATH="${LOTUSIM_WS}/install/lib"
-    export GZ_SIM_RESOURCE_PATH="${MODEL_PATH}"
+    export GZ_SIM_RESOURCE_PATH="$(model_search_path)"
     export LOTUSIM_SPDLOG_LEVEL="${LOTUSIM_SPDLOG_LEVEL}"
 
     echo -e "${GREEN}GZ_SIM_SYSTEM_PLUGIN_PATH${NC}: $GZ_SIM_SYSTEM_PLUGIN_PATH"
@@ -372,9 +398,14 @@ run_command() {
 
         # Use provided world or default
         local world_file="${WORLD:-$DEFAULT_WORLD}"
+        local world_path
+        if ! world_path="$(resolve_world_file "$world_file")"; then
+            echo -e "${RED}Error:${NC} World '${world_file}' not found in: ${ASSETS_PATHS[*]}" >&2
+            exit 1
+        fi
 
-        echo -e "${GREEN}Running the simulation world${NC}: ${WORLD_PATH}/${world_file}"
-        gz sim ${DEBUG} ${GUI} -r "${WORLD_PATH}/${world_file}"
+        echo -e "${GREEN}Running the simulation world${NC}: ${world_path}"
+        gz sim ${DEBUG} ${GUI} -r "${world_path}"
         ;;
     ui)
         clear

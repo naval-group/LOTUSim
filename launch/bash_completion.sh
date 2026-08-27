@@ -9,6 +9,7 @@
 ##
 lotusim_script_completion() {
     local cur prev opts commands
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//:/}
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD - 1]}"
 
@@ -40,7 +41,20 @@ lotusim_script_completion() {
     fi
 
     if [[ -n "$cmd" ]]; then
-        local worlds=$(find ${LOTUSIM_PATH}/assets/worlds -type f -name '*.world' 2>/dev/null | sed "s|${LOTUSIM_PATH}/assets/worlds/||")
+        # Mirror how the launcher resolves worlds: the core assets root, plus
+        # any --assets-path already typed on this command line.
+        local roots=("${LOTUSIM_PATH}/assets") extra_roots i
+        for ((i = 0; i < ${#COMP_WORDS[@]} - 1; i++)); do
+            if [[ "${COMP_WORDS[i]}" == "--assets-path" ]]; then
+                IFS=':' read -ra extra_roots <<< "${COMP_WORDS[i + 1]}"
+                roots+=("${extra_roots[@]}")
+            fi
+        done
+
+        local worlds="" root
+        for root in "${roots[@]}"; do
+            worlds+=" $(find "${root}/worlds" -type f -name '*.world' 2>/dev/null | sed "s|${root}/worlds/||")"
+        done
         COMPREPLY=($(compgen -W "${worlds}" -- ${cur}))
         return 0
     fi
