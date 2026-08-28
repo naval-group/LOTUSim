@@ -7,12 +7,8 @@ LOTUSIM_SCENARIOS_PATH = "{{config_root}}/assets/scenarios"
 LOTUSIM_SPDLOG_LEVEL = "info"
 
 GZ_SIM_SYSTEM_PLUGIN_PATH = "{{config_root}}/install/lib"
-GZ_GUI_PLUGIN_PATH = "{{config_root}}/install/lib"
 # model:// resolves against the directory holding <model>/model.config.
 GZ_SIM_RESOURCE_PATH = "{{config_root}}/assets:{{config_root}}/assets/models"
-
-# Prebuilt xdyn; moves to the lxdyn flake input when physics/ goes.
-_.path = ["{{config_root}}/physics"]
 
 # Fast DDS multicast discovery does not survive most container network setups.
 FASTDDS_BUILTIN_TRANSPORTS = "UDPv4"

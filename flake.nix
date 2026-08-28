@@ -120,7 +120,7 @@
         # invocation order that colcon already knows how to compute.
         # What actually reaches CMake is ~1 MB of sources under systems/,
         # interfaces/ and examples/. Feeding the whole tree in would
-        # copy assets/ (160 MB) and physics/ (42 MB) into the store and make a
+        # copy assets/ (160 MB) into the store and make a
         # README edit invalidate a four-minute build. Deny-list rather than
         # allow-list, so a new package directory still builds by default.
         workspaceSrc = pkgs.lib.cleanSourceWith {
@@ -131,7 +131,7 @@
               rel = pkgs.lib.removePrefix "${self}/" path;
               top = builtins.head (pkgs.lib.splitString "/" rel);
             in
-            !(builtins.elem top [ "assets" "physics" "docs" "scripts" ".github" ])
+            !(builtins.elem top [ "assets" "docs" "scripts" ".github" ])
             && !(pkgs.lib.hasSuffix ".md" rel)
             && !(builtins.elem rel [ "flake.nix" "flake.lock" "mise.toml" ]);
         };
@@ -255,6 +255,34 @@
           path = self + "/scripts/gl-wrapper.sh";
           name = "lotusim-gl-wrapper.sh";
         };
+
+        # xdyn, the physics server each vessel talks to over a websocket. Taken from
+        # lxdyn's published deploy image, which is FROM scratch: the layers hold the
+        # static binaries and nothing else. Pinned by digest — :latest moves.
+        lxdynImage = pkgs.dockerTools.pullImage {
+          imageName = "ghcr.io/naval-group/lxdyn";
+          imageDigest = "sha256:5361ec8eb091d881a34b49a5015a801a42736dd48be4d33cac5f26b398dc06a0";
+          sha256 = "sha256-HYEGXGR6vKnfSGFYsJe5t3jF3whz5PR9q/zTTiPikCE=";
+          finalImageTag = "26.8.1";
+        };
+
+        xdyn = pkgs.runCommand "xdyn-26.8.1"
+          {
+            nativeBuildInputs = [ pkgs.jq ];
+            # Static musl: no interpreter for patchelf to rewrite, and the archives are
+            # the product.
+            dontFixup = true;
+          } ''
+          mkdir -p image rootfs
+          tar -xf ${lxdynImage} -C image
+          for layer in $(jq -r '.[0].Layers[]' image/manifest.json); do
+            tar -xf "image/$layer" -C rootfs
+          done
+          # Three of the six, not the directory: the image also ships an xdyn tool named
+          # `gz`, which would shadow Gazebo's on PATH.
+          install -Dm755 -t $out/bin \
+            rootfs/usr/bin/xdyn rootfs/usr/bin/xdyn-for-cs rootfs/usr/bin/xdyn-for-me
+        '';
 
         # The ROS and Gazebo setup hooks assemble GZ_CONFIG_PATH,
         # AMENT_PREFIX_PATH, LD_LIBRARY_PATH and PYTHONPATH out of 11 to 133
@@ -488,7 +516,7 @@
 
         devShells.default = pkgs.mkShell {
           name = "lotusim";
-          packages = tooling ++ shellTooling ++ rosDeps ++ gazeboHarmonic ++ thirdParty;
+          packages = tooling ++ shellTooling ++ rosDeps ++ gazeboHarmonic ++ thirdParty ++ [ xdyn ];
 
           # colcon defaults to make; ninja is what gets the workspace to ~2 min.
           shellHook = ''
@@ -509,10 +537,6 @@
             export CMAKE_PREFIX_PATH="$LOTUSIM_PATH/install''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
             export LD_LIBRARY_PATH="$LOTUSIM_PATH/install/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             export PYTHONPATH="$LOTUSIM_PATH/install/${pkgs.python3.sitePackages}''${PYTHONPATH:+:$PYTHONPATH}"
-
-            # xdyn-for-cs ships a dead RUNPATH. Not in mise.toml: an [env] entry
-            # replaces this variable instead of composing onto nix's Gazebo paths.
-            export LD_LIBRARY_PATH="$LOTUSIM_PATH/physics''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
             echo "LOTUSim devShell — ROS 2 jazzy / Gazebo Harmonic"
           '';
