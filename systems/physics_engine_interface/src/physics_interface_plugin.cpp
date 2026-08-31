@@ -157,6 +157,10 @@ void PhysicsInterfacePlugin::updateVesselState(
         gz::math::Vector3d lin_vel;
         gz::math::Vector3d ang_vel;
         std::string vessel_name;
+        gz::sim::Entity base_link_entity;
+        std::shared_ptr<PhysicsInterfaceBase> interface;
+
+        // Resolve the mappings (concurrent reads are safe under shared lock).
         {
             std::shared_lock<std::shared_mutex> lock(m_mutex);
             auto it_name = m_vessels_name_map.find(vessel_entity);
@@ -168,24 +172,6 @@ void PhysicsInterfacePlugin::updateVesselState(
             }
             vessel_name = it_name->second;
 
-            float target_time =
-                std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt)
-                    .count();
-
-            std::chrono::_V2::system_clock::time_point start_time =
-                std::chrono::system_clock::now();
-
-            auto pose_comp =
-                _ecm.Component<gz::sim::components::Pose>(vessel_entity);
-            if (pose_comp) {
-                pose = pose_comp->Data();
-            } else {
-                m_logger->error(
-                    "PhysicsInterfacePlugin::updateVesselState: unable to get pose component for {}",
-                    vessel_name);
-                return;
-            }
-
             auto it_base = m_vessels_base_link_map.find(vessel_name);
             if (it_base == m_vessels_base_link_map.end()) {
                 m_logger->error(
@@ -193,13 +179,45 @@ void PhysicsInterfacePlugin::updateVesselState(
                     vessel_name);
                 return;
             }
-            gz::sim::Link _link(it_base->second);
+            base_link_entity = it_base->second;
 
-            // Get the linear and angular velocity in world frame, ENU.
+            auto it_interface = m_current_vessel_interface.find(vessel_entity);
+            if (it_interface == m_current_vessel_interface.end() ||
+                !it_interface->second) {
+                m_logger->error(
+                    "PhysicsInterfacePlugin::updateVesselState: No physics interface found for vessel {}",
+                    vessel_name);
+                return;
+            }
+            interface = it_interface->second;
+        }
+
+        const float target_time =
+            std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt)
+                .count();
+        const std::chrono::_V2::system_clock::time_point start_time =
+            std::chrono::system_clock::now();
+
+        // Phase 1: read the state from the ECM (serialised, ECM not
+        // thread-safe).
+        VesselInformation vessel_info;
+        {
+            std::lock_guard<std::mutex> ecm_lock(m_ecm_mutex);
+            auto pose_comp =
+                _ecm.Component<gz::sim::components::Pose>(vessel_entity);
+            if (!pose_comp) {
+                m_logger->error(
+                    "PhysicsInterfacePlugin::updateVesselState: unable to get pose component for {}",
+                    vessel_name);
+                return;
+            }
+            pose = pose_comp->Data();
+
+            gz::sim::Link _link(base_link_entity);
+            // World frame, ENU.
             auto lin_vel_opt = _link.WorldLinearVelocity(_ecm);
             auto ang_vel_opt = _link.WorldAngularVelocity(_ecm);
 
-            VesselInformation vessel_info;
             vessel_info.time =
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     _info.simTime)
@@ -213,31 +231,23 @@ void PhysicsInterfacePlugin::updateVesselState(
             }
             vessel_info.entity = vessel_entity;
             vessel_info.pose = pose;
-
-            auto it_interface = m_current_vessel_interface.find(vessel_entity);
-            if (it_interface == m_current_vessel_interface.end() ||
-                !it_interface->second) {
-                m_logger->error(
-                    "PhysicsInterfacePlugin::updateVesselState: No physics interface found for vessel {}",
-                    vessel_name);
-                return;
-            }
-
-            update_opt = it_interface->second->getNewState(
-                vessel_entity,
-                vessel_info,
-                target_time);
-
-            // Print physics engine response time if compiled in debug mode
-            if (m_logger->level() < spdlog::level::info) {
-                m_logger->debug(
-                    "PhysicsInterfacePlugin::updateVesselState: {} Phyiscs update time: {}",
-                    vessel_name,
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::system_clock::now() - start_time)
-                        .count());
-            }
         }
+
+        // Phase 2: compute the new state (runs in parallel, no ECM access).
+        update_opt =
+            interface->getNewState(vessel_entity, vessel_info, target_time);
+
+        // Print physics engine response time if compiled in debug mode
+        if (m_logger->level() < spdlog::level::info) {
+            m_logger->debug(
+                "PhysicsInterfacePlugin::updateVesselState: {} Phyiscs update time: {}",
+                vessel_name,
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now() - start_time)
+                    .count());
+        }
+
+        // Phase 3: write the new state to the ECM (serialised).
         if (update_opt) {
             if (!vesselDomainTransition(
                     vessel_entity,
@@ -254,6 +264,7 @@ void PhysicsInterfacePlugin::updateVesselState(
             lin_vel = new_state.lin_vel;
             ang_vel = new_state.ang_vel;
 
+            std::lock_guard<std::mutex> ecm_lock(m_ecm_mutex);
             _ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel_entity,
                 pose);
@@ -263,11 +274,11 @@ void PhysicsInterfacePlugin::updateVesselState(
                 gz::sim::ComponentState::OneTimeChange);
 
             _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-                m_vessels_base_link_map[vessel_name],
+                base_link_entity,
                 lin_vel);
             const auto angularVel =
                 _ecm.Component<gz::sim::components::WorldAngularVelocity>(
-                    m_vessels_base_link_map[vessel_name]);
+                    base_link_entity);
             *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
         } else {
             m_logger->warn(
