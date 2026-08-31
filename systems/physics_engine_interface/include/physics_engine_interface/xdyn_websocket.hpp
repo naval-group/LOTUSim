@@ -254,6 +254,12 @@ private:
      * @brief Save state of vessel
      *
      */
+    /**
+     * @brief Reply arrival flag, read by the send() wait predicate
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, bool> m_msg_ready;
+
     static std::unordered_map<gz::sim::Entity, VesselInformation> m_saved_state;
 };
 }  // namespace lotusim::gazebo
