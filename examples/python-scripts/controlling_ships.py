@@ -35,6 +35,11 @@ class ExampleNode(Node):
             10
         )
         self.mas_action_client = ActionClient(self, MASCmd, '/lotusim/mas_cmd')
+        self.mas_array_action_client = ActionClient(
+            self,
+            MASCmdArray,
+            '/lotusim/mas_cmd_array'
+        )
 
         self.rpm_publisher = {}
         self.position_timer = self.create_timer(1.0, self.print_vessel_positions)
