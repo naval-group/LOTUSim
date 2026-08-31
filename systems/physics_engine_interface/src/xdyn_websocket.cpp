@@ -117,17 +117,21 @@ bool XdynWebsocket::configureInterface(
     }
     m_uri[_entity][domain_type] = uri;
 
-    if (_sdf->HasElement("thrusters") && m_models_cmd_map_ptr) {
+    // The emptiness check is not redundant: a model with no thruster still has
+    // the tag, just with no child, and the loop below dereferences that child
+    // before testing it.
+    if (m_models_cmd_map_ptr && _sdf->HasElement("thrusters") &&
+        _sdf->GetElement("thrusters")->GetFirstElement()) {
         auto sdfPtr_thruster = _sdf->GetElement("thrusters")->GetFirstElement();
         auto thrusters_cmd = json::object();
-        do {
+        while (sdfPtr_thruster != sdf::ElementPtr(nullptr)) {
             std::string thruster_name = sdfPtr_thruster->Get<std::string>();
             thrusters_cmd[thruster_name + "(rpm)"] =
                 50.0;  // was 2.0 but crashes the Wageningen propeller
             thrusters_cmd[thruster_name + "(P/D)"] = 0.79;
             thrusters_cmd[thruster_name + "(beta)"] = 0.0;
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
-        } while (sdfPtr_thruster != sdf::ElementPtr(nullptr));
+        }
         (*m_models_cmd_map_ptr)[_entity] = thrusters_cmd.dump();
     }
     return true;
