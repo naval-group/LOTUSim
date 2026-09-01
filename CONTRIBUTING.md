@@ -2,30 +2,14 @@
 
 This document explains how to contribute to the LOTUSim project.
 
-## Contribution Philosophy
-LOTUSim aims to foster research, experimentation, and interoperability in the field of multi-agent simulation.
+## Scope
 
-A LOTUSim Governance Committee, established within Naval Group, oversees the overall coherence of the project’s developments.
-In the future, the committee may include external personas (key partners or major contributors).
+A few points of scope are worth stating here, as they shape what fits the project.
 
-The committee publishes a roadmap highlighting priority topics and features, based on:
-- Internal needs within Naval Group,
-- Partner priorities,
-- And community-driven contributions.
+- **Proprietary names.** Contributions must not expose the names of proprietary platforms or sensors without agreement. Respect each organisation's wishes about being named or not - some choose to be credited, others do not.
+- **AI-generated code.** Treat it with care. Understand, review and verify what you submit. Do not pour in thousands of lines doing forty things at once - one focused change at a time.
 
-This roadmap is updated every six months and available in the [`VISION.md`](VISION.md#current-focus) file, under "Current Focus" and "Next".
-
-New ideas that enrich LOTUSim are always welcome, even if they are not listed on the roadmap.
-
-- For roadmap-related questions, please contact the [Product Owner](mailto:lotusim_support@naval-group.com).
-
-The LOTUSim Governance Committee ensures:
-
-- Technical consistency of the project core,
-- Validation of contributions,
-- Release publication in alignment with the roadmap.
-
-Before proposing a contribution, please first open an issue (see the Technical Specification section).
+This is a guardrail for a project that means to stay open and modular, not an exhaustive rulebook. Strong rationale and strong community demand can move it.
 
 ## Types of Contributions
 You can contribute in several ways:
