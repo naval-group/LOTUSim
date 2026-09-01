@@ -14,10 +14,11 @@ For more options, check their official website: [Nix](https://nixos.org/download
 
 #### 1. Add the binary caches
 
-Needs root, once per machine. These let Nix fetch the Gazebo stack and the physics engine prebuilt, saving about an hour of compiling.
+Needs root, once per machine. This enables the `nix-command` and `flakes` experimental features and adds binary caches so Nix fetches the Gazebo stack and the physics engine prebuilt instead of compiling them locally.
 
 ```sh
 sudo tee -a /etc/nix/nix.conf <<'EOF'
+experimental-features = nix-command flakes
 extra-substituters = https://ros.cachix.org https://naval-group.cachix.org
 extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo= naval-group.cachix.org-1:ytTEzFEeuzQrC9IRYLzHGa5OnM65G95M6/sbPd0fy28=
 EOF
