@@ -4,17 +4,13 @@ LOTUSim is the first open-source simulation tool released by a major player in F
 naval simulation, across both military and civil domains.
 
 This document sets out where LOTUSim stands today and where it is heading. It complements, and does not replace, the contribution rules.
-How to contribute: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 LOTUSim was born from the work of Naval Group PhD students, in France and around the world, at IRL CROSSING in Australia and at Naval Group Far East in Singapore. Together we decided to offer a shared environment so that PhD students could focus on their research rather than on coding a simulation bench. What started with PhD students quickly proved useful well beyond them : to research engineers,algorithm designers and R&D teams at large.
 
 That is the mission: to make the work of algorithm designers, research engineers,
 human-factors specialists and roboticists simpler and more effective, by giving them a common playground for their work.
 
-## Contribution Philosophy
-
-LOTUSim aims to foster research, experimentation, and interoperability in the
-field of multi-agent simulation.
+## Philosophy & Governance
 
 A LOTUSim Governance Committee, established within Naval Group, oversees the
 overall coherence of the project's developments. In the future, the committee
@@ -33,6 +29,8 @@ The LOTUSim Governance Committee ensures:
 - Technical consistency of the project core,
 - Validation of contributions,
 - Release publication in alignment with the roadmap.
+
+How to contribute: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## Current Focus
 
@@ -66,12 +64,3 @@ LOTUSim's technical choices serve three objectives: openness (open-source, built
 Around that core, models, sensors and scenarios are open to community contribution.
 
 Full details: [LOTUSim Architecture wiki](https://github.com/naval-group/LOTUSim/wiki/LOTUSim-Architecture).
-
-The full contribution process lives in [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## References
-
-- Contribution rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- License: EPL-2.0 - every contribution is made under this license.
-- Repository: [`naval-group/LOTUSim`](https://github.com/naval-group/LOTUSim/)
-- Roadmap and product questions: the Product Owner - lotusim_support@naval-group.com
