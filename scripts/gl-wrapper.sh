@@ -40,5 +40,20 @@ if [ -n "${LOTUSIM_GL_WRAPPER:-}" ]; then
 fi
 
 # nixGLIntel first: plain nixGL bundles the NVIDIA stack and is the wrong guess
-# on a hybrid machine.
-resolve nixGLIntel nixGL nixGLNvidia
+# on a hybrid machine. nixGL installs its NVIDIA wrapper under a name carrying
+# the driver version, so match that too — otherwise a machine whose Intel
+# wrapper cannot reach the GPU finds nothing, and every rendering sensor fails
+# to build its context.
+if resolve nixGLIntel nixGL nixGLNvidia; then
+  exit 0
+fi
+
+for dir in "$HOME/.nix-profile/bin" "/nix/var/nix/profiles/default/bin"; do
+  for candidate in "$dir"/nixGLNvidia-*; do
+    if [ -x "$candidate" ]; then
+      echo "$candidate"
+      exit 0
+    fi
+  done
+done
+exit 1
