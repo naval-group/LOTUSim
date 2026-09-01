@@ -2,7 +2,7 @@
 
 This document explains how to contribute to the LOTUSim project.
 
-## Scope
+## Guardrails
 
 A few points of scope are worth stating here, as they shape what fits the project.
 
@@ -19,6 +19,8 @@ You can contribute in several ways:
 - Enhancements – improving existing functions or models.
 - Data contributions – use cases, simulation scenarios, or datasets.
 - Bug fixes – code corrections, refactoring, or readability/maintainability improvements.
+
+## Contribution Process
 
 Please follow this process to propose changes:
 
@@ -57,4 +59,4 @@ Please follow this process to propose changes:
 All pull requests are reviewed by maintainers and, if relevant, by the LOTUSim Governance Committee.
 Feedback may include requests for clarification, documentation, or code improvements.
 
-Once approved, your contribution will be merged into the main branch and included in the next release according to the project roadmap.
+Once approved, your contribution will be merged into the main branch and included in the next release according to the [project roadmap](VISION.md#current-focus).
