@@ -78,8 +78,7 @@ bool TcpUdpInterface::configureInterface(
         ip,
         udp_port);
     try {
-        m_udp_endpoint =
-            ip::udp::endpoint(ip::address::from_string(ip), udp_port);
+        m_udp_endpoint = ip::udp::endpoint(ip::make_address(ip), udp_port);
         m_udp_socket_ptr->open(ip::udp::v4());
     } catch (const boost::system::system_error& e) {
         m_logger->error("Failed to open UDP socket: {}", e.what());
@@ -91,7 +90,7 @@ bool TcpUdpInterface::configureInterface(
         "TcpUdpInterface::configureInterface : Creating TCP connection at ip: {}  tcp_port: {}",
         ip,
         tcp_port);
-    m_tcp_endpoint = ip::tcp::endpoint(ip::address::from_string(ip), tcp_port);
+    m_tcp_endpoint = ip::tcp::endpoint(ip::make_address(ip), tcp_port);
     boost::system::error_code ec;
     m_tcp_socket_ptr->connect(m_tcp_endpoint, ec);
 

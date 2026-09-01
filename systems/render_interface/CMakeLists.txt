@@ -42,7 +42,9 @@ find_package(lotusim_msgs REQUIRED)
 
 # Third-party libraries
 find_package(yaml-cpp REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
+# Boost.System is header-only since 1.69 and BoostConfig.cmake ships no
+# boost_system component, so requesting it fails once CMP0167 drops FindBoost.
+find_package(Boost REQUIRED)
 
 # Gazebo packages
 find_package(sdformat14 REQUIRED)
@@ -71,7 +73,7 @@ target_link_libraries(render_plugin
   gz-plugin2::gz-plugin2
   gz-msgs10::gz-msgs10
   gz-transport13::gz-transport13
-  Boost::system
+  Boost::boost
   yaml-cpp
 )
 

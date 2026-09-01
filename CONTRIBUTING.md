@@ -13,7 +13,7 @@ The committee publishes a roadmap highlighting priority topics and features, bas
 - Partner priorities,
 - And community-driven contributions.
 
-This roadmap is updated every six months and available in the Project Roadmap section.
+This roadmap is updated every six months and available in the [`VISION.md`](VISION.md#current-focus) file, under "Current Focus" and "Next".
 
 New ideas that enrich LOTUSim are always welcome, even if they are not listed on the roadmap.
 

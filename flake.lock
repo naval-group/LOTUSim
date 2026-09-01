@@ -1,0 +1,160 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "lotusim-ui-backend": {
+      "inputs": {
+        "flake-utils": [
+          "lotusim-ui-backend",
+          "nix-ros-overlay",
+          "flake-utils"
+        ],
+        "nix-ros-overlay": [
+          "nix-ros-overlay"
+        ],
+        "nixpkgs": [
+          "lotusim-ui-backend",
+          "nix-ros-overlay",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787291151,
+        "narHash": "sha256-pgAIA0n/yVkGUAAKJov9vI25VSA5WaBPvhXZplshnAo=",
+        "owner": "naval-group",
+        "repo": "LOTUSim-UI-backend",
+        "rev": "0861406e54844886f55a03479e59ffbe390bc012",
+        "type": "github"
+      },
+      "original": {
+        "owner": "naval-group",
+        "repo": "LOTUSim-UI-backend",
+        "type": "github"
+      }
+    },
+    "lotusim-ui-frontend": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787211194,
+        "narHash": "sha256-q8MdPyR0wsIYdZGTnmpzXlk86MR7CJsErO7ccnEdDaY=",
+        "owner": "naval-group",
+        "repo": "LOTUSim-UI-frontend",
+        "rev": "5f6775299aa3e9d0bf202445b82e5d5b6c832b0c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "naval-group",
+        "repo": "LOTUSim-UI-frontend",
+        "type": "github"
+      }
+    },
+    "nix-ros-overlay": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs",
+        "rosdistro": "rosdistro"
+      },
+      "locked": {
+        "lastModified": 1785606873,
+        "narHash": "sha256-B4+EVJ+D1bKbIzQxdbOJuU/l7y9tJg1dHNAUyO6MQyg=",
+        "owner": "lopsided98",
+        "repo": "nix-ros-overlay",
+        "rev": "2004728f9f450421c9d44b62d6c707a5834139bb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lopsided98",
+        "ref": "master",
+        "repo": "nix-ros-overlay",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1782723713,
+        "narHash": "sha256-oPXCU/SSUokcGaJREHibG1CBX3+s/W7orDWQOZDsEeQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b5aa0fbd538984f6e3d201be0005b4463d8b09f8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": [
+          "nix-ros-overlay",
+          "flake-utils"
+        ],
+        "lotusim-ui-backend": "lotusim-ui-backend",
+        "lotusim-ui-frontend": "lotusim-ui-frontend",
+        "nix-ros-overlay": "nix-ros-overlay",
+        "nixpkgs": [
+          "nix-ros-overlay",
+          "nixpkgs"
+        ]
+      }
+    },
+    "rosdistro": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785506537,
+        "narHash": "sha256-F/E9AWF3V2coFM0tz8Rpgjs7KZELZ617OUrfiF5Tb3I=",
+        "owner": "ros",
+        "repo": "rosdistro",
+        "rev": "16a90886be745b6ec535942294969c2228a8c59a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ros",
+        "repo": "rosdistro",
+        "type": "github"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

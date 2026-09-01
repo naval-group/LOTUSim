@@ -8,21 +8,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        ros:
-          - jazzy
-          - humble
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image (no push)
-        uses: docker/build-push-action@v6
+      - uses: cachix/install-nix-action@v31
         with:
-          context: .
-          push: false
-          build-args: |
-            ROS_DISTRO=${{ matrix.ros }}
-          tags: lotusim:${{ matrix.ros }}
+          # The Gazebo Harmonic vendor stack is not in cache.nixos.org. Without
+          # this the job builds ~370 derivations from source — roughly an hour —
+          # and reports neither an error nor a warning while doing it.
+          extra_nix_config: |
+            extra-substituters = https://ros.cachix.org
+            extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo=
+
+      - name: Build the workspace
+        run: nix build .#lotusim --print-build-logs
+
+      - name: Build the container image
+        run: |
+          set -euo pipefail
+          nix build .#container --print-build-logs
+          # The build only produces the streaming script, so assemble the image
+          # too — discarded rather than loaded, which keeps the runner's disk out
+          # of it while still exercising the layering.
+          ./result > /dev/null

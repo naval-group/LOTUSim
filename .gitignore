@@ -1,8 +1,17 @@
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
+.vscode/
+.config/
 
 docs/doxygen
 lotus_logs/*
 .ipynb_checkpoints
 *.rviz
+
+# colcon
+build/
+install/
+log/
+
+# nix
+result
+result-*
+.direnv/

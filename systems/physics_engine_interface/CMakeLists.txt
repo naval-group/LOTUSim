@@ -37,7 +37,9 @@ find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
+# Boost.System is header-only since 1.69 and BoostConfig.cmake ships no
+# boost_system component, so requesting it fails once CMP0167 drops FindBoost.
+find_package(Boost REQUIRED)
 find_package(websocketpp REQUIRED)
 
 find_package(gz-cmake3 REQUIRED)
@@ -65,7 +67,7 @@ target_link_libraries(physics_interface_plugin
   gz-sim8::gz-sim8
   gz-plugin2::gz-plugin2
   websocketpp::websocketpp
-  Boost::system
+  Boost::boost
   yaml-cpp
 )
 

@@ -1,0 +1,183 @@
+[env]
+LOTUSIM_PATH = "{{config_root}}"
+# The repo's assets, not the flake wrappers' state dir: a dev edits these in-tree.
+# Trailing slash is load-bearing: xdyn concatenates it onto mesh paths.
+LOTUSIM_MODELS_PATH = "{{config_root}}/assets/models/"
+LOTUSIM_SCENARIOS_PATH = "{{config_root}}/assets/scenarios"
+LOTUSIM_SPDLOG_LEVEL = "info"
+
+GZ_SIM_SYSTEM_PLUGIN_PATH = "{{config_root}}/install/lib"
+# model:// resolves against the directory holding <model>/model.config.
+GZ_SIM_RESOURCE_PATH = "{{config_root}}/assets:{{config_root}}/assets/models"
+
+# Fast DDS multicast discovery does not survive most container network setups.
+FASTDDS_BUILTIN_TRANSPORTS = "UDPv4"
+
+[tasks.build]
+description = "Build the colcon workspace"
+dir = "{{config_root}}"
+shell = "bash -c"
+usage = 'flag "--debug" help="Build with DEBUG=ON and a symlinked install"'
+run = '''
+if [ "${usage_debug:-false}" = "true" ]; then
+  colcon build --merge-install --symlink-install \
+    --event-handlers compile_commands+ \
+    --cmake-args -DDEBUG=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+else
+  colcon build --merge-install --event-handlers compile_commands+ \
+    --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+fi
+'''
+
+[tasks.clean]
+description = "Remove build/, install/ and log/"
+dir = "{{config_root}}"
+run = "rm -rf build install log"
+
+[tasks.rebuild]
+description = "Clean, then build"
+depends = ["clean", "build"]
+
+[tasks.test]
+description = "Run the gtest suite (advisory — does not gate the build)"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = '''
+colcon test --merge-install --event-handlers console_direct+
+colcon test-result --verbose
+'''
+
+[tasks."test:assets"]
+description = "Check that --assets-path composes assets roots instead of replacing them"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = "bash scripts/test_assets_path.sh"
+
+[tasks.check]
+description = "Headless smoke test: vessels spawn, sensors render, gz logs no error"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = "bash scripts/check.sh"
+
+[tasks.sim]
+description = "Run a simulation world"
+dir = "{{config_root}}"
+shell = "bash -c"
+usage = '''
+arg "<world>" default="lotusim.world" help="A file in worlds/ of any assets root"
+flag "--assets-path <path>" var=#true help="Extra assets roots, colon-separated and repeatable"
+flag "--gui" help="Open the Gazebo window instead of running headless"
+flag "--debug" help="Verbose gz and debug-level LOTUSim logs"
+'''
+run = '''
+if [ ! -f install/setup.bash ]; then
+  echo "No workspace build found — run 'mise run build' first." >&2
+  exit 1
+fi
+
+# The core root always comes first; --assets-path appends to it rather than replacing it.
+assets_roots=("$LOTUSIM_PATH/assets")
+for entry in ${usage_assets_path:-}; do
+  IFS=':' read -ra extra_roots <<< "$entry"
+  assets_roots+=("${extra_roots[@]}")
+done
+
+resource_path=""
+for root in "${assets_roots[@]}"; do
+  resource_path="${resource_path:+$resource_path:}$root:$root/models"
+done
+export GZ_SIM_RESOURCE_PATH="$resource_path"
+
+# Composition is invisible otherwise, so report the search when it is in play.
+if [ -n "${usage_assets_path:-}" ] || [ "${usage_debug:-false}" = "true" ]; then
+  show_paths=true
+else
+  show_paths=false
+fi
+
+if [ "$show_paths" = "true" ]; then
+  echo "GZ_SIM_RESOURCE_PATH: $GZ_SIM_RESOURCE_PATH"
+fi
+
+world_file=""
+for root in "${assets_roots[@]}"; do
+  if [ -f "$root/worlds/$usage_world" ]; then
+    world_file="$root/worlds/$usage_world"
+    break
+  fi
+done
+if [ -z "$world_file" ]; then
+  echo "World '$usage_world' not found in: ${assets_roots[*]}" >&2
+  exit 1
+fi
+
+if [ "$show_paths" = "true" ]; then
+  echo "World: $world_file"
+fi
+
+# gz sim -s is server-only; dropping it is what opens the GUI.
+if [ "${usage_gui:-false}" = "true" ]; then headless=""; else headless="-s"; fi
+if [ "${usage_debug:-false}" = "true" ]; then
+  verbosity="-v4"
+  export LOTUSIM_SPDLOG_LEVEL=debug
+else
+  # -v1 keeps errors: Ogre2 reports its GLX-to-EGL fallback at this level.
+  verbosity="-v1"
+fi
+
+if [ "${usage_gui:-false}" = "true" ]; then
+  # Qt picks the wayland or xcb plugin itself; only the absence of both is fatal.
+  if [ -z "${WAYLAND_DISPLAY:-}" ] && [ -z "${DISPLAY:-}" ]; then
+    echo "--gui needs a graphical session: neither WAYLAND_DISPLAY nor DISPLAY is set." >&2
+    exit 1
+  fi
+fi
+
+# A nix-built binary cannot see a non-NixOS host's GPU driver; nixGL bridges it.
+# The GUI needs it and so does every rendering sensor — camera, gpu_lidar — which
+# gz implements by rendering the scene, headless or not.
+glwrap=""
+if wrapper=$(bash scripts/gl-wrapper.sh); then
+  glwrap="$wrapper"
+elif [ "${usage_gui:-false}" = "true" ]; then
+  # gz exits 0 when the GUI aborts, so refuse now.
+  echo "No GPU driver bridge — the GUI cannot reach a driver." >&2
+  echo "  nix profile add github:nix-community/nixGL#nixGLIntel" >&2
+  echo "NVIDIA and hybrid machines: see the README." >&2
+  exit 1
+else
+  echo "warning: no GPU driver bridge — camera and gpu_lidar sensors will not render." >&2
+fi
+
+exec $glwrap gz sim $verbosity $headless -r "$world_file"
+'''
+
+[tasks."lint:tidy"]
+description = "Run clang-tidy over the workspace sources"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = '''
+if [ ! -f build/compile_commands.json ]; then
+  echo "No compile_commands.json — run 'mise run build' first." >&2
+  exit 1
+fi
+run-clang-tidy -p build "systems/" "interfaces/" "examples/"
+'''
+
+[tasks.doc]
+description = "Generate the doxygen documentation"
+dir = "{{config_root}}/docs"
+run = "doxygen Doxyfile"
+
+[tasks.image]
+description = "Build the container image and load it into docker or podman"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = '''
+nix build .#container
+if command -v podman >/dev/null; then
+  ./result | podman load
+else
+  ./result | docker load
+fi
+'''

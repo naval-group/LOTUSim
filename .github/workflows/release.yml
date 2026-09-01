@@ -1,10 +1,12 @@
-name: Release Docker image
+name: Release container image
 
 on:
   push:
     branches:
       - main
-    
+    tags:
+      - 'v*'
+
 permissions:
   contents: read
   packages: write
@@ -14,56 +16,78 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        ros:
-          - jazzy
-
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: lotusim
-      LOTUSIM_WS: /lotusim_ws
-      LOTUSIM_PATH: /lotusim_ws/src/LOTUSim
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: cachix/install-nix-action@v31
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract short commit SHA
-        id: commit
-        run: |
-          echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          extra_nix_config: |
+            extra-substituters = https://ros.cachix.org
+            extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo=
 
       - name: Normalize repository name (lowercase)
         id: repo
         run: |
           echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
-      - name: Build and push Docker image
-        id: image    
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ steps.repo.outputs.repo }}:${{ steps.commit.outputs.short_sha }}
-            ghcr.io/${{ steps.repo.outputs.repo }}:latest
-          build-args: |
-            ROS_DISTRO=${{ matrix.ros }}
-      
+      - name: Build and push the image
+        id: image
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The default shell is bash -e without pipefail, so a failing
+          # skopeo login would otherwise be masked by the pipe.
+          set -euo pipefail
+
+          nix build .#container --print-build-logs
+          ./result > "$RUNNER_TEMP/lotusim.tar"
+
+          # skopeo comes from this flake's own nixpkgs, so the tool that
+          # publishes the image is pinned like the image itself.
+          nix build --inputs-from . nixpkgs#skopeo -o "$RUNNER_TEMP/skopeo"
+          export PATH="$RUNNER_TEMP/skopeo/bin:$PATH"
+          export REGISTRY_AUTH_FILE="$RUNNER_TEMP/auth.json"
+
+          printf '%s' "$REGISTRY_PASSWORD" | skopeo login ghcr.io \
+            --username "${{ github.actor }}" --password-stdin
+
+          registry="ghcr.io/${{ steps.repo.outputs.repo }}"
+
+          # A tag push re-publishes a commit main already tagged with its short
+          # sha, so the version name is the only tag it adds.
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tags=("$GITHUB_REF_NAME")
+          else
+            tags=("${GITHUB_SHA::7}" latest)
+          fi
+
+          skopeo copy --digestfile "$RUNNER_TEMP/digest" \
+            "docker-archive:$RUNNER_TEMP/lotusim.tar" \
+            "docker://$registry:${tags[0]}"
+
+          # Copying registry-side keeps every tag on the one digest cosign signs.
+          for t in "${tags[@]:1}"; do
+            skopeo copy "docker://$registry:${tags[0]}" "docker://$registry:$t"
+          done
+
+          # cosign signs a digest, not a tag.
+          echo "digest=$(cat "$RUNNER_TEMP/digest")" >> $GITHUB_OUTPUT
+
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.0.0
         with:
           cosign-release: 'v2.6.2'
 
       - name: Sign container image
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cosign sign --yes ghcr.io/${{ steps.repo.outputs.repo }}@${{ steps.image.outputs.digest }}
+          set -euo pipefail
+
+          # cosign reads ~/.docker/config.json, not skopeo's REGISTRY_AUTH_FILE.
+          printf '%s' "$REGISTRY_PASSWORD" | cosign login ghcr.io \
+            --username "${{ github.actor }}" --password-stdin
+
+          cosign sign --yes \
+            ghcr.io/${{ steps.repo.outputs.repo }}@${{ steps.image.outputs.digest }}
