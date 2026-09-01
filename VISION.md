@@ -11,6 +11,29 @@ LOTUSim was born from the work of Naval Group PhD students, in France and around
 That is the mission: to make the work of algorithm designers, research engineers,
 human-factors specialists and roboticists simpler and more effective, by giving them a common playground for their work.
 
+## Contribution Philosophy
+
+LOTUSim aims to foster research, experimentation, and interoperability in the
+field of multi-agent simulation.
+
+A LOTUSim Governance Committee, established within Naval Group, oversees the
+overall coherence of the project's developments. In the future, the committee
+may include external personas (key partners or major contributors).
+
+The committee publishes a roadmap highlighting priority topics and features,
+based on:
+- Internal needs within Naval Group,
+- Partner priorities,
+- And community-driven contributions.
+
+New ideas that enrich LOTUSim are always welcome, even if they are not listed
+on the roadmap.
+
+The LOTUSim Governance Committee ensures:
+- Technical consistency of the project core,
+- Validation of contributions,
+- Release publication in alignment with the roadmap.
+
 ## Current Focus
 
 The priorities for the current period are:
@@ -42,26 +65,9 @@ These two axes are our internal focus. We strongly encourage the community to bu
 LOTUSim's technical choices serve three objectives: openness (open-source, built on open standards), modularity (add or swap model, sensors and algorithms) and flexibility (configure the simulation to fit your need). The core, governed by Naval Group, holds the architecture, the interfaces and the foundational bricks, and we remain firm there: the main directions are ours to set and to carry.
 Around that core, models, sensors and scenarios are open to community contribution.
 
-- **ROS2** - the de facto standard of robotics. It makes LOTUSim naturally compatible
-  with the real software bricks roboticists work with, so that algorithms built in
-  simulation transpose toward hardware.
-- **Gazebo** - a mature open-source robotics simulator providing physics and sensor
-  rendering, with native ROS2 integration.
-- **xdyn** - an open-source (EPL-2.0) hydrodynamics engine developed by Sirehna. It solves the equations of motion for surface and underwater vehicles under real sea conditions, bringing a level of physical fidelity a generic robotics simulator does not cover - a differentiating brick for the naval domain.
-- **C++** - the the core language, chosen for performance and real-time execution, long favoured by industry for demanding simulation. 
-- **Python** - the accessible layer on top : the language of algorithm designers and the R&D/AI community, with ready examples for users.
+Full details: [LOTUSim Architecture wiki](https://github.com/naval-group/LOTUSim/wiki/LOTUSim-Architecture).
 
-MCP support follows the same logic of openness: exposing LOTUSim so that AI agents can orchestrate it - for instance, going from a natural-language scenario description to a
-running simulation.
-
-## Contributing & Scope
-
-The full contribution process lives in [`CONTRIBUTING.md`](CONTRIBUTING.md). A few points of scope are worth stating here, as they shape what fits the project.
-
-- **Proprietary names.** Contributions must not expose the names of proprietary platforms or sensors without agreement. Respect each organisation's wishes about being named or not - some choose to be credited, others do not.
-- **AI-generated code.** Treat it with care. Understand, review and verify what you submit. Do not pour in thousands of lines doing forty things at once - one focused change at a time, as set out in [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-This is a guardrail for a project that means to stay open and modular, not an exhaustive rulebook. Strong rationale and strong community demand can move it.
+The full contribution process lives in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## References
 
