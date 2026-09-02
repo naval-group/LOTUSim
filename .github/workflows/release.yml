@@ -20,11 +20,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # naval-group is read-only here: ci.yml builds and pushes the same .#container.
+      # A substituter needs no token, so no write path reaches the publishing workflow.
       - uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
-            extra-substituters = https://ros.cachix.org
-            extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo=
+            extra-substituters = https://ros.cachix.org https://naval-group.cachix.org
+            extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo= naval-group.cachix.org-1:ytTEzFEeuzQrC9IRYLzHGa5OnM65G95M6/sbPd0fy28=
 
       - name: Normalize repository name (lowercase)
         id: repo

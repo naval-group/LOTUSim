@@ -20,6 +20,16 @@ jobs:
             extra-substituters = https://ros.cachix.org
             extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo=
 
+      # No pushFilter: it applies before closure expansion, so it cannot keep the Gazebo
+      # stack out. The post-build hook already limits this to the paths CI builds.
+      # main only: `on: push` has no branch filter, and a branch's paths are never
+      # collected once it is deleted.
+      - uses: cachix/cachix-action@v17
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: naval-group
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
       - name: Build the workspace
         run: nix build .#lotusim --print-build-logs
 

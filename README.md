@@ -12,17 +12,19 @@ curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --da
 ```
 For more options, check their official website: [Nix](https://nixos.org/download/). 
 
-#### 1. Add the ROS cache
+#### 1. Add the binary caches
 
-Needs root, once per machine.
+Needs root, once per machine. These let Nix fetch the Gazebo stack and the physics engine prebuilt, saving about an hour of compiling.
 
 ```sh
 sudo tee -a /etc/nix/nix.conf <<'EOF'
-extra-substituters = https://ros.cachix.org
-extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo=
+extra-substituters = https://ros.cachix.org https://naval-group.cachix.org
+extra-trusted-public-keys = ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo= naval-group.cachix.org-1:ytTEzFEeuzQrC9IRYLzHGa5OnM65G95M6/sbPd0fy28=
 EOF
 sudo systemctl restart nix-daemon   # or your init system's equivalent
 ```
+
+`/etc/nix/nix.conf` is the system-wide file, so the keys are trusted for every user and the signatures verify.
 
 #### 2. Install and run:
 
