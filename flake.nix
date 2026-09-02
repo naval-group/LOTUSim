@@ -28,9 +28,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+
+    # Deliberately no `follows`: xdyn has to hash to what lxdyn's own CI built, or it
+    # misses the cache and every contributor compiles the musl closure from source.
+    lxdyn.url = "github:naval-group/lxdyn";
   };
 
-  outputs = { self, nix-ros-overlay, nixpkgs, flake-utils, lotusim-ui-backend, lotusim-ui-frontend }:
+  outputs = { self, nix-ros-overlay, nixpkgs, flake-utils, lotusim-ui-backend, lotusim-ui-frontend, lxdyn }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -241,6 +245,8 @@
           export LOTUSIM_STATE_HOME
           ${seedState} "$LOTUSIM_STATE_HOME"
           export LOTUSIM_MODELS_PATH="''${LOTUSIM_MODELS_PATH:-$LOTUSIM_STATE_HOME/models/}"
+          # The root xdyn resolves a YAML's relative mesh and seabed paths against.
+          export XDYN_ASSETS_PATH="''${XDYN_ASSETS_PATH:-$LOTUSIM_MODELS_PATH}"
           export LOTUSIM_SCENARIOS_PATH="''${LOTUSIM_SCENARIOS_PATH:-$LOTUSIM_STATE_HOME/scenarios}"
           export GZ_SIM_RESOURCE_PATH="$LOTUSIM_STATE_HOME:$LOTUSIM_STATE_HOME/models:${assets}:${assets}/models''${GZ_SIM_RESOURCE_PATH:+:$GZ_SIM_RESOURCE_PATH}"
         '';
@@ -256,33 +262,10 @@
           name = "lotusim-gl-wrapper.sh";
         };
 
-        # xdyn, the physics server each vessel talks to over a websocket. Taken from
-        # lxdyn's published deploy image, which is FROM scratch: the layers hold the
-        # static binaries and nothing else. Pinned by digest — :latest moves.
-        lxdynImage = pkgs.dockerTools.pullImage {
-          imageName = "ghcr.io/naval-group/lxdyn";
-          imageDigest = "sha256:5361ec8eb091d881a34b49a5015a801a42736dd48be4d33cac5f26b398dc06a0";
-          sha256 = "sha256-HYEGXGR6vKnfSGFYsJe5t3jF3whz5PR9q/zTTiPikCE=";
-          finalImageTag = "26.8.1";
-        };
-
-        xdyn = pkgs.runCommand "xdyn-26.8.1"
-          {
-            nativeBuildInputs = [ pkgs.jq ];
-            # Static musl: no interpreter for patchelf to rewrite, and the archives are
-            # the product.
-            dontFixup = true;
-          } ''
-          mkdir -p image rootfs
-          tar -xf ${lxdynImage} -C image
-          for layer in $(jq -r '.[0].Layers[]' image/manifest.json); do
-            tar -xf "image/$layer" -C rootfs
-          done
-          # Three of the six, not the directory: the image also ships an xdyn tool named
-          # `gz`, which would shadow Gazebo's on PATH.
-          install -Dm755 -t $out/bin \
-            rootfs/usr/bin/xdyn rootfs/usr/bin/xdyn-for-cs rootfs/usr/bin/xdyn-for-me
-        '';
+        # xdyn, the physics server each vessel talks to over a websocket. Static musl,
+        # and the derivation installs the three binaries LOTUSim needs — not the `gz`
+        # that would shadow Gazebo's on PATH.
+        xdyn = lxdyn.packages.${system}.xdyn;
 
         # The ROS and Gazebo setup hooks assemble GZ_CONFIG_PATH,
         # AMENT_PREFIX_PATH, LD_LIBRARY_PATH and PYTHONPATH out of 11 to 133
@@ -328,7 +311,8 @@
             Scenarios you create and models you upload are written to
               $LOTUSIM_STATE_HOME
             LOTUSIM_STATE_HOME moves all of it; GZ_SIM_RESOURCE_PATH,
-            LOTUSIM_MODELS_PATH and LOTUSIM_SCENARIOS_PATH override one at a time.
+            LOTUSIM_MODELS_PATH, XDYN_ASSETS_PATH and LOTUSIM_SCENARIOS_PATH
+            override one at a time.
 
             The web UI is its own entry point:
               nix run github:naval-group/LOTUSim#ui      http://localhost:8080

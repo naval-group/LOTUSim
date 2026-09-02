@@ -3,6 +3,8 @@ LOTUSIM_PATH = "{{config_root}}"
 # The repo's assets, not the flake wrappers' state dir: a dev edits these in-tree.
 # Trailing slash is load-bearing: xdyn concatenates it onto mesh paths.
 LOTUSIM_MODELS_PATH = "{{config_root}}/assets/models/"
+# The root xdyn resolves a YAML's relative mesh and seabed paths against.
+XDYN_ASSETS_PATH = "{{config_root}}/assets/models/"
 LOTUSIM_SCENARIOS_PATH = "{{config_root}}/assets/scenarios"
 LOTUSIM_SPDLOG_LEVEL = "info"
 
