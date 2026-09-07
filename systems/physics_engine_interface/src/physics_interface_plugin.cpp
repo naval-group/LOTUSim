@@ -405,7 +405,16 @@ bool PhysicsInterfacePlugin::vesselDomainTransition(
     }
 
     std::unique_lock<std::shared_mutex> lock(m_mutex);
+    // Only tear the previous interface down when it is a DIFFERENT object from
+    // the one just activated. XdynWebsocket is a singleton: the surface and
+    // underwater interfaces of an xdyn model are the same instance, and its
+    // connections are keyed by entity alone, not by (entity, domain). For a
+    // model crossing its surface threshold, activateInterface reused the
+    // connection already open, and deactivating "the previous interface" here
+    // closes that same connection, leaving the model with none for every step
+    // that follows.
     if (m_vehicle_current_mode.find(_vessel) != m_vehicle_current_mode.end() &&
+        m_current_vessel_interface[_vessel] != new_interface &&
         !m_current_vessel_interface[_vessel]->deactivateInterface(
             _vessel,
             m_vehicle_current_mode[_vessel])) {
