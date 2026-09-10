@@ -4,7 +4,7 @@
 
 LOTUSim is a real-time, multi-domain simulation platform for maritime operations. It models realistic surface, underwater, and air physics for aerial drones, surface ships, and underwater vehicles. An immersive interface lets human operators run human-autonomous agent scenarios, and physically accurate models make LOTUSim suitable for training AI algorithms.
 
-Jump to the [Quickstart](#quickstart) below to get it installed and running in about 10 minutes. For everything else — tutorials, available models/sensors/batteries, the [Developer Workflow](https://github.com/naval-group/LOTUSim/wiki/Developer-Workflow), and architecture — see the [wiki](https://github.com/naval-group/LOTUSim/wiki).
+Jump to the [Quickstart](#quickstart) below to get it installed and running in about 10 minutes. For everything else — tutorials, available models/sensors/batteries, and the Developer Guide — see the [wiki](https://github.com/naval-group/LOTUSim/wiki).
 
 ## Quickstart
 
