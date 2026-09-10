@@ -143,7 +143,7 @@ mise run build          # builds the workspace
 mise run sim            # runs it. You can add the param --gui
 ```
 
-This gets the core simulator running. If you also want to work on the web UI or the physics engine (xdyn), or you want the full task reference, see [Developing for LOTUSim](https://github.com/naval-group/LOTUSim/wiki/Getting-Started#developing-for-lotusim) on the wiki.
+This gets the core simulator running. If you also want to work on the web UI or the physics engine (xdyn), or you want the full task reference, see the [Developer Workflow](https://github.com/naval-group/LOTUSim/wiki/Developer-Workflow) on the wiki.
 
 ### Windows users
 
