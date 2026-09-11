@@ -209,15 +209,27 @@ bool XdynWebsocket::activateInterface(
             websocketpp::lib::placeholders::_2));
 
         int retry = 0;
-        while (m_status[_entity] != "opened" && retry < 3) {
+        const auto poll_interval = std::chrono::milliseconds(50);
+        const auto per_attempt_timeout = std::chrono::seconds(3);
+
+        auto is_opened = [&]() {
+            std::unique_lock<std::mutex> lock(m_variable_mutex);
+            return m_status[_entity] == "opened";
+        };
+
+        while (!is_opened() && retry < 3) {
             m_logger->info(
                 "XdynWebsocket::activateInterface: Starting connection: {}",
                 m_name_mapping[_entity]);
             m_client.connect(con);
-            std::this_thread::sleep_for(std::chrono::seconds(3));
+            auto attempt_start = std::chrono::steady_clock::now();
+            while (!is_opened() &&
+                std::chrono::steady_clock::now() - attempt_start < per_attempt_timeout) {
+                std::this_thread::sleep_for(poll_interval);
+            }
             retry += 1;
         }
-        if (retry > 2) {
+        if (!is_opened()) {
             m_logger->error(
                 "XdynWebsocket::activateInterface: Called for vessel entity {} but unable to connect.",
                 _entity);
@@ -406,9 +418,15 @@ bool XdynWebsocket::send(
     const gz::sim::Entity& _entity,
     const std::string& message)
 {
-    std::unique_lock<std::mutex> lock(m_variable_mutex);
-    // Guard to help with setup time
-    auto conn_ptr = m_connection_mapping[_entity];
+    Client::connection_ptr conn_ptr;
+    std::mutex* msg_mutex_ptr = nullptr;
+    std::condition_variable* msg_cv_ptr = nullptr;
+    {
+        std::unique_lock<std::mutex> lock(m_variable_mutex);
+        conn_ptr = m_connection_mapping[_entity];
+        msg_mutex_ptr = &m_msg_mutex[_entity];
+        msg_cv_ptr = &m_msg_cv[_entity];
+    }
     if (!conn_ptr) {
         m_logger->warn("Websocket connection not ready, skipping send.");
         return false;
@@ -425,17 +443,14 @@ bool XdynWebsocket::send(
             ec.message());
         return false;
     }
-    {
-        std::unique_lock<std::mutex> lock(m_msg_mutex[_entity]);
-        if (m_msg_cv[_entity].wait_for(
-                lock,
-                std::chrono::seconds(DEFAULT_WEBSOCKET_TIMEOUT)) ==
-            std::cv_status::timeout) {
-            m_logger->warn("XdynWebsocket::send: websocket timed out.");
-            return false;
-        } else {
-            return true;
-        }
+    std::unique_lock<std::mutex> msg_lock(*msg_mutex_ptr);
+    if (msg_cv_ptr->wait_for(
+            msg_lock,
+            std::chrono::seconds(DEFAULT_WEBSOCKET_TIMEOUT)) ==
+        std::cv_status::timeout) {
+        m_logger->warn("XdynWebsocket::send: websocket timed out.");
+        return false;
     }
+    return true;
 }
 }  // namespace lotusim::gazebo
