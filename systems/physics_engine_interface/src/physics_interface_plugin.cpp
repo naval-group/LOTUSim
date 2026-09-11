@@ -198,8 +198,7 @@ void PhysicsInterfacePlugin::updateVesselState(
         const std::chrono::_V2::system_clock::time_point start_time =
             std::chrono::system_clock::now();
 
-        // Phase 1: read the state from the ECM (serialised, ECM not
-        // thread-safe).
+        // Phase 1: read the state from the ECM (serialised, ECM not thread-safe)
         VesselInformation vessel_info;
         {
             std::lock_guard<std::mutex> ecm_lock(m_ecm_mutex);
@@ -214,7 +213,7 @@ void PhysicsInterfacePlugin::updateVesselState(
             pose = pose_comp->Data();
 
             gz::sim::Link _link(base_link_entity);
-            // World frame, ENU.
+            // World frame, ENU
             auto lin_vel_opt = _link.WorldLinearVelocity(_ecm);
             auto ang_vel_opt = _link.WorldAngularVelocity(_ecm);
 
@@ -233,9 +232,8 @@ void PhysicsInterfacePlugin::updateVesselState(
             vessel_info.pose = pose;
         }
 
-        // Phase 2: compute the new state (runs in parallel, no ECM access).
-        update_opt =
-            interface->getNewState(vessel_entity, vessel_info, target_time);
+        // Phase 2: compute the new state (runs in parallel, no ECM access)
+        update_opt = interface->getNewState(vessel_entity, vessel_info, target_time);
 
         // Print physics engine response time if compiled in debug mode
         if (m_logger->level() < spdlog::level::info) {
@@ -247,7 +245,7 @@ void PhysicsInterfacePlugin::updateVesselState(
                     .count());
         }
 
-        // Phase 3: write the new state to the ECM (serialised).
+        // Phase 3: write the new state to the ECM (serialised)
         if (update_opt) {
             if (!vesselDomainTransition(
                     vessel_entity,
