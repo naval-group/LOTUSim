@@ -108,7 +108,7 @@ if(BUILD_TESTING)
   # Unit tests on the NED<->ENU conversions (pure functions living in the
   # plugin library). The test forward-declares them and links the library, so
   # it does not need the plugin's websocketpp/json include chain.
-  ament_add_gtest(test_ned_enu_conversions test/test_ned_enu_conversions.cpp)
+  ament_add_gtest(test_ned_enu_conversions test/test_vessel_information.cpp)
   if(TARGET test_ned_enu_conversions)
     target_link_libraries(test_ned_enu_conversions
       physics_interface_plugin
