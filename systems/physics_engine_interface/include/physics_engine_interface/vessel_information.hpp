@@ -10,9 +10,6 @@
 #ifndef LOTUSIM_VESSEL_INFORMATION_HH_
 #define LOTUSIM_VESSEL_INFORMATION_HH_
 
-
-namespace lotusim::gazebo {
-
 /**
  * @brief Defines the vessel state representation and coordinate-convention conversion utilities.
  *
@@ -49,6 +46,8 @@ namespace lotusim::gazebo {
 #include <gz/sim/System.hh>
 
 #include <ostream>
+
+namespace lotusim::gazebo {
 
 /**
  * @brief Coordinate conventions supported by VesselInformation.
