@@ -11,36 +11,6 @@
 
 namespace lotusim::gazebo {
 
-// Convert a quaternion from the NED frame to the ENU frame
-
-// An attitude quaternion maps body axes to world axes, so converting it
-// between conventions changes BOTH frames: world swap (ENU<->NED) on the
-// left, body swap (FLU<->FRD) on the right. A similarity transform
-// (q_swap * q * q_swap^-1) only relabels the world frame and yields
-// yaw_ned = -yaw_enu instead of the correct yaw_ned = pi/2 - yaw_enu.
-// Both swap factors are 180-deg rotations (involutive up to sign), so the
-// same product converts in either direction.
-gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned)
-{
-    return q_ned_to_enu * q_ned * q_flu_to_frd;
-}
-
-// Convert a quaternion from the ENU frame back to the NED frame.
-gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu)
-{
-    return q_ned_to_enu * q_enu * q_flu_to_frd;
-}
-
-gz::math::Vector3d vecNedToEnu(const gz::math::Vector3d& v_ned)
-{
-    return {v_ned.Y(), v_ned.X(), -v_ned.Z()};
-}
-
-gz::math::Vector3d vecEnuToNed(const gz::math::Vector3d& v_enu)
-{
-    return {v_enu.Y(), v_enu.X(), -v_enu.Z()};
-}
-
 std::shared_ptr<XdynWebsocket> XdynWebsocket::m_instance = nullptr;
 std::mutex XdynWebsocket::m_instance_mutex;
 std::mutex XdynWebsocket::m_variable_mutex;
@@ -383,39 +353,31 @@ void XdynWebsocket::onMessage(
 
     std::unique_lock<std::mutex> lock(m_msg_mutex[entity]);
 
-    auto ned_position = gz::math::Vector3d(
+    const gz::math::Vector3d ned_position{
         reply["x"].back().get<double>(),
         reply["y"].back().get<double>(),
-        reply["z"].back().get<double>());
+        reply["z"].back().get<double>()};
 
-    auto ned_quad = gz::math::Quaterniond(
+    const gz::math::Quaterniond ned_quat{
         reply["qr"].back().get<double>(),
         reply["qi"].back().get<double>(),
         reply["qj"].back().get<double>(),
-        reply["qk"].back().get<double>());
+        reply["qk"].back().get<double>()};
 
-    auto gz_position = vecNedToEnu(ned_position);
-    auto gz_quad = quatNedToEnu(ned_quad);
-
-    auto ned_lin_vel = gz::math::Vector3d{
+    const gz::math::Vector3d ned_lin_vel{
         reply["u"].back().get<double>(),
         reply["v"].back().get<double>(),
         reply["w"].back().get<double>()};
 
-    auto ned_angular_vel = gz::math::Vector3d(
+    const gz::math::Vector3d ned_angular_vel{
         reply["p"].back().get<double>(),
         reply["q"].back().get<double>(),
-        reply["r"].back().get<double>());
+        reply["r"].back().get<double>()};
 
-    auto gz_lin_vel = vecNedToEnu(ned_lin_vel);
-    auto gz_angular_vel = vecNedToEnu(ned_angular_vel);
-
-    VesselInformation new_state;
+    VesselInformation new_state = VesselInformation::from_xdyn(
+        ned_position, ned_quat, ned_lin_vel, ned_angular_vel);
     new_state.time = reply["t"].back().get<double>();
     new_state.entity = entity;
-    new_state.pose = gz::math::Pose3d(gz_position, gz_quad);
-    new_state.lin_vel = gz_lin_vel;
-    new_state.ang_vel = gz_angular_vel;
 
     m_saved_state[entity] = std::move(new_state);
     m_msg_cv[entity].notify_one();
@@ -427,10 +389,7 @@ XdynWebsocket::getNewState(
     const VesselInformation& previous_state,
     float time_diff)
 {
-    gz::math::Vector3d ned_position = vecEnuToNed(previous_state.pose.Pos());
-    gz::math::Quaterniond ned_quad = quatEnuToNed(previous_state.pose.Rot());
-    gz::math::Vector3d ned_lin_vel = vecEnuToNed(previous_state.lin_vel);
-    gz::math::Vector3d ned_angular_vel = vecEnuToNed(previous_state.ang_vel);
+    const VesselInformation previous_state_xdyn = previous_state.to_xdyn();
 
     json data = json::object();
     data["Dt"] = time_diff / 1000.0;
@@ -441,19 +400,19 @@ XdynWebsocket::getNewState(
         // true clock. The raw step duration in ms sent here previously froze
         // xdyn's clock at ~Dt, which is only harmless on calm water.
         {"t", previous_state.time},
-        {"x", ned_position.X()},
-        {"y", ned_position.Y()},
-        {"z", ned_position.Z()},
-        {"qi", ned_quad.X()},
-        {"qj", ned_quad.Y()},
-        {"qk", ned_quad.Z()},
-        {"qr", ned_quad.W()},
-        {"u", ned_lin_vel.X()},
-        {"v", ned_lin_vel.Y()},
-        {"w", ned_lin_vel.Z()},
-        {"p", ned_angular_vel.X()},
-        {"q", ned_angular_vel.Y()},
-        {"r", ned_angular_vel.Z()}};
+        {"x", previous_state_xdyn.pose.Pos().X()},
+        {"y", previous_state_xdyn.pose.Pos().Y()},
+        {"z", previous_state_xdyn.pose.Pos().Z()},
+        {"qi", previous_state_xdyn.pose.Rot().X()},
+        {"qj", previous_state_xdyn.pose.Rot().Y()},
+        {"qk", previous_state_xdyn.pose.Rot().Z()},
+        {"qr", previous_state_xdyn.pose.Rot().W()},
+        {"u", previous_state_xdyn.lin_vel.X()},
+        {"v", previous_state_xdyn.lin_vel.Y()},
+        {"w", previous_state_xdyn.lin_vel.Z()},
+        {"p", previous_state_xdyn.ang_vel.X()},
+        {"q", previous_state_xdyn.ang_vel.Y()},
+        {"r", previous_state_xdyn.ang_vel.Z()}};
     data["states"].push_back(previous_state_json);
 
     if (m_models_cmd_map_ptr->find(_entity) != m_models_cmd_map_ptr->end()) {
