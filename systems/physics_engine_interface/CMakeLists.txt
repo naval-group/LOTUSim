@@ -13,7 +13,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(LOTUS_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY 
+  set(CMAKE_CXX_CLANG_TIDY
     "clang-tidy;-checks=-*,clang-analyzer-*,modernize-*,performance-*,hicpp-*,concurrency-*,bugprone-*,portability-*,cppcoreguidelines-*;-header-filter=.*")
 endif()
 
@@ -56,6 +56,7 @@ add_library(physics_interface_plugin SHARED
   src/physics_interface_plugin.cpp
   src/xdyn_websocket.cpp
   src/ros2_interface.cpp
+  src/vessel_information.cpp
 )
 
 target_include_directories(physics_interface_plugin PUBLIC
