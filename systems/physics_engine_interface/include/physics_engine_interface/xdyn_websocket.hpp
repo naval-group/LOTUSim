@@ -30,16 +30,6 @@ using hdl = websocketpp::connection_hdl;
 using Client = websocketpp::client<websocketpp::config::asio_client>;
 using json = nlohmann::json;
 
-static const gz::math::Quaterniond
-    q_ned_to_enu(0.0, 0.5 * sqrt(2.0), 0.5 * sqrt(2.0), 0.0);
-// Body-frame convention swap (gz FLU <-> xdyn FRD): 180 deg about body-x.
-static const gz::math::Quaterniond q_flu_to_frd(0.0, 1.0, 0.0, 0.0);
-
-gz::math::Quaterniond quatNedToEnu(const gz::math::Quaterniond& q_ned);
-gz::math::Quaterniond quatEnuToNed(const gz::math::Quaterniond& q_enu);
-gz::math::Vector3d vecNedToEnu(const gz::math::Vector3d& v_ned);
-gz::math::Vector3d vecEnuToNed(const gz::math::Vector3d& v_enu);
-
 constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
 
 /**
