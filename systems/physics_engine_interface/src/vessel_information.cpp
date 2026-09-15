@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Naval Group
+ * Copyright (c) 2026 Naval Group
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -49,9 +49,6 @@ static const gz::math::Matrix3d kWorldEnuNeu(0, 1, 0,  1, 0, 0,  0, 0, 1);
 // Body: FLU (Fwd,Left,Up) <-> FRU (Fwd,Right,Up): Left<->Right flip only.
 static const gz::math::Matrix3d kBodyFluFru(1, 0, 0,  0, -1, 0,  0, 0, 1);
 
-// ---------------------------------------------------------------------------
-// Generic, always-correct conversions
-// ---------------------------------------------------------------------------
 /**
  * @brief Change an attitude quaternion between world and body axis frames.
  * @param q Source attitude quaternion.
