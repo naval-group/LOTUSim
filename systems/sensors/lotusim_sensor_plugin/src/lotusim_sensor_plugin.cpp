@@ -315,6 +315,17 @@ bool LotusimSensorPlugin::EachNew(
                 _entity,
                 model_name,
                 sensor_name);
+        } else if (type == "active_sonar") {
+            m_logger->info(
+                "LotusimSensorPlugin::ActiveSonar: Creating sensor [{}/{}]",
+                model_name,
+                sensor_name);
+            sensor = CreateSensor<ActiveSonar>(
+                data,
+                model_entity,
+                _entity,
+                model_name,
+                sensor_name);
         } else {
             return true;
         }
