@@ -23,6 +23,7 @@ This only needs to be done **once**, not every time you want to run the script.
 
 In a first terminal, run:
    ```shell
+   nix develop
    mise run sim
    ```
 
@@ -30,6 +31,7 @@ In a first terminal, run:
 
 In a second terminal, type the following command:
    ```shell
+   nix develop
    python3 spawn_ships.py
    ```
 

@@ -117,17 +117,21 @@ bool XdynWebsocket::configureInterface(
     }
     m_uri[_entity][domain_type] = uri;
 
-    if (_sdf->HasElement("thrusters") && m_models_cmd_map_ptr) {
+    // The emptiness check is not redundant: a model with no thruster still has
+    // the tag, just with no child, and the loop below dereferences that child
+    // before testing it.
+    if (m_models_cmd_map_ptr && _sdf->HasElement("thrusters") &&
+        _sdf->GetElement("thrusters")->GetFirstElement()) {
         auto sdfPtr_thruster = _sdf->GetElement("thrusters")->GetFirstElement();
         auto thrusters_cmd = json::object();
-        do {
+        while (sdfPtr_thruster != sdf::ElementPtr(nullptr)) {
             std::string thruster_name = sdfPtr_thruster->Get<std::string>();
             thrusters_cmd[thruster_name + "(rpm)"] =
                 50.0;  // was 2.0 but crashes the Wageningen propeller
             thrusters_cmd[thruster_name + "(P/D)"] = 0.79;
             thrusters_cmd[thruster_name + "(beta)"] = 0.0;
             sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
-        } while (sdfPtr_thruster != sdf::ElementPtr(nullptr));
+        }
         (*m_models_cmd_map_ptr)[_entity] = thrusters_cmd.dump();
     }
     return true;
@@ -305,10 +309,40 @@ void XdynWebsocket::onMessage(
     websocketpp::connection_hdl hdl,
     websocketpp::config::asio_client::message_type::ptr msg)
 {
-    gz::sim::Entity entity =
-        m_connection_entity_mapping[m_client.get_con_from_hdl(hdl)];
+    gz::sim::Entity entity = m_connection_entity_mapping[m_client.get_con_from_hdl(hdl)];
+    
+    json reply;
+    try {
+        reply = json::parse(msg->get_payload());
+    } catch (const json::parse_error& e) {
+        m_logger->error("XdynWebsocket::onMessage: Failed to parse xdyn reply: {}", e.what());
+        return;
+    }
+
+    if (reply.contains("error")) {
+        m_logger->error(
+            "XdynWebsocket::onMessage: xdyn reported an error for entity {}: {}",
+            entity,
+            reply["error"].get<std::string>());
+        return;
+    }
+
+    // if xdyn can't simulate, it now logs and skip instead of crashing the websocket thread
+    static const std::vector<std::string> required_fields = {
+        "x", "y", "z", "qi", "qj", "qk", "qr",
+        "u", "v", "w", "p", "q", "r", "t"};
+    for (const auto& field : required_fields) {
+        if (!reply.contains(field) || reply[field].empty()) {
+            m_logger->error(
+                "XdynWebsocket::onMessage: Malformed reply from xdyn for entity {}, missing or empty field '{}'. Skipping update.\nRaw reply: {}",
+                entity,
+                field,
+                reply.dump());
+            return;
+        }
+    }
+
     std::unique_lock<std::mutex> lock(m_msg_mutex[entity]);
-    json reply = json::parse(msg->get_payload());
 
     auto ned_position = gz::math::Vector3d(
         reply["x"].back().get<double>(),
