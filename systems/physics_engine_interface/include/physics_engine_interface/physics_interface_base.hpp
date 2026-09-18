@@ -20,6 +20,7 @@
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "physics_engine_interface/vessel_information.hpp"
 
 namespace lotusim::gazebo {
 
@@ -54,18 +55,6 @@ static std::unordered_map<DomainType, std::string> DomainTypeToStringMap{
     {DomainType::Surface, "Surface"},
     {DomainType::Underwater, "Underwater"},
     {DomainType::Unknown, "Unknown"}};
-
-/**
- * @brief Struct to hold vessel information in ENU frame
- *
- */
-struct VesselInformation {
-    double time;
-    gz::sim::Entity entity;
-    gz::math::Pose3d pose;
-    gz::math::Vector3d lin_vel;
-    gz::math::Vector3d ang_vel;
-};
 
 /**
  * @brief Base class for the different physics server interface.
