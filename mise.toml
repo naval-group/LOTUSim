@@ -118,7 +118,15 @@ if [ "$show_paths" = "true" ]; then
 fi
 
 # gz sim -s is server-only; dropping it is what opens the GUI.
-if [ "${usage_gui:-false}" = "true" ]; then headless=""; else headless="-s"; fi
+# -s alone still opens a dummy GLX window for sensor rendering, so
+# --headless-rendering is what actually gets Ogre2 off GLX/X11 (EGL/off-screen).
+if [ "${usage_gui:-false}" = "true" ]; then
+  headless=""
+  render_flags=""
+else
+  headless="-s"
+  render_flags="--headless-rendering"
+fi
 if [ "${usage_debug:-false}" = "true" ]; then
   verbosity="-v4"
   export LOTUSIM_SPDLOG_LEVEL=debug
@@ -141,6 +149,20 @@ fi
 glwrap=""
 if wrapper=$(bash scripts/gl-wrapper.sh); then
   glwrap="$wrapper"
+  if [ -n "$glwrap" ]; then
+    echo "GPU driver bridge: $glwrap"
+    # On a hybrid/Optimus laptop the chain is <integrated-GPU-wrapper> <nixGLNvidia>
+    # (see gl-wrapper.sh) — without these, that chain renders on the integrated
+    # GPU by default since it's the one that owns the X screen.
+    case "$glwrap" in
+      *nixGLNvidia*)
+        export __NV_PRIME_RENDER_OFFLOAD=1
+        export __GLX_VENDOR_LIBRARY_NAME=nvidia
+        ;;
+    esac
+  else
+    echo "GPU driver bridge: native (NixOS /run/opengl-driver)"
+  fi
 elif [ "${usage_gui:-false}" = "true" ]; then
   # gz exits 0 when the GUI aborts, so refuse now.
   echo "No GPU driver bridge — the GUI cannot reach a driver." >&2
@@ -148,10 +170,10 @@ elif [ "${usage_gui:-false}" = "true" ]; then
   echo "NVIDIA and hybrid machines: see the README." >&2
   exit 1
 else
-  echo "warning: no GPU driver bridge — camera and gpu_lidar sensors will not render." >&2
+  echo "GPU driver bridge: none — camera and gpu_lidar sensors will not render." >&2
 fi
 
-exec $glwrap gz sim $verbosity $headless -r "$world_file"
+exec $glwrap gz sim $verbosity $headless $render_flags -r "$world_file"
 '''
 
 [tasks."lint:tidy"]

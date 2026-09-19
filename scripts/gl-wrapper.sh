@@ -19,13 +19,26 @@ fi
 
 # Absolute fallbacks for contexts that start with a bare PATH, like nix develop -i.
 resolve() {
-  local name path
+  local name path dir match search_dirs
   for name in "$@"; do
     for path in "$name" "$HOME/.nix-profile/bin/$name" "/nix/var/nix/profiles/default/bin/$name"; do
       if command -v "$path" >/dev/null 2>&1; then
         echo "$path"
         return 0
       fi
+    done
+
+    # nixGLNvidia has no unversioned alias — nixGL suffixes it with the
+    # detected driver version, e.g. nixGLNvidia-570.195.03.
+    IFS=':' read -ra search_dirs <<< "$PATH"
+    search_dirs+=("$HOME/.nix-profile/bin" "/nix/var/nix/profiles/default/bin")
+    for dir in "${search_dirs[@]}"; do
+      for match in "$dir/$name"-*; do
+        if [ -x "$match" ]; then
+          echo "$match"
+          return 0
+        fi
+      done
     done
   done
   return 1
@@ -39,21 +52,6 @@ if [ -n "${LOTUSIM_GL_WRAPPER:-}" ]; then
   exit 0
 fi
 
-# nixGLIntel first: plain nixGL bundles the NVIDIA stack and is the wrong guess
-# on a hybrid machine. nixGL installs its NVIDIA wrapper under a name carrying
-# the driver version, so match that too — otherwise a machine whose Intel
-# wrapper cannot reach the GPU finds nothing, and every rendering sensor fails
-# to build its context.
-if resolve nixGLIntel nixGL nixGLNvidia; then
-  exit 0
-fi
-
-for dir in "$HOME/.nix-profile/bin" "/nix/var/nix/profiles/default/bin"; do
-  for candidate in "$dir"/nixGLNvidia-*; do
-    if [ -x "$candidate" ]; then
-      echo "$candidate"
-      exit 0
-    fi
-  done
-done
-exit 1
+# nixGLNvidia first: prefer the NVIDIA GPU when both wrappers are installed.
+# Set LOTUSIM_GL_WRAPPER to force a specific one instead.
+resolve nixGLNvidia nixGLIntel nixGL
