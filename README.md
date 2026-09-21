@@ -30,16 +30,19 @@ sudo systemctl restart nix-daemon   # or your init system's equivalent
 #### 2. Install and run:
 
 ```sh
+# Away from NixOS, the window needs a GPU bridge — install it once and `lotusim` finds it by itself:
+nix profile add github:nix-community/nixGL#nixGLIntel
+
 nix profile add github:naval-group/LOTUSim github:naval-group/LOTUSim#ui
 
 lotusim run --gui        # the simulation, in a Gazebo window
 lotusim-ui               # the browser interface, on http://localhost:8080
 ```
 
-Away from NixOS, the window needs a GPU bridge — install it once and `lotusim` finds it by itself:
+On an NVIDIA or hybrid/Optimus machine, also add the NVIDIA bridge so rendering uses the discrete GPU instead of falling back to Intel — this reads your driver's exact version off the running machine, so it needs `--impure`, and NVIDIA's userspace driver is unfree:
 
 ```sh
-nix profile add github:nix-community/nixGL#nixGLIntel
+NIXPKGS_ALLOW_UNFREE=1 nix profile add --impure github:nix-community/nixGL#nixGLNvidia
 ```
 
 `lotusim --help` lists the worlds a build carries.
