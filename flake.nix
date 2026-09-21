@@ -117,6 +117,9 @@
           # docs/Doxyfile sets HAVE_DOT with an empty DOT_PATH, so doxygen
           # resolves graphviz's dot from PATH.
           pkgs.graphviz
+          # mise's bash completion needs _comp_initialize (bash-completion
+          # >=2.12); Relying on this instead of system's /etc/bash.bashrc's.
+          pkgs.bash-completion
         ];
 
         # colcon drives the whole workspace in one derivation rather than one
@@ -512,6 +515,9 @@
             # the examples find LOTUSIM_* and xdyn-for-cs without a mise prefix.
             mise trust >/dev/null 2>&1 || true
             eval "$(mise env -s bash)"
+
+            source "${pkgs.bash-completion}/share/bash-completion/bash_completion"
+
             LOTUSIM_PATH="''${LOTUSIM_PATH:-$PWD}"
 
             # What `source install/setup.bash` sets, exported up front so the
