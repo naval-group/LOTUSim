@@ -105,13 +105,29 @@ install(
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
-  # Unit tests on the NED<->ENU conversions (pure functions living in the
-  # plugin library). The test forward-declares them and links the library, so
-  # it does not need the plugin's websocketpp/json include chain.
+  # A second, test-only compilation of vessel_information.cpp to test conversion logic only
+  add_library(vessel_information_test STATIC
+    src/vessel_information.cpp
+  )
+
+  target_include_directories(vessel_information_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+
+  target_link_libraries(vessel_information_test
+    gz-sim8::gz-sim8
+  )
+
+  ament_target_dependencies(vessel_information_test
+    lotusim_common
+  )
+
+  # Unit tests on the NED<->ENU conversions (pure functions living in
+  # vessel_information.cpp).
   ament_add_gtest(test_ned_enu_conversions test/test_vessel_information.cpp)
   if(TARGET test_ned_enu_conversions)
     target_link_libraries(test_ned_enu_conversions
-      physics_interface_plugin
+      vessel_information_test
       gz-sim8::gz-sim8
     )
   endif()

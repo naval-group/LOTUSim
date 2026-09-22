@@ -9,11 +9,20 @@
  */
 #include "physics_engine_interface/vessel_information.hpp"
 
+#include <lotusim_common/common.hpp>
+
 #include <iostream>
 #include <stdexcept>
 
 
 namespace lotusim::gazebo {
+
+using lotusim::common::pseudoVecBodyChangeFrame;
+using lotusim::common::poseChangeFrame;
+using lotusim::common::quatChangeFrame;
+using lotusim::common::targetBodyVelToWorld;
+using lotusim::common::vecBodyChangeFrame;
+using lotusim::common::worldVelToTargetBody;
 
 /**
  * @brief Stream a human-readable coordinate convention name.
@@ -49,124 +58,20 @@ static const gz::math::Matrix3d kWorldEnuNeu(0, 1, 0,  1, 0, 0,  0, 0, 1);
 // Body: FLU (Fwd,Left,Up) <-> FRU (Fwd,Right,Up): Left<->Right flip only.
 static const gz::math::Matrix3d kBodyFluFru(1, 0, 0,  0, -1, 0,  0, 0, 1);
 
-/**
- * @brief Change an attitude quaternion between world and body axis frames.
- * @param q Source attitude quaternion.
- * @param worldC World-frame axis conversion matrix.
- * @param bodyC Body-frame axis conversion matrix.
- * @return The attitude quaternion in the target convention.
- */
-gz::math::Quaterniond quatChangeFrame(
-    const gz::math::Quaterniond& q,
-    const gz::math::Matrix3d& worldC,
-    const gz::math::Matrix3d& bodyC)
-{
-    const gz::math::Matrix3d R(q);
-    // const gz::math::Matrix3d R_new = worldC.Inverse() * R * bodyC;  // worldC is self-inverse, so no need to call Inverse()
-    const gz::math::Matrix3d R_new = worldC * R * bodyC;
-    gz::math::Quaterniond q_new(R_new);
-    q_new.Normalize();
-    return q_new;
-}
-
-/**
- * @brief Change the position and attitude of a pose between conventions.
- * @param pose Source pose.
- * @param worldC World-frame axis conversion matrix.
- * @param bodyC Body-frame axis conversion matrix.
- * @return The pose in the target convention.
- */
-gz::math::Pose3d poseChangeFrame(
-    const gz::math::Pose3d& pose,
-    const gz::math::Matrix3d& worldC,
-    const gz::math::Matrix3d& bodyC)
-{
-    return gz::math::Pose3d(
-        // worldC.Inverse() * pose.Pos(), // worldC is self-inverse, so no need to call Inverse()
-        worldC * pose.Pos(),
-        quatChangeFrame(pose.Rot(), worldC, bodyC));
-}
-
-/**
- * @brief Relabel an ordinary vector from source to the target body frame.
- * @note Ordinary body-frame vector (e.g. linear velocity): just the relabeling,
- * no extra sign.
- * @param v Vector in the body frame.
- * @param bodyC Body-frame axis conversion matrix.
- * @return The vector in the target body frame.
- */
-inline gz::math::Vector3d vecBodyChangeFrame(
-    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC)
-{
-    // return bodyC.Inverse() * v;  // bodyC is self-inverse, so no need to call Inverse()
-    return bodyC * v;
-}
-
-/**
- * @brief Relabel a body-frame pseudovector, including handedness correction.
- * @note Body-frame pseudovector (e.g. angular velocity): picks up an extra sign
- * of det(bodyC) relative to an ordinary vector whenever bodyC flips
- * handedness. For kBodyFluFrd (det=+1) this is a no-op; for kBodyFluFul and
- * kBodyFluFru (det=-1 each) it is not, which is why angular velocity and
- * linear velocity need separate helpers even though they look similar.
-*/
- inline gz::math::Vector3d pseudoVecBodyChangeFrame(
-    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC)
-{
-    // return bodyC.Determinant() * (bodyC.Inverse() * v);
-    return bodyC.Determinant() * (bodyC * v);
-}
-
-/**
- * @brief Convert a world-frame velocity to the target body frame.
- * @param v_world_enu Velocity in the ENU world frame.
- * @param q_enu_attitude Vehicle attitude in the ENU_FLU convention.
- * @param bodyC Body-frame axis conversion matrix.
- * @param isPseudoVector Whether the velocity is an angular pseudovector.
- * @return The velocity in the target body frame.
- * @note this->lin_vel / this->ang_vel (ENU_FLU convention) are stored in the
- * ENU ground (WORLD) frame. Every other convention in this file stores
- * body-frame velocities. Converting world -> body-of-target therefore
- * needs an extra step that pure axis relabeling doesn't: first undo the
- * vehicle's own attitude rotation to get the velocity in FLU body-frame
- * components, THEN relabel those FLU components into the target's body
- * axes.
- */
-gz::math::Vector3d worldVelToTargetBody(
-    const gz::math::Vector3d& v_world_enu,
-    const gz::math::Quaterniond& q_enu_attitude,
-    const gz::math::Matrix3d& bodyC,
-    bool isPseudoVector)
-{
-    const gz::math::Vector3d v_body_flu =
-        q_enu_attitude.RotateVectorReverse(v_world_enu);
-    return isPseudoVector ? pseudoVecBodyChangeFrame(v_body_flu, bodyC)
-                          : vecBodyChangeFrame(v_body_flu, bodyC);
-}
-
-/**
- * @brief Convert a target body-frame velocity to the ENU world frame.
- * @param v_body_target Velocity in the target body frame.
- * @param q_enu_attitude Vehicle attitude in the ENU_FLU convention.
- * @param bodyC Body-frame axis conversion matrix.
- * @param isPseudoVector Whether the velocity is an angular pseudovector.
- * @return The velocity in the ENU world frame.
- * @note Inverse of the above: a body-frame velocity in some target convention
- * (e.g. xdyn's FRD uvw/pqr) needs relabeling into FLU body-frame
- * components, then rotating by the (already-computed) ENU attitude to
- * land in ENU_FLU's world-frame velocity storage.
- */
-gz::math::Vector3d targetBodyVelToWorld(
-    const gz::math::Vector3d& v_body_target,
-    const gz::math::Quaterniond& q_enu_attitude,
-    const gz::math::Matrix3d& bodyC,
-    bool isPseudoVector)
-{
-    const gz::math::Vector3d v_body_flu =
-        isPseudoVector ? pseudoVecBodyChangeFrame(v_body_target, bodyC)
-                       : vecBodyChangeFrame(v_body_target, bodyC);
-    return q_enu_attitude.RotateVector(v_body_flu);
-}
+// quatChangeFrame, poseChangeFrame, vecBodyChangeFrame,
+// pseudoVecBodyChangeFrame, worldVelToTargetBody and targetBodyVelToWorld
+// live in lotusim_common/common.hpp: they take arbitrary axis conversion
+// matrices and don't depend on Convention or VesselInformation, so any
+// system doing frame relabeling can reuse them.
+//
+// Every call below passes q_enu_attitude / pose.Rot() as the world-attitude
+// argument: this->lin_vel / this->ang_vel (ENU_FLU convention) are stored in
+// the ENU ground (WORLD) frame, while every other convention in this file
+// stores body-frame velocities. Converting world -> body-of-target therefore
+// needs an extra step that pure axis relabeling doesn't: worldVelToTargetBody
+// first undoes the vehicle's own attitude rotation to get the velocity in FLU
+// body-frame components, THEN relabels those FLU components into the
+// target's body axes (and targetBodyVelToWorld does the inverse).
 
 /** @brief Convert this GAZEBO state to xdyn's NED_FRD convention. */
 VesselInformation VesselInformation::to_xdyn() const
