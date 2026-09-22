@@ -83,6 +83,23 @@ install(
 )
 
 #============================================================================
+# Testing
+#============================================================================
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # Unit tests on the generic frame-conversion helpers (pure functions living
+  # in this library).
+  ament_add_gtest(test_frame_change test/test_frame_change.cpp)
+  if(TARGET test_frame_change)
+    target_link_libraries(test_frame_change
+      ${PROJECT_NAME}
+      gz-sim8::gz-sim8
+    )
+  endif()
+endif()
+
+#============================================================================
 # Ament export
 #============================================================================
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)

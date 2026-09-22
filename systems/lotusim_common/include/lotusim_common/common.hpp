@@ -12,7 +12,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <gz/math/Matrix3.hh>
 #include <gz/math/Pose3.hh>
+#include <gz/math/Quaternion.hh>
+#include <gz/math/Vector3.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
@@ -114,6 +117,89 @@ bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b);
  * @return std::string
  */
 std::string getWorldName(const gz::sim::EntityComponentManager& _ecm);
+
+/**
+ * @brief Change an attitude quaternion between world and body axis frames.
+ *
+ * @param q Source attitude quaternion.
+ * @param worldC World-frame axis conversion matrix.
+ * @param bodyC Body-frame axis conversion matrix.
+ * @return The attitude quaternion in the target convention.
+ */
+gz::math::Quaterniond quatChangeFrame(
+    const gz::math::Quaterniond& q,
+    const gz::math::Matrix3d& worldC,
+    const gz::math::Matrix3d& bodyC);
+
+/**
+ * @brief Change the position and attitude of a pose between conventions.
+ *
+ * @param pose Source pose.
+ * @param worldC World-frame axis conversion matrix.
+ * @param bodyC Body-frame axis conversion matrix.
+ * @return The pose in the target convention.
+ */
+gz::math::Pose3d poseChangeFrame(
+    const gz::math::Pose3d& pose,
+    const gz::math::Matrix3d& worldC,
+    const gz::math::Matrix3d& bodyC);
+
+/**
+ * @brief Relabel an ordinary vector from source to the target body frame.
+ *
+ * @note Ordinary body-frame vector (e.g. linear velocity): just the
+ * relabeling, no extra sign.
+ * @param v Vector in the body frame.
+ * @param bodyC Body-frame axis conversion matrix.
+ * @return The vector in the target body frame.
+ */
+gz::math::Vector3d vecBodyChangeFrame(
+    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC);
+
+/**
+ * @brief Relabel a body-frame pseudovector, including handedness correction.
+ *
+ * @note Body-frame pseudovector (e.g. angular velocity): picks up an extra
+ * sign of det(bodyC) relative to an ordinary vector whenever bodyC flips
+ * handedness.
+ * @param v Vector in the body frame.
+ * @param bodyC Body-frame axis conversion matrix.
+ * @return The pseudovector in the target body frame.
+ */
+gz::math::Vector3d pseudoVecBodyChangeFrame(
+    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC);
+
+/**
+ * @brief Convert a world-frame velocity to the target body frame.
+ *
+ * @param v_world Velocity in the source world frame.
+ * @param q_world_attitude Vehicle attitude, rotating from the source body
+ * frame to the source world frame.
+ * @param bodyC Body-frame axis conversion matrix.
+ * @param isPseudoVector Whether the velocity is an angular pseudovector.
+ * @return The velocity in the target body frame.
+ */
+gz::math::Vector3d worldVelToTargetBody(
+    const gz::math::Vector3d& v_world,
+    const gz::math::Quaterniond& q_world_attitude,
+    const gz::math::Matrix3d& bodyC,
+    bool isPseudoVector);
+
+/**
+ * @brief Convert a target body-frame velocity to the source world frame.
+ *
+ * @param v_body_target Velocity in the target body frame.
+ * @param q_world_attitude Vehicle attitude, rotating from the source body
+ * frame to the source world frame.
+ * @param bodyC Body-frame axis conversion matrix.
+ * @param isPseudoVector Whether the velocity is an angular pseudovector.
+ * @return The velocity in the source world frame.
+ */
+gz::math::Vector3d targetBodyVelToWorld(
+    const gz::math::Vector3d& v_body_target,
+    const gz::math::Quaterniond& q_world_attitude,
+    const gz::math::Matrix3d& bodyC,
+    bool isPseudoVector);
 
 /**
  * @brief Get the Model Name object regardless of any child enetity

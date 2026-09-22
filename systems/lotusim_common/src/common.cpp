@@ -19,6 +19,68 @@ bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b)
            gz::math::equal(_a.Rot().W(), _b.Rot().W(), 1e-6);
 }
 
+gz::math::Quaterniond quatChangeFrame(
+    const gz::math::Quaterniond& q,
+    const gz::math::Matrix3d& worldC,
+    const gz::math::Matrix3d& bodyC)
+{
+    const gz::math::Matrix3d R(q);
+    // const gz::math::Matrix3d R_new = worldC.Inverse() * R * bodyC;  // worldC is self-inverse, so no need to call Inverse()
+    const gz::math::Matrix3d R_new = worldC * R * bodyC;
+    gz::math::Quaterniond q_new(R_new);
+    q_new.Normalize();
+    return q_new;
+}
+
+gz::math::Pose3d poseChangeFrame(
+    const gz::math::Pose3d& pose,
+    const gz::math::Matrix3d& worldC,
+    const gz::math::Matrix3d& bodyC)
+{
+    return gz::math::Pose3d(
+        // worldC.Inverse() * pose.Pos(), // worldC is self-inverse, so no need to call Inverse()
+        worldC * pose.Pos(),
+        quatChangeFrame(pose.Rot(), worldC, bodyC));
+}
+
+gz::math::Vector3d vecBodyChangeFrame(
+    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC)
+{
+    // return bodyC.Inverse() * v;  // bodyC is self-inverse, so no need to call Inverse()
+    return bodyC * v;
+}
+
+gz::math::Vector3d pseudoVecBodyChangeFrame(
+    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC)
+{
+    // return bodyC.Determinant() * (bodyC.Inverse() * v);
+    return bodyC.Determinant() * (bodyC * v);
+}
+
+gz::math::Vector3d worldVelToTargetBody(
+    const gz::math::Vector3d& v_world,
+    const gz::math::Quaterniond& q_world_attitude,
+    const gz::math::Matrix3d& bodyC,
+    bool isPseudoVector)
+{
+    const gz::math::Vector3d v_body_source =
+        q_world_attitude.RotateVectorReverse(v_world);
+    return isPseudoVector ? pseudoVecBodyChangeFrame(v_body_source, bodyC)
+                          : vecBodyChangeFrame(v_body_source, bodyC);
+}
+
+gz::math::Vector3d targetBodyVelToWorld(
+    const gz::math::Vector3d& v_body_target,
+    const gz::math::Quaterniond& q_world_attitude,
+    const gz::math::Matrix3d& bodyC,
+    bool isPseudoVector)
+{
+    const gz::math::Vector3d v_body_source =
+        isPseudoVector ? pseudoVecBodyChangeFrame(v_body_target, bodyC)
+                       : vecBodyChangeFrame(v_body_target, bodyC);
+    return q_world_attitude.RotateVector(v_body_source);
+}
+
 std::string getWorldName(const gz::sim::EntityComponentManager& _ecm)
 {
     std::string world_name = "";
