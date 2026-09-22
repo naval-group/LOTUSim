@@ -13,6 +13,7 @@
 #include <gz/math/Rand.hh>
 #include <gtest/gtest.h>
 #include <cmath>
+#include <cstdlib>
 #include <stdexcept>
 
 using namespace lotusim::gazebo;
@@ -433,4 +434,15 @@ TEST_F(VesselInformationTest, ConvertsToUnRealRandom2_Inplace)
         const gz::math::Vector3d body_pqr = quat.RotateVectorReverse(pqr);
         EXPECT_EQ(converted.ang_vel, gz::math::Vector3d(-body_pqr.X(), +body_pqr.Y(), -body_pqr.Z()));
     }
+}
+
+// Custom main instead of gtest_main: gz-sim8's dependency chain segfaults
+// during static teardown when this binary runs inside the nix build
+// sandbox _Exit() skips that teardown; the OS reclaims everything on
+// process exit regardless of whether destructors ran.
+int main(int argc, char** argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    int result = RUN_ALL_TESTS();
+    std::_Exit(result);
 }

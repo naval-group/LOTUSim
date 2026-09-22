@@ -123,8 +123,12 @@ if(BUILD_TESTING)
   )
 
   # Unit tests on the NED<->ENU conversions (pure functions living in
-  # vessel_information.cpp).
-  ament_add_gtest(test_ned_enu_conversions test/test_vessel_information.cpp)
+  # vessel_information.cpp). SKIP_LINKING_MAIN_LIBRARIES: the test provides
+  # its own main() that calls _Exit() instead of returning (see
+  # test_vessel_information.cpp for why).
+  ament_add_gtest(test_ned_enu_conversions test/test_vessel_information.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
   if(TARGET test_ned_enu_conversions)
     target_link_libraries(test_ned_enu_conversions
       vessel_information_test

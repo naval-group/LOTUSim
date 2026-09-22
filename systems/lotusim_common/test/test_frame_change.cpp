@@ -13,6 +13,7 @@
 #include <gz/math/Rand.hh>
 #include <gtest/gtest.h>
 #include <cmath>
+#include <cstdlib>
 
 using namespace lotusim::common;
 
@@ -218,4 +219,15 @@ TEST(FrameChangeRegression, MatchesPriorEnuNedXdynConversion)
     EXPECT_QUATERNION_NEAR(converted_pose.Rot(), -expected_quaternion, 1e-12);
     EXPECT_VECTOR3_NEAR(converted_lin_vel, gz::math::Vector3d(1.0, -2.0, -3.0));
     EXPECT_VECTOR3_NEAR(converted_ang_vel, gz::math::Vector3d(4.0, -5.0, -6.0));
+}
+
+// Custom main instead of gtest_main: gz-sim8's dependency chain segfaults
+// during static teardown when this binary runs inside the nix build
+// sandbox _Exit() skips that teardown; the OS reclaims everything on
+// process exit regardless of whether destructors ran.
+int main(int argc, char** argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    int result = RUN_ALL_TESTS();
+    std::_Exit(result);
 }
