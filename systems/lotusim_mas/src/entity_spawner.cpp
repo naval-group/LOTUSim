@@ -146,6 +146,11 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
     desired_name = resolveUniqueName(desired_name);
     model.SetName(desired_name);
 
+    {
+        std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
+        m_vessels_models[desired_name] = msg.model_name;
+    }
+
     // Create entity in the simulation.
     gz::sim::Entity entity = m_creator->CreateEntities(&model);
     if (entity == gz::sim::kNullEntity) {
@@ -285,6 +290,7 @@ bool EntitySpawner::deleteEntity(const lotusim_msgs::msg::MASCmd& msg)
             if (auto name_it = m_vessels_names.find(vessel_entity);
                 name_it != m_vessels_names.end()) {
                 m_vessels_entities.erase(name_it->second);
+                m_vessels_models.erase(name_it->second);
                 m_vessels_names.erase(name_it);
             }
         }
@@ -360,6 +366,7 @@ void EntitySpawner::unregisterEntity(gz::sim::Entity entity)
         it->second);
 
     m_vessels_entities.erase(it->second);
+    m_vessels_models.erase(it->second); 
     m_vessels_names.erase(it);
 }
 
@@ -385,6 +392,13 @@ std::string EntitySpawner::resolveUniqueName(const std::string& desired) const
         if (!taken(candidate))
             return candidate;
     }
+}
+
+std::string EntitySpawner::modelName(const std::string& vessel_name) const
+{
+    std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
+    auto it = m_vessels_models.find(vessel_name);
+    return it != m_vessels_models.end() ? it->second : std::string{};
 }
 
 }  // namespace lotusim::mas

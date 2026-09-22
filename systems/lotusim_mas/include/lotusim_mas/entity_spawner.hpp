@@ -127,6 +127,13 @@ public:
         return m_vessels_names;
     }
 
+    const std::unordered_map<std::string, std::string>& vesselModels() const
+    {
+        return m_vessels_models;
+    }
+
+    std::string modelName(const std::string& vessel_name) const;
+
     /**
      * @brief Acquire a shared (read) lock on the vessel maps.
      */
@@ -165,6 +172,7 @@ private:
 
     /// GZ entity  →  vessel name
     std::unordered_map<gz::sim::Entity, std::string> m_vessels_names;
+    std::unordered_map<std::string, std::string> m_vessels_models;
 };
 
 }  // namespace lotusim::mas
