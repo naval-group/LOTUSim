@@ -1,0 +1,87 @@
+name: test2
+description: test for demo
+version: v0.0.1
+author: demo
+tags: []
+time_of_day: "10:00"
+date: "2026-09-20"
+reference_position:
+  latitude: 1.02
+  longitude: 103.8
+  altitude: 0
+environment:
+  atmosphere:
+    windSpeed: 0
+    windDirection: 0
+    temperature: 15
+    pressure: 1013.25
+    humidity: 0.5
+  ocean:
+    seaState: 0
+    waveHeight: 0
+    waveDirection: 0
+    wavePeriod: 0
+    waveSpectrum: PM
+    currentSpeed: 0
+    currentDirection: 0
+    waterTemperature: 20
+    salinity: 35
+  visibility:
+    horizontal: 10000
+    vertical: 10000
+  weather: CLEAR
+agents:
+  dtmb1:
+    model: dtmb_hull
+    position:
+      latitude: 1.255757632099228
+      longitude: 103.74853134155275
+      altitude: 0
+    heading: 84.14615915400753
+    waypoint_interface:
+      enabled: true
+      loop: true
+      mode: waypoints
+      waypoints:
+        - lat: 1.2579883955657196
+          lng: 103.74732971191406
+        - lat: 1.2536984641325968
+          lng: 103.78149032592775
+        - lat: 1.2449469822380834
+          lng: 103.773250579834
+  bluerov:
+    model: bluerov2_heavy
+    position:
+      latitude: 1.2325918995684462
+      longitude: 103.80483627319337
+      altitude: 0
+    heading: 140.70035948661535
+    waypoint_interface:
+      enabled: true
+      loop: true
+      mode: waypoints
+      waypoints:
+        - lat: 1.240142234714835
+          lng: 103.80174636840822
+        - lat: 1.2554144375507081
+          lng: 103.77153396606447
+        - lat: 1.2425446095688717
+          lng: 103.7794303894043
+  fremm:
+    model: fremm
+    position:
+      latitude: 1.2499233186559435
+      longitude: 103.77307891845705
+      altitude: 0
+    heading: 0
+    waypoint_interface:
+      enabled: true
+      loop: true
+      mode: waypoints
+      waypoints:
+        - lat: 1.250952904324845
+          lng: 103.78406524658205
+        - lat: 1.2485505371361614
+          lng: 103.7706756591797
+        - lat: 1.239284243166858
+          lng: 103.78578186035156

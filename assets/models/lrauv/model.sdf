@@ -49,6 +49,11 @@
         <efficiency>0.35</efficiency>
         <voltage_nominal>48.0</voltage_nominal>
       </lotusim_power>
+      <lotus_param>
+        <power_system>
+          <power_management_type>default</power_management_type>
+        </power_system>
+      </lotus_param>
     </link>
   </model>
 </sdf>
