@@ -89,8 +89,12 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
   # Unit tests on the generic frame-conversion helpers (pure functions living
-  # in this library).
-  ament_add_gtest(test_frame_change test/test_frame_change.cpp)
+  # in this library). SKIP_LINKING_MAIN_LIBRARIES: the test provides its own
+  # main() that calls _Exit() instead of returning (see test_frame_change.cpp
+  # for why).
+  ament_add_gtest(test_frame_change test/test_frame_change.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
   if(TARGET test_frame_change)
     target_link_libraries(test_frame_change
       ${PROJECT_NAME}
