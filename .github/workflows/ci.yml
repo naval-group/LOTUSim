@@ -35,6 +35,13 @@ jobs:
       - name: Build the workspace
         run: nix build .#lotusim --print-build-logs
 
+      # Separate derivation from `workspace` (see flake.nix), so this rebuilds
+      # the workspace with BUILD_TESTING=ON and runs colcon test, rather than
+      # reusing the step above — a failing test here does not block the
+      # container image build below.
+      - name: Run package tests
+        run: nix build .#checks.x86_64-linux.default --print-build-logs
+
       - name: Build the container image
         run: |
           set -euo pipefail

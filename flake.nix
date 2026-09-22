@@ -143,8 +143,8 @@
             && !(builtins.elem rel [ "flake.nix" "flake.lock" "mise.toml" ]);
         };
 
-        colconWorkspace = { pname, src, buildInputs }: pkgs.stdenv.mkDerivation {
-          inherit pname src buildInputs;
+        colconWorkspace = { pname, src, buildInputs, doCheck ? false }: pkgs.stdenv.mkDerivation {
+          inherit pname src buildInputs doCheck;
           version = "0.1.1";
 
           nativeBuildInputs = tooling;
@@ -162,8 +162,23 @@
               --merge-install \
               --install-base $out \
               --build-base $TMPDIR/build \
-              --cmake-args -DCMAKE_BUILD_TYPE=Release
+              --cmake-args -DCMAKE_BUILD_TYPE=Release ${pkgs.lib.optionalString doCheck "-DBUILD_TESTING=ON"}
             runHook postBuild
+          '';
+
+          # Runs in the same sandbox right after buildPhase, against the build
+          # directory it just produced — no second compile. colcon test itself
+          # exits 0 even when a test fails, so test-result is the actual gate;
+          # its non-zero exit aborts the derivation under the phases' set -e.
+          checkPhase = pkgs.lib.optionalString doCheck ''
+            runHook preCheck
+            colcon --log-base $TMPDIR/log test \
+              --merge-install \
+              --install-base $out \
+              --build-base $TMPDIR/build \
+              --event-handlers console_direct+ || true
+            colcon --log-base $TMPDIR/log test-result --all --verbose --test-result-base $TMPDIR/build
+            runHook postCheck
           '';
 
           # colcon has already written everything to $out.
@@ -174,6 +189,21 @@
           pname = "lotusim-workspace";
           src = workspaceSrc;
           buildInputs = rosDeps ++ gazeboHarmonic ++ thirdParty;
+        };
+
+        # A sibling of `workspace`, not a variant of it: `lotusim`/`container`
+        # depend on `workspace` and stay buildable even when a test is
+        # failing. This derivation exists only for the CI test step, built
+        # and gated separately via `checks.default`. Because its build script
+        # differs (BUILD_TESTING=ON, plus checkPhase), it is a distinct
+        # derivation from `workspace` — Nix does not share partial build
+        # state between them, so this recompiles the whole workspace rather
+        # than reusing `workspace`'s build.
+        workspaceTests = colconWorkspace {
+          pname = "lotusim-workspace-tests";
+          src = workspaceSrc;
+          buildInputs = rosDeps ++ gazeboHarmonic ++ thirdParty;
+          doCheck = true;
         };
 
         # What the UI backend gets: handing it ${workspace} would put 3.02 GB of Gazebo behind it.
@@ -471,7 +501,15 @@
         packages = {
           inherit lotusim workspace messages container ui-backend ui-frontend ui;
           assets = assetsPackage;
+          workspace-tests = workspaceTests;
           default = lotusim;
+        };
+
+        # CI builds this by name (`nix build .#checks.<system>.default`), not via
+        # `nix flake check` — this flake declares no other checks. Aliases
+        # workspaceTests so CI's test gate stays a separate build from `workspace`.
+        checks = {
+          default = workspaceTests;
         };
 
         apps = {
