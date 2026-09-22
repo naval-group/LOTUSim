@@ -434,6 +434,8 @@ void MultiAgentSystem::publishPose(
     array_msg.header.frame_id = "world";
 
     auto lock = m_entity_spawner->sharedLock();
+    const auto& models = m_entity_spawner->vesselModels();
+
     for (auto& [entity, name] : m_entity_spawner->vesselNames()) {
         auto pose = worldPose(entity, _ecm);
         auto latLonEle =
@@ -447,6 +449,8 @@ void MultiAgentSystem::publishPose(
 
         lotusim_msgs::msg::VesselPosition msg;
         msg.vessel_name = name;
+        auto model_it = models.find(name);
+        msg.model_name = (model_it != models.end()) ? model_it->second : std::string{};
 
         msg.pose.position.x = pose.X();
         msg.pose.position.y = pose.Y();
