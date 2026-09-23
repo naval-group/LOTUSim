@@ -17,12 +17,7 @@
 
 namespace lotusim::gazebo {
 
-using lotusim::common::pseudoVecBodyChangeFrame;
-using lotusim::common::poseChangeFrame;
-using lotusim::common::quatChangeFrame;
-using lotusim::common::targetBodyVelToWorld;
-using lotusim::common::vecBodyChangeFrame;
-using lotusim::common::worldVelToTargetBody;
+namespace common = lotusim::common;
 
 /**
  * @brief Stream a human-readable coordinate convention name.
@@ -39,24 +34,6 @@ std::ostream& operator<<(std::ostream& os, Convention s)
     }
     return os << "Unknown";
 }
-
-// World: ENU (East,North,Up) <-> NED (North,East,Down): x_ned=y_enu, y_ned=x_enu, z_ned=-z_enu
-static const gz::math::Matrix3d kWorldEnuNed(0, 1, 0,  1, 0, 0,  0, 0, -1);
-static const gz::math::Matrix3d kWorldNedEnu(0, 1, 0,  1, 0, 0,  0, 0, -1);
-// Body: FLU (Fwd,Left,Up) <-> FRD (Fwd,Right,Down): u_frd=u_flu, v_frd=-v_flu, w_frd=-w_flu
-static const gz::math::Matrix3d kBodyFluFrd(1, 0, 0,  0, -1, 0,  0, 0, -1);
-static const gz::math::Matrix3d kBodyFrdFlu(1, 0, 0,  0, -1, 0,  0, 0, -1);
-
-// World: ENU (East,North,Up) <-> EUN (East,Up,North): swap Y,Z (Unity)
-static const gz::math::Matrix3d kWorldEnuEun(1, 0, 0,  0, 0, 1,  0, 1, 0);
-// Body: FLU (Fwd,Left,Up) <-> FUL (Fwd,Up,Left): swap Y,Z -- mirrors the
-// world swap above for this convention.
-static const gz::math::Matrix3d kBodyFluFul(1, 0, 0,  0, 0, 1,  0, 1, 0);
-
-// World: ENU (East,North,Up) <-> NEU (North,East,Up): swap X,Y (Unreal)
-static const gz::math::Matrix3d kWorldEnuNeu(0, 1, 0,  1, 0, 0,  0, 0, 1);
-// Body: FLU (Fwd,Left,Up) <-> FRU (Fwd,Right,Up): Left<->Right flip only.
-static const gz::math::Matrix3d kBodyFluFru(1, 0, 0,  0, -1, 0,  0, 0, 1);
 
 // quatChangeFrame, poseChangeFrame, vecBodyChangeFrame,
 // pseudoVecBodyChangeFrame, worldVelToTargetBody and targetBodyVelToWorld
@@ -83,9 +60,9 @@ VesselInformation VesselInformation::to_xdyn() const
     v.convention = Convention::NED_FRD;
     v.time = time;
     v.entity = entity;
-    v.pose = poseChangeFrame(pose, kWorldEnuNed, kBodyFluFrd);
-    v.lin_vel = worldVelToTargetBody(lin_vel, pose.Rot(), kBodyFluFrd, /*isPseudoVector=*/false);
-    v.ang_vel = worldVelToTargetBody(ang_vel, pose.Rot(), kBodyFluFrd, /*isPseudoVector=*/true);
+    v.pose = common::poseChangeFrame(pose, common::kWorldEnuNed, common::kBodyFluFrd);
+    v.lin_vel = common::worldVelToTargetBody(lin_vel, pose.Rot(), common::kBodyFluFrd, /*isPseudoVector=*/false);
+    v.ang_vel = common::worldVelToTargetBody(ang_vel, pose.Rot(), common::kBodyFluFrd, /*isPseudoVector=*/true);
 
     return v;
 }
@@ -102,9 +79,9 @@ VesselInformation VesselInformation::to_unity() const
     v.convention = Convention::EUN_FUL;
     v.time = time;
     v.entity = entity;
-    v.pose = poseChangeFrame(pose, kWorldEnuEun, kBodyFluFul);
-    v.lin_vel = worldVelToTargetBody(lin_vel, pose.Rot(), kBodyFluFul, /*isPseudoVector=*/false);
-    v.ang_vel = worldVelToTargetBody(ang_vel, pose.Rot(), kBodyFluFul, /*isPseudoVector=*/true);
+    v.pose = common::poseChangeFrame(pose, common::kWorldEnuEun, common::kBodyFluFul);
+    v.lin_vel = common::worldVelToTargetBody(lin_vel, pose.Rot(), common::kBodyFluFul, /*isPseudoVector=*/false);
+    v.ang_vel = common::worldVelToTargetBody(ang_vel, pose.Rot(), common::kBodyFluFul, /*isPseudoVector=*/true);
     return v;
 }
 
@@ -120,9 +97,9 @@ VesselInformation VesselInformation::to_unreal() const
     v.convention = Convention::NEU_FRU;
     v.time = time;
     v.entity = entity;
-    v.pose = poseChangeFrame(pose, kWorldEnuNeu, kBodyFluFru);
-    v.lin_vel = worldVelToTargetBody(lin_vel, pose.Rot(), kBodyFluFru, /*isPseudoVector=*/false);
-    v.ang_vel = worldVelToTargetBody(ang_vel, pose.Rot(), kBodyFluFru, /*isPseudoVector=*/true);
+    v.pose = common::poseChangeFrame(pose, common::kWorldEnuNeu, common::kBodyFluFru);
+    v.lin_vel = common::worldVelToTargetBody(lin_vel, pose.Rot(), common::kBodyFluFru, /*isPseudoVector=*/false);
+    v.ang_vel = common::worldVelToTargetBody(ang_vel, pose.Rot(), common::kBodyFluFru, /*isPseudoVector=*/true);
     return v;
 }
 
@@ -137,9 +114,9 @@ VesselInformation VesselInformation::from_xdyn(
 {
     VesselInformation s;
     s.convention = Convention::GAZEBO;
-    s.pose = poseChangeFrame(gz::math::Pose3d(ned_xyz, ned_quaternion), kWorldEnuNed, kBodyFluFrd);
-    s.lin_vel = targetBodyVelToWorld(ned_uvw, s.pose.Rot(), kBodyFluFrd, /*isPseudoVector=*/false);
-    s.ang_vel = targetBodyVelToWorld(ned_pqr, s.pose.Rot(), kBodyFluFrd, /*isPseudoVector=*/true);
+    s.pose = common::poseChangeFrame(gz::math::Pose3d(ned_xyz, ned_quaternion), common::kWorldEnuNed, common::kBodyFluFrd);
+    s.lin_vel = common::targetBodyVelToWorld(ned_uvw, s.pose.Rot(), common::kBodyFluFrd, /*isPseudoVector=*/false);
+    s.ang_vel = common::targetBodyVelToWorld(ned_pqr, s.pose.Rot(), common::kBodyFluFrd, /*isPseudoVector=*/true);
 
     return s;
 }
