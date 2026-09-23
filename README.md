@@ -1,26 +1,21 @@
 ![Logo](docs/lotusim_logo.svg)
 
-![Different drones in LOTUSim.](docs/lotusim_environment.png)
+[![LOTUSim Video - IROS2026](https://img.youtube.com/vi/iXDz8ZqSpq4/0.jpg)](https://www.youtube.com/watch?v=iXDz8ZqSpq4)
 
 LOTUSim is a real-time, multi-domain simulation platform for maritime operations. It models realistic surface, underwater, and air physics for aerial drones, surface ships, and underwater vehicles. An immersive interface lets human operators run human-autonomous agent scenarios, and physically accurate models make LOTUSim suitable for training AI algorithms.
 
-Jump to the [Quickstart](#quickstart) below to get it installed and running in about 10 minutes. For everything else — tutorials, available models/sensors/batteries, and the Developer Guide — see the [wiki](https://github.com/naval-group/LOTUSim/wiki).
+The [Quickstart](#quickstart) below covers how to install and run LOTUSim in about 10 minutes. 
+For everything else — tutorials, available models/sensors/batteries, and the Developer Guide — see the [wiki](https://github.com/naval-group/LOTUSim/wiki).
 
 ## Quickstart
-
-**Get LOTUSim installed and running a live example in about 10 minutes!**
 
 LOTUSim is installed and run through **Nix**, a package manager that downloads everything the simulator needs (ROS 2, Gazebo, and all their dependencies) into its own isolated location on your computer. It won't conflict with or change anything else you have installed.
 
 You don't need to know Nix to use LOTUSim. Follow the steps below in order and you'll have a working simulation in a few minutes.
 
-LOTUSim runs natively on **Linux and macOS**.
+LOTUSim runs natively on **Linux and macOS**: follow the steps below, then pick the path that fits your needs.
 
 > **On Windows?** Nix doesn't run natively on Windows. Skip ahead to [Windows users](#windows-users). You'll run everything inside WSL2, then the rest of this guide applies exactly as written.
-
-### One-time setup
-
-Do this section once, no matter which path you choose.
 
 #### Step 1 - Install Nix
 
@@ -73,7 +68,7 @@ NIXPKGS_ALLOW_UNFREE=1 nix profile add --impure github:nix-community/nixGL#nixGL
 
 You're now ready to run LOTUSim!
 
-### Pick your path
+### Then, pick your path
 
 There are three ways to get LOTUSim, depending on what you want to do:
 
@@ -83,7 +78,8 @@ There are three ways to get LOTUSim, depending on what you want to do:
 | Have `lotusim` available any time, like a normal app | [Path B - Install LOTUSim](#path-b---install-lotusim) |
 | Change or contribute to LOTUSim's code | [Path C - Set up your dev environment](#path-c---set-up-your-dev-environment) |
 
-### Path A - Run without installing
+<details>
+<summary><b>Path A - Run without installing</b></summary>
 
 Good for a first try. Nothing is added to your system permanently (aside from Nix itself).
 
@@ -106,7 +102,10 @@ For **Nvidia** cards, you will need the [NVIDIA Container Toolkit](https://docs.
 
 Once it's running, jump to [Try your first scenario](#try-your-first-scenario).
 
-### Path B - Install LOTUSim
+</details>
+
+<details>
+<summary><b>Path B - Install LOTUSim </b></summary>
 
 This puts `lotusim` and `lotusim-ui` permanently on your computer, like installing a normal application.
 
@@ -131,7 +130,11 @@ Then open **http://localhost:8080** in your browser.
 
 Now head to [Try your first scenario](#try-your-first-scenario).
 
-### Path C - Set up your dev environment
+</details>
+
+<details>
+<summary><b>Path C - Set up your dev environment </b></summary>
+
 
 If you're going to modify LOTUSim's code, you want the developer workflow:
 
@@ -145,7 +148,11 @@ mise run sim            # runs it. You can add the param --gui
 
 This gets the core simulator running. If you also want to work on the web UI or the physics engine (xdyn), or you want the full task reference, see the [Developer Workflow](https://github.com/naval-group/LOTUSim/wiki/Developer-Workflow) on the wiki.
 
-### Windows users
+</details>
+
+<a id="windows-users"></a>
+<details>
+<summary><b>Windows users </b></summary>
 
 Nix isn't natively supported on Windows, so you'll run it inside **WSL2** (Windows Subsystem for Linux). It's a lightweight Linux environment that runs alongside Windows. Once it's set up, everything else in this guide (Paths A, B, and C) works exactly as written, from inside your WSL2 terminal.
 
@@ -166,19 +173,10 @@ networkingMode=mirrored
 
 > If you hit networking issues after this, check your Windows Firewall, mirrored networking is sometimes blocked by default.
 
-### Try your first scenario
+</details>
 
-1. With LOTUSim and the web UI both running, open the UI in your browser:
-   - Installed via Path B: **http://localhost:8080**
-   - Dev setup (Path C, `nix run .#ui`): **http://localhost:8080**; if running the frontend directly with `npm run dev`, it's **http://localhost:5173**
-2. In the left panel, under **"Launch Scenario"**, select **`demo.yaml`**.
-3. Click **Launch Scenario**.
-
-You should see an arrow representing an LRAUV (an underwater vehicle) appear and start moving. 🎉
-
-Want to see more? Check the [Tutorial page](https://github.com/naval-group/LOTUSim/wiki/Tutorial) for further examples, or run `lotusim --help` to see every scenario/world your build includes.
-
-### Optional: Set up the 3D rendering
+<details>
+<summary><b>Optional: Set up the 3D rendering </b></summary>
 
 > This is only needed if you want photorealistic rendering through Unity. The demo scenario above works without it.
 
@@ -204,17 +202,29 @@ In Unity Hub, open a scene from the imported project (for example, the defense s
 
 > If the scene appears black, check that your graphics drivers are properly installed.
 
-The [wiki](https://github.com/naval-group/LOTUSim/wiki) covers upgrading an install, composing extra asset roots, the state directory, and developing the web UI or physics engine.
+</details>
 
-For full documentation, see the [wiki](https://github.com/naval-group/LOTUSim/wiki). For issues or questions, please open an issue and we will get back to you asap.
+### Try your first scenario
+
+1. With LOTUSim and the web UI both running, open the UI in your browser:
+   - Installed via Path B: **http://localhost:8080**
+   - Dev setup (Path C, `nix run .#ui`): **http://localhost:8080**; if running the frontend directly with `npm run dev`, it's **http://localhost:5173**
+2. In the left panel, under **"Launch Scenario"**, select **`demo.yaml`**.
+3. Click **Launch Scenario**.
+
+You should see an arrow representing an LRAUV (an underwater vehicle) appear and start moving. 🎉
+
+## Next steps
+
+Want to see more? Check the [Tutorial page](https://github.com/naval-group/LOTUSim/wiki/Tutorial) for further examples, or run `lotusim --help` to see every scenario/world your build includes.
+
+For full documentation, see the [wiki](https://github.com/naval-group/LOTUSim/wiki).
+
+## Support and contact
+
+For issues or questions, please open an issue and we will get back to you asap.
 
 For partnerships or contributing, contact [lotusim_support@naval-group.com](mailto:lotusim_support@naval-group.com).
-
-Published under [EPL-2.0](LICENSE).
-
-## Video
-
-[![LOTUSim Video - IROS2026](https://img.youtube.com/vi/iXDz8ZqSpq4/0.jpg)](https://www.youtube.com/watch?v=iXDz8ZqSpq4)
 
 ## Citation
 
@@ -231,3 +241,7 @@ If you use LOTUSim in your research, please cite:
 ```
 
 See the [Publications](https://github.com/naval-group/LOTUSim/wiki/Publications) wiki page for related repositories and papers.
+
+## License
+
+Published under [EPL-2.0](LICENSE).
