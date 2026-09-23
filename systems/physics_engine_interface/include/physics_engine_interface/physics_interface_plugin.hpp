@@ -229,6 +229,15 @@ private:
     mutable std::shared_mutex m_mutex;
 
     /**
+     * @brief Serialises EntityComponentManager access.
+     *
+     * The ECM is not thread-safe and the per-model updates run concurrently,
+     * so its reads and writes are taken under this lock while the physics step
+     * itself stays parallel.
+     */
+    std::mutex m_ecm_mutex;
+
+    /**
      * @brief List of the vessel entities
      *
      */
