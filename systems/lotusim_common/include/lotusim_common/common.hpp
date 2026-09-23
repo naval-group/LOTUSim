@@ -118,6 +118,26 @@ bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b);
  */
 std::string getWorldName(const gz::sim::EntityComponentManager& _ecm);
 
+// World: ENU (East,North,Up) <-> NED (North,East,Down): x_ned=y_enu,
+// y_ned=x_enu, z_ned=-z_enu
+static const gz::math::Matrix3d kWorldEnuNed(0, 1, 0, 1, 0, 0, 0, 0, -1);
+static const gz::math::Matrix3d kWorldNedEnu(0, 1, 0, 1, 0, 0, 0, 0, -1);
+// Body: FLU (Fwd,Left,Up) <-> FRD (Fwd,Right,Down): u_frd=u_flu, v_frd=-v_flu,
+// w_frd=-w_flu
+static const gz::math::Matrix3d kBodyFluFrd(1, 0, 0, 0, -1, 0, 0, 0, -1);
+static const gz::math::Matrix3d kBodyFrdFlu(1, 0, 0, 0, -1, 0, 0, 0, -1);
+
+// World: ENU (East,North,Up) <-> EUN (East,Up,North): swap Y,Z (Unity)
+static const gz::math::Matrix3d kWorldEnuEun(1, 0, 0, 0, 0, 1, 0, 1, 0);
+// Body: FLU (Fwd,Left,Up) <-> FUL (Fwd,Up,Left): swap Y,Z -- mirrors the
+// world swap above for this convention.
+static const gz::math::Matrix3d kBodyFluFul(1, 0, 0, 0, 0, 1, 0, 1, 0);
+
+// World: ENU (East,North,Up) <-> NEU (North,East,Up): swap X,Y (Unreal)
+static const gz::math::Matrix3d kWorldEnuNeu(0, 1, 0, 1, 0, 0, 0, 0, 1);
+// Body: FLU (Fwd,Left,Up) <-> FRU (Fwd,Right,Up): Left<->Right flip only.
+static const gz::math::Matrix3d kBodyFluFru(1, 0, 0, 0, -1, 0, 0, 0, 1);
+
 /**
  * @brief Change an attitude quaternion between world and body axis frames.
  *
@@ -154,7 +174,8 @@ gz::math::Pose3d poseChangeFrame(
  * @return The vector in the target body frame.
  */
 gz::math::Vector3d vecBodyChangeFrame(
-    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC);
+    const gz::math::Vector3d& v,
+    const gz::math::Matrix3d& bodyC);
 
 /**
  * @brief Relabel a body-frame pseudovector, including handedness correction.
@@ -167,7 +188,8 @@ gz::math::Vector3d vecBodyChangeFrame(
  * @return The pseudovector in the target body frame.
  */
 gz::math::Vector3d pseudoVecBodyChangeFrame(
-    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC);
+    const gz::math::Vector3d& v,
+    const gz::math::Matrix3d& bodyC);
 
 /**
  * @brief Convert a world-frame velocity to the target body frame.
