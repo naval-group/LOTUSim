@@ -36,7 +36,7 @@ PowerProvider::CreateResult PowerProvider::createFromSdf(
     if (!typeOpt) {
         logger->warn(
             "PowerProvider::createFromSdf : unknown type '{}' on "
-            "consumer [{},{}] -> skipping",
+            "provider [{},{}] -> skipping",
             providerTypeStr,
             provider_name,
             vessel_name);

@@ -123,6 +123,13 @@ bool PowerManager::loadVessel(
     }
     const std::string vesselName = nameOpt->second;
 
+    if (!_model_sdf) {
+        m_logger->error(
+            "PlatformPowerManager [{}]: no ModelSdf component found",
+            vesselName);
+        return false;
+    }
+
     sdf::Model data = _model_sdf->Data();
     sdf::ElementPtr sdfptr = data.Element();
     if (!sdfptr) {
@@ -144,18 +151,18 @@ bool PowerManager::loadVessel(
             vesselName);
         return false;
     }
-    if (!_model_sdf) {
-        m_logger->error(
-            "PlatformPowerManager [{}]: no ModelSdf component found",
+    
+    // Getting power management type for the ship
+    PlatformPowerManagerType power_management_type = PlatformPowerManagerType::DEFAULT;
+
+    if (!rootEl->HasElement("lotusim_power")) {
+        m_logger->debug(
+            "PowerManager::loadVessel [{}]: no <lotusim_power> found, skipping",
             vesselName);
         return false;
     }
 
-    // Getting power management type for the ship
-    PlatformPowerManagerType power_management_type =
-        PlatformPowerManagerType::DEFAULT;
-    // The lotus param will either be include statement or part of the
-    // model
+    // if a custom power management type is specified, use it. ELSE, keep DEFAULT
     if (rootEl->HasElement("lotus_param") &&
         rootEl->GetElement("lotus_param")->HasElement("power_system") &&
         rootEl->GetElement("lotus_param")
@@ -165,11 +172,6 @@ bool PowerManager::loadVessel(
             rootEl->GetElement("lotus_param")
                 ->GetElement("power_system")
                 ->Get<std::string>("power_management_type"));
-    } else {
-        m_logger->debug(
-            "PowerManager::loadVessel [{}]: no <lotusim_power> tag found, skipping PowerManager creation",
-            vesselName);
-        return false;
     }
 
     auto vesselNode = m_ros_node->create_sub_node(vesselName + "_power");
