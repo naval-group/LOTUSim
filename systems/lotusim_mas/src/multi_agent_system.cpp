@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "lotusim_mas/multi_agent_system.hpp"
+#include <gz/sim/components/LinearVelocity.hh>
 
 namespace lotusim::gazebo {
 
@@ -436,6 +437,22 @@ void MultiAgentSystem::publishPose(
     auto lock = m_entity_spawner->sharedLock();
     for (auto& [entity, name] : m_entity_spawner->vesselNames()) {
         auto pose = worldPose(entity, _ecm);
+        double speedOverGround = 0.0;
+        const auto currentTime = _info.simTime;
+        auto previousPosition = m_previous_positions.find(entity);
+        auto previousTime = m_previous_times.find(entity);
+
+        if (previousPosition != m_previous_positions.end() && previousTime != m_previous_times.end()) {
+            const double dt = std::chrono::duration<double>(currentTime - previousTime->second).count();
+            if (dt > 0.0){
+                const double distance = (pose.Pos() - previousPosition->second).Length();
+                speedOverGround = distance / dt;
+            }
+        }
+
+        m_previous_positions[entity] = pose.Pos();
+        m_previous_times[entity] = currentTime;
+
         auto latLonEle =
             lotusim::common::XYToLatLong(_ecm, pose.X(), pose.Y(), pose.Z());
         if (!latLonEle) {
@@ -459,6 +476,8 @@ void MultiAgentSystem::publishPose(
         msg.geo_point.latitude = std::get<0>(latLonEle.value());
         msg.geo_point.longitude = std::get<1>(latLonEle.value());
         msg.geo_point.altitude = std::get<2>(latLonEle.value());
+
+        msg.speed_over_ground = static_cast<float>(speedOverGround);
 
         array_msg.vessels.push_back(msg);
     }

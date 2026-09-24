@@ -20,6 +20,9 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <string>
 #include <thread>
+#include <cmath>
+#include <unordered_map>
+#include <chrono>
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
@@ -276,6 +279,9 @@ private:
         m_cmd_array_action;
 
     rclcpp_action::Server<lotusim_msgs::action::MASCmd>::SharedPtr m_cmd_action;
+
+    std::unordered_map<gz::sim::Entity, gz::math::Vector3d> m_previous_positions;
+    std::unordered_map<gz::sim::Entity, std::chrono::nanoseconds> m_previous_times;
 };
 
 }  // namespace lotusim::gazebo
