@@ -10,6 +10,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AIS.msg"
   "msg/GPS.msg"
+  "msg/DVL.msg"
   "msg/PressureDepth.msg"
   "msg/Collision.msg"
   "msg/Collisions.msg"
