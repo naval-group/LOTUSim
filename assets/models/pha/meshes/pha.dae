@@ -13,23 +13,13 @@
   <library_effects>
     <effect id="Material_001-effect">
       <profile_COMMON>
-        <newparam sid="DefaultMaterial_Base_color_png-surface">
-          <surface type="2D">
-            <init_from>DefaultMaterial_Base_color_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="DefaultMaterial_Base_color_png-sampler">
-          <sampler2D>
-            <source>DefaultMaterial_Base_color_png-surface</source>
-          </sampler2D>
-        </newparam>
         <technique sid="common">
           <lambert>
             <emission>
               <color sid="emission">0 0 0 1</color>
             </emission>
             <diffuse>
-              <texture texture="DefaultMaterial_Base_color_png-sampler" texcoord="UVMap"/>
+              <color>0.7 0.7 0.7 1</color>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -39,11 +29,6 @@
       </profile_COMMON>
     </effect>
   </library_effects>
-  <library_images>
-    <image id="DefaultMaterial_Base_color_png" name="DefaultMaterial_Base_color_png">
-      <init_from>DefaultMaterial_Base_color.png</init_from>
-    </image>
-  </library_images>
   <library_materials>
     <material id="Material_001-material" name="Material.001">
       <instance_effect url="#Material_001-effect"/>
