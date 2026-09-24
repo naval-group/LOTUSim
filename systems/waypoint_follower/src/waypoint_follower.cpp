@@ -17,8 +17,8 @@ using namespace std::placeholders;
 WaypointFollowerPlugin::WaypointFollowerPlugin() : m_running{false}
 {
     m_logger = logger::createConsoleAndFileLogger(
-        "waypoing_follower",
-        "waypoing_follower.txt");
+        "waypoint_follower",
+        "waypoint_follower.txt");
 }
 
 //////////////////////////////////////////////////
