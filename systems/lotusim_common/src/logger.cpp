@@ -7,9 +7,42 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
+#include <mutex>
+#include <utility>
 #include "lotusim_common/logger.hpp"
 
 namespace lotusim::logger {
+
+namespace { // private
+
+LogCallback g_log_callback;
+
+class CallbackSink : public spdlog::sinks::base_sink<std::mutex>
+{
+protected:
+    void sink_it_(const spdlog::details::log_msg& msg) override
+    {
+        // only forward INFO and ERROR logs
+        if (msg.level != spdlog::level::info &&
+            msg.level != spdlog::level::err) {
+            return;
+        }
+        if (!g_log_callback) {
+            return;
+        }
+        g_log_callback(
+            std::string(msg.logger_name.data(), msg.logger_name.size()),
+            msg.level,
+            std::string(msg.payload.data(), msg.payload.size()));
+    }
+    void flush_() override {}
+};
+}  // namespace
+
+void setLogCallback(LogCallback callback)
+{
+    g_log_callback = std::move(callback);
+}
 
 spdlog::level::level_enum getLogLevelFromEnv()
 {
@@ -65,6 +98,8 @@ auto createConsoleAndFileLogger(
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
             file_path,
             true);
+        
+        auto callback_sink = std::make_shared<CallbackSink>();
 
         try {
             std::filesystem::permissions(
@@ -81,7 +116,7 @@ auto createConsoleAndFileLogger(
         // creating logger manually
         logger = std::make_shared<spdlog::logger>(
             logger_name,
-            spdlog::sinks_init_list{file_sink, console_sink});
+            spdlog::sinks_init_list{file_sink, console_sink, callback_sink});
 
         logger->set_level(getLogLevelFromEnv());
 

@@ -14,6 +14,7 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -33,6 +34,17 @@ const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::trace;
 #else
 const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::info;
 #endif
+
+using LogCallback = std::function<void(
+    const std::string& logger_name,
+    spdlog::level::level_enum level,
+    const std::string& message)>;
+
+/**
+ * @brief callback for forwarding log messages to external consumers like the UI
+ * @param callback function called with the logger name, log level, and message
+ */
+void setLogCallback(LogCallback callback);
 
 /**
  * @brief Get log level from environment variable or return default
