@@ -9,6 +9,7 @@ find_package(std_srvs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Log.msg"
   "msg/MASCmd.msg"
   "msg/VesselCmd.msg"
   "msg/VesselCmdArray.msg"
