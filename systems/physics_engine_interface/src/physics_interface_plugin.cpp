@@ -416,6 +416,7 @@ bool PhysicsInterfacePlugin::vesselDomainTransition(
 
     std::unique_lock<std::shared_mutex> lock(m_mutex);
     if (m_vehicle_current_mode.find(_vessel) != m_vehicle_current_mode.end() &&
+        m_current_vessel_interface[_vessel] != new_interface &&
         !m_current_vessel_interface[_vessel]->deactivateInterface(
             _vessel,
             m_vehicle_current_mode[_vessel])) {
