@@ -15,6 +15,7 @@
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Static.hh>
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_sensor_base/common.hpp"
@@ -50,6 +51,10 @@ double ActiveSonar::NormaliseDeg(double deg)
     if (d < 0.0) {
         d += 360.0;
     }
+    // a tiny negative input (e.g. -1e-15) rounds to exactly 360.0 above
+    if (d >= 360.0) {
+        d = 0.0;
+    }
     return d;
 }
 
@@ -63,12 +68,26 @@ bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
     GetSDFParam<double>(elem, "sector_width_deg", m_sector_width_deg, 45.0);
     GetSDFParam<double>(elem, "dwell_time_s", m_dwell_time_s, 1.0);
     GetSDFParam<double>(elem, "max_range", m_max_range, 500.0);
+    GetSDFParam<double>(elem, "vertical_beamwidth_deg", m_vertical_beamwidth_deg, 30.0);
+
+    if (m_vertical_beamwidth_deg <= 0.0 || m_vertical_beamwidth_deg > 180.0) {
+        m_logger->warn(
+            "ActiveSonar [{}]: invalid vertical_beamwidth_deg={}, clamping to 30",
+            m_sensor_name, m_vertical_beamwidth_deg);
+        m_vertical_beamwidth_deg = 30.0;
+    }
 
     if (m_sector_width_deg <= 0.0 || m_sector_width_deg > 360.0) {
         m_logger->warn(
             "ActiveSonar [{}]: invalid sector_width_deg={}, clamping to 45",
             m_sensor_name, m_sector_width_deg);
         m_sector_width_deg = 45.0;
+    }
+    if (m_dwell_time_s <= 0.0) {
+        m_logger->warn(
+            "ActiveSonar [{}]: invalid dwell_time_s={}, clamping to 1.0",
+            m_sensor_name, m_dwell_time_s);
+        m_dwell_time_s = 1.0;
     }
     m_num_sectors = std::max(1, static_cast<int>(std::round(360.0 / m_sector_width_deg)));
     const double requested_width_deg = m_sector_width_deg;
@@ -90,14 +109,16 @@ bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
 
     m_logger->info(
         "ActiveSonar [{}]: publisher ready on [{}/{}/scan], "
-        "sector_width={}deg ({} sectors), dwell={}s, max_range={}m",
+        "sector_width={}deg ({} sectors), dwell={}s, max_range={}m, "
+        "vertical_beamwidth={}deg",
         m_sensor_name,
         m_vessel_name,
         m_sensor_name,
         m_sector_width_deg,
         m_num_sectors,
         m_dwell_time_s,
-        m_max_range);
+        m_max_range,
+        m_vertical_beamwidth_deg);
 
     return true;
 }
@@ -116,18 +137,23 @@ bool ActiveSonar::UpdateSensor(
 
     // ── Advance sector based on sim time ──
     const double now_s = std::chrono::duration<double>(_info.simTime).count();
-    if (m_sector_start_time_s < 0.0) {
-        m_sector_start_time_s = now_s;  // first tick
-    } else if (now_s - m_sector_start_time_s >= m_dwell_time_s) {
-        m_current_sector = (m_current_sector + 1) % m_num_sectors;
+    if (m_sector_start_time_s < 0.0 || now_s < m_sector_start_time_s) {
+        // first tick, or sim time went backwards (world reset)
         m_sector_start_time_s = now_s;
+    } else if (now_s - m_sector_start_time_s >= m_dwell_time_s) {
+        const auto steps = static_cast<long>(
+            (now_s - m_sector_start_time_s) / m_dwell_time_s);
+        m_current_sector = static_cast<int>((m_current_sector + steps) % m_num_sectors);
+        m_sector_start_time_s += steps * m_dwell_time_s;
     }
 
     const double sector_lo = m_current_sector * m_sector_width_deg;
     const double sector_hi = sector_lo + m_sector_width_deg;
     const double sector_center = sector_lo + m_sector_width_deg / 2.0;
 
-    auto self_pose = gz::sim::worldPose(m_vessel_entity, _ecm);
+    // bearings and elevations are measured in the sensor's own frame, so its
+    // mounting offset and orientation on the hull are taken into account
+    auto self_pose = gz::sim::worldPose(m_sensor_entity, _ecm);
 
     lotusim_sensor_msgs::msg::SonarScan msg;
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
@@ -137,10 +163,16 @@ bool ActiveSonar::UpdateSensor(
     msg.sector_width_deg = m_sector_width_deg;
     msg.max_range = m_max_range;
 
-    // scans every model entity in the world as a potential target
+    // scans every top-level, non-static model in the world as a potential target
     auto model_entities = _ecm.EntitiesByComponents(gz::sim::components::Model());
     for (auto&& entity : model_entities) {
-        if (gz::sim::topLevelModel(entity, _ecm) == m_vessel_entity) {
+        // nested models would duplicate their parent's contact
+        if (entity == m_vessel_entity || gz::sim::topLevelModel(entity, _ecm) != entity) {
+            continue;
+        }
+        // static world models (seabed, terrain, ocean surface) aren't targets
+        auto static_comp = _ecm.Component<gz::sim::components::Static>(entity);
+        if (static_comp && static_comp->Data()) {
             continue;
         }
 
@@ -153,6 +185,13 @@ bool ActiveSonar::UpdateSensor(
 
         const double range = rel_body.Length();
         if (range <= 1e-6 || range > m_max_range) {
+            continue;
+        }
+
+        // Vertical beam: elevation above/below the sensor's horizontal plane
+        const double elevation_deg =
+            std::atan2(rel_body.Z(), std::hypot(rel_body.X(), rel_body.Y())) * 180.0 / M_PI;
+        if (std::abs(elevation_deg) > m_vertical_beamwidth_deg / 2.0) {
             continue;
         }
 
