@@ -18,19 +18,19 @@ LOTUSim is a real-time, multi-domain simulation platform for maritime operations
 
 The [Quickstart](#quickstart) gets you up and running with LOTUSim in about 10 minutes.
 
-For all installation options, see the [Getting Started](Getting-Started.md) guide:
+For all installation options, see the [Getting Started](https://github.com/naval-group/LOTUSim/wiki/getting-started) guide:
 
 | I want to... | Use this path |
 |---|---|
-| Try LOTUSim without installing anything | [Path A - Run without installing](Getting-Started.md#path-a---run-without-installing) |
-| Install LOTUSim for regular use | [Path B - Install LOTUSim](Getting-Started.md#path-b---install-lotusim) |
-| Develop or contribute to LOTUSim | [Path C - Set up your dev environment](Getting-Started.md#path-c---set-up-your-dev-environment) |
+| Try LOTUSim without installing anything | [Path A - Run without installing](https://github.com/naval-group/LOTUSim/wiki/getting-started#path-a---run-without-installing) |
+| Install LOTUSim for regular use | [Path B - Install LOTUSim](https://github.com/naval-group/LOTUSim/wiki/getting-started#path-b---install-lotusim) |
+| Develop or contribute to LOTUSim | [Path C - Set up your dev environment](https://github.com/naval-group/LOTUSim/wiki/getting-started#path-c---set-up-your-dev-environment) |
 
 For tutorials, models, sensors, batteries, and the Developer Guide, see the [wiki](https://github.com/naval-group/LOTUSim/wiki).
 
 ## Quickstart
 
-> **On Windows?** Window users need to first setup WSL2 before going through the steps below. Check out this section in the wiki for the setup steps: [Windows users](Getting-Started.md#windows-users).
+> **On Windows?** Window users need to first setup WSL2 before going through the steps below. Check out this section in the wiki for the setup steps: [Windows users](https://github.com/naval-group/LOTUSim/wiki/getting-started#windows-users).
 
 #### Step 1 - Install Nix
 
