@@ -64,6 +64,7 @@ private:
     double m_sector_width_deg{45.0};
     double m_dwell_time_s{1.0};
     double m_max_range{500.0};
+    double m_vertical_beamwidth_deg{30.0};  // full width, centred on the sensor's horizontal plane
     int m_num_sectors{8};
 
     // ── sector-scan state ─────────────────────────────────────────────────
