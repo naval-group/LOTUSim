@@ -18,7 +18,7 @@ LOTUSim is a real-time, multi-domain simulation platform for maritime operations
 
 The [Quickstart](#quickstart) gets you up and running with LOTUSim in about 10 minutes.
 
-For all installation options, see the [Getting Started](https://github.com/naval-group/LOTUSim/wiki/getting-started) guide:
+For all installation options, **including the Docker image**, see the [Getting Started](https://github.com/naval-group/LOTUSim/wiki/getting-started) guide:
 
 | I want to... | Use this path |
 |---|---|
@@ -30,7 +30,10 @@ For tutorials, models, sensors, batteries, and the Developer Guide, see the [wik
 
 ## Quickstart
 
-> **On Windows?** Window users need to first setup WSL2 before going through the steps below. Check out this section in the wiki for the setup steps: [Windows users](https://github.com/naval-group/LOTUSim/wiki/getting-started#windows-users).
+Pick your platform for the one-time environment setup, then continue with [Step 4](#step-4---install-and-run-lotusim).
+
+<details>
+<summary><b>Linux / macOS</b></summary>
 
 #### Step 1 - Install Nix
 
@@ -55,21 +58,137 @@ EOF
 sudo systemctl restart nix-daemon   # macOS: sudo launchctl kickstart -k system/org.nixos.nix-daemon
 ```
 
-> `/etc/nix/nix.conf` is the system-wide file, so the keys are trusted for every user and the signatures verify..
+> `/etc/nix/nix.conf` is the system-wide file, so the keys are trusted for every user and the signatures verify.
 
-#### Step 3 - Install and run LOTUSim
+#### Step 3 - Install a graphics bridge (optional, Linux only)
 
-LOTUSim's 3D window needs to talk to your graphics card. Without this bridge, the simulation window may not open. Install the one matching your graphics card:
+Programs installed through Nix can't see your system's graphics drivers on their own, so LOTUSim's 3D Gazebo window may fail to open or fall back to slow software rendering. [nixGL](https://github.com/nix-community/nixGL) bridges that gap by pointing LOTUSim at the driver already on your machine. It's optional: pick the bridge that matches your graphics card, or skip it and come back here if `lotusim run --gui` doesn't open a window. macOS users can skip this step.
+
+Not sure which graphics card you have? Run `lspci | grep -iE 'vga|3d'`.
+
+**Intel or AMD** (both use the open-source Mesa drivers, so they share one bridge despite the `Intel` in its name):
+
 ```sh
 nix profile add github:nix-community/nixGL#nixGLIntel
-
-nix profile add github:naval-group/LOTUSim github:naval-group/LOTUSim#ui
 ```
 
-On an NVIDIA or hybrid/Optimus machine, also add the NVIDIA bridge so rendering uses the discrete GPU instead of falling back to Intel, this reads your driver's exact version off the running machine, so it needs `--impure`, and NVIDIA's userspace driver is unfree:
+**NVIDIA**, including hybrid/Optimus laptops (for hybrid laptops, install the Intel/AMD bridge above too). It reads your installed driver's exact version, so it needs `--impure`, and NVIDIA's driver is unfree, so it needs `NIXPKGS_ALLOW_UNFREE=1`:
 
 ```sh
 NIXPKGS_ALLOW_UNFREE=1 nix profile add --impure github:nix-community/nixGL#nixGLNvidia
+```
+
+</details>
+
+<details>
+<summary><b>Windows (WSL2)</b></summary>
+
+Nix doesn't run natively on Windows, so you'll run LOTUSim inside **NixOS-WSL**, a full NixOS system running under WSL2.
+
+##### 1. Install WSL (skip if you already have it)
+
+Open PowerShell **as Administrator** and run:
+
+```
+wsl --install --no-distribution
+```
+
+Restart Windows if prompted.
+
+##### 2. Install NixOS-WSL
+
+Download `nixos.wsl` from the [latest NixOS-WSL release](https://github.com/nix-community/NixOS-WSL/releases/latest). If you have WSL 2.4.4 or later, you can double-click the file to install it. Or install it from PowerShell:
+
+```
+wsl --install --from-file nixos.wsl
+```
+
+On older WSL versions, use:
+
+```
+wsl --import NixOS $env:USERPROFILE\NixOS nixos.wsl --version 2
+```
+
+Then open it:
+
+```
+wsl -d NixOS
+```
+
+Optionally, make it your default distro with `wsl -s NixOS`.
+
+##### 3. Enable mirrored networking
+
+This lets ROS 2's device discovery work without extra configuration, and lets your Windows browser reach the LOTUSim UI on `localhost`. In PowerShell, open:
+
+```
+notepad $env:USERPROFILE\.wslconfig
+```
+
+and add:
+
+```
+[wsl2]
+networkingMode=mirrored
+memory=16GB
+swap=16GB
+```
+
+##### 4. Configure NixOS for LOTUSim
+
+This step sets nix binary caches and graphics bridge. Inside the NixOS shell, open the system config:
+
+```
+sudo nano /etc/nixos/configuration.nix
+```
+
+Add these lines inside the main `{ ... }` block. Keep what's already there, especially the `imports` and `system.stateVersion` lines.
+
+```nix
+  # Flakes + binary caches (replaces Step 2)
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    extra-substituters = [ "https://ros.cachix.org" "https://naval-group.cachix.org" ];
+    extra-trusted-public-keys = [
+      "ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo="
+      "naval-group.cachix.org-1:ytTEzFEeuzQrC9IRYLzHGa5OnM65G95M6/sbPd0fy28="
+    ];
+  };
+
+  # GPU access through the Windows driver (replaces Step 3)
+  hardware.graphics.enable = true;
+  wsl.useWindowsDriver = true;
+
+  # Needed to clone the repo and for flakes to see your files
+  environment.systemPackages = with pkgs; [ git ];
+```
+
+Apply it:
+
+```
+sudo nixos-rebuild switch
+```
+
+> Without the trusted keys, Nix will quietly build the ROS/Gazebo packages from source the first time, which takes about an hour. If a build seems stuck, check that this rebuild succeeded.
+
+##### 5. Restart WSL
+
+In PowerShell:
+
+```
+wsl --shutdown
+```
+
+Then reopen NixOS with `wsl -d NixOS` and continue with **Step 4** below.
+
+> **Troubleshooting:** If ROS nodes can't find each other, check the Windows Firewall first, since mirrored networking is sometimes blocked by default. NixOS also has its own firewall; for local development you can add `networking.firewall.enable = false;` to `configuration.nix` and rebuild. If `--gui` fails to open a window, try the Intel/AMD nixGL bridge from Step 3 (in the Linux / macOS section) as a fallback.
+
+</details>
+
+#### Step 4 - Install and run LOTUSim
+
+```sh
+nix profile add github:naval-group/LOTUSim github:naval-group/LOTUSim#ui
 ```
 
 You're now ready to run LOTUSim!
@@ -80,8 +199,8 @@ lotusim-ui               # the browser interface, on http://localhost:8080
 
 #### Without installing anything
 ```sh
-nix run github:naval-group/LOTUSim -- run --gui
-podman run --rm ghcr.io/naval-group/lotusim
+nix run github:naval-group/LOTUSim -- run --gui   # the simulation, in a Gazebo window
+nix run github:naval-group/LOTUSim#ui             # the browser interface, on http://localhost:8080
 ```
 
 ## Next steps
