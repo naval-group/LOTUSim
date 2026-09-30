@@ -158,7 +158,7 @@ protected:
 
     gz::math::Vector3d m_lat_long{std::nan(""), std::nan(""), std::nan("")};
 
-    gz::math::Quaterniond m_quad{0.0, 0.0, 0.0, 1.0};
+    gz::math::Quaterniond m_quad{gz::math::Quaterniond::Identity};
 };
 
 }  // namespace lotusim::sensor
