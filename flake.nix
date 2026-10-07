@@ -556,6 +556,23 @@
 
             source "${pkgs.bash-completion}/share/bash-completion/bash_completion"
 
+            # the nix store ros2cli is a different location, so install/setup.bash never reaches it.
+            source "${ros.ros2cli}/share/ros2cli/environment/ros2-argcomplete.bash"
+
+            # The overlay's ament hook indexes only prefixes shipping a
+            # local_setup.sh, which ament_python packages (sros2, ...) lack.
+            # Without this every `ros2` call, each Tab included, fails to load
+            # the `security` verb.
+            for _sp in ''${PYTHONPATH//:/ }; do
+              _prefix="''${_sp%/lib/*}"
+              if [ -d "$_prefix/share/ament_index" ] \
+                && [[ ":$AMENT_PREFIX_PATH:" != *":$_prefix:"* ]]; then
+                AMENT_PREFIX_PATH="$AMENT_PREFIX_PATH:$_prefix"
+              fi
+            done
+            unset _sp _prefix
+            export AMENT_PREFIX_PATH
+
             LOTUSIM_PATH="''${LOTUSIM_PATH:-$PWD}"
 
             # What `source install/setup.bash` sets, exported up front so the
