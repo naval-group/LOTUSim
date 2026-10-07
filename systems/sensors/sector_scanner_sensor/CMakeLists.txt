@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.8)
-project(active_sonar)
+cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
+project(sector_scanner_sensor)
 
 #============================================================================
 # Configure the project
@@ -62,19 +62,19 @@ set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
 #============================================================================
 # Create library
 #============================================================================
-add_library(active_sonar
+add_library(sector_scanner_sensor
   SHARED
-  src/active_sonar.cpp
+  src/sector_scanner_sensor.cpp
 )
 
-target_include_directories(active_sonar
+target_include_directories(sector_scanner_sensor
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${EIGEN3_INCLUDE_DIRS}
 )
 
-target_link_libraries(active_sonar
+target_link_libraries(sector_scanner_sensor
   PUBLIC
   gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
   gz-msgs${GZ_MSGS_VER}::gz-msgs${GZ_MSGS_VER}
@@ -82,7 +82,7 @@ target_link_libraries(active_sonar
   gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
 )
 
-ament_target_dependencies(active_sonar
+ament_target_dependencies(sector_scanner_sensor
   PUBLIC
   rclcpp
   lotusim_common
@@ -94,8 +94,8 @@ ament_target_dependencies(active_sonar
 # Install
 #============================================================================
 install(
-  TARGETS active_sonar
-  EXPORT  export_active_sonar
+  TARGETS sector_scanner_sensor
+  EXPORT  export_sector_scanner_sensor
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -113,7 +113,7 @@ install(
 #============================================================================
 # Export
 #============================================================================
-ament_export_targets(export_active_sonar HAS_LIBRARY_TARGET)
+ament_export_targets(export_sector_scanner_sensor HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
   lotusim_common
