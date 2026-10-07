@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>active_sonar</name>
+  <name>sector_scanner_sensor</name>
   <version>0.0.0</version>
-  <description>Active sonar sensor for LOTUSim</description>
+  <description>Sector scanner sensor for LOTUSim</description>
   <maintainer email="newsther@yahoo.com">esther</maintainer>
   <license>EPL-2.0</license>
 

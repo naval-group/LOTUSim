@@ -50,7 +50,7 @@ find_package(subsea_pressure_sensor REQUIRED)
 find_package(ais_sensor REQUIRED)
 find_package(imu_sensor REQUIRED)
 find_package(radar_sensor REQUIRED)
-find_package(active_sonar REQUIRED)
+find_package(sector_scanner_sensor REQUIRED)
 find_package(gz-rendering8 REQUIRED)
 find_package(gz-sensors8 REQUIRED)
 
@@ -82,7 +82,7 @@ ament_target_dependencies(lotusim_sensor_plugin
   ais_sensor
   imu_sensor
   radar_sensor
-  active_sonar
+  sector_scanner_sensor
 )
 ament_export_include_directories(include)
 ament_export_dependencies(
@@ -93,7 +93,7 @@ ament_export_dependencies(
   ais_sensor
   imu_sensor
   radar_sensor
-  active_sonar
+  sector_scanner_sensor
 )
 ament_export_targets(
   export_lotusim_sensor_plugin

@@ -35,7 +35,7 @@
         <always_on>1</always_on>
         <update_rate>1000.0</update_rate>
       </sensor>
-      <sensor name="active_sonar" type="custom" gz:type="active_sonar">
+      <sensor name="sector_scanner_sensor" type="custom" gz:type="sector_scanner">
         <update_rate>1</update_rate>
         <sector_width_deg>45.0</sector_width_deg>
         <dwell_time_s>1.0</dwell_time_s>

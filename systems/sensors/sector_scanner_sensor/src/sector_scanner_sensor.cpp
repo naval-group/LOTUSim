@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-#include "active_sonar/active_sonar.hpp"
+#include "sector_scanner_sensor/sector_scanner.hpp"
 
 #include <cmath>
 
@@ -25,7 +25,7 @@ namespace lotusim::sensor {
 // ═══════════════════════════════════════════════════════════════════════════
 // Constructor
 // ═══════════════════════════════════════════════════════════════════════════
-ActiveSonar::ActiveSonar(
+SectorScanner::SectorScanner(
     std::shared_ptr<spdlog::logger> logger,
     rclcpp::Node::SharedPtr node,
     const gz::sim::Entity& vessel_entity,
@@ -45,7 +45,7 @@ ActiveSonar::ActiveSonar(
 // ═══════════════════════════════════════════════════════════════════════════
 // NormaliseDeg - wrap an angle into [0, 360)
 // ═══════════════════════════════════════════════════════════════════════════
-double ActiveSonar::NormaliseDeg(double deg)
+double SectorScanner::NormaliseDeg(double deg)
 {
     double d = std::fmod(deg, 360.0);
     if (d < 0.0) {
@@ -61,7 +61,7 @@ double ActiveSonar::NormaliseDeg(double deg)
 // ═══════════════════════════════════════════════════════════════════════════
 // CustomSensorLoad - read sector/dwell/range config from SDF, create publisher
 // ═══════════════════════════════════════════════════════════════════════════
-bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
+bool SectorScanner::CustomSensorLoad(const sdf::Sensor& _sdf)
 {
     sdf::ElementPtr elem = _sdf.Element();
 
@@ -72,20 +72,20 @@ bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
 
     if (m_vertical_beamwidth_deg <= 0.0 || m_vertical_beamwidth_deg > 180.0) {
         m_logger->warn(
-            "ActiveSonar [{}]: invalid vertical_beamwidth_deg={}, clamping to 30",
+            "SectorScanner [{}]: invalid vertical_beamwidth_deg={}, clamping to 30",
             m_sensor_name, m_vertical_beamwidth_deg);
         m_vertical_beamwidth_deg = 30.0;
     }
 
     if (m_sector_width_deg <= 0.0 || m_sector_width_deg > 360.0) {
         m_logger->warn(
-            "ActiveSonar [{}]: invalid sector_width_deg={}, clamping to 45",
+            "SectorScanner [{}]: invalid sector_width_deg={}, clamping to 45",
             m_sensor_name, m_sector_width_deg);
         m_sector_width_deg = 45.0;
     }
     if (m_dwell_time_s <= 0.0) {
         m_logger->warn(
-            "ActiveSonar [{}]: invalid dwell_time_s={}, clamping to 1.0",
+            "SectorScanner [{}]: invalid dwell_time_s={}, clamping to 1.0",
             m_sensor_name, m_dwell_time_s);
         m_dwell_time_s = 1.0;
     }
@@ -95,20 +95,20 @@ bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
 
     if (std::abs(m_sector_width_deg - requested_width_deg) > 1e-6) {
         m_logger->warn(
-            "ActiveSonar [{}]: sector_width_deg={} does not evenly divide 360; "
+            "SectorScanner [{}]: sector_width_deg={} does not evenly divide 360; "
             "using {} sectors of {:.3f}deg each to avoid a coverage gap",
             m_sensor_name, requested_width_deg, m_num_sectors, m_sector_width_deg);
     }
 
     m_power_managed = elem->HasElement("lotusim_power");
 
-    m_sonar_pub = m_ros_node->create_publisher<lotusim_sensor_msgs::msg::SonarScan>(
+    m_sector_scan_pub = m_ros_node->create_publisher<lotusim_sensor_msgs::msg::SectorScan>(
         m_vessel_name + "/" + m_sensor_name + "/scan",
         rclcpp::QoS(10)
     );
 
     m_logger->info(
-        "ActiveSonar [{}]: publisher ready on [{}/{}/scan], "
+        "SectorScanner [{}]: publisher ready on [{}/{}/scan], "
         "sector_width={}deg ({} sectors), dwell={}s, max_range={}m, "
         "vertical_beamwidth={}deg",
         m_sensor_name,
@@ -126,7 +126,7 @@ bool ActiveSonar::CustomSensorLoad(const sdf::Sensor& _sdf)
 // ═══════════════════════════════════════════════════════════════════════════
 // UpdateSensor - advance sector, scan world entities, publish contacts
 // ═══════════════════════════════════════════════════════════════════════════
-bool ActiveSonar::UpdateSensor(
+bool SectorScanner::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
@@ -155,7 +155,7 @@ bool ActiveSonar::UpdateSensor(
     // mounting offset and orientation on the hull are taken into account
     auto self_pose = gz::sim::worldPose(m_sensor_entity, _ecm);
 
-    lotusim_sensor_msgs::msg::SonarScan msg;
+    lotusim_sensor_msgs::msg::SectorScan msg;
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
     msg.header.frame_id = m_vessel_name + "/" + m_sensor_name;
     msg.current_sector = m_current_sector;
@@ -205,14 +205,14 @@ bool ActiveSonar::UpdateSensor(
             continue;
         }
 
-        lotusim_sensor_msgs::msg::SonarContact contact;
+        lotusim_sensor_msgs::msg::SectorScanContact contact;
         contact.target_name = target_name;
         contact.range = range;
         contact.bearing_deg = bearing_deg;
         msg.contacts.push_back(contact);
     }
 
-    m_sonar_pub->publish(msg);
+    m_sector_scan_pub->publish(msg);
     return true;
 }
 

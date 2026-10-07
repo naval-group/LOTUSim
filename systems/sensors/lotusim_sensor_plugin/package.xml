@@ -20,7 +20,7 @@
   <depend>ais_sensor</depend>
   <depend>imu_sensor</depend>
   <depend>radar_sensor</depend>
-  <depend>active_sonar</depend>
+  <depend>sector_scanner_sensor</depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-sonar_viewer.py
+sector_scanner_viewer.py
 
-Sector scan style active sonar
+Sector scan visualisation tool
 Shows:
   - the active 45-deg sector, shaded
   - a sweep line at the sector's center bearing
@@ -12,7 +12,7 @@ Shows:
 Bearing convention matches the sensor: nautical, clockwise from bow (0 deg = straight ahead, 90 deg = to starboard/right)
 
 Usage:
-    python3 sonar_viewer.py --topic /lotusim/lrauv_0/active_sonar/scan
+    python3 sector_scanner_viewer.py --topic /lotusim/lrauv_0/sector_scanner/scan
 
 """
 
@@ -27,7 +27,7 @@ import rclpy
 from rclpy.node import Node
 import threading
 
-from lotusim_sensor_msgs.msg import SonarScan
+from lotusim_sensor_msgs.msg import SectorScan
 
 # How many past scans to keep on screen
 TRAIL_LENGTH = 5
@@ -40,15 +40,15 @@ FAR_COLOR = np.array([0.0, 1.0, 0.0])   # green, range >= RANGE_THRESHOLD_M
 RANGE_THRESHOLD_M = 80.0
 
 
-class SonarScanSource(Node):
+class SectorScanSource(Node):
     def __init__(self, topic):
-        super().__init__("sonar_viewer")
+        super().__init__("sector_scanner_viewer")
         self.history = deque(maxlen=TRAIL_LENGTH)
         self.latest_sector_info = None  # (current_sector, center_deg, width_deg, max_range)
         self.vessel_name = None
         self.sensor_name = None
         self.lock = threading.Lock()
-        self.create_subscription(SonarScan, topic, self._callback, 10)
+        self.create_subscription(SectorScan, topic, self._callback, 10)
 
     def _callback(self, msg):
         contacts = [(c.bearing_deg, c.range, c.target_name) for c in msg.contacts]
@@ -66,7 +66,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--topic", default=None,
-                         help="Full topic path, e.g. /lrauv_0/sonar_0/scan")
+                         help="Full topic path, e.g. /lrauv_0/sector_scanner_0/scan")
     parser.add_argument("--vessel", default=None,
                          help="Vessel name, used to build the default topic "
                               "if --topic isn't given")
@@ -84,7 +84,7 @@ def main():
         parser.error("Provide either --topic, or both --vessel and --sensor")
 
     rclpy.init()
-    source = SonarScanSource(topic)
+    source = SectorScanSource(topic)
 
     spin_thread = threading.Thread(target=rclpy.spin, args=(source,), daemon=True)
     spin_thread.start()
@@ -103,7 +103,7 @@ def main():
 
     max_range_guess = 500.0  # placeholder until first scan arrives
     ax.set_ylim(0, max_range_guess)
-    fig.suptitle("Active sonar - sector scan", color=FG_COLOR, fontsize=13, y=0.98)
+    fig.suptitle("Active sector scanner - sector scan", color=FG_COLOR, fontsize=13, y=0.98)
     fig.text(0.5, 0.94, topic, color=FG_COLOR, ha="center", fontsize=9, alpha=0.75)
 
     sector_wedge, = ax.fill([0, 0], [0, 0], color=FG_COLOR, alpha=0.15, zorder=1)
