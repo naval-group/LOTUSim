@@ -318,18 +318,6 @@ bool LotusimSensorPlugin::EachNew(
         } else {
             return true;
         }
-        auto child_link = m_ecm->ChildrenByComponents(
-            model_entity,
-            gz::sim::components::Link());
-        for (auto&& link : child_link) {
-            auto name_opt = m_ecm->Component<gz::sim::components::Name>(link);
-            if (name_opt &&
-                name_opt->Data().find("base_link") != std::string::npos) {
-                gz::sim::Link _link(link);
-                _link.EnableVelocityChecks(*m_ecm);
-                break;
-            }
-        }
 
         m_entity_sensor_map.insert(std::make_pair(_entity, std::move(sensor)));
         return true;

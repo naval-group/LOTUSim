@@ -12,9 +12,9 @@
 #include <tinyxml2.h>
 
 #include <cstdlib>
-#include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
-#include <gz/sim/components/Link.hh>
+#include <gz/sim/components/AngularVelocity.hh>
+#include <gz/sim/components/LinearVelocity.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Pose.hh>
@@ -66,10 +66,15 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
 
             // Use the provided sdf_file inside the model folder.
             // If empty, default to "model.sdf".
-            std::string sdf_filename = msg.sdf_file.empty() ? "model.sdf" : msg.sdf_file;
-            m_logger->info("EntitySpawner::addEntity: using sdf_file='{}' for model='{}'", sdf_filename, msg.model_name);
+            std::string sdf_filename =
+                msg.sdf_file.empty() ? "model.sdf" : msg.sdf_file;
+            m_logger->info(
+                "EntitySpawner::addEntity: using sdf_file='{}' for model='{}'",
+                sdf_filename,
+                msg.model_name);
             const std::string file_path_sdf = (file_path + "/" + sdf_filename);
-            if (sdf_doc.LoadFile(file_path_sdf.c_str()) != tinyxml2::XML_SUCCESS) {
+            if (sdf_doc.LoadFile(file_path_sdf.c_str()) !=
+                tinyxml2::XML_SUCCESS) {
                 m_logger->error(
                     "EntitySpawner::addEntity: Failed to load SDF file '{}'",
                     file_path_sdf);
@@ -331,21 +336,6 @@ void EntitySpawner::registerNewEntity(
         m_vessels_names[entity] = name;
     }
 
-    // Enable velocity reporting on the model's base_link.
-    auto links =
-        m_ecm.ChildrenByComponents(entity, gz::sim::components::Link());
-
-    for (auto link_entity : links) {
-        auto name_comp =
-            m_ecm.Component<gz::sim::components::Name>(link_entity);
-        if (name_comp &&
-            name_comp->Data().find("base_link") != std::string::npos) {
-            gz::sim::Link link(link_entity);
-            link.EnableVelocityChecks(m_ecm);
-            break;
-        }
-    }
-
     m_logger->info(
         "EntitySpawner::registerNewEntity: Registered entity [{}] '{}'",
         entity,
@@ -368,6 +358,30 @@ void EntitySpawner::unregisterEntity(gz::sim::Entity entity)
     m_vessels_entities.erase(it->second);
     m_vessels_models.erase(it->second); 
     m_vessels_names.erase(it);
+}
+
+std::array<double, 3> EntitySpawner::getVesselLinearVelocity(
+    gz::sim::Entity entity) const
+{
+    auto comp =
+        m_ecm.Component<gz::sim::components::WorldLinearVelocity>(entity);
+    if (!comp)
+        return {0.0, 0.0, 0.0};
+
+    const auto& vel = comp->Data();
+    return {vel.X(), vel.Y(), vel.Z()};
+}
+
+std::array<double, 3> EntitySpawner::getVesselAngularVelocity(
+    gz::sim::Entity entity) const
+{
+    auto comp =
+        m_ecm.Component<gz::sim::components::WorldAngularVelocity>(entity);
+    if (!comp)
+        return {0.0, 0.0, 0.0};
+
+    const auto& vel = comp->Data();
+    return {vel.X(), vel.Y(), vel.Z()};
 }
 
 std::string EntitySpawner::resolveUniqueName(const std::string& desired) const

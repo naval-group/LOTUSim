@@ -10,8 +10,9 @@
 #ifndef IMU_SENSOR_HPP
 #define IMU_SENSOR_HPP
 
+#include "gz/math/Vector3.hh"
 #include "gz/sim/components/AngularVelocity.hh"
-#include "gz/sim/components/LinearAcceleration.hh"
+#include "gz/sim/components/LinearVelocity.hh"
 #include "lotusim_common/common.hpp"
 #include "lotusim_sensor_base/custom_sensor.hpp"
 #include "sensor_msgs/msg/imu.hpp"
@@ -42,6 +43,11 @@ private:
     std::chrono::steady_clock::duration m_update_period;
     std::chrono::steady_clock::duration m_last_pub;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr m_sensor_pub;
+
+    // State for differentiating the vessel velocity into acceleration
+    gz::math::Vector3d m_prev_lin_vel;
+    double m_prev_vel_time{0.0};
+    bool m_has_prev_vel{false};
 };
 }  // namespace lotusim::sensor
 

@@ -61,7 +61,6 @@ static std::unordered_map<DomainType, std::string> DomainTypeToStringMap{
  * It is reponsible for interfacing with the physics engine of your choice. It
  * is also responsible for subscribing to the thruster commands your engine
  * takes
- * The model must have a link named base_link
  */
 class PhysicsInterfaceBase {
 public:

@@ -22,6 +22,8 @@
 #include <gz/sim/Model.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/Util.hh>
+#include <gz/sim/components/AngularVelocity.hh>
+#include <gz/sim/components/LinearVelocity.hh>
 #include <gz/sim/components/Link.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>

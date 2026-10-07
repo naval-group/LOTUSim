@@ -10,6 +10,7 @@
 #ifndef LOTUSIM_ENTITY_SPAWNER_HH_
 #define LOTUSIM_ENTITY_SPAWNER_HH_
 
+#include <array>
 #include <gz/sim/EntityComponentManager.hh>
 #include <gz/sim/SdfEntityCreator.hh>
 #include <memory>
@@ -105,7 +106,6 @@ public:
      * @brief Register a newly spawned entity once GZ has confirmed it exists.
      *
      * Called from MultiAgentSystem::Update via EachNew<ModelSdf>.
-     * Also enables velocity checks on the model's base_link.
      */
     void registerNewEntity(gz::sim::Entity entity, const std::string& name);
 
@@ -133,6 +133,29 @@ public:
     }
 
     std::string modelName(const std::string& vessel_name) const;
+
+    /**
+     * @brief Get the world linear velocity of the vessel.
+     *
+     * Reads the model's WorldLinearVelocity component.
+     * Caller must hold the shared lock returned by sharedLock().
+     *
+     * @param entity model entity
+     * @return x y z velocity, or zero if unknown / not yet available
+     */
+    std::array<double, 3> getVesselLinearVelocity(gz::sim::Entity entity) const;
+
+    /**
+     * @brief Get the world angular velocity of the vessel.
+     *
+     * Reads the model's WorldAngularVelocity component.
+     * Caller must hold the shared lock returned by sharedLock().
+     *
+     * @param entity model entity
+     * @return x y z angular velocity, or zero if unknown / not yet available
+     */
+    std::array<double, 3> getVesselAngularVelocity(
+        gz::sim::Entity entity) const;
 
     /**
      * @brief Acquire a shared (read) lock on the vessel maps.

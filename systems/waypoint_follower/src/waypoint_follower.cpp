@@ -605,6 +605,34 @@ void WaypointFollowerPlugin::Update(
 
         _ecm.SetComponentData<gz::sim::components::Pose>(_entity, pose);
 
+        // Velocities in world frame: surge projected on heading, yaw rate
+        // about Z.
+        const gz::math::Vector3d lin_vel(
+            m_velocities[_entity][0] * cos(pose.Yaw()),
+            m_velocities[_entity][0] * sin(pose.Yaw()),
+            0);
+        const gz::math::Vector3d ang_vel(0, 0, m_velocities[_entity][1]);
+        if (!_ecm.Component<gz::sim::components::WorldLinearVelocity>(
+                _entity)) {
+            _ecm.CreateComponent(
+                _entity,
+                gz::sim::components::WorldLinearVelocity(lin_vel));
+        } else {
+            _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
+                _entity,
+                lin_vel);
+        }
+        if (!_ecm.Component<gz::sim::components::WorldAngularVelocity>(
+                _entity)) {
+            _ecm.CreateComponent(
+                _entity,
+                gz::sim::components::WorldAngularVelocity(ang_vel));
+        } else {
+            _ecm.SetComponentData<gz::sim::components::WorldAngularVelocity>(
+                _entity,
+                ang_vel);
+        }
+
         m_logger->debug(
             "\n\n\n-------------------------------\n"
             "Entity {} is heading to waypoint {}/{}\n"
