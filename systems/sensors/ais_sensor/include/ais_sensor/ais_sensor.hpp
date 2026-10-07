@@ -11,9 +11,7 @@
 #define AIS_SENSOR_HPP
 
 #include <cmath>
-#include <gz/sim/Link.hh>
 #include <gz/sim/components/LinearVelocity.hh>
-#include <gz/sim/components/Link.hh>
 #include <gz/sim/components/Name.hh>
 
 #include "lotusim_common/common.hpp"
@@ -45,7 +43,6 @@ private:
     // Sensor params
     std::chrono::steady_clock::duration m_update_period;
     std::chrono::steady_clock::duration m_last_pub;
-    gz::sim::Entity m_base_link;
     rclcpp::Publisher<lotusim_sensor_msgs::msg::AIS>::SharedPtr m_sensor_pub;
 };
 

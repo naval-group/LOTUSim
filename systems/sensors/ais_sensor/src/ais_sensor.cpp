@@ -28,7 +28,6 @@ AISSensor::AISSensor(
           sensor_name)
     , m_update_period(std::chrono::seconds(2))
     , m_last_pub(std::chrono::seconds(0))
-    , m_base_link(gz::sim::kNullEntity)
 {
     m_logger->info(
         "AISSensor::AISSensor: Created for vessel {} sensor {}",
@@ -49,20 +48,6 @@ bool AISSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
-    if (m_base_link == gz::sim::kNullEntity) {
-        auto child_link = _ecm.ChildrenByComponents(
-            m_vessel_entity,
-            gz::sim::components::Link());
-        for (auto&& link : child_link) {
-            auto name_opt = _ecm.Component<gz::sim::components::Name>(link);
-            if (name_opt &&
-                name_opt->Data().find("base_link") != std::string::npos) {
-                m_base_link = link;
-                break;
-            }
-        }
-    }
-
     if (!EnableMeasurement(_info.simTime))
         return false;
 
@@ -73,8 +58,8 @@ bool AISSensor::UpdateSensor(
     msg.longitude = m_lat_long.Y();
     msg.latitude = m_lat_long.X();
 
-    auto vel_opt =
-        _ecm.Component<gz::sim::components::WorldLinearVelocity>(m_base_link);
+    auto vel_opt = _ecm.Component<gz::sim::components::WorldLinearVelocity>(
+        m_vessel_entity);
 
     if (vel_opt) {
         double vel = std::sqrt(

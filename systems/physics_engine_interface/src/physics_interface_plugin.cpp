@@ -116,16 +116,6 @@ void PhysicsInterfacePlugin::Update(
             continue;
         }
 
-        const std::string& vessel_name = it_name->second;
-        auto it_base = m_vessels_base_link_map.find(vessel_name);
-        if (it_base == m_vessels_base_link_map.end()) {
-            m_logger->warn(
-                "PhysicsInterfacePlugin::Update: Entity {} ({}) has no base link mapping",
-                vessel_entity,
-                vessel_name);
-            continue;
-        }
-
         futures.push_back(std::async(
             std::launch::async,
             &PhysicsInterfacePlugin::updateVesselState,
@@ -157,7 +147,6 @@ void PhysicsInterfacePlugin::updateVesselState(
         gz::math::Vector3d lin_vel;
         gz::math::Vector3d ang_vel;
         std::string vessel_name;
-        gz::sim::Entity base_link_entity;
         std::shared_ptr<PhysicsInterfaceBase> interface;
 
         // Resolve the mappings (concurrent reads are safe under shared lock).
@@ -171,15 +160,6 @@ void PhysicsInterfacePlugin::updateVesselState(
                 return;
             }
             vessel_name = it_name->second;
-
-            auto it_base = m_vessels_base_link_map.find(vessel_name);
-            if (it_base == m_vessels_base_link_map.end()) {
-                m_logger->error(
-                    "PhysicsInterfacePlugin::updateVesselState: No base link found for vessel {}",
-                    vessel_name);
-                return;
-            }
-            base_link_entity = it_base->second;
 
             auto it_interface = m_current_vessel_interface.find(vessel_entity);
             if (it_interface == m_current_vessel_interface.end() ||
@@ -212,21 +192,24 @@ void PhysicsInterfacePlugin::updateVesselState(
             }
             pose = pose_comp->Data();
 
-            gz::sim::Link _link(base_link_entity);
-            // World frame, ENU
-            auto lin_vel_opt = _link.WorldLinearVelocity(_ecm);
-            auto ang_vel_opt = _link.WorldAngularVelocity(_ecm);
+            // World frame, ENU. Absent until the first state is written.
+            auto lin_vel_comp =
+                _ecm.Component<gz::sim::components::WorldLinearVelocity>(
+                    vessel_entity);
+            auto ang_vel_comp =
+                _ecm.Component<gz::sim::components::WorldAngularVelocity>(
+                    vessel_entity);
 
             vessel_info.time =
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     _info.simTime)
                     .count() /
                 1000.0;
-            if (lin_vel_opt) {
-                vessel_info.lin_vel = lin_vel_opt.value();
+            if (lin_vel_comp) {
+                vessel_info.lin_vel = lin_vel_comp->Data();
             }
-            if (ang_vel_opt) {
-                vessel_info.ang_vel = ang_vel_opt.value();
+            if (ang_vel_comp) {
+                vessel_info.ang_vel = ang_vel_comp->Data();
             }
             vessel_info.entity = vessel_entity;
             vessel_info.pose = pose;
@@ -271,13 +254,27 @@ void PhysicsInterfacePlugin::updateVesselState(
                 gz::sim::components::Pose::typeId,
                 gz::sim::ComponentState::OneTimeChange);
 
-            _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
-                base_link_entity,
-                lin_vel);
-            const auto angularVel =
-                _ecm.Component<gz::sim::components::WorldAngularVelocity>(
-                    base_link_entity);
-            *angularVel = gz::sim::components::WorldAngularVelocity(ang_vel);
+            // Velocity lives on the model entity (read by MAS and sensors).
+            if (!_ecm.Component<gz::sim::components::WorldLinearVelocity>(
+                    vessel_entity)) {
+                _ecm.CreateComponent(
+                    vessel_entity,
+                    gz::sim::components::WorldLinearVelocity(lin_vel));
+            } else {
+                _ecm.SetComponentData<gz::sim::components::WorldLinearVelocity>(
+                    vessel_entity,
+                    lin_vel);
+            }
+            if (!_ecm.Component<gz::sim::components::WorldAngularVelocity>(
+                    vessel_entity)) {
+                _ecm.CreateComponent(
+                    vessel_entity,
+                    gz::sim::components::WorldAngularVelocity(ang_vel));
+            } else {
+                _ecm.SetComponentData<gz::sim::components::WorldAngularVelocity>(
+                    vessel_entity,
+                    ang_vel);
+            }
         } else {
             m_logger->warn(
                 "PhysicsInterfacePlugin::updateVesselState: {} update failed.",
@@ -435,7 +432,6 @@ bool PhysicsInterfacePlugin::loadVessel(
     gz::sim::EntityComponentManager* _ecm)
 {
     try {
-        gz::sim::Entity base_link;
         sdf::Model data = _model->Data();
         sdf::ElementPtr sdfptr = data.Element();
         auto name_opt = _ecm->Component<gz::sim::components::Name>(_entity);
@@ -462,22 +458,6 @@ bool PhysicsInterfacePlugin::loadVessel(
                 m_vessels_entities.push_back(_entity);
                 m_vessels_model_map[vessel_name] = _entity;
                 m_vessels_name_map[_entity] = vessel_name;
-            }
-            // Get base link
-            auto child_link = _ecm->ChildrenByComponents(
-                _entity,
-                gz::sim::components::Link());
-            for (auto&& link : child_link) {
-                auto name_opt =
-                    _ecm->Component<gz::sim::components::Name>(link);
-                if (name_opt &&
-                    name_opt->Data().find("base_link") != std::string::npos) {
-                    base_link = link;
-                    m_vessels_base_link_map[vessel_name] = base_link;
-                    gz::sim::Link _link(base_link);
-                    _link.EnableVelocityChecks(*_ecm);
-                    break;
-                }
             }
             // Init Interface
             sdf::ElementPtr physics_sdf_ptr =
@@ -612,7 +592,6 @@ bool PhysicsInterfacePlugin::deleteVessel(
         if (it != m_vessels_entities.end()) {
             m_vessels_entities.erase(it);
         }
-        m_vessels_base_link_map.erase(m_vessels_name_map[_entity]);
         m_vessels_model_map.erase(m_vessels_name_map[_entity]);
         m_vessels_name_map.erase(_entity);
         m_current_vessel_interface.erase(_entity);

@@ -286,9 +286,6 @@ private:
         m_cmd_array_action;
 
     rclcpp_action::Server<lotusim_msgs::action::MASCmd>::SharedPtr m_cmd_action;
-
-    std::unordered_map<gz::sim::Entity, gz::math::Vector3d> m_previous_positions;
-    std::unordered_map<gz::sim::Entity, std::chrono::nanoseconds> m_previous_times;
 };
 
 }  // namespace lotusim::gazebo

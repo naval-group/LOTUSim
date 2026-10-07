@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "lotusim_mas/multi_agent_system.hpp"
+
 #include <gz/sim/components/LinearVelocity.hh>
 
 namespace lotusim::gazebo {
@@ -370,6 +371,7 @@ void MultiAgentSystem::PostUpdate(
     const gz::sim::EntityComponentManager& _ecm)
 {
     publishPose(_info, _ecm);
+
     customUserPostUpdate();
 }
 
@@ -462,21 +464,10 @@ void MultiAgentSystem::publishPose(
 
     for (auto& [entity, name] : m_entity_spawner->vesselNames()) {
         auto pose = worldPose(entity, _ecm);
-        double speedOverGround = 0.0;
-        const auto currentTime = _info.simTime;
-        auto previousPosition = m_previous_positions.find(entity);
-        auto previousTime = m_previous_times.find(entity);
-
-        if (previousPosition != m_previous_positions.end() && previousTime != m_previous_times.end()) {
-            const double dt = std::chrono::duration<double>(currentTime - previousTime->second).count();
-            if (dt > 0.0){
-                const double distance = (pose.Pos() - previousPosition->second).Length();
-                speedOverGround = distance / dt;
-            }
-        }
-
-        m_previous_positions[entity] = pose.Pos();
-        m_previous_times[entity] = currentTime;
+        // Speed over ground is the horizontal component of world velocity.
+        const auto [vx, vy, vz] =
+            m_entity_spawner->getVesselLinearVelocity(entity);
+        const double speedOverGround = std::hypot(vx, vy);
 
         auto latLonEle =
             lotusim::common::XYToLatLong(_ecm, pose.X(), pose.Y(), pose.Z());

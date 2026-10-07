@@ -14,12 +14,10 @@
 #include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/Link.hh>
 #include <gz/sim/System.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/AngularVelocity.hh>
 #include <gz/sim/components/LinearVelocity.hh>
-#include <gz/sim/components/Link.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
@@ -242,12 +240,6 @@ private:
      *
      */
     std::vector<gz::sim::Entity> m_vessels_entities;
-
-    /**
-     * @brief Mapping for vessel name to base_link entity
-     *
-     */
-    std::unordered_map<std::string, gz::sim::Entity> m_vessels_base_link_map;
 
     /**
      * @brief Mapping for vessel name to the model entity
