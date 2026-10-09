@@ -7,6 +7,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
+#include <memory>
 #include <mutex>
 #include <utility>
 #include "lotusim_common/logger.hpp"
@@ -15,7 +16,11 @@ namespace lotusim::logger {
 
 namespace { // private
 
-LogCallback g_log_callback;
+// Set and cleared from plugin threads while any thread may be logging: the
+// sink takes a copy under this mutex and calls it outside, so clearing it
+// never waits on a running callback.
+std::mutex g_log_callback_mutex;
+std::shared_ptr<const LogCallback> g_log_callback;
 
 class CallbackSink : public spdlog::sinks::base_sink<std::mutex>
 {
@@ -27,10 +32,15 @@ protected:
             msg.level != spdlog::level::err) {
             return;
         }
-        if (!g_log_callback) {
+        std::shared_ptr<const LogCallback> callback;
+        {
+            std::lock_guard<std::mutex> lock(g_log_callback_mutex);
+            callback = g_log_callback;
+        }
+        if (!callback || !*callback) {
             return;
         }
-        g_log_callback(
+        (*callback)(
             std::string(msg.logger_name.data(), msg.logger_name.size()),
             msg.level,
             std::string(msg.payload.data(), msg.payload.size()));
@@ -41,7 +51,11 @@ protected:
 
 void setLogCallback(LogCallback callback)
 {
-    g_log_callback = std::move(callback);
+    auto shared =
+        callback ? std::make_shared<const LogCallback>(std::move(callback))
+                 : nullptr;
+    std::lock_guard<std::mutex> lock(g_log_callback_mutex);
+    g_log_callback = std::move(shared);
 }
 
 spdlog::level::level_enum getLogLevelFromEnv()

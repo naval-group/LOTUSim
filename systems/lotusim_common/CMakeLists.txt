@@ -101,6 +101,19 @@ if(BUILD_TESTING)
       gz-sim8::gz-sim8
     )
   endif()
+
+  # The global log callback: forwarding, clearing, re-entrancy, concurrency.
+  ament_add_gtest(test_log_callback test/test_log_callback.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_log_callback)
+    # The test logs through spdlog itself, so it links spdlog (and fmt).
+    target_link_libraries(test_log_callback
+      ${PROJECT_NAME}
+      gz-sim8::gz-sim8
+      spdlog::spdlog
+    )
+  endif()
 endif()
 
 #============================================================================
