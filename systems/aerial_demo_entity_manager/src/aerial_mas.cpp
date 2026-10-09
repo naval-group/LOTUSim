@@ -41,8 +41,38 @@ void AerialMAS::customUserConfiguration(
     }
 }
 
+bool AerialMAS::mirrorsFromAerialWorld(const lotusim_msgs::msg::MASCmd& msg)
+{
+    // The agent SDK emits, per domain, a <physics_engine_interface> block. Only
+    // the aerial one wired as <connection_type>ROS2</connection_type> means "the
+    // host mirrors my pose from the aerial world", which is the single case that
+    // needs a twin entity over there. A Kinematic aerial agent is integrated
+    // locally and needs no twin; a surface or underwater agent needs none either,
+    // and forwarding one is harmful: the aerial world then loads a hull
+    // collision mesh its physics engine cannot handle.
+    const std::string& sdf = msg.sdf_string;
+    const auto open = sdf.find("<aerial>");
+    if (open == std::string::npos) {
+        return false;
+    }
+    const auto close = sdf.find("</aerial>", open);
+    if (close == std::string::npos) {
+        return false;
+    }
+    return sdf.find("ROS2", open) < close;
+}
+
 void AerialMAS::customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
+    if (!mirrorsFromAerialWorld(msg)) {
+        m_logger->info(
+            "AerialMAS::customUserAddEntity: '{}' is not mirrored from the "
+            "aerial world; not forwarding.",
+            msg.vessel_name);
+        return;
+    }
+    m_forwarded_vessels.insert(msg.vessel_name);
+
     auto aerial_goal_msg = lotusim_msgs::action::MASCmd::Goal();
     aerial_goal_msg.header.stamp = rclcpp::Clock().now();
     aerial_goal_msg.header.frame_id = "world";
@@ -60,6 +90,12 @@ void AerialMAS::customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg)
 
 void AerialMAS::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
+    // Only vessels we mirrored exist over there; deleting any other name would
+    // be a goal the aerial world can only reject.
+    if (m_forwarded_vessels.erase(msg.vessel_name) == 0) {
+        return;
+    }
+
     auto aerial_goal_msg = lotusim_msgs::action::MASCmd::Goal();
     aerial_goal_msg.header.stamp = rclcpp::Clock().now();
     aerial_goal_msg.header.frame_id = "world";
