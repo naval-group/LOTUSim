@@ -321,6 +321,8 @@
             --set FASTDDS_BUILTIN_TRANSPORTS UDPv4
         '';
 
+        shortRev = self.shortRev or self.dirtyShortRev or "unknown";
+
         # `run` is the shape the old shell script had, kept because it says what it
         # means; anything starting with a dash still goes straight to gz sim, which
         # is what the container's default command relies on.
@@ -333,6 +335,7 @@
             usage() {
               cat <<USAGE
             lotusim — the LOTUSim simulation server (Gazebo Harmonic)
+            Commit: ${shortRev}
 
             Usage:
               lotusim run [--gui] [--debug] [<world>]    world defaults to lotusim.world
