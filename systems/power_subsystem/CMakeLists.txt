@@ -93,6 +93,20 @@ ament_target_dependencies(power_subsystem
   lotusim_sensor_msgs
 )
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # Which provider the power status reports. Own main() (see the test file).
+  ament_add_gtest(test_power_status test/test_power_status.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_power_status)
+    # spdlog's fmt symbols are not re-exported by power_subsystem.
+    find_package(spdlog REQUIRED)
+    target_link_libraries(test_power_status power_subsystem spdlog::spdlog)
+  endif()
+endif()
+
 #============================================================================
 # Install the files for this package
 #============================================================================

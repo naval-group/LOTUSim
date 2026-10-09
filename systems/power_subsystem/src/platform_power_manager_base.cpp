@@ -283,9 +283,23 @@ void PlatformPowerManagerBase::publishPowerStatus()
         msg.providers_type.push_back(std::string(toString(provider->type())));
         msg.providers_soc.push_back(provider->getStateOfCharge());
         msg.providers_voltage.push_back(provider->voltage());
-        msg.active_provider = m_batteries[m_active_battery_index]->name();
     }
+    msg.active_provider = activeProviderName();
     m_power_status_pub->publish(msg);
+}
+
+std::string PlatformPowerManagerBase::activeProviderName() const
+{
+    if (!m_all_batteries_depleted && m_active_battery_index >= 0 &&
+        m_active_battery_index < static_cast<int>(m_batteries.size())) {
+        return m_batteries[m_active_battery_index]->name();
+    }
+    for (const auto& generator : m_generators) {
+        if (!generator->isDepleted()) {
+            return generator->name();
+        }
+    }
+    return "";
 }
 
 }  // namespace lotusim::gazebo

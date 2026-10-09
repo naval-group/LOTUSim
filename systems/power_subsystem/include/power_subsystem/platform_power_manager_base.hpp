@@ -118,6 +118,14 @@ public:
 
     float activeBusVoltage() const;
 
+    /**
+     * @brief Name of the provider currently supplying the bus: the active
+     * battery, else the first generator with fuel left, else "" (a vessel
+     * with generators only, or with every battery empty at startup, has no
+     * active battery).
+     */
+    std::string activeProviderName() const;
+
     static std::unique_ptr<PlatformPowerManagerBase> create(
         PlatformPowerManagerType type,
         gz::sim::Entity vessel_entity,
