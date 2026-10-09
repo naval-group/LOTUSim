@@ -9,6 +9,8 @@
  */
 #include "physics_engine_interface/xdyn_websocket.hpp"
 
+#include "physics_engine_interface/xdyn_commands.hpp"
+
 namespace lotusim::gazebo {
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::m_instance = nullptr;
@@ -102,8 +104,10 @@ bool XdynWebsocket::configureInterface(
                 _sdf->GetElement("thrusters")->GetFirstElement();
             do {
                 std::string thruster_name = sdfPtr_thruster->Get<std::string>();
-                initial_cmd[thruster_name + "(rpm)"] =
-                    50.0;  // was 2.0 but crashes the Wageningen propeller
+                // rpm, like every LOTUSim command: 50 rpm (5.2 rad/s) keeps the
+                // Wageningen model inside its domain. Until the rpm-to-rad/s
+                // conversion, this seed meant 50 rad/s (477 rpm).
+                initial_cmd[thruster_name + "(rpm)"] = 50.0;
                 initial_cmd[thruster_name + "(P/D)"] = 0.79;
                 initial_cmd[thruster_name + "(beta)"] = 0.0;
                 sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
@@ -416,7 +420,8 @@ XdynWebsocket::getNewState(
     data["states"].push_back(previous_state_json);
 
     if (m_models_cmd_map_ptr->find(_entity) != m_models_cmd_map_ptr->end()) {
-        data["commands"] = json::parse((*m_models_cmd_map_ptr)[_entity]);
+        data["commands"] =
+            toXdynCommands(json::parse((*m_models_cmd_map_ptr)[_entity]));
     }
 
     data["requested_output"] = json::array();

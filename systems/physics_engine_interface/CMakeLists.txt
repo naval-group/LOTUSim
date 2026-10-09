@@ -55,6 +55,7 @@ add_library(physics_interface_plugin SHARED
   src/physics_interface_base.cpp
   src/physics_interface_plugin.cpp
   src/xdyn_websocket.cpp
+  src/xdyn_commands.cpp
   src/ros2_interface.cpp
   src/vessel_information.cpp
 )
@@ -133,6 +134,17 @@ if(BUILD_TESTING)
     target_link_libraries(test_ned_enu_conversions
       vessel_information_test
       gz-sim8::gz-sim8
+    )
+  endif()
+
+  # rpm -> rad/s on the way out to xdyn; a pure function, so no gz-sim here.
+  ament_add_gtest(test_xdyn_commands
+    test/test_xdyn_commands.cpp
+    src/xdyn_commands.cpp
+  )
+  if(TARGET test_xdyn_commands)
+    target_include_directories(test_xdyn_commands PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
   endif()
 endif()
