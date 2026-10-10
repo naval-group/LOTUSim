@@ -114,6 +114,15 @@ if(BUILD_TESTING)
     )
   endif()
 
+  # SpinThread start/stop, against a real executor.
+  find_package(rclcpp REQUIRED)
+  ament_add_gtest(test_spin_thread test/test_spin_thread.cpp TIMEOUT 120)
+  if(TARGET test_spin_thread)
+    target_include_directories(test_spin_thread PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(test_spin_thread rclcpp::rclcpp)
+  endif()
+
 endif()
 
 #============================================================================

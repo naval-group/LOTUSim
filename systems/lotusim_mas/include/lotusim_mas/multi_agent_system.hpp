@@ -26,6 +26,7 @@
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "lotusim_common/spin_thread.hpp"
 #include "lotusim_mas/entity_spawner.hpp"
 #include "lotusim_mas/scenario_manager.hpp"
 #include "lotusim_msgs/action/mas_cmd.hpp"
@@ -271,7 +272,7 @@ protected:
 private:
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
-    std::shared_ptr<std::thread> m_ros_node_thread;
+    std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
 
     std::vector<rclcpp::CallbackGroup::SharedPtr> m_callback_group;
 
