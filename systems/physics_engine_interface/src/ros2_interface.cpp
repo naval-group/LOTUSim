@@ -33,18 +33,13 @@ ROS2Interface::ROS2Interface() : PhysicsInterfaceBase("Ros2Interface")
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
         m_executor->add_node(m_ros_node);
         m_ros_node_thread =
-            std::make_shared<std::thread>([&]() { m_executor->spin(); });
+            std::make_unique<lotusim::common::SpinThread>(*m_executor);
     }
 }
 
 ROS2Interface::~ROS2Interface()
 {
-    if (m_executor) {
-        m_executor->cancel();
-    }
-    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
-        m_ros_node_thread->join();
-    }
+    m_ros_node_thread.reset();
     m_executor.reset();
 }
 
