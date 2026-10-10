@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "power_subsystem/power_manager.hpp"
+#include "lotusim_common/spin_thread.hpp"
 
 #include <gz/common/Console.hh>
 #include <gz/sim/components/Model.hh>
@@ -59,7 +60,7 @@ void PowerManager::Configure(
         m_world_name);
 
     m_executor.add_node(m_ros_node);
-    m_spin_thread = std::thread([this]() { m_executor.spin(); });
+    m_spin_thread = lotusim::common::startSpinThread(m_executor);
 }
 
 void PowerManager::PostUpdate(

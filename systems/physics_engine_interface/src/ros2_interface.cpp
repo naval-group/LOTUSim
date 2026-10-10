@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "physics_engine_interface/ros2_interface.hpp"
+#include "lotusim_common/spin_thread.hpp"
 
 namespace lotusim::gazebo {
 
@@ -32,8 +33,8 @@ ROS2Interface::ROS2Interface() : PhysicsInterfaceBase("Ros2Interface")
         m_executor =
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
         m_executor->add_node(m_ros_node);
-        m_ros_node_thread =
-            std::make_shared<std::thread>([&]() { m_executor->spin(); });
+        m_ros_node_thread = std::make_shared<std::thread>(
+            lotusim::common::startSpinThread(*m_executor));
     }
 }
 
