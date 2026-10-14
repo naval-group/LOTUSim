@@ -42,7 +42,11 @@ using LogCallback = std::function<void(
 
 /**
  * @brief callback for forwarding log messages to external consumers like the UI
- * @param callback function called with the logger name, log level, and message
+ * @param callback function called with the logger name, log level, and message;
+ * an empty function removes it. The callback is global and outlives whoever
+ * set it: an owner that captures itself must clear it before being destroyed,
+ * or the next log line from any plugin calls into freed memory. It runs while
+ * spdlog holds the sink's lock, so it must not log through a LOTUSim logger.
  */
 void setLogCallback(LogCallback callback);
 

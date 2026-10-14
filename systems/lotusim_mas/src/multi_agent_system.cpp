@@ -29,6 +29,11 @@ MultiAgentSystem::~MultiAgentSystem()
 
 void MultiAgentSystem::shutdown()
 {
+    // The log callback captures this and uses m_ros_node; Gazebo destroys
+    // MAS before other systems, whose shutdown logs would otherwise call into
+    // a destroyed object.
+    logger::setLogCallback(nullptr);
+
     m_running.store(false);
     if (m_executor) {
         m_executor->cancel();
