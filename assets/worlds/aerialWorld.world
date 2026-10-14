@@ -8,11 +8,11 @@
       <grid>1</grid>
     </scene>
 
-    <gravity>0 0 0</gravity>
+    <gravity>0 0 -9.8066</gravity>
 
     <physics type="ode">
-      <max_step_size>0.2</max_step_size>
-      <real_time_update_rate>5</real_time_update_rate>
+      <max_step_size>0.002</max_step_size>
+      <real_time_update_rate>500</real_time_update_rate>
       <real_time_factor>1</real_time_factor>
     </physics>
 
@@ -23,21 +23,52 @@
       <longitude_deg>103.7198</longitude_deg>
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
-    </spherical_coordinates>
+    </spherical_coordinates>   
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1000 1000</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1000 1000</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
 
     <!-- Core Simulation Plugins -->
     <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
     <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer" />
     <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
+    <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat" />
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" />
 
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
-
-    <plugin filename="aerial_demo_mas" name="lotusim::gazebo::AerialMAS" />
+    <plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem" />
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 
-    <!-- Wind Plugin -->
-    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::systems::WindEffects">
+    <!-- Wind Regions Plugin (replaces stock WindEffects: supports per-region
+         wind on top of the ambient/global vector, and subscribes to ROS
+         directly instead of via a gz-transport bridge) -->
+    <plugin filename="wind_regions_plugin" name="lotusim::gazebo::WindRegionsPlugin">
+      <scaling_factor>0.35</scaling_factor>
     </plugin>
   </world>
 </sdf>
