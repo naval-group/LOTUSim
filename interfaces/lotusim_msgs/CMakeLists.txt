@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SimStats.msg"
   "msg/WaypointFollowerStatus.msg"
   "msg/PowerStatus.msg"
+  "msg/OceanCurrent.msg"
   "action/MASCmdArray.action"
   "action/MASCmd.action"
   "srv/SetWaypoints.srv"

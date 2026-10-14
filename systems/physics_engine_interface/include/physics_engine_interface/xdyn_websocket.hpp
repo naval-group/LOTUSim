@@ -21,6 +21,8 @@
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
+#include "physics_engine_interface/copernicus_current.hpp"
+#include "physics_engine_interface/gauss_markov_current.hpp"
 #include "physics_engine_interface/physics_interface_base.hpp"
 
 namespace lotusim::gazebo {
@@ -29,6 +31,9 @@ namespace Weblib = websocketpp::lib;
 using hdl = websocketpp::connection_hdl;
 using Client = websocketpp::client<websocketpp::config::asio_client>;
 using json = nlohmann::json;
+
+/// Depth below which a vessel is treated as underwater, in metres.
+constexpr double DEFAULT_SURFACE_DEPTH = 10.0;
 
 constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
 
@@ -235,6 +240,25 @@ private:
      * @brief Current domain type mapping
      *
      */
+    /// Depth threshold separating the surface and underwater domains, per
+    /// vessel.
+    static std::unordered_map<gz::sim::Entity, double> m_surface_depth;
+
+    /// Optional uniform Gauss-Markov current, per vessel.
+    static std::unordered_map<
+        gz::sim::Entity,
+        std::shared_ptr<GaussMarkovCurrent>>
+        m_gauss_markov_current;
+
+    /// Current applied on the last state sent to xdyn, per vessel. xdyn works
+    /// relative to it, so the reply's velocity has it added back.
+
+    /// Optional depth-resolved measured current profile, per vessel.
+    static std::unordered_map<
+        gz::sim::Entity,
+        std::shared_ptr<CopernicusCurrent>>
+        m_copernicus_current;
+
     static std::unordered_map<gz::sim::Entity, DomainType> m_current_domain;
 
     /**
@@ -251,15 +275,21 @@ private:
         m_msg_cv;
 
     /**
-     * @brief Save state of vessel
-     *
-     */
-    /**
      * @brief Reply arrival flag, read by the send() wait predicate
      *
      */
     static std::unordered_map<gz::sim::Entity, bool> m_msg_ready;
 
+    /**
+     * @brief Whether the last reply carried a usable state, set with m_msg_ready
+     *
+     */
+    static std::unordered_map<gz::sim::Entity, bool> m_msg_ok;
+
+    /**
+     * @brief Save state of vessel
+     *
+     */
     static std::unordered_map<gz::sim::Entity, VesselInformation> m_saved_state;
 };
 }  // namespace lotusim::gazebo
