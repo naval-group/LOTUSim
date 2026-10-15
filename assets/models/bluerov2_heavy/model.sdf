@@ -5,7 +5,7 @@
       <collision name="base_link_collision">
         <geometry>
           <mesh>
-            <uri>model://bluerov/meshes/bluerov2_heavy.dae</uri>
+            <uri>model://bluerov2_heavy/meshes/bluerov2_heavy.dae</uri>
             <scale>0.025 0.025 0.025</scale>
           </mesh>
         </geometry>
