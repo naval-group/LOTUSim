@@ -168,6 +168,13 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
     }
 
     m_creator->SetParent(entity, m_world_entity);
+    // Reserve the name now so a later CREATE_CMD in the same PreUpdate batch
+    // sees it; EachNew registers the same mapping again, idempotently.
+    {
+        std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
+        m_vessels_entities[desired_name] = entity;
+        m_vessels_names[entity] = desired_name;
+    }
     m_logger->info(
         "EntitySpawner::addEntity: Created entity [{}] named '{}'",
         entity,
@@ -389,8 +396,18 @@ std::string EntitySpawner::resolveUniqueName(const std::string& desired) const
     if (desired.empty())
         return desired;
 
-    // Check if name already exists as a direct child of the world.
+    // A name is taken if it is already registered, or present in the ECM.
+    // The registry check matters when two CREATE_CMDs for the same class land
+    // in one PreUpdate batch: CreateEntities() does not make the first entity
+    // visible to EntityByComponents() until the ECM rebuilds its views next
+    // cycle, so the ECM alone would hand both the same name. addEntity
+    // registers each assigned name synchronously to close that window.
     auto taken = [&](const std::string& name) {
+        {
+            std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
+            if (m_vessels_entities.find(name) != m_vessels_entities.end())
+                return true;
+        }
         return gz::sim::kNullEntity !=
                m_ecm.EntityByComponents(
                    gz::sim::components::Name(name),

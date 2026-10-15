@@ -472,10 +472,11 @@ void MultiAgentSystem::publishPose(
         auto latLonEle =
             lotusim::common::XYToLatLong(_ecm, pose.X(), pose.Y(), pose.Z());
         if (!latLonEle) {
+            // A world without <spherical_coordinates> still has poses to
+            // publish; only geo_point is unavailable.
             m_logger->warn(
-                "MultiAgentSystem::PostUpdate: Vessel: {} unable to find coordinate. Skip pose update.",
+                "MultiAgentSystem::PostUpdate: Vessel: {} unable to find spherical coordinates, geo_point will be zero.",
                 name);
-            continue;
         }
 
         lotusim_msgs::msg::VesselPosition msg;
@@ -491,9 +492,11 @@ void MultiAgentSystem::publishPose(
         msg.pose.orientation.y = pose.Rot().Y();
         msg.pose.orientation.z = pose.Rot().Z();
 
-        msg.geo_point.latitude = std::get<0>(latLonEle.value());
-        msg.geo_point.longitude = std::get<1>(latLonEle.value());
-        msg.geo_point.altitude = std::get<2>(latLonEle.value());
+        if (latLonEle) {
+            msg.geo_point.latitude = std::get<0>(latLonEle.value());
+            msg.geo_point.longitude = std::get<1>(latLonEle.value());
+            msg.geo_point.altitude = std::get<2>(latLonEle.value());
+        }
 
         msg.speed_over_ground = static_cast<float>(speedOverGround);
 
