@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "lotusim_mas/multi_agent_system.hpp"
+#include "lotusim_common/spin_thread.hpp"
 
 #include <gz/sim/components/LinearVelocity.hh>
 
@@ -174,8 +175,8 @@ bool MultiAgentSystem::initROSNode()
     m_executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
     m_executor->add_node(m_ros_node);
     m_running.store(true);
-    m_ros_node_thread =
-        std::make_shared<std::thread>([&]() { m_executor->spin(); });
+    m_ros_node_thread = std::make_shared<std::thread>(
+        lotusim::common::startSpinThread(*m_executor));
     m_logger->info(
         "MultiAgentSystem::initROSNode: MultiAgentSystem ROS node initiated");
     return true;

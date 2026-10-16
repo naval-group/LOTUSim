@@ -9,6 +9,7 @@
  */
 
 #include "waypoint_follower/waypoint_follower.hpp"
+#include "lotusim_common/spin_thread.hpp"
 
 namespace lotusim::gazebo {
 using namespace std::placeholders;
@@ -280,8 +281,8 @@ void WaypointFollowerPlugin::Configure(
         m_executor =
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
         m_executor->add_node(m_ros_node);
-        m_ros_node_thread =
-            std::make_shared<std::thread>([this]() { m_executor->spin(); });
+        m_ros_node_thread = std::make_shared<std::thread>(
+            lotusim::common::startSpinThread(*m_executor));
         m_running.store(true);
     } else {
         m_logger->error(
