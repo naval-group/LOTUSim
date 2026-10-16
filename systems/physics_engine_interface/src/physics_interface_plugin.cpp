@@ -26,6 +26,12 @@ PhysicsInterfacePlugin::PhysicsInterfacePlugin()
 
 PhysicsInterfacePlugin::~PhysicsInterfacePlugin()
 {
+    if (m_ros_executor) {
+        m_ros_executor->cancel();
+    }
+    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
+        m_ros_node_thread->join();
+    }
     ROS2Interface::resetInstance();
     XdynWebsocket::resetInstance();
     m_logger->info(
@@ -46,29 +52,55 @@ void PhysicsInterfacePlugin::Configure(
         m_world_name + "_physics_interface_plugin.txt");
 
     m_ros_node = rclcpp::Node::make_shared("physics_plugin", m_world_name);
+    // One subscription receives from N per-agent publishers; it is drained by
+    // the spin thread below and staged into m_pending_cmds. The queue depth
+    // buffers more messages if that thread is delayed for a step.
     m_cmd_array_sub = m_ros_node->create_subscription<
         lotusim_msgs::msg::VesselCmdArray>(
         "vessel_cmd_array",
-        10,
+        100,
         [this](lotusim_msgs::msg::VesselCmdArray::ConstSharedPtr msgs) -> void {
+            // Runs on the spin thread: resolve the entity under the mapping
+            // lock and stage the command; Update() drains the staged commands
+            // into the shared map on the main thread.
             for (auto&& msg : msgs->cmds) {
-                int entity;
-                if (msg.vessel_name.empty() && msg.entity) {
-                    entity = msg.entity;
-                } else if (
-                    m_vessels_model_map.find(msg.vessel_name) !=
-                    m_vessels_model_map.end()) {
-                    entity = m_vessels_model_map[msg.vessel_name];
-                } else {
-                    m_logger->error(
-                        "PhysicsInterfacePlugin::Topic lotusim_vessel_cmd callback failed. No known entity: {}, {}",
-                        msg.entity,
-                        msg.vessel_name);
-                    continue;
+                gz::sim::Entity entity;
+                {
+                    std::shared_lock<std::shared_mutex> lock(m_mutex);
+                    auto it = m_vessels_model_map.find(msg.vessel_name);
+                    if (msg.vessel_name.empty() && msg.entity) {
+                        entity = msg.entity;
+                    } else if (it != m_vessels_model_map.end()) {
+                        entity = it->second;
+                    } else {
+                        m_logger->error(
+                            "PhysicsInterfacePlugin::Topic lotusim_vessel_cmd callback failed. No known entity: {}, {}",
+                            msg.entity,
+                            msg.vessel_name);
+                        continue;
+                    }
                 }
-                (*m_models_cmd_map_ptr)[entity] = std::move(msg.cmd_string);
+                std::lock_guard<std::mutex> lock(m_pending_cmds_mutex);
+                m_pending_cmds[entity] = msg.cmd_string;
             }
         });
+
+    // Optional fake ocean current for Kinematic-connected entities, see
+    // ocean_current_feed.hpp.
+    m_ocean_current_feed = std::make_unique<OceanCurrentFeed>(m_ros_node);
+
+    // Service the command subscription on its own thread so every message is
+    // consumed on arrival (see m_ros_executor in the header).
+    if (rclcpp::ok()) {
+        m_ros_executor =
+            std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+        m_ros_executor->add_node(m_ros_node);
+        m_ros_node_thread = std::make_shared<std::thread>(
+            [this]() { m_ros_executor->spin(); });
+    } else {
+        m_logger->error(
+            "PhysicsInterfacePlugin::Configure: RCLCPP context shutdown.");
+    }
 
     m_logger->debug(
         "PhysicsInterfacePlugin debug initiated\n {}",
@@ -85,11 +117,15 @@ void PhysicsInterfacePlugin::Update(
     _ecm.EachRemoved<gz::sim::components::ModelSdf>(
         std::bind(&PhysicsInterfacePlugin::deleteVessel, this, _1, _2, &_ecm));
 
-    if (rclcpp::ok()) {
-        rclcpp::spin_some(m_ros_node);
-    } else {
-        m_logger->error(
-            "PhysicsInterfacePlugin::Update: RCLCPP context shutdown.");
+    // Drain the commands staged by the spin thread into the shared map. The
+    // shared map itself stays single-threaded: written here on the main
+    // thread, read by the per-model async updates below.
+    {
+        std::lock_guard<std::mutex> lock(m_pending_cmds_mutex);
+        for (auto& [entity, cmd] : m_pending_cmds) {
+            (*m_models_cmd_map_ptr)[entity] = std::move(cmd);
+        }
+        m_pending_cmds.clear();
     }
 
     if (_info.dt.count() == 0) {
@@ -363,7 +399,27 @@ bool PhysicsInterfacePlugin::vesselDomainTransition(
                 m_vehicle_current_mode.end() &&
             m_vehicle_current_mode[_vessel] == _new_mode) {
             return true;
-        } else if (_new_mode == DomainType::Aerial) {
+        }
+
+        // A model may declare a single domain, in which case its interface
+        // covers the whole mission: keep it rather than reporting a failed
+        // transition on every step spent outside that domain.
+        const bool has_target_interface =
+            (_new_mode == DomainType::Aerial &&
+             m_aerial_interface.count(_vessel)) ||
+            (_new_mode == DomainType::Surface &&
+             m_surface_interface.count(_vessel)) ||
+            (_new_mode == DomainType::Underwater &&
+             m_underwater_interface.count(_vessel));
+        if (!has_target_interface) {
+            m_logger->debug(
+                "PhysicsInterfacePlugin::vesselDomainTransition: Entity {} has no {} interface, keeping the current one.",
+                _vessel,
+                DomainTypeToStringMap[_new_mode]);
+            return true;
+        }
+
+        if (_new_mode == DomainType::Aerial) {
             new_domain = "aerial";
             if (m_aerial_interface.find(_vessel) != m_aerial_interface.end()) {
                 new_interface = m_aerial_interface[_vessel];
@@ -412,6 +468,14 @@ bool PhysicsInterfacePlugin::vesselDomainTransition(
     }
 
     std::unique_lock<std::shared_mutex> lock(m_mutex);
+    // Only tear the previous interface down when it is a DIFFERENT object from
+    // the one just activated. XdynWebsocket is a singleton: the surface and
+    // underwater interfaces of an xdyn model are the same instance, and its
+    // connections are keyed by entity alone, not by (entity, domain). For a
+    // model crossing <surface_depth>, activateInterface() above reused the
+    // connection already open, and deactivating "the previous interface" here
+    // would close that same connection, leaving the model with none for every
+    // subsequent step.
     if (m_vehicle_current_mode.find(_vessel) != m_vehicle_current_mode.end() &&
         m_current_vessel_interface[_vessel] != new_interface &&
         !m_current_vessel_interface[_vessel]->deactivateInterface(
@@ -511,7 +575,7 @@ bool PhysicsInterfacePlugin::loadVessel(
             }
             // Add warning that the init is not found
             if (physics_sdf_ptr->HasElement("init_state")) {
-                DomainType init_domain;
+                DomainType init_domain = DomainType::Unknown;
                 auto domain_it = DomainTypeMap.find(common::toUpper(
                     physics_sdf_ptr->Get<std::string>("init_state")));
                 if (domain_it != DomainTypeMap.end()) {
