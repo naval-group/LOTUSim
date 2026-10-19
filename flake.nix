@@ -366,6 +366,35 @@
               local wrapper
               if wrapper=$(${pkgs.bash}/bin/bash ${glWrapper}); then
                 if [ -n "$wrapper" ]; then glwrap=("$wrapper"); fi
+                # On a hybrid laptop the integrated GPU owns the X screen, so GL
+                # renders there unless told to offload to the discrete one.
+                case "$wrapper" in
+                  *nixGLNvidia*)
+                    export __NV_PRIME_RENDER_OFFLOAD=1
+                    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+                    ;;
+                  *nixGLIntel*)
+                    # Render on an AMD GPU when there is one, else leave Mesa on
+                    # its default (Intel or the only GPU). DRI_PRIME takes the
+                    # card's PCI address, so this holds whichever GPU drives the
+                    # screen. Between an AMD APU and a discrete card, the one
+                    # with more VRAM wins.
+                    local card vram best="" best_vram=-1
+                    for card in /sys/class/drm/card*; do
+                      # Skip connectors such as card1-HDMI-A-1.
+                      case "''${card##*/}" in *-*) continue ;; esac
+                      [ "$(cat "$card/device/vendor" 2>/dev/null)" = 0x1002 ] || continue
+                      vram=$(cat "$card/device/mem_info_vram_total" 2>/dev/null || echo 0)
+                      if [ "$vram" -gt "$best_vram" ]; then
+                        best_vram=$vram
+                        best=$(basename "$(readlink -f "$card/device")")
+                      fi
+                    done
+                    if [ -n "$best" ]; then
+                      export DRI_PRIME="''${DRI_PRIME:-pci-''${best//[:.]/_}}"
+                    fi
+                    ;;
+                esac
                 return 0
               fi
               return 1
