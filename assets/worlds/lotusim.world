@@ -25,6 +25,7 @@
 
 
         <gravity>0 0 0</gravity>
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 
         <plugin filename="physics_interface_plugin" name="lotusim::gazebo::PhysicsInterfacePlugin">
         </plugin>

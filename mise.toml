@@ -21,13 +21,19 @@ dir = "{{config_root}}"
 shell = "bash -c"
 usage = 'flag "--debug" help="Build with DEBUG=ON and a symlinked install"'
 run = '''
+# Every nix-store prefix on AMENT_PREFIX_PATH lacks the local_setup.* colcon
+# expects of a workspace, so it warns about each one. The prefixes have to stay:
+# rosidl finds its typesupports through them. Drop only that warning.
+set -o pipefail
 if [ "${usage_debug:-false}" = "true" ]; then
   colcon build --merge-install --symlink-install \
     --event-handlers compile_commands+ \
-    --cmake-args -DDEBUG=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    --cmake-args -DDEBUG=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 2>&1 |
+    sed -u "/AMENT_PREFIX_PATH doesn't contain any 'local_setup/d"
 else
   colcon build --merge-install --event-handlers compile_commands+ \
-    --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 2>&1 |
+    sed -u "/AMENT_PREFIX_PATH doesn't contain any 'local_setup/d"
 fi
 '''
 
@@ -45,7 +51,10 @@ description = "Run the gtest suite (advisory — does not gate the build)"
 dir = "{{config_root}}"
 shell = "bash -c"
 run = '''
-colcon test --merge-install --event-handlers console_direct+
+# Same local_setup.* warning as in the build task.
+set -o pipefail
+colcon test --merge-install --event-handlers console_direct+ 2>&1 |
+  sed -u "/AMENT_PREFIX_PATH doesn't contain any 'local_setup/d"
 colcon test-result --verbose
 '''
 
@@ -193,7 +202,12 @@ else
   echo "GPU driver bridge: none — camera and gpu_lidar sensors will not render." >&2
 fi
 
-exec $glwrap gz sim $verbosity $headless $render_flags -r "$world_file"
+# Not exec'd: Ctrl+C reaches gz from the terminal and again from mise, and gz's
+# GUI-mode handler crashes (Errno::ESRCH) killing a GUI the first one reaped.
+# With bash in between, mise's forwarded signal lands here instead.
+$glwrap gz sim $verbosity $headless $render_flags -r "$world_file"
+status=$?
+exit $status
 '''
 
 [tasks."lint:tidy"]
