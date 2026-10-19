@@ -15,6 +15,7 @@ namespace lotusim::logger {
 
 namespace { // private
 
+std::mutex g_log_callback_mutex;
 LogCallback g_log_callback;
 
 class CallbackSink : public spdlog::sinks::base_sink<std::mutex>
@@ -27,6 +28,7 @@ protected:
             msg.level != spdlog::level::err) {
             return;
         }
+        std::lock_guard<std::mutex> lock(g_log_callback_mutex);
         if (!g_log_callback) {
             return;
         }
@@ -41,6 +43,7 @@ protected:
 
 void setLogCallback(LogCallback callback)
 {
+    std::lock_guard<std::mutex> lock(g_log_callback_mutex);
     g_log_callback = std::move(callback);
 }
 
