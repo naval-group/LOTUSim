@@ -604,6 +604,10 @@ void WaypointFollowerPlugin::Update(
             pose.Yaw() + dt_s * m_velocities[_entity][1]);
 
         _ecm.SetComponentData<gz::sim::components::Pose>(_entity, pose);
+        _ecm.SetChanged(
+            _entity,
+            gz::sim::components::Pose::typeId,
+            gz::sim::ComponentState::PeriodicChange);
 
         // Velocities in world frame: surge projected on heading, yaw rate
         // about Z.

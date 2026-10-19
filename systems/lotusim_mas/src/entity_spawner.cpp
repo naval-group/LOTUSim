@@ -18,11 +18,21 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Pose.hh>
+#include <sdf/ParserConfig.hh>
 #include <sdf/Root.hh>
 
 #include "lotusim_common/common.hpp"
 
 namespace lotusim::mas {
+
+// Temporarily silence sdf parse warnings for lotusim params.
+// TODO: Long term fix by changing sdformat
+static sdf::ParserConfig sdf_config()
+{
+    sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
+    config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::LOG);
+    return config;
+}
 
 EntitySpawner::EntitySpawner(
     gz::sim::EntityComponentManager& ecm,
@@ -44,7 +54,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
 
     if (msg.model_name.empty()) {
         // Full SDF provided directly in sdf_string.
-        errors = root.LoadSdfString(msg.sdf_string);
+        errors = root.LoadSdfString(msg.sdf_string, sdf_config());
     } else {
         // Load model from disk; optionally inject a <lotus_param> block.
         const char* asset_path = std::getenv("LOTUSIM_MODELS_PATH");
@@ -59,7 +69,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
 
         if (msg.sdf_string.empty()) {
             // No lotus_param — load file as-is.
-            errors = root.Load(file_path + "/model.sdf");
+            errors = root.Load(file_path + "/model.sdf", sdf_config());
         } else {
             // Inject the <lotus_param> block into the loaded SDF.
             tinyxml2::XMLDocument sdf_doc;
@@ -120,7 +130,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
                 "EntitySpawner::addEntity: Modified SDF:\n{}",
                 modified_sdf);
 
-            errors = root.LoadSdfString(modified_sdf);
+            errors = root.LoadSdfString(modified_sdf, sdf_config());
             if (!errors.empty()) {
                 for (const auto& err : errors)
                     m_logger->error(
@@ -356,7 +366,7 @@ void EntitySpawner::unregisterEntity(gz::sim::Entity entity)
         it->second);
 
     m_vessels_entities.erase(it->second);
-    m_vessels_models.erase(it->second); 
+    m_vessels_models.erase(it->second);
     m_vessels_names.erase(it);
 }
 

@@ -3,6 +3,13 @@
   <model name="wamv">
     <!-- Base -->
     <link name="base_link">
+      <visual name="base_visual">
+        <geometry>
+          <mesh>
+            <uri>model://wamv/meshes/WAM-V-Base.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
       <collision name="base_collision">
         <geometry>
           <mesh>
