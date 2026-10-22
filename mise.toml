@@ -6,7 +6,7 @@ LOTUSIM_MODELS_PATH = "{{config_root}}/assets/models/"
 # The root xdyn resolves a YAML's relative mesh and seabed paths against.
 XDYN_ASSETS_PATH = "{{config_root}}/assets/models/"
 LOTUSIM_SCENARIOS_PATH = "{{config_root}}/assets/scenarios"
-LOTUSIM_SPDLOG_LEVEL = "info"
+LOTUSIM_LOG_LEVEL = "info"
 
 GZ_SIM_SYSTEM_PLUGIN_PATH = "{{config_root}}/install/lib"
 # model:// resolves against the directory holding <model>/model.config.
@@ -138,7 +138,7 @@ else
 fi
 if [ "${usage_debug:-false}" = "true" ]; then
   verbosity="-v4"
-  export LOTUSIM_SPDLOG_LEVEL=debug
+  export LOTUSIM_LOG_LEVEL=debug
 else
   # -v1 keeps errors: Ogre2 reports its GLX-to-EGL fallback at this level.
   verbosity="-v1"

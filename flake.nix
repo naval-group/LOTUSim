@@ -467,7 +467,7 @@
 
             if [ "$debug" = true ]; then
               verbosity=-v4
-              export LOTUSIM_SPDLOG_LEVEL=debug
+              export LOTUSIM_LOG_LEVEL=debug
             else
               verbosity=-v1
             fi

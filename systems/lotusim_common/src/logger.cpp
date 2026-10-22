@@ -7,19 +7,21 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
+#include "lotusim_common/logger.hpp"
+
 #include <mutex>
 #include <utility>
-#include "lotusim_common/logger.hpp"
 
 namespace lotusim::logger {
 
-namespace { // private
+namespace {  // private
 
 std::mutex g_log_callback_mutex;
 LogCallback g_log_callback;
 
-class CallbackSink : public spdlog::sinks::base_sink<std::mutex>
-{
+std::mutex g_logger_creation_mutex;
+
+class CallbackSink : public spdlog::sinks::base_sink<std::mutex> {
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override
     {
@@ -49,7 +51,7 @@ void setLogCallback(LogCallback callback)
 
 spdlog::level::level_enum getLogLevelFromEnv()
 {
-    const char* env_level = std::getenv("LOTUSIM_SPDLOG_LEVEL");
+    const char* env_level = std::getenv("LOTUSIM_LOG_LEVEL");
     if (env_level == nullptr) {
         return DEFAULT_LOG_LEVEL;
     }
@@ -83,6 +85,7 @@ auto createConsoleAndFileLogger(
     const std::string& logger_name,
     const std::string& file_name) -> std::shared_ptr<spdlog::logger>
 {
+    std::lock_guard<std::mutex> creation_lock(g_logger_creation_mutex);
     try {
         std::shared_ptr<spdlog::logger> logger;
 
@@ -101,7 +104,7 @@ auto createConsoleAndFileLogger(
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
             file_path,
             true);
-        
+
         auto callback_sink = std::make_shared<CallbackSink>();
 
         try {
@@ -142,6 +145,7 @@ auto createBasicFileLogger(
     const std::string& logger_name,
     const std::string& file_name) -> std::shared_ptr<spdlog::logger>
 {
+    std::lock_guard<std::mutex> creation_lock(g_logger_creation_mutex);
     try {
         std::shared_ptr<spdlog::logger> logger;
 
@@ -169,7 +173,6 @@ auto createBasicFileLogger(
         }
 
         spdlog::flush_every(std::chrono::seconds(3));
-        spdlog::register_logger(logger);
         setLoggerPattern(logger);
 
         return logger;
@@ -205,11 +208,15 @@ std::filesystem::path createOrGetLogFolderPath()
 
     auto env_level = getLogLevelFromEnv();
     if (env_level >= spdlog::level::info) {
-        auto now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d_%H-%M-%S");
-        logs_dir /= ss.str();
+        // Taken once, so every logger of a run lands in the same folder.
+        static const std::string run_timestamp = [] {
+            auto now = std::chrono::system_clock::now();
+            std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+            std::stringstream ss;
+            ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d_%H-%M-%S");
+            return ss.str();
+        }();
+        logs_dir /= run_timestamp;
     } else {
         logs_dir /= "debug";
     }

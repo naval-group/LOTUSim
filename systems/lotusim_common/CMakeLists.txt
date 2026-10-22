@@ -101,6 +101,19 @@ if(BUILD_TESTING)
       gz-sim8::gz-sim8
     )
   endif()
+
+  ament_add_gtest(test_logger test/test_logger.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_logger)
+    # The test logs through spdlog itself, so it links spdlog (and fmt).
+    target_link_libraries(test_logger
+      ${PROJECT_NAME}
+      gz-sim8::gz-sim8
+      spdlog::spdlog
+    )
+  endif()
+
 endif()
 
 #============================================================================
