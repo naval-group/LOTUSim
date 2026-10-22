@@ -42,14 +42,18 @@ using LogCallback = std::function<void(
 
 /**
  * @brief callback for forwarding log messages to external consumers like the UI
- * @param callback function called with the logger name, log level, and message
+ *
+ * One callback serves the whole process. Only INFO and ERROR messages from
+ * loggers made by createConsoleAndFileLogger() are forwarded.
+ * @param callback function called with the logger name, log level, and
+ * message; nullptr stops forwarding
  */
 void setLogCallback(LogCallback callback);
 
 /**
  * @brief Get log level from environment variable or return default
  * Supports: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL, OFF
- * Set via: export LOTUSIM_LOG_LEVEL=DEBUG
+ * Set via: export LOTUSIM_LOG_LEVEL=DEBUG (case-insensitive)
  * @return spdlog::level::level_enum
  */
 spdlog::level::level_enum getLogLevelFromEnv();
@@ -58,10 +62,11 @@ spdlog::level::level_enum getLogLevelFromEnv();
  * @brief Creates both console and file logger object
  * @param logger_name name of the logger, which is also used for getLogger()
  * function
- * @param file_name name of the log file. If file name exist, it will be
- * overwritten
- * @return std::shared_ptr<spdlog::logger> returns a shared_ptr to logger on
- * successful initializations else std::nullopt on any spdlog exceptions
+ * @param file_name name of the log file, in createOrGetLogFolderPath(). If file
+ * name exist, it will be overwritten
+ * @return std::shared_ptr<spdlog::logger> the new logger, or the logger already
+ * registered under logger_name (whichever factory made it, unchanged)
+ * @throws std::runtime_error if the log folder or file cannot be created
  */
 std::shared_ptr<spdlog::logger> createConsoleAndFileLogger(
     const std::string& logger_name,
@@ -71,9 +76,11 @@ std::shared_ptr<spdlog::logger> createConsoleAndFileLogger(
  * @brief creates basic file logger object
  * @param logger_name name of the logger, which is also used for getLogger()
  * function
- * @param file_name name of the log file
- * @return std::shared_ptr<spdlog::logger> returns a shared_ptr to logger on
- * successful initializations else std::nullopt on any spdlog exceptions
+ * @param file_name name of the log file, in createOrGetLogFolderPath(). If file
+ * name exist, it will be overwritten
+ * @return std::shared_ptr<spdlog::logger> the new logger, or the logger already
+ * registered under logger_name (whichever factory made it, unchanged)
+ * @throws std::runtime_error if the log folder or file cannot be created
  */
 std::shared_ptr<spdlog::logger> createBasicFileLogger(
     const std::string& logger_name,
@@ -83,20 +90,26 @@ std::shared_ptr<spdlog::logger> createBasicFileLogger(
  * @brief Get the Logger object
  *
  * @param logger_name  name of the logger
- * @return std::shared_ptr<spdlog::logger> returns a shared_ptr to logger on
- * successful initializations else std::nullopt on any spdlog exceptions
+ * @return std::shared_ptr<spdlog::logger> the logger registered under
+ * logger_name, or nullptr if there is none
  */
 std::shared_ptr<spdlog::logger> getLogger(const std::string& logger_name);
 
 /**
- * @brief Create a Or Get Log Folder Path object
+ * @brief Get the log folder, creating it if needed
  *
- * @return std::string
+ * The folder is $LOTUSIM_PATH/lotus_logs (the system temp directory if
+ * LOTUSIM_PATH is unset), then "debug" below INFO level, else the time of the
+ * first call, so one run keeps one folder.
+ * @return std::filesystem::path
+ * @throws std::filesystem::filesystem_error if the folder cannot be created
  */
 std::filesystem::path createOrGetLogFolderPath();
 
 /**
  * @brief Set logger pattern based on log level
+ *
+ * Below INFO the message alone ("%v"), else "[%D %T] [%l]: %v".
  */
 void setLoggerPattern(std::shared_ptr<spdlog::logger>& logger);
 
