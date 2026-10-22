@@ -35,6 +35,18 @@ jobs:
       - name: Build the workspace
         run: nix build .#lotusim --print-build-logs
 
+      # Nix will generate the hash from the input libraries and UI code.
+      # If there is a hash change, it will test build
+      - name: Build the UI
+        run: |
+          set -euo pipefail
+          ui=$(nix eval --raw .#ui.outPath)
+          if nix path-info --store https://naval-group.cachix.org "$ui" >/dev/null 2>&1; then
+            echo "Already in naval-group: $ui"
+          else
+            nix build .#ui --print-build-logs
+          fi
+
       # Separate derivation from `workspace` (see flake.nix), so this rebuilds
       # the workspace with BUILD_TESTING=ON and runs colcon test, rather than
       # reusing the step above — a failing test here does not block the
