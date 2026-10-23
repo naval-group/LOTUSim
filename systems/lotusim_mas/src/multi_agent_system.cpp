@@ -31,13 +31,7 @@ void MultiAgentSystem::shutdown()
 {
     logger::setLogCallback(nullptr);
     m_running.store(false);
-    if (m_executor) {
-        m_executor->cancel();
-    }
-
-    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
-        m_ros_node_thread->join();
-    }
+    m_ros_node_thread.reset();
     m_executor.reset();
     m_logger->info(
         "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
@@ -176,7 +170,7 @@ bool MultiAgentSystem::initROSNode()
     m_executor->add_node(m_ros_node);
     m_running.store(true);
     m_ros_node_thread =
-        std::make_shared<std::thread>([&]() { m_executor->spin(); });
+        std::make_unique<lotusim::common::SpinThread>(*m_executor);
     m_logger->info(
         "MultiAgentSystem::initROSNode: MultiAgentSystem ROS node initiated");
     return true;
