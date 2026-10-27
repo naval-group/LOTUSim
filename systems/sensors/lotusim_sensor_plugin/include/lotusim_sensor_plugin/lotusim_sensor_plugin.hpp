@@ -36,6 +36,7 @@
 #include <utility>
 
 #include "ais_sensor/ais_sensor.hpp"
+#include "battery_sensor/battery_sensor.hpp"
 #include "imu_sensor/imu_sensor.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/entity_group.hpp"
@@ -44,6 +45,8 @@
 #include "lotusim_sensor_msgs/msg/collisions.hpp"
 #include "radar_sensor/radar_sensor.hpp"
 #include "sector_scanner_sensor/sector_scanner.hpp"
+#include <thread>
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
@@ -62,6 +65,7 @@ class LotusimSensorPlugin : public gz::sim::System,
                             public gz::sim::ISystemPostUpdate {
 public:
     LotusimSensorPlugin();
+    ~LotusimSensorPlugin() override;
 
     void Configure(
         const gz::sim::Entity& _entity,
@@ -151,6 +155,24 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 
     rclcpp::Node::SharedPtr m_ros_node;
+
+    /**
+     * @brief Dedicated executor + thread servicing m_ros_node.
+     *
+     * Every sensor of the world shares this node, so draining it with
+     * rclcpp::spin_some() from a sensor's update ran once per sensor per
+     * step: each call builds a SingleThreadedExecutor, a wait set and a guard
+     * condition, on Gazebo's own thread. With 127 battery sensors that took
+     * the world's real-time factor from 1.00 to 0.03. It also crashed the
+     * server on exit — after rcl_shutdown() the call throws, and the
+     * exception escapes Gazebo's update callback into std::terminate.
+     *
+     * A spinning thread consumes every message on arrival instead, and
+     * returns on its own when the context shuts down. Sensor callbacks
+     * already guard their state (see BatterySensor::m_rpm_mutex).
+     */
+    rclcpp::executors::SingleThreadedExecutor::SharedPtr m_ros_executor;
+    std::shared_ptr<std::thread> m_ros_node_thread;
 
     std::unordered_map<gz::sim::Entity, std::shared_ptr<CustomSensor>>
         m_entity_sensor_map;
