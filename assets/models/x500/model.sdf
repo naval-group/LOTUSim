@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdf version='1.9'>
   <model name='x500'>
-    <enable_wind>true</enable_wind>
     <pose>0 0 .24 0 0 0</pose>
     <self_collide>false</self_collide>
     <static>false</static>
-    <enable_wind>true</enable_wind>
     <link name="base_link">
+      <!-- Must be per-link: sdformat14 does not propagate //model/enable_wind
+           to the links, and WindEffects only forces links with WindMode set. -->
+      <enable_wind>true</enable_wind>
       <inertial>
         <mass>2.0</mass>
         <inertia>
