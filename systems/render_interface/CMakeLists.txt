@@ -59,6 +59,7 @@ find_package(gz-common5 REQUIRED COMPONENTS profiler events av)
 #============================================================================
 add_library(render_plugin SHARED   
   src/tcpudp_interface.cpp
+  src/tcpudp_messages.cpp
   src/render_plugin.cpp
   src/ros_interface.cpp
 )
@@ -82,6 +83,30 @@ ament_target_dependencies(render_plugin
   lotusim_common
   lotusim_msgs
 )
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(nlohmann_json REQUIRED)
+  find_package(fmt REQUIRED)
+  find_package(gz-math7 REQUIRED)
+
+  # The JSON commands sent to the renderer over TCP; pure functions, no
+  # socket or Gazebo needed.
+  ament_add_gtest(test_tcpudp_messages
+    test/test_tcpudp_messages.cpp
+    src/tcpudp_messages.cpp
+  )
+  if(TARGET test_tcpudp_messages)
+    target_include_directories(test_tcpudp_messages PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+    target_link_libraries(test_tcpudp_messages
+      fmt::fmt
+      gz-math7::gz-math7
+      nlohmann_json::nlohmann_json
+    )
+  endif()
+endif()
 
 #============================================================================
 # Installation
