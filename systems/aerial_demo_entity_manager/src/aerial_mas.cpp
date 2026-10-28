@@ -9,6 +9,8 @@
  */
 #include "custom_aerial_mas/aerial_mas.hpp"
 
+#include <gz/sim/components/Model.hh>
+
 namespace lotusim::gazebo {
 
 AerialMAS::AerialMAS() : MultiAgentSystem() {}
@@ -24,8 +26,21 @@ void AerialMAS::customUserConfiguration(
             "AerialMAS::customUserConfiguration: aerial manager namespace {}",
             m_aerial_namespace);
     } else {
+        m_aerial_namespace = "aerialWorld";
+        m_logger->warn(
+            "AerialMAS::customUserConfiguration: no aerial namespace given, "
+            "defaulting to '{}'.",
+            m_aerial_namespace);
+    }
+
+    // An invalid name makes create_client throw, which aborts gz-server in
+    // Configure. Leave the client null instead; the hooks then skip mirroring.
+    if (!lotusim::common::isValidRosName(m_aerial_namespace)) {
         m_logger->error(
-            "AerialMAS::customUserConfiguration: no aerial namespace given.");
+            "AerialMAS::customUserConfiguration: invalid aerial namespace "
+            "'{}', vessels will not be mirrored.",
+            m_aerial_namespace);
+        return;
     }
 
     m_aerial_mas_client =
@@ -41,30 +56,62 @@ void AerialMAS::customUserConfiguration(
     }
 }
 
-bool AerialMAS::mirrorsFromAerialWorld(const lotusim_msgs::msg::MASCmd& msg)
+bool AerialMAS::mirrorsFromAerialWorld(const gz::sim::Entity& entity) const
 {
     // The agent SDK emits, per domain, a <physics_engine_interface> block. Only
-    // the aerial one wired as <connection_type>ROS2</connection_type> means "the
-    // host mirrors my pose from the aerial world", which is the single case that
-    // needs a twin entity over there. A Kinematic aerial agent is integrated
-    // locally and needs no twin; a surface or underwater agent needs none either,
-    // and forwarding one is harmful: the aerial world then loads a hull
-    // collision mesh its physics engine cannot handle.
-    const std::string& sdf = msg.sdf_string;
-    const auto open = sdf.find("<aerial>");
-    if (open == std::string::npos) {
+    // the aerial one wired as <connection_type>ROS2</connection_type> means
+    // "the host mirrors my pose from the aerial world", which is the single
+    // case that needs a twin entity over there. A Kinematic aerial agent is
+    // integrated locally and needs no twin; a surface or underwater agent needs
+    // none either, and forwarding one is harmful: the aerial world then loads a
+    // hull collision mesh its physics engine cannot handle.
+    //
+    // The SDF is read back from the spawned entity rather than the request, so
+    // a <lotus_param> declared in the model's own model.sdf is seen too. The
+    // lookup mirrors PhysicsInterfacePlugin::loadVessel and
+    // createDomainInterface, so both agree on which agents are aerial ROS2.
+    const auto* model_sdf =
+        m_ecm->Component<gz::sim::components::ModelSdf>(entity);
+    if (!model_sdf) {
         return false;
     }
-    const auto close = sdf.find("</aerial>", open);
-    if (close == std::string::npos) {
+    sdf::ElementPtr model_elem = model_sdf->Data().Element();
+    if (!model_elem) {
         return false;
     }
-    return sdf.find("ROS2", open) < close;
+    sdf::ElementPtr lotus_elem = model_elem->GetIncludeElement();
+    if (!lotus_elem) {
+        lotus_elem = model_elem;
+    }
+    if (!lotus_elem->HasElement("lotus_param") ||
+        !lotus_elem->GetElement("lotus_param")
+             ->HasElement("physics_engine_interface")) {
+        return false;
+    }
+    sdf::ElementPtr aerial_sdf = lotusim::common::getElementCaseInsensitive(
+        lotus_elem->GetElement("lotus_param")
+            ->GetElement("physics_engine_interface"),
+        "aerial");
+    if (!aerial_sdf) {
+        return false;
+    }
+
+    // connection_type is the legacy spelling and wins when both are present.
+    std::string interface_type;
+    if (aerial_sdf->HasElement("connection_type")) {
+        interface_type = aerial_sdf->Get<std::string>("connection_type");
+    } else if (aerial_sdf->HasElement("interface_type")) {
+        interface_type = aerial_sdf->Get<std::string>("interface_type");
+    }
+    return lotusim::common::toUpper(interface_type) == "ROS2";
 }
 
 void AerialMAS::customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
-    if (!mirrorsFromAerialWorld(msg)) {
+    if (!m_aerial_mas_client) {
+        return;
+    }
+    if (!mirrorsFromAerialWorld(msg.entity)) {
         m_logger->info(
             "AerialMAS::customUserAddEntity: '{}' is not mirrored from the "
             "aerial world; not forwarding.",
@@ -90,6 +137,9 @@ void AerialMAS::customUserAddEntity(const lotusim_msgs::msg::MASCmd& msg)
 
 void AerialMAS::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg)
 {
+    if (!m_aerial_mas_client) {
+        return;
+    }
     // Only vessels we mirrored exist over there; deleting any other name would
     // be a goal the aerial world can only reject.
     if (m_forwarded_vessels.erase(msg.vessel_name) == 0) {
@@ -100,6 +150,8 @@ void AerialMAS::customUserDeleteEntity(const lotusim_msgs::msg::MASCmd& msg)
     aerial_goal_msg.header.stamp = rclcpp::Clock().now();
     aerial_goal_msg.header.frame_id = "world";
     aerial_goal_msg.cmd = msg;
+    // When entity is set to 0, deleteEntity use vessel name instead
+    aerial_goal_msg.cmd.entity = 0;
 
     auto send_goal_options =
         rclcpp_action::Client<lotusim_msgs::action::MASCmd>::SendGoalOptions();
