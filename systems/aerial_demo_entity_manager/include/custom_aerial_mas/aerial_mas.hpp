@@ -35,10 +35,10 @@ private:
     void customUserDeleteEntity(
         const lotusim_msgs::msg::MASCmd& msg) override final;
 
-    /// True when the entity being created asks the host to mirror it from the
-    /// aerial world, i.e. its SDF declares an <aerial> domain wired over ROS2.
+    /// True when the spawned entity asks the host to mirror it from the aerial
+    /// world, i.e. its loaded SDF declares an <aerial> domain wired over ROS2.
     /// Every other entity belongs to this world alone and must not be forwarded.
-    static bool mirrorsFromAerialWorld(const lotusim_msgs::msg::MASCmd& msg);
+    bool mirrorsFromAerialWorld(const gz::sim::Entity& entity) const;
 
     void resultCB(const ClientGoalHandleMASCmd::WrappedResult& result);
 

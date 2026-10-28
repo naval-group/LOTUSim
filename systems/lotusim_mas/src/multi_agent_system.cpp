@@ -260,7 +260,7 @@ MultiAgentSystem::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 std::optional<std::tuple<uint16_t, std::string>> res =
                     std::nullopt;
 
-                if (isValidRosName(vessel_name)) {
+                if (lotusim::common::isValidRosName(vessel_name)) {
                     res = m_entity_spawner->addEntity(cmd);
                 } else {
                     m_logger->error(
@@ -270,7 +270,12 @@ MultiAgentSystem::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
 
                 if (res) {
                     auto [entity, vessel_name] = *res;
-                    customUserAddEntity(cmd);
+                    // Hand the hook the name and entity the spawner actually
+                    // assigned; the requested name may have been made unique.
+                    auto spawned_cmd = cmd;
+                    spawned_cmd.vessel_name = vessel_name;
+                    spawned_cmd.entity = entity;
+                    customUserAddEntity(spawned_cmd);
                     result->result = true;
                     result->name = vessel_name;
                     result->entity = entity;
@@ -282,11 +287,22 @@ MultiAgentSystem::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 break;
             }
             case lotusim_msgs::msg::MASCmd::DELETE_CMD: {
+                // A delete by entity number may carry no vessel_name, and
+                // deleteEntity drops the entity from the spawner's name map,
+                // so look the name up for the hook before deleting.
+                auto deleted_cmd = cmd;
+                if (cmd.entity) {
+                    auto lock = m_entity_spawner->sharedLock();
+                    const auto& names = m_entity_spawner->vesselNames();
+                    if (auto it = names.find(cmd.entity); it != names.end()) {
+                        deleted_cmd.vessel_name = it->second;
+                    }
+                }
                 result->result = m_entity_spawner->deleteEntity(cmd);
                 result->name = cmd.vessel_name;
                 result->entity = cmd.entity;
                 if (result->result) {
-                    customUserDeleteEntity(cmd);
+                    customUserDeleteEntity(deleted_cmd);
                 }
                 break;
             }
@@ -500,20 +516,6 @@ void MultiAgentSystem::publishPose(
         array_msg.vessels.push_back(msg);
     }
     m_pose_pub->publish(array_msg);
-}
-
-bool MultiAgentSystem::isValidRosName(const std::string& name)
-{
-    if (name.empty())
-        return false;
-    if (std::isdigit(static_cast<unsigned char>(name.front())))
-        return false;
-    for (char c : name) {
-        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
-            return false;
-        }
-    }
-    return true;
 }
 
 }  // namespace lotusim::gazebo
