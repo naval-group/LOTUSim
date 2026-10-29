@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  nix-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -67,3 +67,38 @@ jobs:
       # checks.*, and this flake declares none. Without this the dependency is untested.
       - name: The devShell resolves xdyn
         run: nix develop --command xdyn-for-cs --help
+
+  # The apt toolchain, kept alongside Nix: installs ROS and Gazebo from apt.
+  apt-build:
+    runs-on: ubuntu-24.04
+
+    env:
+      LOTUSIM_WS: ${{ github.workspace }}
+      LOTUSIM_PATH: ${{ github.workspace }}/src/LOTUSim
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/LOTUSim
+
+      - name: Install dependencies and build with apt
+        run: bash "$LOTUSIM_PATH/scripts/lotusim" install_lotus
+
+  # Branch protection can only require checks by name; it has no "every job
+  # passed" option. So this job is the single required check: jobs can be
+  # renamed or added here, listed in needs, without touching the repository
+  # settings.
+  ci-success:
+    if: always()
+    needs: [nix-build, apt-build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Every required job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done
