@@ -35,6 +35,7 @@
 
 #include "lotusim_msgs/msg/vessel_cmd.hpp"
 #include "lotusim_msgs/msg/vessel_cmd_array.hpp"
+#include "physics_engine_interface/ocean_current_feed.hpp"
 #include "physics_engine_interface/physics_interface_base.hpp"
 
 namespace lotusim::gazebo {
@@ -214,6 +215,39 @@ private:
      */
     rclcpp::Node::SharedPtr m_ros_node;
 
+    /// Optional fake ocean current feed, see ocean_current_feed.hpp.
+    std::unique_ptr<OceanCurrentFeed> m_ocean_current_feed;
+
+    /**
+     * @brief Dedicated executor and thread servicing m_ros_node.
+     *
+     * rclcpp::spin_some() once per Update takes at most one message per
+     * subscription per call, so a 0.1 s physics step consumes at most ten
+     * commands per second while N agents publish N*20/s, overflowing the queue
+     * and dropping commands. A spinning thread consumes every message on
+     * arrival; Update() then reads the freshest command.
+     */
+    rclcpp::executors::SingleThreadedExecutor::SharedPtr m_ros_executor;
+    std::shared_ptr<std::thread> m_ros_node_thread;
+
+    /**
+     * @brief Latest command per entity received by the spin thread, drained
+     * into m_models_cmd_map_ptr at the top of Update(). Keeps the shared
+     * command map single-threaded: written on the main thread, read by the
+     * per-model async updates.
+     */
+    /**
+     * @brief Serialises EntityComponentManager access.
+     *
+     * The ECM is not thread-safe and the per-model updates run concurrently,
+     * so reads and writes are taken under this lock while the physics step
+     * itself runs in parallel.
+     */
+    std::mutex m_ecm_mutex;
+
+    std::mutex m_pending_cmds_mutex;
+    std::unordered_map<gz::sim::Entity, std::string> m_pending_cmds;
+
     /**
      * @brief Stores the PhysicsInterfacePlugin entity
      *
@@ -225,15 +259,6 @@ private:
      *
      */
     mutable std::shared_mutex m_mutex;
-
-    /**
-     * @brief Serialises EntityComponentManager access.
-     *
-     * The ECM is not thread-safe and the per-model updates run concurrently,
-     * so its reads and writes are taken under this lock while the physics step
-     * itself stays parallel.
-     */
-    std::mutex m_ecm_mutex;
 
     /**
      * @brief List of the vessel entities
