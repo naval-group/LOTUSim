@@ -21,6 +21,7 @@
   <depend>imu_sensor</depend>
   <depend>radar_sensor</depend>
   <depend>sector_scanner_sensor</depend>
+  <depend>doppler_vel_log</depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>
