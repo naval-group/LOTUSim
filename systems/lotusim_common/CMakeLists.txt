@@ -51,14 +51,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+# spdlog is linked as a target, not through ament_target_dependencies: its
+# CMake package only exports spdlog::spdlog, so ament would add no libraries,
+# and Ubuntu's spdlog needs the external fmt it brings in.
 target_link_libraries(${PROJECT_NAME}
   stdc++fs
   gz-sim8::gz-sim8
+  spdlog::spdlog
 )
 
 ament_target_dependencies(${PROJECT_NAME}
   std_msgs
-  spdlog
 )
 
 #============================================================================
