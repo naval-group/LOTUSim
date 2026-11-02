@@ -31,6 +31,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "lotusim_msgs/msg/vessel_cmd.hpp"
@@ -244,6 +245,10 @@ private:
      * itself runs in parallel.
      */
     std::mutex m_ecm_mutex;
+
+    /// Vessels whose last update failed, guarded by m_ecm_mutex: a dead
+    /// physics engine warns once per vessel instead of once per step.
+    std::unordered_set<std::string> m_update_failed;
 
     std::mutex m_pending_cmds_mutex;
     std::unordered_map<gz::sim::Entity, std::string> m_pending_cmds;

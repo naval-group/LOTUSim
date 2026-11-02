@@ -282,6 +282,11 @@ void PhysicsInterfacePlugin::updateVesselState(
             ang_vel = new_state.ang_vel;
 
             std::lock_guard<std::mutex> ecm_lock(m_ecm_mutex);
+            if (m_update_failed.erase(vessel_name)) {
+                m_logger->info(
+                    "PhysicsInterfacePlugin::updateVesselState: {} updates again.",
+                    vessel_name);
+            }
             _ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel_entity,
                 pose);
@@ -312,9 +317,12 @@ void PhysicsInterfacePlugin::updateVesselState(
                     ang_vel);
             }
         } else {
-            m_logger->warn(
-                "PhysicsInterfacePlugin::updateVesselState: {} update failed.",
-                vessel_name);
+            std::lock_guard<std::mutex> ecm_lock(m_ecm_mutex);
+            if (m_update_failed.insert(vessel_name).second) {
+                m_logger->warn(
+                    "PhysicsInterfacePlugin::updateVesselState: {} update failed (further failures not logged until it recovers).",
+                    vessel_name);
+            }
         }
         return;
     } catch (const std::exception& e) {

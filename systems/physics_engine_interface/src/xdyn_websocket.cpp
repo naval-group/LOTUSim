@@ -28,6 +28,7 @@ std::unordered_map<gz::sim::Entity, Client::connection_ptr>
 std::unordered_map<Client::connection_ptr, gz::sim::Entity>
     XdynWebsocket::m_connection_entity_mapping;
 std::unordered_map<gz::sim::Entity, std::string> XdynWebsocket::m_status;
+std::unordered_set<gz::sim::Entity> XdynWebsocket::m_send_failed;
 std::unordered_map<gz::sim::Entity, std::mutex> XdynWebsocket::m_msg_mutex;
 std::unordered_map<gz::sim::Entity, std::condition_variable>
     XdynWebsocket::m_msg_cv;
@@ -645,8 +646,23 @@ XdynWebsocket::getNewState(
         // current, so this is a no-op for the common case.
         state_it->second.lin_vel += current_enu;
 
-        state_it->second.pose.Pos() = previous_state.pose.Pos() +
-            0.5 * (previous_state.lin_vel + state_it->second.lin_vel) * dt_s;
+        // A hull slamming back into a steep sea can blow xdyn's step up (a WAM-V was thrown
+        // 46 m up at Beaufort 9, then every later step was NaN). Drop such a step: the vessel
+        // keeps its last pose at rest, and xdyn restarts from it on the next step.
+        auto& s = state_it->second;
+        const bool sane = s.lin_vel.IsFinite() && s.ang_vel.IsFinite() && s.pose.Rot().IsFinite() &&
+                          s.lin_vel.Length() < 30.0 && s.ang_vel.Length() < 10.0;
+        if (sane) {
+            s.pose.Pos() = previous_state.pose.Pos() + 0.5 * (previous_state.lin_vel + s.lin_vel) * dt_s;
+        } else {
+            m_logger->warn(
+                "XdynWebsocket: entity {} diverged at t = {:.2f} s (|v| {:.1f} m/s, |w| {:.1f} rad/s); "
+                "step dropped, vessel reset at rest.",
+                _entity, previous_state.time, s.lin_vel.Length(), s.ang_vel.Length());
+            s.pose = previous_state.pose;
+            s.lin_vel = gz::math::Vector3d::Zero;
+            s.ang_vel = gz::math::Vector3d::Zero;
+        }
 
         // ENU altitude, positive up, taken from the state just integrated.
         const double z = state_it->second.pose.Pos().Z();
@@ -709,10 +725,16 @@ bool XdynWebsocket::send(
             websocketpp::frame::opcode::text,
             ec);
         if (ec) {
-            m_logger->error(
-                "XdynWebsocket::send: Error sending message: {}",
-                ec.message());
+            if (m_send_failed.insert(_entity).second) {
+                m_logger->error(
+                    "XdynWebsocket::send: Error sending message for entity {}: {} (further failures not logged until it recovers)",
+                    _entity,
+                    ec.message());
+            }
             return false;
+        }
+        if (m_send_failed.erase(_entity)) {
+            m_logger->info("XdynWebsocket::send: entity {} sends again.", _entity);
         }
     }
 

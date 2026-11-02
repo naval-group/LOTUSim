@@ -16,6 +16,7 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <websocketpp/client.hpp>
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/common/thread.hpp>
@@ -235,6 +236,13 @@ private:
      *
      */
     static std::unordered_map<gz::sim::Entity, std::string> m_status;
+
+    /**
+     * @brief Entities whose last send failed, so a dead xdyn logs once per
+     * entity instead of once per physics step
+     *
+     */
+    static std::unordered_set<gz::sim::Entity> m_send_failed;
 
     /**
      * @brief Current domain type mapping
