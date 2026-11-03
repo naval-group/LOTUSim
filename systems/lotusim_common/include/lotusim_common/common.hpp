@@ -294,6 +294,17 @@ sdf::ElementPtr getElementCaseInsensitive(
 std::string toUpper(std::string str);
 
 /**
+ * @brief Check that a name is a valid ROS name token: non-empty, not starting
+ * with a digit, and made only of letters, digits and underscores. Use it
+ * before building a topic, action or entity name from user input, as an
+ * invalid one makes rclcpp throw.
+ *
+ * @param name
+ * @return true if the name is valid
+ */
+bool isValidRosName(const std::string& name);
+
+/**
  * @brief Convert radians to degrees
  *
  * @param rad angle in radians

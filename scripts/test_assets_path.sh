@@ -66,6 +66,31 @@ check() { # check <name> <expected-regex> <output>
 
 sim() { mise run sim "$@" 2>&1; }
 
+# Kills a process and all its descendants. The sim task runs gz as a child
+# in a process group of its own, so neither killing mise nor its group would
+# reach gz.
+kill_tree() {
+    local child
+    for child in $(cat /proc/"$1"/task/*/children 2>/dev/null); do
+        kill_tree "$child"
+    done
+    kill -KILL "$1" 2>/dev/null
+}
+
+# A world that loads keeps gz running: stop the sim task after 30 s.
+sim_for_30s() {
+    local log="${FIXTURE}/sim.log" pid i
+    mise run sim "$@" >"$log" 2>&1 &
+    pid=$!
+    for ((i = 0; i < 30; i++)); do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 1
+    done
+    kill_tree "$pid"
+    wait "$pid" 2>/dev/null
+    cat "$log"
+}
+
 echo "1. no option: the core assets root, unchanged"
 out=$(sim --debug __no_such__.world)
 check "GZ_SIM_RESOURCE_PATH is the core root and its models dir" \
@@ -89,14 +114,14 @@ check "a missing world names every searched root" \
     "World '__no_such__.world' not found in: ${CORE} ${A} ${B}" "$out"
 
 echo "5. the world is resolved from the root that holds it"
-out=$(timeout -s KILL 30 mise run sim --assets-path "${A}:${B}" compose_test.world 2>&1)
+out=$(sim_for_30s --assets-path "${A}:${B}" compose_test.world)
 check "world found under rootB" \
     "World: ${B}/worlds/compose_test.world" "$out"
 
 echo "6. gz A/B: rootA's model resolves from rootB's world"
 # --debug (-v4) is required: at -v1 gz reports nothing and the A/B would prove nothing.
-both=$(timeout -s KILL 30 mise run sim --debug --assets-path "${A}:${B}" compose_test.world 2>&1)
-only=$(timeout -s KILL 30 mise run sim --debug --assets-path "$B" compose_test.world 2>&1)
+both=$(sim_for_30s --debug --assets-path "${A}:${B}" compose_test.world)
+only=$(sim_for_30s --debug --assets-path "$B" compose_test.world)
 
 if grep -aqi "unable to find uri\[model://alpha\]" <<<"$both"; then
     echo "  FAIL  with both roots, gz cannot resolve model://alpha"

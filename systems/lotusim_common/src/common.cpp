@@ -217,6 +217,20 @@ std::string toUpper(std::string str)
     return str;
 }
 
+bool isValidRosName(const std::string& name)
+{
+    if (name.empty())
+        return false;
+    if (std::isdigit(static_cast<unsigned char>(name.front())))
+        return false;
+    for (char c : name) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+            return false;
+        }
+    }
+    return true;
+}
+
 PowerStateRegistry& PowerStateRegistry::instance()
 {
     static PowerStateRegistry reg;

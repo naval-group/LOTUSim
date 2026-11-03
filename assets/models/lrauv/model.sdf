@@ -16,6 +16,19 @@
           </mesh>
         </geometry>
       </collision>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
+            <submesh>
+              <name>Body</name>
+              <center>false</center>
+            </submesh>
+          </mesh>
+        </geometry>
+      </visual>
+
       <sensor name="ais_sensor" type="custom" gz:type="ais">
         <lotusim_power>
           <type>sensor</type>
