@@ -275,6 +275,25 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
     double z = 0.0);
 
 /**
+ * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude, for
+ * callers that already hold the world entity.
+ *
+ * @param _ecm Entity Component Manager used to retrieve spherical coordinates
+ * @param worldEntity World entity holding the spherical coordinates
+ * @param x Local X coordinate in metres
+ * @param y Local Y coordinate in metres
+ * @param z Local Z coordinate in metres (default 0)
+ * @return std::optional<std::tuple<double, double, double>> (lat deg, lon deg,
+ * alt metres), or std::nullopt if spherical coordinates are unavailable
+ */
+std::optional<std::tuple<double, double, double>> XYToLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
+    const gz::sim::Entity& worldEntity,
+    double x,
+    double y,
+    double z = 0.0);
+
+/**
  * @brief Get the SDF Element with case insensitive name
  *
  * @param parent

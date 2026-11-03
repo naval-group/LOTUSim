@@ -263,6 +263,12 @@ protected:
     std::atomic_bool m_running;
 
 private:
+    /**
+     * @brief Whether the world's missing spherical coordinates were warned
+     * about, this warning is only logged once
+     */
+    bool m_geo_warned{false};
+
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
     std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
