@@ -161,11 +161,6 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
     desired_name = resolveUniqueName(desired_name);
     model.SetName(desired_name);
 
-    {
-        std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
-        m_vessels_models[desired_name] = msg.model_name;
-    }
-
     // Create entity in the simulation.
     gz::sim::Entity entity = m_creator->CreateEntities(&model);
     if (entity == gz::sim::kNullEntity) {
@@ -182,6 +177,7 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
     // sees it; EachNew registers the same mapping again, idempotently.
     {
         std::unique_lock<std::shared_mutex> lock(m_variable_mutex);
+        m_vessels_models[desired_name] = msg.model_name;
         m_vessels_entities[desired_name] = entity;
         m_vessels_names[entity] = desired_name;
     }
@@ -406,12 +402,8 @@ std::string EntitySpawner::resolveUniqueName(const std::string& desired) const
     if (desired.empty())
         return desired;
 
-    // A name is taken if it is already registered, or present in the ECM.
-    // The registry check matters when two CREATE_CMDs for the same class land
-    // in one PreUpdate batch: CreateEntities() does not make the first entity
-    // visible to EntityByComponents() until the ECM rebuilds its views next
-    // cycle, so the ECM alone would hand both the same name. addEntity
-    // registers each assigned name synchronously to close that window.
+    // Taken = registered or in the ECM
+    // the registry covers entities created earlier in this batch, which the ECM only shows in the next cycle
     auto taken = [&](const std::string& name) {
         {
             std::shared_lock<std::shared_mutex> lock(m_variable_mutex);
