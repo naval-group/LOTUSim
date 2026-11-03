@@ -483,9 +483,12 @@ void MultiAgentSystem::publishPose(
         auto latLonEle =
             lotusim::common::XYToLatLong(_ecm, pose.X(), pose.Y(), pose.Z());
         if (!latLonEle) {
-            m_logger->warn_once(
-                "MultiAgentSystem::PostUpdate: Vessel: {} unable to find spherical coordinates, geo_point will be zero.",
-                name);
+            if (m_geo_warned.insert(name).second) {
+                m_logger->warn(
+                    "MultiAgentSystem::publishPose: Vessel '{}' has no spherical coordinates;"
+                    "geo_point is left at (0, 0, 0).",
+                    name);
+            }
         }
 
         lotusim_msgs::msg::VesselPosition msg;
