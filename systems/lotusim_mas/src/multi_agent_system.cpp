@@ -472,9 +472,7 @@ void MultiAgentSystem::publishPose(
         auto latLonEle =
             lotusim::common::XYToLatLong(_ecm, pose.X(), pose.Y(), pose.Z());
         if (!latLonEle) {
-            // A world without <spherical_coordinates> still has poses to
-            // publish; only geo_point is unavailable.
-            m_logger->warn(
+            m_logger->warn_once(
                 "MultiAgentSystem::PostUpdate: Vessel: {} unable to find spherical coordinates, geo_point will be zero.",
                 name);
         }
