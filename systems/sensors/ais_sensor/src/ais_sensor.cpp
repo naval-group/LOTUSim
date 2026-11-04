@@ -9,21 +9,29 @@
  */
 
 #include <cmath>
+#include <gz/sim/Util.hh>
 
 #include "ais_sensor/ais_sensor.hpp"
 
 namespace lotusim::sensor {
 
 namespace {
+constexpr double kCogNotAvailable = 360.0;   // AIS "not available" value
+constexpr double kMinSogForCog = 0.05;       // m/s, below this the course is noise
 
 /// \brief Wrap an angle in degrees into [0, 360), the range AIS reports
 /// headings and courses in.
 double toCompassRange(double _degrees)
 {
     double d = std::fmod(_degrees, 360.0);
-    return d < 0.0 ? d + 360.0 : d;
+    if (d < 0.0) {
+        d += 360.0;
+    }
+    if (d >= 360.0) {
+        d = 0.0;  // guards rounding errors
+    }
+    return d;
 }
-
 }  // namespace
 
 AISSensor::AISSensor(
@@ -72,30 +80,23 @@ bool AISSensor::UpdateSensor(
     msg.longitude = m_lat_long.Y();
     msg.latitude = m_lat_long.X();
 
-    // True heading is where the vessel POINTS, taken from its attitude, and is
-    // a different quantity from course over ground below: a vessel holding a
-    // track across a current points off that track by the crab angle, and the
-    // two readings then differ by exactly that angle. m_quad is the world
-    // attitude in ENU, whose yaw runs counter-clockwise from East, so convert
-    // it to a compass bearing running clockwise from North.
-    msg.true_heading = toCompassRange(90.0 - m_quad.Yaw() * 180.0 / M_PI);
+    const auto vessel_pose = gz::sim::worldPose(m_vessel_entity, _ecm);
+    msg.true_heading = toCompassRange(90.0 - vessel_pose.Rot().Yaw() * 180.0 / M_PI);
+    msg.cog = kCogNotAvailable;   // default
 
     // The physics plugin keeps the velocity on the model entity.
     auto vel_opt = _ecm.Component<gz::sim::components::WorldLinearVelocity>(
         m_vessel_entity);
 
     if (vel_opt) {
-        // Speed over ground is horizontal by definition: a diving vehicle's
-        // vertical rate is not part of it.
-        msg.sog = std::sqrt(
-            std::pow(vel_opt->Data()[0], 2) + std::pow(vel_opt->Data()[1], 2));
+        // Speed over ground is horizontal by definition
+        msg.sog = std::sqrt(std::pow(vel_opt->Data()[0], 2) + std::pow(vel_opt->Data()[1], 2));
 
         // Course over ground is where the vessel actually TRAVELS. atan2 of
-        // (East, North) is already a compass bearing. It is meaningless at
-        // rest, as it is on a real receiver; sog tells a consumer when to
-        // disregard it.
-        msg.cog = toCompassRange(
-            atan2(vel_opt->Data()[0], vel_opt->Data()[1]) * 180.0 / M_PI);
+        // (East, North) is already a compass bearing
+        if (msg.sog > kMinSogForCog) {
+            msg.cog = toCompassRange(atan2(vel_opt->Data()[0], vel_opt->Data()[1]) * 180.0 / M_PI);
+        }
     }
     m_sensor_pub->publish(msg);
     m_last_measurement_time = _info.simTime;
