@@ -486,7 +486,7 @@ void MultiAgentSystem::publishPose(
             if (m_geo_warned.insert(name).second) {
                 m_logger->warn(
                     "MultiAgentSystem::publishPose: Vessel '{}' has no spherical coordinates;"
-                    "geo_point is left at (0, 0, 0).",
+                    " geo_point is left at (0, 0, 0).",
                     name);
             }
         }
