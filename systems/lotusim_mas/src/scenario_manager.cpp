@@ -163,10 +163,10 @@ lotusim_msgs::msg::MASCmd ScenarioManager::agentToMASCmd(
     cmd.geo_point.latitude = agent.position.latitude;
     cmd.geo_point.longitude = agent.position.longitude;
     cmd.geo_point.altitude = agent.position.altitude;
-    cmd.heading = agent.heading;
+    // compass bearing (deg, 0 = North, clockwise) -> ENU yaw (rad, East = 0, CCW)
+    const double yaw = (90.0 - agent.heading) * M_PI / 180.0;  
+    cmd.heading = static_cast<float>(yaw);  // as moveEntity expects it
 
-    // heading → yaw (Z-up, East=0, right-hand rule)
-    const double yaw = agent.heading * M_PI / 180.0;
     cmd.vessel_position.orientation.w = std::cos(yaw / 2.0);
     cmd.vessel_position.orientation.x = 0.0;
     cmd.vessel_position.orientation.y = 0.0;

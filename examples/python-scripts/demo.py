@@ -12,6 +12,10 @@ SPAWN_LATITUDE = 1.2605794416293148
 SPAWN_LONGITUDE = 103.7516212463379
 SPAWN_ALTITUDE = 0.0
 
+def bearing_to_enu_yaw_rad(bearing_deg: float) -> float:
+    """Compass bearing (deg, 0 = North, clockwise) -> MASCmd.heading (rad, ENU yaw)."""
+    return math.radians(90.0 - bearing_deg)
+
 class RadarTestSpawner(Node):
     def __init__(self):
         super().__init__('demo_test_spawner')
@@ -41,19 +45,20 @@ class RadarTestSpawner(Node):
             lon = vessel_position.geo_point.longitude
             self.vessel_poses[vessel_position.vessel_name] = (lat, lon)
 
-    def spawn_static_dtmb(self):
+    def spawn_static_dtmb(self, heading_deg=0.0):
         """Spawn a single dtmb ship at the center"""
         msg = MASCmdMsg()
         msg.cmd_type = MASCmdMsg.CREATE_CMD
         
-        msg.model_name = "dtmb_hull"  
-        msg.vessel_name = "dtmb_0" 
+        msg.model_name = "commando"  
+        msg.vessel_name = "commando_0" 
 
         geo = GeoPoint()
         geo.latitude = SPAWN_LATITUDE
         geo.longitude = SPAWN_LONGITUDE
         geo.altitude = SPAWN_ALTITUDE
         msg.geo_point = geo
+        msg.heading = bearing_to_enu_yaw_rad(heading_deg)
 
         msg.sdf_string = """
         <lotus_param>
@@ -89,6 +94,7 @@ class RadarTestSpawner(Node):
             geo.longitude = SPAWN_LONGITUDE + lon_offset
             geo.altitude = SPAWN_ALTITUDE
             msg.geo_point = geo
+            msg.heading = bearing_to_enu_yaw_rad(math.degrees(angle) % 360.0)
 
             # Static LRAUV (no physics)
             msg.sdf_string = """
@@ -109,7 +115,7 @@ def main(args=None):
     node = RadarTestSpawner()
 
     # Spawn central dtmb ship
-    future_dtmb = node.spawn_static_dtmb()
+    future_dtmb = node.spawn_static_dtmb(heading_deg=90.0)
     rclpy.spin_until_future_complete(node, future_dtmb)
     node.get_logger().info("DTMB ship spawned")
 
