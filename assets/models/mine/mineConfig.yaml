@@ -52,10 +52,18 @@ bodies:
       r: { value: 0, unit: rad/s }
 
     dynamics:
+      # Matches "centre of inertia" below: with no gravity/hydrostatic force
+      # model on this drift-only prop (see the <external forces> note
+      # further down), there is no restoring moment, so an offset here
+      # between the damping force's application point and the CoG creates a
+      # torque with nothing to counteract it -- a slow, steady tilt that
+      # never settles back to level (mild here given the mine's large
+      # rotational inertia, but the same mismatch made wamv.yaml corkscrew
+      # itself underwater within a minute).
       hydrodynamic forces calculation point in body frame:
-        x: { value: 0, unit: m }
+        x: { value: 1.0, unit: m }
         y: { value: 0, unit: m }
-        z: { value: 1.00, unit: m }
+        z: { value: 0, unit: m }
 
       centre of inertia:
         frame: floating_cube
@@ -82,3 +90,21 @@ bodies:
         row 6: [0, 0, 0, 0, 0, 40]
 
     external forces:
+      # Only a drag term, no gravity/hydrostatic: this is a "drift-only" prop
+      # (see mine_drift_only.json) meant to demonstrate current advection, not
+      # a physically-calibrated hull. Without ANY external force the body's
+      # relative velocity to the ekman current above never turns into a force
+      # -- it just sits at its spawn pose forever, current or not. Linear
+      # damping against the body's velocity relative to the current is what
+      # makes it accelerate up to drifting at the current's speed; time
+      # constant tau = mass/damping ~= 1040/70 ~= 15 s, the same settling-time
+      # convention as fremmConfig.yaml's own damping (tau ~= mass/damping).
+      - model: linear damping
+        damping matrix at the center of gravity projected in the body frame:
+          frame: floating_cube
+          row 1: [70, 0, 0, 0, 0, 0]
+          row 2: [0, 70, 0, 0, 0, 0]
+          row 3: [0, 0, 70, 0, 0, 0]
+          row 4: [0, 0, 0, 1E3, 0, 0]
+          row 5: [0, 0, 0, 0, 1E3, 0]
+          row 6: [0, 0, 0, 0, 0, 1E3]

@@ -9,8 +9,35 @@ environment models:
 
   - model: no wind
 
-  - model: no waves
-    constant sea elevation in NED frame: {value: 0, unit: m}
+  - model: waves
+    # omega max is 4 rad/s rather than commando/fremm's 10 rad/s: at 10 rad/s the
+    # spectrum includes deep-water wavelengths down to ~0.6m (lambda = 2*pi*g/omega^2),
+    # close to this hull's 1.2m length. Those short components load a boat this small
+    # far harder per-unit-Hs than they would commando's/fremm's much larger hulls,
+    # driving surge oscillation each wave cycle instead of a smooth drift.
+    discretization:
+      ndir: 8
+      nfreq: 16
+      omega min: { value: 0.1, unit: rad/s }
+      omega max: { value: 4, unit: rad/s }
+      energy fraction: 0.99
+      equal energy bins: false
+    spectra:
+      - model: airy
+        depth: { value: 1000, unit: m }
+        seed of the random data generator: 2
+        stretching:
+          delta: 1
+          h: { unit: m, value: 0 }
+        directional spreading:
+          type: cos2s
+          s: 2
+          waves propagating to: { value: 0, unit: deg }
+        spectral density:
+          type: jonswap
+          Hs: { value: 0.5, unit: m }
+          Tp: { value: 3, unit: s }
+          gamma: 1.2
   - model: ekman current
     #seabed depth: 123
     seabed file: seabed/seabed.png
@@ -27,26 +54,41 @@ bodies: # All bodies have NED as parent frame
 
   - name: WAMV
 
-    # The mesh definition from this stl file is necessary for hydrostatic and Froud-Krylov
-    mesh: wamv/meshes/cube.stl
+    # The mesh definition from this stl file is necessary for hydrostatic and Froud-Krylov.
+    # wamv_box.stl: single-shell 1.2x1.1x0.55m box with correct outward-facing normals.
+    # A disconnected multi-shell mesh (e.g. a twin-pontoon hull with a separate elevated
+    # bridge deck) causes hydrostatic-integration force spikes whenever roll/pitch lets
+    # one section graze the waterline independently of the others, producing erratic,
+    # chaotic motion rather than a clean instability. A mesh with inconsistent
+    # facet-normal winding combined with zero added mass diverges to NaN almost
+    # immediately once gravity/hydrostatic forces are enabled.
+    mesh: wamv/meshes/wamv_box.stl
 
+    # Body frame origin placed at the box's own volumetric centroid (0, 0, 0.125) so that
+    # "centre of inertia" and "hydrodynamic forces calculation point" below can both sit
+    # at the body-frame origin (0,0,0) -- same "no offset -> no spurious torque" pattern
+    # as the rest of this file, just expressed via the mesh transform instead.
     position of body frame relative to mesh:
         frame: mesh
         x: {value: 0, unit: m}
         y: {value: 0, unit: m}
-        z: {value: 5, unit: m}
+        z: {value: 0.125, unit: m}
         phi: {value: 0, unit: rad}
         theta: {value: 0, unit: rad}
         psi: {value: 0, unit: rad}
 
+    # z: 0.2011 m places the equilibrium waterline at mesh z~=-0.076 for a 100 kg body
+    # (draft = (mass/rho) / (1.2*1.1 footprint) above the box's z=-0.15 keel). Only
+    # matters for the standalone xdyn CLI; the real scenario pipeline overrides x/y/z/yaw
+    # from the JSON "spawn" block and resets phi/theta to 0 regardless of what's here.
     initial position of body frame relative to NED:
         frame: NED
-        x: {value: -12.3, unit: m}
-        y: {value: 7.4, unit: m}
-        z: {value: 2.0, unit: m}
-        phi: {value: -1.1, unit: rad}
-        theta: {value: 2.3, unit: rad}
-        psi: {value: 0.2, unit: rad}
+        x: {value: 0.0, unit: m}
+        y: {value: 0.0, unit: m}
+        z: {value: 0.2011, unit: m}
+        phi: {value: 0, unit: rad}
+        theta: {value: 0, unit: rad}
+        psi: {value: 0, unit: rad}
 
     initial velocity of body frame relative to NED:
         frame: WAMV
@@ -59,37 +101,95 @@ bodies: # All bodies have NED as parent frame
 
     dynamics:
 
+        # Both points at the body-frame origin (0,0,0), which is now the mesh's own
+        # centroid (see "position of body frame relative to mesh" above) -- matching
+        # points means no spurious torque from a mismatch between where damping/
+        # hydrostatic forces are applied and where the mass actually is.
         hydrodynamic forces calculation point in body frame:
-            # center_of_volume:
-            # x: 0.0
-            # y: 0.0
-            # z: 0.06
             x: {value: 0, unit: m}
             y: {value: 0, unit: m}
             z: {value: 0, unit: m}
 
         centre of inertia:
-            # center_of_mass:
-            # x: 0.0
-            # y: 0.0
-            # z: 0.011
             frame: WAMV
             x: {value: 0, unit: m}
             y: {value: 0, unit: m}
-            z: {value: 0.011, unit: m}
+            z: {value: 0, unit: m}
 
+        # 100 kg total, floating at ~7.4cm draft in the box hull (see spawn z above).
+        # Rotational inertia (12.60/14.52/22.08) is the box's actual geometric inertia
+        # tensor for this mass, not a placeholder: computed via trimesh (moment_inertia
+        # at density=1, scaled by 100/mesh.volume) so it's consistent with the real hull
+        # shape rather than an arbitrary small number -- the original cube.stl's tiny
+        # inertia (0.26/0.23/0.37) against a large hydrostatic restoring stiffness gave a
+        # roll natural frequency of ~89 rad/s, far too stiff for a 0.02-0.2s timestep to
+        # integrate without blowing up.
         rigid body inertia matrix at the center of gravity and projected in the body frame:
-            row 1: [ 13,  0,  0,    0,    0,    0]
-            row 2: [  0, 13,  0,    0,    0,    0]
-            row 3: [  0,  0, 13,    0,    0,    0]
-            row 4: [  0,  0,  0, 0.26,    0,    0]
-            row 5: [  0,  0,  0,    0, 0.23,    0]
-            row 6: [  0,  0,  0,    0,    0, 0.37]
-            
+            row 1: [ 100,  0,  0,     0,     0,     0]
+            row 2: [  0, 100,  0,     0,     0,     0]
+            row 3: [  0,  0, 100,     0,     0,     0]
+            row 4: [  0,  0,  0, 12.60,     0,     0]
+            row 5: [  0,  0,  0,     0, 14.52,     0]
+            row 6: [  0,  0,  0,     0,     0, 22.08]
+
+        # Nonzero added mass (unlike the old all-zero matrix) softens the effective
+        # stiffness-to-inertia ratio of the hydrostatic restoring moment enough to be
+        # numerically stable at 0.02-0.05s timesteps; magnitudes are rough surface-
+        # vessel heuristics (surge/sway/heave as fractions of the 100 kg displaced
+        # mass, roll/pitch/yaw scaled off the rigid inertia above), not a real
+        # computed added-mass matrix for this hull.
         added mass matrix at the center of gravity and projected in the body frame:
-            row 1: [ 0, 0,  0,  0,  0, 0]
-            row 2: [ 0, 0,  0,  0,  0, 0]
-            row 3: [ 0, 0,  0,  0,  0, 0]
-            row 4: [ 0, 0,  0,  0,  0, 0]
-            row 5: [ 0, 0,  0,  0,  0, 0]
-            row 6: [ 0, 0,  0,  0,  0, 0]
+            row 1: [ 20, 0,  0, 0, 0, 0]
+            row 2: [ 0, 60,  0, 0, 0, 0]
+            row 3: [ 0, 0,  80, 0, 0, 0]
+            row 4: [ 0, 0,  0, 3, 0, 0]
+            row 5: [ 0, 0,  0, 0, 3, 0]
+            row 6: [ 0, 0,  0, 0, 0, 5]
+
+    external forces:
+        - model: gravity
+
+        - model: non-linear hydrostatic (fast)
+
+        # Roll/pitch/heave (rows 3-5) are sized off the theoretical damping-ratio
+        # formula (zeta = c/(2*sqrt(K*I)), roll/pitch K from GM computed off the box's
+        # waterplane inertia, heave K = rho*g*Awp), targeting zeta ~= 0.3-0.4
+        # (underdamped). Keep these three rows' zeta below ~1: above that, the mode
+        # splits into two real poles and the faster pole's magnitude grows roughly as
+        # damping/inertia, which can exceed RK4's explicit stability region
+        # (|eigenvalue|*dt < 2.8) at coarser timesteps even though it looks stable at
+        # a finer dt. Below zeta=1, pole magnitude stays fixed at the natural
+        # frequency regardless of damping level, which is the safer regime for a
+        # fixed, coarse dt.
+        #
+        # Surge/sway/yaw (rows 1,2,6) have NO hydrostatic restoring force/moment --
+        # a floating body has no righting moment for heading, and no spring at all
+        # for horizontal translation -- so they're plain first-order poles
+        # (lambda = damping/inertia) with none of the two-pole overdamping risk
+        # above; damping is the ONLY thing bounding their rate, since there's no
+        # stiffness to bound the angle/position itself. Weak damping here lets yaw
+        # spin freely and surge/sway lurch back and forth each wave cycle rather than
+        # settling; the current values keep surge/sway to a gentle bob against a
+        # 0.1 m/s current with no overdamping risk, since these DOFs are single
+        # first-order poles with no stiffness/spring term.
+        #
+        # Yaw specifically: with zero hydrostatic restoring moment (no rudder/keel
+        # righting a floating hull's heading), whatever heading the initial
+        # wave/current transient leaves it at persists -- the same "weathervaning"
+        # behavior a real derelict boat shows, not a bug. Higher damping shrinks the
+        # settled heading offset (smaller integrated response to the same transient
+        # torque) but does not remove it.
+        #
+        # Note on --dt: the xdyn-for-cs websocket protocol used by the real pipeline
+        # requests state advances of "Dt":0.1 regardless of the xdyn process's --dt
+        # command-line argument, so standalone CLI testing should validate against
+        # --dt 0.1, not the --dt 0.2 the launcher passes on its command line.
+        - model: linear damping
+          damping matrix at the center of gravity projected in the body frame:
+            frame: WAMV
+            row 1: [150, 0, 0, 0, 0, 0]
+            row 2: [0, 180, 0, 0, 0, 0]
+            row 3: [0, 0, 1236, 0, 0, 0]
+            row 4: [0, 0, 0, 105, 0, 0]
+            row 5: [0, 0, 0, 0, 123, 0]
+            row 6: [0, 0, 0, 0, 0, 550]
