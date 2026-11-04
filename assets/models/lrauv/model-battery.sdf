@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="lrauv">
+    <static>false</static>
+
+    <link name="base_link">
+      <pose>0 0 0 0 0 3.1415</pose>
+
+      <!-- ===================== -->
+      <!-- Inertial (REQUIRED)   -->
+      <!-- ===================== -->
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>108.0</mass>
+        <inertia>
+          <ixx>0.26</ixx>
+          <iyy>37.8</iyy>
+          <izz>37.8</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <!-- ===================== -->
+      <!-- Visual                -->
+      <!-- ===================== -->
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://lrauv/meshes/tethys.dae</uri>
+            <submesh>
+              <name>Body</name>
+              <center>false</center>
+            </submesh>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <!-- ===================== -->
+      <!-- Collision             -->
+      <!-- ===================== -->
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.0 0.3 0.3</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- ===================== -->
+      <!-- AIS Sensor            -->
+      <!-- ===================== -->
+      <sensor name="ais_sensor" type="custom" gz:type="ais">
+        <update_rate>1</update_rate>
+        <noise_sigma>0.01</noise_sigma>
+        <noise_amplitude>0.01</noise_amplitude>
+      </sensor>
+
+      <!-- ===================== -->
+      <!-- Battery Sensor        -->
+      <!-- ===================== -->
+      <!-- Capacity and load are the LRAUV's own figures, not the 1 Ah / 200 W
+           placeholders used by the other model-battery.sdf variants: a 60 Ah
+           pack at 20 W is what makes a long endurance mission readable. -->
+      <sensor name="battery_sensor" type="custom" gz:type="battery">
+        <battery_name>linear_battery</battery_name>
+        <voltage>48.0</voltage>
+        <open_circuit_voltage_constant_coef>50.4</open_circuit_voltage_constant_coef>
+        <open_circuit_voltage_linear_coef>-3.1</open_circuit_voltage_linear_coef>
+        <capacity>60.0</capacity>
+        <resistance>0.05</resistance>
+        <smooth_current_tau>2.0</smooth_current_tau>
+        <power_load>20.0</power_load>
+        <start_draining>true</start_draining>
+        <fix_issue_225>true</fix_issue_225>
+      </sensor>
+
+    </link>
+
+  </model>
+</sdf>

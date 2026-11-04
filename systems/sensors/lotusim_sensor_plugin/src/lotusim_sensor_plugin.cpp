@@ -14,6 +14,16 @@ namespace lotusim::sensor {
 
 LotusimSensorPlugin::LotusimSensorPlugin() {}
 
+LotusimSensorPlugin::~LotusimSensorPlugin()
+{
+    if (m_ros_executor) {
+        m_ros_executor->cancel();
+    }
+    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
+        m_ros_node_thread->join();
+    }
+}
+
 void LotusimSensorPlugin::Configure(
     const gz::sim::Entity&,
     const std::shared_ptr<const sdf::Element>&,
@@ -37,6 +47,21 @@ void LotusimSensorPlugin::Configure(
         m_ros_node->create_publisher<lotusim_sensor_msgs::msg::Collisions>(
             "collisions",
             rclcpp::QoS(10));
+
+    // Service every sensor's subscriptions on their own thread, so no sensor
+    // has to drain the shared node from Gazebo's update (see m_ros_executor
+    // doc in the header). Mirrors PhysicsInterfacePlugin's node-thread
+    // pattern.
+    if (rclcpp::ok()) {
+        m_ros_executor =
+            std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+        m_ros_executor->add_node(m_ros_node);
+        m_ros_node_thread = std::make_shared<std::thread>(
+            [this]() { m_ros_executor->spin(); });
+    } else {
+        m_logger->error(
+            "LotusimSensorPlugin::Configure: RCLCPP context shutdown.");
+    }
 
     m_logger->info(
         "LotusimSensorPlugin::Configure: LotusimSensorPlugin successfully startup.");
@@ -321,6 +346,17 @@ bool LotusimSensorPlugin::EachNew(
                 model_name,
                 sensor_name);
             sensor = CreateSensor<SectorScanner>(
+                data,
+                model_entity,
+                _entity,
+                model_name,
+                sensor_name);
+        } else if (type == "battery") {
+            m_logger->info(
+                "LotusimSensorPlugin::Battery: Creating sensor [{}/{}]",
+                model_name,
+                sensor_name);
+            sensor = CreateSensor<BatterySensor>(
                 data,
                 model_entity,
                 _entity,
