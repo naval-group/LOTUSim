@@ -28,4 +28,5 @@ geometry_msgs/Pose vessel_position
 
 # Having geographic coordinate system or heading replace Pose
 geographic_msgs/GeoPoint geo_point
+# Yaw in radians, ENU (counter-clockwise from East). Applied with geo_point
 float32 heading
