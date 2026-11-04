@@ -2,6 +2,14 @@
 <sdf version="1.10">
     <model name="pha">
         <link name="base_link">
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://pha/meshes/pha.dae</uri>
+                        <scale>10 10 10</scale>
+                    </mesh>
+                </geometry>
+            </visual>
             <collision name="collision">
                 <geometry>
                     <mesh>

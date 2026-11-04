@@ -29,14 +29,9 @@ MultiAgentSystem::~MultiAgentSystem()
 
 void MultiAgentSystem::shutdown()
 {
+    logger::setLogCallback(nullptr);
     m_running.store(false);
-    if (m_executor) {
-        m_executor->cancel();
-    }
-
-    if (m_ros_node_thread && m_ros_node_thread->joinable()) {
-        m_ros_node_thread->join();
-    }
+    m_ros_node_thread.reset();
     m_executor.reset();
     m_logger->info(
         "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
@@ -85,29 +80,29 @@ bool MultiAgentSystem::initROSNode()
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
             "poses",
             rclcpp::QoS(10));
-    m_log_pub =
-        m_ros_node->create_publisher<lotusim_msgs::msg::Log>(
-            "/lotusim/logs",
-            rclcpp::QoS(10));
+    m_log_pub = m_ros_node->create_publisher<lotusim_msgs::msg::Log>(
+        "/lotusim/logs",
+        rclcpp::QoS(10));
 
-    logger::setLogCallback(
-        [this](const std::string& logger_name, spdlog::level::level_enum level, const std::string& message) {
-            lotusim_msgs::msg::Log log_msg;
-            log_msg.stamp = m_ros_node->now();
-            log_msg.logger = logger_name;
-            log_msg.message = message;
+    logger::setLogCallback([this](
+                               const std::string& logger_name,
+                               spdlog::level::level_enum level,
+                               const std::string& message) {
+        lotusim_msgs::msg::Log log_msg;
+        log_msg.stamp = m_ros_node->now();
+        log_msg.logger = logger_name;
+        log_msg.message = message;
 
-            if (level == spdlog::level::info) {
-                log_msg.level = lotusim_msgs::msg::Log::INFO;
-            } else if (level == spdlog::level::err) {
-                log_msg.level = lotusim_msgs::msg::Log::ERROR;
-            } else {
-                return;
-            }
-
-            m_log_pub->publish(log_msg);
+        if (level == spdlog::level::info) {
+            log_msg.level = lotusim_msgs::msg::Log::INFO;
+        } else if (level == spdlog::level::err) {
+            log_msg.level = lotusim_msgs::msg::Log::ERROR;
+        } else {
+            return;
         }
-    );
+
+        m_log_pub->publish(log_msg);
+    });
 
     m_callback_group.push_back(m_ros_node->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive));
@@ -175,7 +170,7 @@ bool MultiAgentSystem::initROSNode()
     m_executor->add_node(m_ros_node);
     m_running.store(true);
     m_ros_node_thread =
-        std::make_shared<std::thread>([&]() { m_executor->spin(); });
+        std::make_unique<lotusim::common::SpinThread>(*m_executor);
     m_logger->info(
         "MultiAgentSystem::initROSNode: MultiAgentSystem ROS node initiated");
     return true;
@@ -260,7 +255,7 @@ MultiAgentSystem::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 std::optional<std::tuple<uint16_t, std::string>> res =
                     std::nullopt;
 
-                if (isValidRosName(vessel_name)) {
+                if (lotusim::common::isValidRosName(vessel_name)) {
                     res = m_entity_spawner->addEntity(cmd);
                 } else {
                     m_logger->error(
@@ -270,7 +265,12 @@ MultiAgentSystem::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
 
                 if (res) {
                     auto [entity, vessel_name] = *res;
-                    customUserAddEntity(cmd);
+                    // Hand the hook the name and entity the spawner actually
+                    // assigned; the requested name may have been made unique.
+                    auto spawned_cmd = cmd;
+                    spawned_cmd.vessel_name = vessel_name;
+                    spawned_cmd.entity = entity;
+                    customUserAddEntity(spawned_cmd);
                     result->result = true;
                     result->name = vessel_name;
                     result->entity = entity;
@@ -282,11 +282,22 @@ MultiAgentSystem::handleMASCmd(const lotusim_msgs::msg::MASCmd& cmd)
                 break;
             }
             case lotusim_msgs::msg::MASCmd::DELETE_CMD: {
+                // A delete by entity number may carry no vessel_name, and
+                // deleteEntity drops the entity from the spawner's name map,
+                // so look the name up for the hook before deleting.
+                auto deleted_cmd = cmd;
+                if (cmd.entity) {
+                    auto lock = m_entity_spawner->sharedLock();
+                    const auto& names = m_entity_spawner->vesselNames();
+                    if (auto it = names.find(cmd.entity); it != names.end()) {
+                        deleted_cmd.vessel_name = it->second;
+                    }
+                }
                 result->result = m_entity_spawner->deleteEntity(cmd);
                 result->name = cmd.vessel_name;
                 result->entity = cmd.entity;
                 if (result->result) {
-                    customUserDeleteEntity(cmd);
+                    customUserDeleteEntity(deleted_cmd);
                 }
                 break;
             }
@@ -472,16 +483,19 @@ void MultiAgentSystem::publishPose(
         auto latLonEle =
             lotusim::common::XYToLatLong(_ecm, pose.X(), pose.Y(), pose.Z());
         if (!latLonEle) {
-            m_logger->warn(
-                "MultiAgentSystem::PostUpdate: Vessel: {} unable to find coordinate. Skip pose update.",
-                name);
-            continue;
+            if (m_geo_warned.insert(name).second) {
+                m_logger->warn(
+                    "MultiAgentSystem::publishPose: Vessel '{}' has no spherical coordinates;"
+                    " geo_point is left at (0, 0, 0).",
+                    name);
+            }
         }
 
         lotusim_msgs::msg::VesselPosition msg;
         msg.vessel_name = name;
         auto model_it = models.find(name);
-        msg.model_name = (model_it != models.end()) ? model_it->second : std::string{};
+        msg.model_name =
+            (model_it != models.end()) ? model_it->second : std::string{};
 
         msg.pose.position.x = pose.X();
         msg.pose.position.y = pose.Y();
@@ -491,29 +505,17 @@ void MultiAgentSystem::publishPose(
         msg.pose.orientation.y = pose.Rot().Y();
         msg.pose.orientation.z = pose.Rot().Z();
 
-        msg.geo_point.latitude = std::get<0>(latLonEle.value());
-        msg.geo_point.longitude = std::get<1>(latLonEle.value());
-        msg.geo_point.altitude = std::get<2>(latLonEle.value());
+        if (latLonEle) {
+            msg.geo_point.latitude = std::get<0>(latLonEle.value());
+            msg.geo_point.longitude = std::get<1>(latLonEle.value());
+            msg.geo_point.altitude = std::get<2>(latLonEle.value());
+        }
 
         msg.speed_over_ground = static_cast<float>(speedOverGround);
 
         array_msg.vessels.push_back(msg);
     }
     m_pose_pub->publish(array_msg);
-}
-
-bool MultiAgentSystem::isValidRosName(const std::string& name)
-{
-    if (name.empty())
-        return false;
-    if (std::isdigit(static_cast<unsigned char>(name.front())))
-        return false;
-    for (char c : name) {
-        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
-            return false;
-        }
-    }
-    return true;
 }
 
 }  // namespace lotusim::gazebo

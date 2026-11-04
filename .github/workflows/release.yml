@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 jobs:
-  release:
+  release-nix:
     runs-on: ubuntu-latest
 
     steps:
@@ -93,3 +93,57 @@ jobs:
 
           cosign sign --yes \
             ghcr.io/${{ steps.repo.outputs.repo }}@${{ steps.image.outputs.digest }}
+
+  # The developer image: Ubuntu with the toolchain, source and a built
+  # workspace, set up through apt and the lotusim script (Dockerfile.dev).
+  # The Nix image cannot stand in for it: it holds only the lotusim closure
+  # plus bash and coreutils, with no FHS layout, package manager, compiler,
+  # colcon or source to develop against.
+  # Published as <repo>-dev so its tags never collide with the Nix image's.
+  release-dev:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Image name and tags
+        id: meta
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}-dev"
+          # Same scheme as the Nix image: a version tag on tag pushes, the
+          # short sha plus latest on main.
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tags="$image:$GITHUB_REF_NAME"
+          else
+            tags="$image:${GITHUB_SHA::7},$image:latest"
+          fi
+          echo "image=$image" >> $GITHUB_OUTPUT
+          echo "tags=$tags" >> $GITHUB_OUTPUT
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the image
+        id: image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.dev
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.0.0
+        with:
+          cosign-release: 'v2.6.2'
+
+      - name: Sign container image
+        run: |
+          cosign sign --yes \
+            ${{ steps.meta.outputs.image }}@${{ steps.image.outputs.digest }}

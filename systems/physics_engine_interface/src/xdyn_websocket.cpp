@@ -9,6 +9,8 @@
  */
 #include "physics_engine_interface/xdyn_websocket.hpp"
 
+#include <cmath>
+
 namespace lotusim::gazebo {
 
 std::shared_ptr<XdynWebsocket> XdynWebsocket::m_instance = nullptr;
@@ -102,8 +104,10 @@ bool XdynWebsocket::configureInterface(
                 _sdf->GetElement("thrusters")->GetFirstElement();
             do {
                 std::string thruster_name = sdfPtr_thruster->Get<std::string>();
-                initial_cmd[thruster_name + "(rpm)"] =
-                    50.0;  // was 2.0 but crashes the Wageningen propeller
+                // rpm, like every LOTUSim command: 50 rpm (5.2 rad/s) keeps the
+                // Wageningen model inside its domain. Until the rpm-to-rad/s
+                // conversion, this seed meant 50 rad/s (477 rpm).
+                initial_cmd[thruster_name + "(rpm)"] = 50.0;
                 initial_cmd[thruster_name + "(P/D)"] = 0.79;
                 initial_cmd[thruster_name + "(beta)"] = 0.0;
                 sdfPtr_thruster = sdfPtr_thruster->GetNextElement();
@@ -417,6 +421,15 @@ XdynWebsocket::getNewState(
 
     if (m_models_cmd_map_ptr->find(_entity) != m_models_cmd_map_ptr->end()) {
         data["commands"] = json::parse((*m_models_cmd_map_ptr)[_entity]);
+        // xdyn reads command values in SI units, whatever the signal is named:
+        // "(rpm)" is taken as rad/s. LOTUSim speaks rpm, so convert here, once.
+        // Unconverted, propellers spun ~9.5x too fast.
+        for (auto& [key, value] : data["commands"].items()) {
+            if (value.is_number() && key.size() >= 5 &&
+                key.compare(key.size() - 5, 5, "(rpm)") == 0) {
+                value = value.get<double>() * 2.0 * M_PI / 60.0;
+            }
+        }
     }
 
     data["requested_output"] = json::array();

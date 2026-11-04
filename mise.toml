@@ -6,7 +6,7 @@ LOTUSIM_MODELS_PATH = "{{config_root}}/assets/models/"
 # The root xdyn resolves a YAML's relative mesh and seabed paths against.
 XDYN_ASSETS_PATH = "{{config_root}}/assets/models/"
 LOTUSIM_SCENARIOS_PATH = "{{config_root}}/assets/scenarios"
-LOTUSIM_SPDLOG_LEVEL = "info"
+LOTUSIM_LOG_LEVEL = "info"
 
 GZ_SIM_SYSTEM_PLUGIN_PATH = "{{config_root}}/install/lib"
 # model:// resolves against the directory holding <model>/model.config.
@@ -21,13 +21,19 @@ dir = "{{config_root}}"
 shell = "bash -c"
 usage = 'flag "--debug" help="Build with DEBUG=ON and a symlinked install"'
 run = '''
+# Every nix-store prefix on AMENT_PREFIX_PATH lacks the local_setup.* colcon
+# expects of a workspace, so it warns about each one. The prefixes have to stay:
+# rosidl finds its typesupports through them. Drop only that warning.
+set -o pipefail
 if [ "${usage_debug:-false}" = "true" ]; then
   colcon build --merge-install --symlink-install \
     --event-handlers compile_commands+ \
-    --cmake-args -DDEBUG=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    --cmake-args -DDEBUG=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 2>&1 |
+    sed -u "/AMENT_PREFIX_PATH doesn't contain any 'local_setup/d"
 else
   colcon build --merge-install --event-handlers compile_commands+ \
-    --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 2>&1 |
+    sed -u "/AMENT_PREFIX_PATH doesn't contain any 'local_setup/d"
 fi
 '''
 
@@ -45,7 +51,10 @@ description = "Run the gtest suite (advisory — does not gate the build)"
 dir = "{{config_root}}"
 shell = "bash -c"
 run = '''
-colcon test --merge-install --event-handlers console_direct+
+# Same local_setup.* warning as in the build task.
+set -o pipefail
+colcon test --merge-install --event-handlers console_direct+ 2>&1 |
+  sed -u "/AMENT_PREFIX_PATH doesn't contain any 'local_setup/d"
 colcon test-result --verbose
 '''
 
@@ -129,7 +138,7 @@ else
 fi
 if [ "${usage_debug:-false}" = "true" ]; then
   verbosity="-v4"
-  export LOTUSIM_SPDLOG_LEVEL=debug
+  export LOTUSIM_LOG_LEVEL=debug
 else
   # -v1 keeps errors: Ogre2 reports its GLX-to-EGL fallback at this level.
   verbosity="-v1"
@@ -151,13 +160,33 @@ if wrapper=$(bash scripts/gl-wrapper.sh); then
   glwrap="$wrapper"
   if [ -n "$glwrap" ]; then
     echo "GPU driver bridge: $glwrap"
-    # On a hybrid/Optimus laptop the chain is <integrated-GPU-wrapper> <nixGLNvidia>
-    # (see gl-wrapper.sh) — without these, that chain renders on the integrated
-    # GPU by default since it's the one that owns the X screen.
+    # On a hybrid laptop the integrated GPU owns the X screen, so GL renders
+    # there unless told to offload to the discrete one.
     case "$glwrap" in
       *nixGLNvidia*)
         export __NV_PRIME_RENDER_OFFLOAD=1
         export __GLX_VENDOR_LIBRARY_NAME=nvidia
+        ;;
+      *nixGLIntel*)
+        # Render on an AMD GPU when there is one, else leave Mesa on its
+        # default (Intel or the only GPU). DRI_PRIME takes the card's PCI
+        # address, so this holds whichever GPU drives the screen. Between an
+        # AMD APU and a discrete card, the one with more VRAM wins.
+        best=""
+        best_vram=-1
+        for card in /sys/class/drm/card*; do
+          # Skip connectors such as card1-HDMI-A-1.
+          case "${card##*/}" in *-*) continue ;; esac
+          [ "$(cat "$card/device/vendor" 2>/dev/null)" = 0x1002 ] || continue
+          vram=$(cat "$card/device/mem_info_vram_total" 2>/dev/null || echo 0)
+          if [ "$vram" -gt "$best_vram" ]; then
+            best_vram=$vram
+            best=$(basename "$(readlink -f "$card/device")")
+          fi
+        done
+        if [ -n "$best" ]; then
+          export DRI_PRIME="${DRI_PRIME:-pci-${best//[:.]/_}}"
+        fi
         ;;
     esac
   else
@@ -173,7 +202,12 @@ else
   echo "GPU driver bridge: none — camera and gpu_lidar sensors will not render." >&2
 fi
 
-exec $glwrap gz sim $verbosity $headless $render_flags -r "$world_file"
+# Not exec'd: Ctrl+C reaches gz from the terminal and again from mise, and gz's
+# GUI-mode handler crashes (Errno::ESRCH) killing a GUI the first one reaped.
+# With bash in between, mise's forwarded signal lands here instead.
+$glwrap gz sim $verbosity $headless $render_flags -r "$world_file"
+status=$?
+exit $status
 '''
 
 [tasks."lint:tidy"]

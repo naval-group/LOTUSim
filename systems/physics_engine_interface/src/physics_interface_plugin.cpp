@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "physics_engine_interface/physics_interface_plugin.hpp"
+
 #include "physics_engine_interface/ros2_interface.hpp"
 #include "physics_engine_interface/xdyn_websocket.hpp"
 
@@ -178,7 +179,8 @@ void PhysicsInterfacePlugin::updateVesselState(
         const std::chrono::_V2::system_clock::time_point start_time =
             std::chrono::system_clock::now();
 
-        // Phase 1: read the state from the ECM (serialised, ECM not thread-safe)
+        // Phase 1: read the state from the ECM (serialised, ECM not
+        // thread-safe)
         VesselInformation vessel_info;
         {
             std::lock_guard<std::mutex> ecm_lock(m_ecm_mutex);
@@ -216,7 +218,8 @@ void PhysicsInterfacePlugin::updateVesselState(
         }
 
         // Phase 2: compute the new state (runs in parallel, no ECM access)
-        update_opt = interface->getNewState(vessel_entity, vessel_info, target_time);
+        update_opt =
+            interface->getNewState(vessel_entity, vessel_info, target_time);
 
         // Print physics engine response time if compiled in debug mode
         if (m_logger->level() < spdlog::level::info) {
@@ -252,7 +255,7 @@ void PhysicsInterfacePlugin::updateVesselState(
             _ecm.SetChanged(
                 vessel_entity,
                 gz::sim::components::Pose::typeId,
-                gz::sim::ComponentState::OneTimeChange);
+                gz::sim::ComponentState::PeriodicChange);
 
             // Velocity lives on the model entity (read by MAS and sensors).
             if (!_ecm.Component<gz::sim::components::WorldLinearVelocity>(
@@ -271,7 +274,8 @@ void PhysicsInterfacePlugin::updateVesselState(
                     vessel_entity,
                     gz::sim::components::WorldAngularVelocity(ang_vel));
             } else {
-                _ecm.SetComponentData<gz::sim::components::WorldAngularVelocity>(
+                _ecm.SetComponentData<
+                    gz::sim::components::WorldAngularVelocity>(
                     vessel_entity,
                     ang_vel);
             }

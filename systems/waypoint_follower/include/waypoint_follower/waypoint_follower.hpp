@@ -40,6 +40,7 @@
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "lotusim_common/spin_thread.hpp"
 #include "lotusim_msgs/msg/waypoint_follower_status.hpp"
 #include "lotusim_msgs/srv/set_waypoints.hpp"
 #include "std_srvs/srv/empty.hpp"
@@ -312,7 +313,7 @@ private:
 
     std::atomic_bool m_running;
 
-    std::shared_ptr<std::thread> m_ros_node_thread;
+    std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
 
     std::unordered_map<
         gz::sim::Entity,

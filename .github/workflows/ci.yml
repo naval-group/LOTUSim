@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  nix-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,6 +35,18 @@ jobs:
       - name: Build the workspace
         run: nix build .#lotusim --print-build-logs
 
+      # Nix will generate the hash from the input libraries and UI code.
+      # If there is a hash change, it will test build
+      - name: Build the UI
+        run: |
+          set -euo pipefail
+          ui=$(nix eval --raw .#ui.outPath)
+          if nix path-info --store https://naval-group.cachix.org "$ui" >/dev/null 2>&1; then
+            echo "Already in naval-group: $ui"
+          else
+            nix build .#ui --print-build-logs
+          fi
+
       # Separate derivation from `workspace` (see flake.nix), so this rebuilds
       # the workspace with BUILD_TESTING=ON and runs colcon test, rather than
       # reusing the step above — a failing test here does not block the
@@ -55,3 +67,38 @@ jobs:
       # checks.*, and this flake declares none. Without this the dependency is untested.
       - name: The devShell resolves xdyn
         run: nix develop --command xdyn-for-cs --help
+
+  # The apt toolchain, kept alongside Nix: installs ROS and Gazebo from apt.
+  apt-build:
+    runs-on: ubuntu-24.04
+
+    env:
+      LOTUSIM_WS: ${{ github.workspace }}
+      LOTUSIM_PATH: ${{ github.workspace }}/src/LOTUSim
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/LOTUSim
+
+      - name: Install dependencies and build with apt
+        run: bash "$LOTUSIM_PATH/scripts/lotusim" install_lotus
+
+  # Branch protection can only require checks by name; it has no "every job
+  # passed" option. So this job is the single required check: jobs can be
+  # renamed or added here, listed in needs, without touching the repository
+  # settings.
+  ci-success:
+    if: always()
+    needs: [nix-build, apt-build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Every required job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done
