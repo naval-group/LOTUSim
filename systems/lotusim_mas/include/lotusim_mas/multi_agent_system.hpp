@@ -22,6 +22,7 @@
 #include <thread>
 #include <cmath>
 #include <unordered_map>
+#include <unordered_set>
 #include <chrono>
 
 #include "lotusim_common/common.hpp"
@@ -263,6 +264,12 @@ protected:
     std::atomic_bool m_running;
 
 private:
+    /**
+     * @brief vessels are warned about the missing spherical coordinates,
+     * this warning is only logged once per vessel
+     */
+    std::unordered_set<std::string> m_geo_warned;
+
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
     std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
