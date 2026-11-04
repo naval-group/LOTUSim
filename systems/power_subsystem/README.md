@@ -365,6 +365,23 @@ Load shedding is priority-based. Lower number = higher priority = shed last.
 
 ---
 
+## Power Management Type
+
+Each model can choose how its power system is managed with the `power_system` parameter in its `lotus_param` block:
+
+```xml
+<lotus_param>
+  <power_system>
+    <power_management_type>default</power_management_type>
+  </power_system>
+</lotus_param>
+```
+
+If the parameter is omitted, the default power manager is used (`DefaultPlatformPowerManager`). See its source for the exact behaviour,
+and Load Distribution Logic below for how it shares load between batteries and generators.
+
+---
+
 ## Load Distribution Logic
 
 Each tick, `DefaultPlatformPowerManager::handlePowerUpdate` runs the following sequence:
