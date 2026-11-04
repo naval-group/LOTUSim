@@ -50,7 +50,7 @@ agents:
       latitude: 48.8566
       longitude: 2.3522
       altitude: -30.0
-    heading: 30 # Relative to East
+    heading: 30 # Relative to North
     
     waypoint_interface:
       enabled: true
