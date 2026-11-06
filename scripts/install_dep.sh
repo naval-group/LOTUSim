@@ -91,6 +91,7 @@ apt-get -y install \
   ros-$ROS_DISTRO-geographic-msgs \
   ros-$ROS_DISTRO-radar-msgs \
   python3-colcon-common-extensions \
+  bash-completion \
   clang \
   libyaml-cpp-dev \
   libwebsocketpp-dev \

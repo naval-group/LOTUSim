@@ -1,9 +1,0 @@
-# Local build output; the image builds its own.
-.git
-build
-install
-log
-lotus_logs
-result
-result-*
-.direnv

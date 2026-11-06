@@ -17,6 +17,7 @@ GUI="-s"
 LOTUSIM_SPDLOG_LEVEL="info"
 COMMAND=""
 DEFAULT_WORLD="lotusim.world"
+NODE_MAJOR=22
 WORLD=""
 
 # Detect Ubuntu codename
@@ -174,9 +175,9 @@ install_ui() {
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-    echo -e "\n📦 Installing Node.js v18 with NVM..."
-    nvm install 18 >/dev/null
-    nvm use 18 >/dev/null
+    echo -e "\n📦 Installing Node.js v${NODE_MAJOR} with NVM..."
+    nvm install "$NODE_MAJOR" >/dev/null
+    nvm use "$NODE_MAJOR" >/dev/null
 
     echo -e "
 ********************************************************************************************
@@ -282,12 +283,15 @@ validate_ui_setup() {
         fi
     fi
     
-    # Check if Node.js 18 is available via nvm
+    # Check if the UI's Node.js is available via nvm, and select it: a machine
+    # set up earlier may still default to an older version.
     if command -v nvm &> /dev/null || type nvm &> /dev/null; then
-        if ! nvm ls 18 &> /dev/null; then
-            echo -e "❌ ${RED}Error:${NC} Node.js version 18 is not installed via nvm"
-            echo -e "   Install with: nvm install 18"
+        if ! nvm ls "$NODE_MAJOR" &> /dev/null; then
+            echo -e "❌ ${RED}Error:${NC} Node.js version ${NODE_MAJOR} is not installed via nvm"
+            echo -e "   Install with: nvm install ${NODE_MAJOR}"
             errors=$((errors + 1))
+        else
+            nvm use "$NODE_MAJOR" >/dev/null
         fi
     fi
     
@@ -400,9 +404,10 @@ run_command() {
         npx ts-node src/main.ts &
         BACKEND_PID=$!
 
-        # Start frontend
+        # Start frontend. Vite's own defaults; the dev image overrides them, as
+        # localhost inside a container is unreachable from the browser.
         cd ${FRONTEND_DIR}
-        npm run dev &
+        npm run dev -- --host "${LOTUSIM_UI_HOST:-localhost}" --port "${LOTUSIM_UI_PORT:-5173}" &
         FRONTEND_PID=$!
 
         echo -e "${GREEN}Backend PID:${NC} $BACKEND_PID"
