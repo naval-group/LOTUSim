@@ -1,0 +1,13 @@
+# Dockerfile.dev's context is the workspace's src/, so paths start at the repos.
+# The image installs and builds its own; local output would only shadow it.
+**/.git
+**/node_modules
+**/dist
+**/build
+**/install
+**/log
+**/lotus_logs
+**/result
+**/result-*
+**/.direnv
+**/.env*
