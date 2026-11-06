@@ -119,8 +119,25 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
                 return std::nullopt;
             }
 
-            model_elem->InsertEndChild(static_cast<tinyxml2::XMLElement*>(
-                lotus_elem->DeepClone(&sdf_doc)));
+            // Readers take the first <lotus_param> of the model, so a model
+            // that already has one (e.g. its power_system) gets the
+            // scenario's blocks merged in, the scenario winning on the same
+            // block, instead of a second <lotus_param> nobody reads.
+            tinyxml2::XMLElement* model_lotus =
+                model_elem->FirstChildElement("lotus_param");
+            if (!model_lotus) {
+                model_elem->InsertEndChild(lotus_elem->DeepClone(&sdf_doc));
+            } else {
+                for (const tinyxml2::XMLElement* block =
+                         lotus_elem->FirstChildElement();
+                     block;
+                     block = block->NextSiblingElement()) {
+                    while (tinyxml2::XMLElement* same =
+                               model_lotus->FirstChildElement(block->Name()))
+                        model_lotus->DeleteChild(same);
+                    model_lotus->InsertEndChild(block->DeepClone(&sdf_doc));
+                }
+            }
 
             tinyxml2::XMLPrinter printer;
             sdf_doc.Print(&printer);
