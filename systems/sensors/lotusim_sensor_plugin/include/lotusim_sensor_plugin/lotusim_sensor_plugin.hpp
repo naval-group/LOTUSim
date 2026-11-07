@@ -37,6 +37,7 @@
 
 #include "ais_sensor/ais_sensor.hpp"
 #include "imu_sensor/imu_sensor.hpp"
+#include "doppler_vel_log/doppler_vel_log.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/entity_group.hpp"
 #include "lotusim_common/logger.hpp"
