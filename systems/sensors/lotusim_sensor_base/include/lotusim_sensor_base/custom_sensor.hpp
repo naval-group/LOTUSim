@@ -10,6 +10,7 @@
 #ifndef LOTUSIM_CUSTOM_SENSOR_HPP
 #define LOTUSIM_CUSTOM_SENSOR_HPP
 
+#include <atomic>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <chrono>
@@ -17,6 +18,7 @@
 #include <gz/sensors/Util.hh>
 #include <gz/sim/System.hh>
 #include <map>
+#include <mutex>
 #include <random>
 #include <string>
 
@@ -80,6 +82,13 @@ public:
 
     void Orientation(const gz::math::Quaterniond& _quad);
 
+    // blocks until any ongoing callback finishes, then disables all future ones. Call before destroying the sensor.
+    void Shutdown()
+    {
+        std::lock_guard<std::mutex> lock(m_cb_guard->mutex);
+        m_cb_guard->alive = false;
+    }
+
     // getters for power manager to turn sensor off
     const std::string& vesselName() const
     {
@@ -103,6 +112,12 @@ protected:
     bool EnableMeasurement(
         const std::chrono::steady_clock::duration& _now) const;
 
+    // shared with callbacks so they can detect that the sensor was removed
+    struct CallbackGuard {
+        std::mutex mutex;
+        bool alive{true};
+    };
+
 private:
     bool ChangeSensorState(
         const std::shared_ptr<lotusim_sensor_msgs::srv::ActivateSensor::Request>
@@ -124,6 +139,8 @@ protected:
     std::string m_vessel_name;
 
     std::string m_sensor_name;
+
+    std::shared_ptr<CallbackGuard> m_cb_guard = std::make_shared<CallbackGuard>();
 
     /// \brief type of sensor loaded
     std::string m_type;
@@ -147,7 +164,7 @@ protected:
     std::map<std::string, std::normal_distribution<double>> m_noise_models;
 
     /// \brief Flag to control the generation of output messages
-    bool m_is_on;
+    std::atomic<bool> m_is_on;
 
     rclcpp::Node::SharedPtr m_ros_node;
 

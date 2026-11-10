@@ -51,11 +51,15 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
     m_sensor_activate_service =
         m_ros_node->create_service<lotusim_sensor_msgs::srv::ActivateSensor>(
             m_vessel_name + "/" + m_sensor_name + "/change_state",
-            std::bind(
-                &CustomSensor::ChangeSensorState,
-                this,
-                std::placeholders::_1,
-                std::placeholders::_2));
+            [this, guard = m_cb_guard](
+            const std::shared_ptr<lotusim_sensor_msgs::srv::ActivateSensor::Request> req,
+            std::shared_ptr<lotusim_sensor_msgs::srv::ActivateSensor::Response> res) {
+                std::lock_guard<std::mutex> lock(guard->mutex);
+                if (!guard->alive) {
+                    return;
+                }
+                ChangeSensorState(req, res);
+            });
 
     GetSDFParam<double>(_sdfptr, "noise_sigma", m_noise_sigma, 0.0);
     if (m_noise_sigma < 0.0) {
@@ -85,7 +89,7 @@ bool CustomSensor::ChangeSensorState(
 
 double CustomSensor::GetGaussianNoise(std::string _name, double _amp)
 {
-    if (m_noise_models.count(_name)) {
+    if (!m_noise_models.count(_name)) {
         m_logger->warn("Gaussian noise model does not exist");
         return 0;
     }
