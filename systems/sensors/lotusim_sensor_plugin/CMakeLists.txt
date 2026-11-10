@@ -74,7 +74,7 @@ target_link_libraries(lotusim_sensor_plugin
   gz-sensors8::gpu_lidar
   gz-sensors8::rendering   
 )
-ament_target_dependencies(lotusim_sensor_plugin 
+ament_target_dependencies(lotusim_sensor_plugin
   ament_cmake
   lotusim_common
   lotusim_sensor_base

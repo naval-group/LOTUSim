@@ -14,6 +14,11 @@ namespace lotusim::sensor {
 
 LotusimSensorPlugin::LotusimSensorPlugin() {}
 
+LotusimSensorPlugin::~LotusimSensorPlugin()
+{
+    m_ros_node_thread.reset();
+}
+
 void LotusimSensorPlugin::Configure(
     const gz::sim::Entity&,
     const std::shared_ptr<const sdf::Element>&,
@@ -38,6 +43,9 @@ void LotusimSensorPlugin::Configure(
             "collisions",
             rclcpp::QoS(10));
 
+    m_ros_executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    m_ros_executor->add_node(m_ros_node);
+    m_ros_node_thread = std::make_unique<lotusim::common::SpinThread>(*m_ros_executor);
     m_logger->info(
         "LotusimSensorPlugin::Configure: LotusimSensorPlugin successfully startup.");
 }
@@ -217,11 +225,15 @@ void LotusimSensorPlugin::PostUpdate(
     _ecm.EachRemoved<gz::sim::components::CustomSensor>(
         [&](const gz::sim::Entity& _entity,
             const gz::sim::components::CustomSensor*) -> bool {
-            if (m_entity_sensor_map.erase(_entity) == 0) {
+            auto it = m_entity_sensor_map.find(_entity);
+            if (it == m_entity_sensor_map.end()) {
                 m_logger->error(
                     "LotusimSensorPlugin::PreUpdate: Sensor entity [{}] removed but not found in system",
                     _entity);
+                return true;
             }
+            it->second->Shutdown();
+            m_entity_sensor_map.erase(it);
             return true;
         });
 
