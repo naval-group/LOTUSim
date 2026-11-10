@@ -228,7 +228,7 @@ void LotusimSensorPlugin::PostUpdate(
             auto it = m_entity_sensor_map.find(_entity);
             if (it == m_entity_sensor_map.end()) {
                 m_logger->error(
-                    "LotusimSensorPlugin::PreUpdate: Sensor entity [{}] removed but not found in system",
+                    "LotusimSensorPlugin::PostUpdate: Sensor entity [{}] removed but not found in system",
                     _entity);
                 return true;
             }
@@ -339,6 +339,14 @@ bool LotusimSensorPlugin::EachNew(
                 model_name,
                 sensor_name);
         } else {
+            return true;
+        }
+
+        if (!sensor) {
+            m_logger->error(
+                "LotusimSensorPlugin::EachNew: Failed to create sensor [{}/{}]",
+                model_name,
+                sensor_name);
             return true;
         }
 
