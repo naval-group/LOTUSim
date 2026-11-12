@@ -45,6 +45,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -98,6 +99,7 @@ ament_target_dependencies(multi_agent_system_plugin
   rclcpp_action
   geometry_msgs
   geographic_msgs
+  diagnostic_msgs
   lotusim_msgs
   lotusim_common
 )
@@ -131,6 +133,7 @@ ament_export_dependencies(
   rclcpp_action
   geometry_msgs
   geographic_msgs
+  diagnostic_msgs
   lotusim_msgs
   lotusim_common
   gz-sim8
