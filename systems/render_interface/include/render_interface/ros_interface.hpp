@@ -18,7 +18,7 @@
 
 #include "gz/sim/Util.hh"
 #include "lotusim_msgs/msg/renderer_cmd.hpp"
-#include "lotusim_msgs/msg/vessel_position_array.hpp"
+#include "lotusim_msgs/msg/vessel_pose_array.hpp"
 #include "render_interface/render_interface.hpp"
 
 namespace lotusim::gazebo {
@@ -82,7 +82,7 @@ private:
 
     rclcpp::Publisher<lotusim_msgs::msg::RendererCmd>::SharedPtr
         m_renderer_cmd_pub;
-    rclcpp::Publisher<lotusim_msgs::msg::VesselPositionArray>::SharedPtr
+    rclcpp::Publisher<lotusim_msgs::msg::VesselPoseArray>::SharedPtr
         m_pose_pub;
 };
 

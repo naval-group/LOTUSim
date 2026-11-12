@@ -27,10 +27,23 @@ General-purpose helpers for working with Gazebo's `EntityComponentManager` (ECM)
 | `getWorldName(ecm)` | Returns the name of the (first) entity with both `Name` and `World` components |
 | `getModelName(ecm, entity)` | Walks up the `ParentEntity` chain from `entity` until it finds an ancestor with a `Model` component, returning that entity + its name. Use this to resolve "which vessel does this sensor/link belong to" from a child entity |
 | `generateHeaderMessage(time)` | Builds a `std_msgs::msg::Header` from a `steady_clock::duration` (splits into `sec`/`nanosec`). **`frame_id` is hardcoded to `"wgs84"`** regardless of the actual frame |
-| `XYFromLatLong(ecm, lat, lon)` | Converts a lat/lon pair to local `(x, y)` using the world's `SphericalCoordinates` origin. Returns `std::nullopt` if the world has no spherical coordinates configured |
+| `LatLongToXY(ecm, lat, lon, alt)` / `XYToLatLong(ecm, x, y, z)` | Convert between WGS84 (degrees, altitude in metres from sea level) and local ENU with the world's projection (`geo.hpp`): x and y projected around the world's `SphericalCoordinates` origin, z the altitude. Return `std::nullopt` if the world has no spherical coordinates configured |
 | `getElementCaseInsensitive(parent, name)` | Finds a child SDF element by name, case-insensitively |
 | `toUpper(str)` | Simple uppercase conversion, used internally by `getElementCaseInsensitive` |
 | `shuffleOrder<T>(vector, type)` | Shuffles a `std::vector<T>` in place via `std::shuffle` |
+
+---
+
+## `geo.hpp` / `geo.cpp` - geographic conventions
+
+The one conversion step between what LOTUSim exposes (WGS84 degrees, altitude in metres from sea level, negative when submerged, angles in degrees from true North, clockwise) and Gazebo's flat ENU world (sea surface at z = 0, yaw in radians from East, counter-clockwise).
+
+| Function | Description |
+|---|---|
+| `geoToLocal(origin, lat, lon, alt)` / `localToGeo(origin, xyz)` | The world's map projection and its exact inverse: x and y are the projection of latitude and longitude onto the plane tangent at the origin, z is the altitude. Gazebo's own conversion gives the 3D point on that plane, whose z drops with the Earth's curvature (about 785 m at 100 km); the projection keeps altitude 0 at the surface. Local scale error about d²/2R² (1e-4 at 100 km) |
+| `headingToYaw(deg)` / `yawToHeading(rad)` | Heading (degrees from true North, clockwise) to and from ENU yaw |
+| `courseOf(east, north)` | Course over ground of a velocity, degrees from true North, clockwise; 360 below 0.05 m/s, as AIS does |
+| `wrapDegrees(deg)` | An angle brought into [0, 360) |
 
 ---
 

@@ -240,6 +240,7 @@ void LotusimSensorPlugin::PostUpdate(
     // Only update and publish if not paused.
     if (!_info.paused) {
         m_current_time = _info.simTime;
+        const gz::sim::Entity world_entity = gz::sim::worldEntity(_ecm);
         for (auto& [entity, sensor] : m_entity_sensor_map) {
             // check power state registry set by SensorPowerConsumer::update()
             // which runs in PowerManagerInstance::Update() before PostUpdate()
@@ -253,9 +254,19 @@ void LotusimSensorPlugin::PostUpdate(
             sensor->Position(world_pos.Pos());
             sensor->Orientation(world_pos.Rot());
 
-            auto lat_long = gz::sim::sphericalCoordinates(entity, _ecm);
+            // The world's projection, as for the vessels' positions: the
+            // altitude is z.
+            const auto lat_long = common::XYToLatLong(
+                _ecm,
+                world_entity,
+                world_pos.X(),
+                world_pos.Y(),
+                world_pos.Z());
             if (lat_long) {
-                sensor->LatLong(lat_long.value());
+                sensor->LatLong(
+                    {std::get<0>(*lat_long),
+                     std::get<1>(*lat_long),
+                     std::get<2>(*lat_long)});
             }
             sensor->UpdateSensor(_info, _ecm);
         }
