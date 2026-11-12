@@ -93,12 +93,17 @@ bool MultiAgentSystem::initROSNode()
          status.message = message;
          status.hardware_id = m_world_name;
 
-        if (level == spdlog::level::info) {
-            status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-        } else if (level == spdlog::level::err) {
-            status.level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
-        } else {
-            return;
+        switch (level) {
+            case spdlog::level::err:
+            case spdlog::level::critical:
+                status.level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+                break;
+            case spdlog::level::warn:
+                status.level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
+                break;
+            default:
+                status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+                break;
         }
 
         diagnostic_msgs::msg::DiagnosticArray array_msg;
