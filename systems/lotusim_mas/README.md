@@ -76,7 +76,7 @@ Declared once in the world SDF:
 
 | Interface | Type | Direction | Purpose |
 |---|---|---|---|
-| `poses` | Topic - `lotusim_msgs/msg/VesselPositionArray` | Publishes | Pose + geo-point of every tracked vessel, every tick |
+| `poses` | Topic - `lotusim_msgs/msg/VesselPositionArray` | Publishes | Geo-point (altitude in m from sea level), heading and course (deg from true North, clockwise) and speed over ground (m/s) of every tracked vessel, every tick |
 | `mas_cmd` | Action - `lotusim_msgs/action/MASCmd` | Server | Single create / move / delete command |
 | `mas_cmd_array` | Action - `lotusim_msgs/action/MASCmdArray` | Server | Batch of commands, executed together in one tick |
 | `launch_scenario` | Service - `lotusim_msgs/srv/String` | Server | Load and spawn every agent in a YAML scenario file |
@@ -92,8 +92,8 @@ Declared once in the world SDF:
 | `sdf_file` | Optional SDF filename inside the model folder - defaults to `model.sdf` |
 | `vessel_name` | Target vessel - required unless `entity` is set. Must not start with a digit or contain characters other than letters, digits, `_` |
 | `entity` | Target vessel by entity ID (delete / move); ignored and overwritten on create |
-| `vessel_position` | Cartesian pose (create / move) |
-| `geo_point` + `heading` | Geographic pose (create / move) - takes priority over `vessel_position` when non-zero |
+| `geo_point` | Position (create / move), always given: WGS84 latitude and longitude in degrees, altitude in metres from sea level, negative when submerged |
+| `heading` | Where the bow points (create / move), always given: degrees from true North, clockwise (90 = East) |
 
 ---
 
@@ -106,7 +106,7 @@ Owns the vessel name↔entity maps and exposes `addEntity()` / `moveEntity()` / 
   - `model_name` set → loads `$LOTUSIM_MODELS_PATH/<model_name>/<sdf_file or model.sdf>` from disk; if `sdf_string` is also set, its `<lotus_param>` block is parsed and injected into the loaded model's XML before spawning.
 
   The final vessel name comes from `vessel_name`, falling back to the SDF's own model name, then passed through `resolveUniqueName()` (appends `_0`, `_1`, … if already taken). On success the entity is created, parented to the world, and immediately moved to the requested pose via an internal `moveEntity()` call.
-- **`moveEntity()`** - resolves the target by `entity` or `vessel_name`, then sets its `Pose` component. If a non-zero `geo_point` or `heading` is present, it's converted to world XY via the world's spherical-coordinates reference and overrides the Cartesian pose.
+- **`moveEntity()`** - resolves the target by `entity` or `vessel_name`, then sets its `Pose` component from `geo_point` and `heading` (`resolveMovePose`): x and y projected from latitude and longitude around the world's spherical-coordinates origin, z the altitude, yaw from the heading (see `lotusim_common/geo.hpp`). It fails if the world has no `<spherical_coordinates>`.
 - **`deleteEntity()` / `deleteAllEntities()`** - remove the vessel from the internal maps immediately, then request removal via `SdfEntityCreator`; Gazebo actually removes the entity on the next update step.
 - **Thread-safety** - `addEntity` / `moveEntity` / `deleteEntity` run only on the Gazebo `PreUpdate` thread, so ECM writes need no locking. The name↔entity maps themselves are protected by a `shared_mutex` since they're also read from the pose-publishing path in `PostUpdate`.
 
