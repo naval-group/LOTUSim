@@ -72,7 +72,7 @@
           builtin-interfaces
           geographic-msgs
           geometry-msgs
-          diagnostic_msgs
+          diagnostic-msgs
           radar-msgs
           rclcpp
           rclcpp-action
@@ -220,7 +220,7 @@
             builtin-interfaces
             geographic-msgs
             geometry-msgs
-            diagnostic_msgs
+            diagnostic-msgs
             rosidl-default-generators
             rosidl-default-runtime
             sensor-msgs
