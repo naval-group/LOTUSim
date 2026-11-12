@@ -12,10 +12,6 @@ SPAWN_LATITUDE = 1.2605794416293148
 SPAWN_LONGITUDE = 103.7516212463379
 SPAWN_ALTITUDE = 0.0
 
-def bearing_to_enu_yaw_rad(bearing_deg: float) -> float:
-    """Compass bearing (deg, 0 = North, clockwise) -> MASCmd.heading (rad, ENU yaw)."""
-    return math.radians(90.0 - bearing_deg)
-
 class RadarTestSpawner(Node):
     def __init__(self):
         super().__init__('demo_test_spawner')
@@ -58,7 +54,7 @@ class RadarTestSpawner(Node):
         geo.longitude = SPAWN_LONGITUDE
         geo.altitude = SPAWN_ALTITUDE
         msg.geo_point = geo
-        msg.heading = bearing_to_enu_yaw_rad(heading_deg)
+        msg.heading = float(heading_deg)  # degrees from true North, clockwise
 
         msg.sdf_string = """
         <lotus_param>
@@ -94,7 +90,7 @@ class RadarTestSpawner(Node):
             geo.longitude = SPAWN_LONGITUDE + lon_offset
             geo.altitude = SPAWN_ALTITUDE
             msg.geo_point = geo
-            msg.heading = bearing_to_enu_yaw_rad(math.degrees(angle) % 360.0)
+            msg.heading = math.degrees(angle) % 360.0
 
             # Static LRAUV (no physics)
             msg.sdf_string = """

@@ -16,7 +16,10 @@ CLIMB_THRUST = 8.0
 DIVE_THRUST = -8.0
 # how often to flip direction
 FLIP_PERIOD_SEC = 4.0
-SPAWN_Z = -10.0
+# The origin of lotusim.world; altitude in metres from sea level.
+SPAWN_LATITUDE = 1.2421
+SPAWN_LONGITUDE = 103.7198
+SPAWN_ALTITUDE = -10.0
 
 class OscillateTestNode(Node):
     def __init__(self):
@@ -47,7 +50,7 @@ class OscillateTestNode(Node):
         now = time.time()
         for vessel_position in msg.vessels:
             name = vessel_position.vessel_name
-            z = vessel_position.pose.position.z
+            z = vessel_position.geo_point.altitude
             self.vessel_poses[name] = z
             self.last_pose_time[name] = now
 
@@ -70,10 +73,12 @@ class OscillateTestNode(Node):
         vessel_name = f"bluerov2_heavy{self.vessel_id}"
         msg.vessel_name = vessel_name
 
-        msg.vessel_position.position.x = 0.0
-        msg.vessel_position.position.y = 0.0
-        msg.vessel_position.position.z = SPAWN_Z
-        msg.vessel_position.orientation.w = 1.0 
+        msg.geo_point = GeoPoint(
+            latitude=SPAWN_LATITUDE,
+            longitude=SPAWN_LONGITUDE,
+            altitude=SPAWN_ALTITUDE,
+        )
+        msg.heading = 90.0  # degrees from true North, clockwise
 
         msg.sdf_string = """
         <lotus_param>

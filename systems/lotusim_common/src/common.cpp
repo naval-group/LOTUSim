@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "lotusim_common/common.hpp"
+
+#include "lotusim_common/geo.hpp"
 namespace lotusim::common {
 
 bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b)
@@ -154,10 +156,7 @@ std::optional<std::tuple<double, double, double>> LatLongToXY(
     if (sphComp == nullptr) {
         return std::nullopt;
     }
-    auto xyz = sphComp->Data().PositionTransform(
-        gz::math::Vector3d(degToRad(lat), degToRad(lon), alt),
-        gz::math::SphericalCoordinates::SPHERICAL,
-        gz::math::SphericalCoordinates::LOCAL2);
+    const auto xyz = geo::geoToLocal(sphComp->Data(), lat, lon, alt);
 
     return std::make_tuple(xyz.X(), xyz.Y(), xyz.Z());
 }
@@ -192,15 +191,8 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
         return std::nullopt;
     }
 
-    auto latlon = sphComp->Data().PositionTransform(
-        gz::math::Vector3d(x, y, z),
-        gz::math::SphericalCoordinates::LOCAL2,
-        gz::math::SphericalCoordinates::SPHERICAL);
-
-    return std::make_tuple(
-        radToDeg(latlon.X()),
-        radToDeg(latlon.Y()),
-        latlon.Z());
+    const auto geo = geo::localToGeo(sphComp->Data(), {x, y, z});
+    return std::make_tuple(geo.X(), geo.Y(), geo.Z());
 }
 
 sdf::ElementPtr getElementCaseInsensitive(

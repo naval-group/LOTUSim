@@ -22,6 +22,7 @@
 #include <sdf/Root.hh>
 
 #include "lotusim_common/common.hpp"
+#include "lotusim_mas/move_pose.hpp"
 
 namespace lotusim::mas {
 
@@ -182,9 +183,14 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
         m_vessels_names[entity] = desired_name;
     }
     m_logger->info(
-        "EntitySpawner::addEntity: Created entity [{}] named '{}'",
+        "EntitySpawner::addEntity: Created entity [{}] named '{}' at "
+        "lat={:.6f} deg lon={:.6f} deg alt={:.2f} m heading={:.1f} deg",
         entity,
-        desired_name);
+        desired_name,
+        msg.geo_point.latitude,
+        msg.geo_point.longitude,
+        msg.geo_point.altitude,
+        msg.heading);
 
     // Teleport to the requested pose.
     lotusim_msgs::msg::MASCmd move_msg = msg;
@@ -218,37 +224,34 @@ bool EntitySpawner::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             return false;
         }
 
-        gz::math::Pose3d pose(
-            msg.vessel_position.position.x,
-            msg.vessel_position.position.y,
-            msg.vessel_position.position.z,
-            msg.vessel_position.orientation.w,
-            msg.vessel_position.orientation.x,
-            msg.vessel_position.orientation.y,
-            msg.vessel_position.orientation.z);
-
-        // Override XY (and optionally Z) from geo-point if provided.
-        if (msg.geo_point.latitude != 0.0 || msg.geo_point.longitude != 0.0 ||
-            msg.geo_point.altitude != 0.0 || msg.heading != 0.0) {
-            auto xyz_opt = lotusim::common::LatLongToXY(
-                m_ecm,
+        const auto pose = resolveMovePose(
+            msg,
+            [this](double lat, double lon, double alt) {
+                return lotusim::common::LatLongToXY(m_ecm, lat, lon, alt);
+            });
+        if (!pose) {
+            m_logger->error(
+                "EntitySpawner::moveEntity: the world has no "
+                "<spherical_coordinates>, cannot place vessel '{}' at "
+                "lat={:.6f} deg lon={:.6f} deg",
+                msg.vessel_name,
                 msg.geo_point.latitude,
-                msg.geo_point.longitude,
-                msg.geo_point.altitude);
-
-            if (xyz_opt) {
-                pose.Pos().X() = std::get<0>(*xyz_opt);
-                pose.Pos().Y() = std::get<1>(*xyz_opt);
-                pose.Pos().Z() = std::get<2>(*xyz_opt);
-            } else {
-                pose.Pos().Z() = msg.geo_point.altitude;
-            }
-            pose.Rot() = gz::math::Quaterniond(0.0, 0.0, msg.heading);
+                msg.geo_point.longitude);
+            return false;
         }
+        m_logger->debug(
+            "EntitySpawner::moveEntity: vessel '{}' (entity {}) to "
+            "lat={:.6f} deg lon={:.6f} deg alt={:.2f} m heading={:.1f} deg",
+            msg.vessel_name,
+            vessel_entity,
+            msg.geo_point.latitude,
+            msg.geo_point.longitude,
+            msg.geo_point.altitude,
+            msg.heading);
 
         if (!m_ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel_entity,
-                pose)) {
+                *pose)) {
             m_logger->warn(
                 "EntitySpawner::moveEntity: SetComponentData failed "
                 "(vessel='{}', entity={})",

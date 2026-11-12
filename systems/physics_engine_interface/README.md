@@ -91,4 +91,4 @@ A **singleton** WebSocket client connecting to xdyn - one shared client instance
 
 ## `ROS2Interface`
 
-A second **singleton** interface, intended for bridging to an externally-driven physics source over ROS 2 rather than xdyn — subscribes to `<namespace>/poses` (`VesselPositionArray`) and looks up a vessel's pose by name each tick. Runs its own `MultiThreadedExecutor` on a dedicated thread (node name: `physics_aerial_linker`).
+A second **singleton** interface, intended for bridging to an externally-driven physics source over ROS 2 rather than xdyn — subscribes to `<namespace>/poses` (`VesselPoseArray`, local ENU poses) and looks up a vessel's pose by name each tick. Runs its own `MultiThreadedExecutor` on a dedicated thread (node name: `physics_aerial_linker`).

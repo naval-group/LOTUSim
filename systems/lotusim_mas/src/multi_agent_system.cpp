@@ -9,6 +9,8 @@
  */
 #include "lotusim_mas/multi_agent_system.hpp"
 
+#include "lotusim_common/geo.hpp"
+
 #include <gz/sim/components/LinearVelocity.hh>
 
 namespace lotusim::gazebo {
@@ -504,13 +506,9 @@ void MultiAgentSystem::publishPose(
         msg.model_name =
             (model_it != models.end()) ? model_it->second : std::string{};
 
-        msg.pose.position.x = pose.X();
-        msg.pose.position.y = pose.Y();
-        msg.pose.position.z = pose.Z();
-        msg.pose.orientation.w = pose.Rot().W();
-        msg.pose.orientation.x = pose.Rot().X();
-        msg.pose.orientation.y = pose.Rot().Y();
-        msg.pose.orientation.z = pose.Rot().Z();
+        msg.heading =
+            static_cast<float>(common::geo::yawToHeading(pose.Rot().Yaw()));
+        msg.course = static_cast<float>(common::geo::courseOf(vx, vy));
 
         if (latLonEle) {
             msg.geo_point.latitude = std::get<0>(latLonEle.value());

@@ -15,6 +15,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/VesselCmdArray.msg"
   "msg/VesselPosition.msg"
   "msg/VesselPositionArray.msg"
+  "msg/VesselPose.msg"
+  "msg/VesselPoseArray.msg"
   "msg/RendererCmd.msg"
   "msg/Wind.msg"
   "msg/SimStats.msg"

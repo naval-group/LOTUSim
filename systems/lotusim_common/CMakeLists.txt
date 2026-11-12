@@ -44,6 +44,7 @@ add_library(${PROJECT_NAME} SHARED
   src/logger.cpp
   src/common.cpp
   src/entity_group.cpp
+  src/geo.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -100,6 +101,17 @@ if(BUILD_TESTING)
   )
   if(TARGET test_frame_change)
     target_link_libraries(test_frame_change
+      ${PROJECT_NAME}
+      gz-sim8::gz-sim8
+    )
+  endif()
+
+  # The geographic conversion step: angles and the map projection.
+  ament_add_gtest(test_geo test/test_geo.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_geo)
+    target_link_libraries(test_geo
       ${PROJECT_NAME}
       gz-sim8::gz-sim8
     )
