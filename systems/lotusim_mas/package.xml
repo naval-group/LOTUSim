@@ -18,6 +18,7 @@
   <depend>lotusim_msgs</depend>
   <depend>lotusim_common</depend>
   <depend>geographic_msgs</depend>
+  <depend>diagnostic_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

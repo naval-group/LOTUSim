@@ -24,6 +24,9 @@
 #include <unordered_map>
 #include <chrono>
 
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
 #include "lotusim_common/spin_thread.hpp"
@@ -32,7 +35,6 @@
 #include "lotusim_msgs/action/mas_cmd.hpp"
 #include "lotusim_msgs/action/mas_cmd_array.hpp"
 #include "lotusim_msgs/msg/mas_cmd.hpp"
-#include "lotusim_msgs/msg/log.hpp"
 #include "lotusim_msgs/msg/vessel_position_array.hpp"
 
 using GoalHandleMASCmdArray =
@@ -236,7 +238,7 @@ protected:
     * @brief ROS publisher for LOTUSim log messages
     *
     */
-    rclcpp::Publisher<lotusim_msgs::msg::Log>::SharedPtr m_log_pub;
+    rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr m_log_pub;
 
     /**
      * @brief GZ Entity Component Manager

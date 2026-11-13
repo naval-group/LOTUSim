@@ -35,11 +35,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787291151,
-        "narHash": "sha256-pgAIA0n/yVkGUAAKJov9vI25VSA5WaBPvhXZplshnAo=",
+        "lastModified": 1793943569,
+        "narHash": "sha256-4MUeU6z59+LpLeD782MfaQigTYoohfgRDrtbJ363F0k=",
         "owner": "naval-group",
         "repo": "LOTUSim-UI-backend",
-        "rev": "0861406e54844886f55a03479e59ffbe390bc012",
+        "rev": "53aa6b4f8c7906c730af5b4852a56c10a3192eae",
         "type": "github"
       },
       "original": {
@@ -58,11 +58,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787211194,
-        "narHash": "sha256-q8MdPyR0wsIYdZGTnmpzXlk86MR7CJsErO7ccnEdDaY=",
+        "lastModified": 1793944683,
+        "narHash": "sha256-Gq9TSpRKSyODhWoo0tnakaNs+PllA13UI00sHAA5Iuk=",
         "owner": "naval-group",
         "repo": "LOTUSim-UI-frontend",
-        "rev": "5f6775299aa3e9d0bf202445b82e5d5b6c832b0c",
+        "rev": "ad5012ef47ff900261dc65f97e6587681d88dd68",
         "type": "github"
       },
       "original": {
