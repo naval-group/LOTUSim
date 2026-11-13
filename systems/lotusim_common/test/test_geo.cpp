@@ -22,15 +22,15 @@ namespace {
 
 constexpr double kPi = 3.14159265358979323846;
 
-// A reference point in the Singapore Strait.
-SphericalCoordinates worldOrigin()
+// A reference point in the Singapore Strait
+SphericalCoordinates worldOrigin(double elevation = 0.0, double heading_deg = 0.0)
 {
     return SphericalCoordinates(
         SphericalCoordinates::EARTH_WGS84,
         gz::math::Angle(1.26 * kPi / 180.0),
         gz::math::Angle(103.75 * kPi / 180.0),
-        0.0,
-        gz::math::Angle(0.0));
+        elevation,
+        gz::math::Angle(heading_deg * kPi / 180.0));
 }
 
 // Gazebo's own conversion of a WGS84 point to the tangent plane.
@@ -149,10 +149,55 @@ TEST(GeoProjection, NorthIsUp)
     EXPECT_NEAR(east.X(), 1.26, 1e-6);
 }
 
-// Custom main instead of gtest_main: gz-sim8's dependency chain segfaults
-// during static teardown when this binary runs inside the nix build
-// sandbox _Exit() skips that teardown; the OS reclaims everything on
-// process exit regardless of whether destructors ran.
+TEST(GeoAngles, FloatDegStayBelow360)
+{
+    EXPECT_EQ(toFloatDegrees(359.99999), 0.0f);  // casts to 360.0f else
+    EXPECT_EQ(toFloatDegrees(90.0), 90.0f);
+    // moving vessel heading just west of North is not "not available"
+    const double course = courseOf(-1e-9, 1.0);
+    EXPECT_LT(course, 360.0);
+    EXPECT_EQ(toFloatDegrees(course), 0.0f);
+}
+
+TEST(GeoProjection, ElevationRefDoesNotShiftZ)
+{
+    const auto origin = worldOrigin(150.0);
+    const auto local = geoToLocal(origin, 1.26, 103.75, 0.0);
+    EXPECT_NEAR(local.X(), 0.0, 1e-6);
+    EXPECT_NEAR(local.Y(), 0.0, 1e-6);
+    EXPECT_EQ(local.Z(), 0.0);
+    const auto geo = localToGeo(origin, local);
+    EXPECT_NEAR(geo.X(), 1.26, 1e-9);
+    EXPECT_EQ(geo.Z(), 0.0);
+}
+
+TEST(GeoProjection, RoundTripWithOtherOrigins)
+{
+    for (double elevation : {0.0, 150.0}) {
+        for (double heading : {0.0, 90.0, 217.0}) {
+            const auto origin = worldOrigin(elevation, heading);
+            const gz::math::Vector3d local(30e3, -40e3, -20.0);
+            const auto geo = localToGeo(origin, local);
+            const auto back = geoToLocal(origin, geo.X(), geo.Y(), geo.Z());
+            EXPECT_NEAR(back.X(), local.X(), 1e-5)
+                << "elevation " << elevation << " heading " << heading;
+            EXPECT_NEAR(back.Y(), local.Y(), 1e-5);
+            EXPECT_EQ(back.Z(), -20.0);
+        }
+    }
+}
+
+TEST(GeoProjection, HeadingOffsetIsIgnored)
+{
+    const auto origin = worldOrigin(0.0, 90.0);
+    const auto geo = localToGeo(origin, {0.0, 1000.0, 0.0});
+    EXPECT_GT(geo.X(), 1.26 + 0.008);
+    EXPECT_NEAR(geo.Y(), 103.75, 1e-9);
+}
+
+// Custom main instead of gtest_main: gz-sim8 segfaults during static teardown 
+// in the nix build sandbox. _Exit() skips teardown; the OS reclaims resources on
+// process exit
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
