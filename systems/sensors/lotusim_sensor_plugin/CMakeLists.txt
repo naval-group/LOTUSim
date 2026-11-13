@@ -48,6 +48,7 @@ find_package(lotusim_common REQUIRED)
 find_package(lotusim_sensor_base REQUIRED)
 find_package(subsea_pressure_sensor REQUIRED)
 find_package(ais_sensor REQUIRED)
+find_package(doppler_vel_log REQUIRED)
 find_package(imu_sensor REQUIRED)
 find_package(radar_sensor REQUIRED)
 find_package(sector_scanner_sensor REQUIRED)
@@ -83,6 +84,7 @@ ament_target_dependencies(lotusim_sensor_plugin
   imu_sensor
   radar_sensor
   sector_scanner_sensor
+  doppler_vel_log
 )
 ament_export_include_directories(include)
 ament_export_dependencies(
@@ -94,6 +96,7 @@ ament_export_dependencies(
   imu_sensor
   radar_sensor
   sector_scanner_sensor
+  doppler_vel_log
 )
 ament_export_targets(
   export_lotusim_sensor_plugin
