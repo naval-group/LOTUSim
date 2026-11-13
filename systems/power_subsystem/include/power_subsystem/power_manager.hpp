@@ -23,6 +23,7 @@
 #include <unordered_map>
 
 #include "lotusim_common/logger.hpp"
+#include "lotusim_common/spin_thread.hpp"
 #include "power_subsystem/platform_power_manager_base.hpp"
 
 namespace lotusim::gazebo {
@@ -131,7 +132,7 @@ private:
     gz::sim::Entity m_entity;
     gz::sim::EntityComponentManager* m_ecm{nullptr};
     rclcpp::executors::MultiThreadedExecutor m_executor;
-    std::thread m_spin_thread;
+    std::unique_ptr<lotusim::common::SpinThread> m_spin_thread;
 
     /// One PlatformPowerManager per vessel, keyed by model entity
     std::unordered_map<

@@ -275,6 +275,25 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
     double z = 0.0);
 
 /**
+ * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude, for
+ * callers that already hold the world entity.
+ *
+ * @param _ecm Entity Component Manager used to retrieve spherical coordinates
+ * @param worldEntity World entity holding the spherical coordinates
+ * @param x Local X coordinate in metres
+ * @param y Local Y coordinate in metres
+ * @param z Local Z coordinate in metres (default 0)
+ * @return std::optional<std::tuple<double, double, double>> (lat deg, lon deg,
+ * alt metres), or std::nullopt if spherical coordinates are unavailable
+ */
+std::optional<std::tuple<double, double, double>> XYToLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
+    const gz::sim::Entity& worldEntity,
+    double x,
+    double y,
+    double z = 0.0);
+
+/**
  * @brief Get the SDF Element with case insensitive name
  *
  * @param parent
@@ -292,6 +311,17 @@ sdf::ElementPtr getElementCaseInsensitive(
  * @return std::string
  */
 std::string toUpper(std::string str);
+
+/**
+ * @brief Check that a name is a valid ROS name token: non-empty, not starting
+ * with a digit, and made only of letters, digits and underscores. Use it
+ * before building a topic, action or entity name from user input, as an
+ * invalid one makes rclcpp throw.
+ *
+ * @param name
+ * @return true if the name is valid
+ */
+bool isValidRosName(const std::string& name);
 
 /**
  * @brief Convert radians to degrees

@@ -176,6 +176,16 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
             worldEntity = _entity;
             return true;
         });
+    return XYToLatLong(_ecm, worldEntity, x, y, z);
+}
+
+std::optional<std::tuple<double, double, double>> XYToLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
+    const gz::sim::Entity& worldEntity,
+    double x,
+    double y,
+    double z)
+{
     auto sphComp =
         _ecm.Component<gz::sim::components::SphericalCoordinates>(worldEntity);
     if (sphComp == nullptr) {
@@ -215,6 +225,20 @@ std::string toUpper(std::string str)
         return std::toupper(c);
     });
     return str;
+}
+
+bool isValidRosName(const std::string& name)
+{
+    if (name.empty())
+        return false;
+    if (std::isdigit(static_cast<unsigned char>(name.front())))
+        return false;
+    for (char c : name) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+            return false;
+        }
+    }
+    return true;
 }
 
 PowerStateRegistry& PowerStateRegistry::instance()

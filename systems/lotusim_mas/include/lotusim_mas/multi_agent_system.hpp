@@ -26,6 +26,7 @@
 
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
+#include "lotusim_common/spin_thread.hpp"
 #include "lotusim_mas/entity_spawner.hpp"
 #include "lotusim_mas/scenario_manager.hpp"
 #include "lotusim_msgs/action/mas_cmd.hpp"
@@ -178,13 +179,6 @@ private:
         const gz::sim::UpdateInfo& _info,
         const gz::sim::EntityComponentManager& _ecm);
 
-    /**
-     * @brief Pensure the vessel name is valid to avoid crashing the simulation
-     *
-     * @param name
-     */
-    static bool isValidRosName(const std::string& name);
-
 private:
     // MASCmd Array action server functions
     rclcpp_action::GoalResponse handleMASCmdArrayGoal(
@@ -269,9 +263,15 @@ protected:
     std::atomic_bool m_running;
 
 private:
+    /**
+     * @brief Whether the world's missing spherical coordinates were warned
+     * about, this warning is only logged once
+     */
+    bool m_geo_warned{false};
+
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
-    std::shared_ptr<std::thread> m_ros_node_thread;
+    std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
 
     std::vector<rclcpp::CallbackGroup::SharedPtr> m_callback_group;
 

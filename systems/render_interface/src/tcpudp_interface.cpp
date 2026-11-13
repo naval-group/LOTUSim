@@ -9,6 +9,8 @@
  */
 #include "render_interface/tcpudp_interface.hpp"
 
+#include "render_interface/tcpudp_messages.hpp"
+
 namespace lotusim::gazebo {
 
 // TODO: create explosion pipeline. Create default function update for special
@@ -122,38 +124,7 @@ bool TcpUdpInterface::sendPosition(
     std::string msgs =
         R"({"time": )" + std::to_string(secs) + R"(, "VesselsInfo": [)";
     for (auto&& temp : poses) {
-        std::string vessel_name = temp.first;
-        gz::math::Pose3d pose = temp.second;
-
-        // Construct the vessel message
-        std::string msg = fmt::format(
-            R"(
-        {{
-            "name": "{}",
-            "position": {{
-                "x": {},
-                "y": {},
-                "z": {}
-            }},
-            "rotation": {{
-                "x": {},
-                "y": {},
-                "z": {},
-                "w": {}
-            }},
-            "thrusters": [
-                    )",
-            vessel_name,
-            pose.X(),
-            pose.Y(),
-            pose.Z(),
-            pose.Rot().X(),
-            pose.Rot().Y(),
-            pose.Rot().Z(),
-            pose.Rot().W());
-
-        msg += R"(]},)";
-        msgs += msg;
+        msgs += formatPositionMessage(temp.first, temp.second) + ",";
     }
 
     // Remove the trailing comma and finalize the JSON structure
@@ -237,22 +208,7 @@ bool TcpUdpInterface::sendCreateMessage(
     }
 
     m_logger->info("RenderPlugin creating model: {}", name);
-    std::string msg = fmt::format(
-        R"({{
-        "cmd": "create",
-        "name": "{}",
-        "pose": {{
-            "x": {},
-            "y": {},
-            "z": {}
-        }},
-        "type": "{}"
-    }})",
-        name,
-        pose.X(),
-        pose.Y(),
-        pose.Z(),
-        type);
+    std::string msg = formatCreateMessage(name, pose, type);
     boost::asio::write(*m_tcp_socket_ptr, boost::asio::buffer(msg));
     boost::asio::streambuf response;
     // To add timeout
@@ -280,13 +236,7 @@ bool TcpUdpInterface::sendDestroyMessage(const std::string& name)
     }
 
     m_logger->info("RenderPlugin destroying model: {}", name);
-    std::string msg = fmt::format(
-        R"(
-        {
-            "cmd": "destroy",
-            "name": "{}"
-        })",
-        name);
+    std::string msg = formatDestroyMessage(name);
 
     boost::asio::write(*m_tcp_socket_ptr, boost::asio::buffer(msg));
     boost::asio::streambuf response;
@@ -315,13 +265,7 @@ bool TcpUdpInterface::sendExplodeMessage(const std::string& name)
     }
 
     m_logger->info("RenderPlugin exploding model: {}", name);
-    std::string msg = fmt::format(
-        R"(
-        {
-            "cmd": "explode",
-            "name": "{}"
-        })",
-        name);
+    std::string msg = formatExplodeMessage(name);
 
     boost::asio::write(*m_tcp_socket_ptr, boost::asio::buffer(msg));
     boost::asio::streambuf response;

@@ -18,6 +18,7 @@
 #include <tuple>
 #include <unordered_map>
 
+#include "lotusim_common/spin_thread.hpp"
 #include "lotusim_msgs/msg/vessel_position_array.hpp"
 #include "physics_engine_interface/physics_interface_base.hpp"
 
@@ -92,7 +93,7 @@ private:
 
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
-    std::shared_ptr<std::thread> m_ros_node_thread;
+    std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
 
     std::vector<
         rclcpp::Subscription<lotusim_msgs::msg::VesselPositionArray>::SharedPtr>

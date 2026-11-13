@@ -1,0 +1,56 @@
+# The LOTUSim developer platform: Ubuntu with the toolchain, the source, a built
+# workspace and the UI, ready to edit and rebuild. ROS and Gazebo come from apt
+# via scripts/install_dep.sh, and the lotusim script builds the workspace. The
+# runtime-only image is flake.nix's `container`.
+#
+# It needs the UI repos beside this one, so the build context is the workspace's
+# src/, not this repo:
+#   docker build -f LOTUSim/Dockerfile.dev -t lotusim-dev .
+#   docker run --rm -it -p 8080:8080 -p 5000:5000 lotusim-dev
+FROM ubuntu:24.04
+
+SHELL ["/bin/bash", "-c"]
+
+# tzdata and friends prompt during install without this.
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV ROS_DISTRO=jazzy \
+    LOTUSIM_WS=/lotusim_ws \
+    LOTUSIM_PATH=/lotusim_ws/src/LOTUSim \
+    LOTUSIM_MODELS_PATH=/lotusim_ws/src/LOTUSim/assets/models/ \
+    LOTUSIM_SCENARIOS_PATH=/lotusim_ws/src/LOTUSim/assets/scenarios \
+    FASTDDS_BUILTIN_TRANSPORTS=UDPv4 \
+    LOTUSIM_UI_HOST=0.0.0.0 \
+    LOTUSIM_UI_PORT=8080
+
+WORKDIR ${LOTUSIM_WS}
+
+COPY LOTUSim src/LOTUSim
+
+# The completion registers for the command name `lotusim`, so link it under
+# that name. Runs as root, so the script calls install_dep.sh without sudo.
+RUN ln -s ${LOTUSIM_PATH}/scripts/lotusim /usr/local/bin/lotusim && \
+    lotusim install_lotus && \
+    rm -rf /var/lib/apt/lists/* build log && \
+    echo "source /usr/share/bash-completion/bash_completion" >> ~/.bashrc && \
+    echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc && \
+    echo "source ${LOTUSIM_WS}/install/setup.bash" >> ~/.bashrc && \
+    echo "source ${LOTUSIM_PATH}/scripts/bash_completion.sh" >> ~/.bashrc
+
+# After the workspace build: rclnodejs generates its bindings from the messages
+# in install/. install_ui repeats the apt step first, which finds nothing left
+# to do. COLCON_IGNORE keeps a colcon build in this workspace out of node_modules.
+#
+# Its apt update also leaves the package lists in place for `apt install <Tab>`.
+# docker-clean goes last, as it keeps downloaded .debs out of the layers above,
+# but it also disables the package cache that makes that completion fast.
+COPY LOTUSim-UI-backend src/LOTUSim-UI-backend
+COPY LOTUSim-UI-frontend src/LOTUSim-UI-frontend
+RUN lotusim install_ui && \
+    touch src/LOTUSim-UI-backend/COLCON_IGNORE src/LOTUSim-UI-frontend/COLCON_IGNORE && \
+    rm /etc/apt/apt.conf.d/docker-clean && \
+    apt-cache gencaches
+
+EXPOSE 5000 8080
+ENTRYPOINT ["/lotusim_ws/src/LOTUSim/scripts/dev-entrypoint.sh"]
+CMD ["bash"]

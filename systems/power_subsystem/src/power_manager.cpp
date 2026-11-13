@@ -25,10 +25,7 @@ PowerManager::PowerManager()
 }
 PowerManager::~PowerManager()
 {
-    m_executor.cancel();
-    if (m_spin_thread.joinable()) {
-        m_spin_thread.join();
-    }
+    m_spin_thread.reset();
     m_logger->info(
         "PowerManager::~PowerManager: PowerManager successfully shutdown.");
 }
@@ -59,7 +56,7 @@ void PowerManager::Configure(
         m_world_name);
 
     m_executor.add_node(m_ros_node);
-    m_spin_thread = std::thread([this]() { m_executor.spin(); });
+    m_spin_thread = std::make_unique<lotusim::common::SpinThread>(m_executor);
 }
 
 void PowerManager::PostUpdate(

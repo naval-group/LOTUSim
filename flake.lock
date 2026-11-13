@@ -75,22 +75,17 @@
       "inputs": {
         "nixpkgs": "nixpkgs",
         "src-boost": "src-boost",
-        "src-f2c": "src-f2c",
         "src-googletest": "src-googletest",
         "src-grpc": "src-grpc",
         "src-hdf5": "src-hdf5",
-        "src-interfaces": "src-interfaces",
-        "src-ssc": "src-ssc",
-        "src-stb": "src-stb",
-        "src-websocketpp": "src-websocketpp",
         "src-yaml-cpp": "src-yaml-cpp"
       },
       "locked": {
-        "lastModified": 1788329882,
-        "narHash": "sha256-j/GbeqUdG/UjIPienMfjagQLYrilAdxkpSMeVqn9/LI=",
+        "lastModified": 1794451623,
+        "narHash": "sha256-DnjWYPTBPT3sZQY3eGLRUFHMlkHjbZk4W4K8ABk1hfc=",
         "owner": "naval-group",
         "repo": "lxdyn",
-        "rev": "363668b2b1f97e3177d2d617586fee6c4a727262",
+        "rev": "d194464a4e023cf3f19f7cfcb686926550490d91",
         "type": "github"
       },
       "original": {
@@ -122,11 +117,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1785090369,
-        "narHash": "sha256-m0pDuRJG7EDo9ri+4Ksu83VsI+PlxNC9lNBfydejce4=",
+        "lastModified": 1793540411,
+        "narHash": "sha256-fiPJ88izTVucjeo2EQ3jk4aWmLg03I1D4vxnX2QjEgE=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "624af665418d3c65d544145b4d34ad696439570e",
+        "rev": "0bb2eedc20e4739f29e8045034f2828ad7054f8f",
         "type": "github"
       },
       "original": {
@@ -187,47 +182,29 @@
     "src-boost": {
       "flake": false,
       "locked": {
-        "lastModified": 1754508366,
-        "narHash": "sha256-0BvLUfw1CiWBPbonT7hn4fZPfmbRulWL3txR3ewOpRg=",
+        "lastModified": 1785952113,
+        "narHash": "sha256-w1uASkoqgwIBviozajZrOlPJXyUKRA617zlSCu45Z9o=",
         "type": "tarball",
-        "url": "https://archives.boost.io/release/1.89.0/source/boost_1_89_0.tar.bz2"
+        "url": "https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.bz2"
       },
       "original": {
         "type": "tarball",
-        "url": "https://archives.boost.io/release/1.89.0/source/boost_1_89_0.tar.bz2"
-      }
-    },
-    "src-f2c": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1479731186,
-        "narHash": "sha256-W+WGamktJJB3X08bw5ws+XFwt+A1l6xwdgSd86jBht8=",
-        "ref": "refs/tags/v1.0.0",
-        "rev": "844703f7eff4c533bb147931bffe914b3345ef4d",
-        "revCount": 1,
-        "type": "git",
-        "url": "https://gitlab.com/sirehna_naval_group/ThirdParty/f2c.git"
-      },
-      "original": {
-        "ref": "refs/tags/v1.0.0",
-        "rev": "844703f7eff4c533bb147931bffe914b3345ef4d",
-        "type": "git",
-        "url": "https://gitlab.com/sirehna_naval_group/ThirdParty/f2c.git"
+        "url": "https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.bz2"
       }
     },
     "src-googletest": {
       "flake": false,
       "locked": {
-        "lastModified": 1722432886,
-        "narHash": "sha256-1OJ2SeSscRBNr7zZ/a8bJGIqAnhkg45re0j3DtPfcXM=",
+        "lastModified": 1786382357,
+        "narHash": "sha256-rXsn2L0xeWvfxTjMAoWEu0UFZ7xOSfYmhbKgRF5J9co=",
         "owner": "google",
         "repo": "googletest",
-        "rev": "b514bdc898e2951020cbdca1304b75f5950d1f59",
+        "rev": "063de7e9578f82b369302001269680b4b1553359",
         "type": "github"
       },
       "original": {
         "owner": "google",
-        "ref": "v1.15.2",
+        "ref": "v1.18.0",
         "repo": "googletest",
         "type": "github"
       }
@@ -235,17 +212,17 @@
     "src-grpc": {
       "flake": false,
       "locked": {
-        "lastModified": 1771503333,
-        "narHash": "sha256-+AF3JvZo+LbBwqtPM5mWFwg+btk+BySe4TiGmoK6vMs=",
-        "ref": "refs/tags/v1.78.1",
-        "rev": "5b6492ea90b2b867a6adad1b10a6edda28e860d1",
-        "revCount": 57821,
+        "lastModified": 1793339113,
+        "narHash": "sha256-Z/V8UrCu76hoX957Mmsxeo3W0e3mxRS5RBeLPjjBLnI=",
+        "ref": "refs/tags/v1.85.1",
+        "rev": "558b7e3b09e42e2160018732acbbf56c9094c84d",
+        "revCount": 59049,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/grpc/grpc"
       },
       "original": {
-        "ref": "refs/tags/v1.78.1",
+        "ref": "refs/tags/v1.85.1",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/grpc/grpc"
@@ -254,85 +231,17 @@
     "src-hdf5": {
       "flake": false,
       "locked": {
-        "lastModified": 1738706505,
-        "narHash": "sha256-mJTax+VWAL3Amkq3Ij8fxazY2nfpMOTxYMUQlTvY/rg=",
+        "lastModified": 1785271196,
+        "narHash": "sha256-Tp2f8jJjVst0Fd07Wt4+EzjHRRI+8TlD1uWD9sDTw4g=",
         "owner": "HDFGroup",
         "repo": "hdf5",
-        "rev": "7bf340440909d468dbb3cf41f0ea0d87f5050cea",
+        "rev": "49df1b4e5ca4108d56e80f06321a749da1535268",
         "type": "github"
       },
       "original": {
         "owner": "HDFGroup",
-        "ref": "hdf5_1.14.6",
+        "ref": "2.2.0",
         "repo": "hdf5",
-        "type": "github"
-      }
-    },
-    "src-interfaces": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1661966030,
-        "narHash": "sha256-6pcNu8+9NLppeTzGIIPNxKeDRvrJusahClQtJlwNH7o=",
-        "owner": "naval-group",
-        "repo": "interfaces",
-        "rev": "5a3b79e3cc6c2a5c29f81d0316c0daa3d11f40d5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "naval-group",
-        "repo": "interfaces",
-        "rev": "5a3b79e3cc6c2a5c29f81d0316c0daa3d11f40d5",
-        "type": "github"
-      }
-    },
-    "src-ssc": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1662567726,
-        "narHash": "sha256-5Pce4lFne/sEL2JDe0xFh4v9jfKVAFDTHsx+uGbMcek=",
-        "owner": "naval-group",
-        "repo": "scientific_computing",
-        "rev": "690f80f6a065dbea65d9423d03c96b3a50ebb1b5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "naval-group",
-        "repo": "scientific_computing",
-        "rev": "690f80f6a065dbea65d9423d03c96b3a50ebb1b5",
-        "type": "github"
-      }
-    },
-    "src-stb": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1785652929,
-        "narHash": "sha256-vA5RZLte4gf5/NkbWT3VNzGVD04kyVTHPeEZwxNnxi0=",
-        "owner": "nothings",
-        "repo": "stb",
-        "rev": "2c980bb59875b0d32144a71867fbdebb2f77cd20",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nothings",
-        "repo": "stb",
-        "rev": "2c980bb59875b0d32144a71867fbdebb2f77cd20",
-        "type": "github"
-      }
-    },
-    "src-websocketpp": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1771519395,
-        "narHash": "sha256-UXcn1ADnwhW6fBsV+btFRlaKJX1e2HrqPl24P30ZPyI=",
-        "owner": "LocutusOfBorg",
-        "repo": "websocketpp",
-        "rev": "67405e1ab225f20835e4086f89b54b805dd43bae",
-        "type": "github"
-      },
-      "original": {
-        "owner": "LocutusOfBorg",
-        "repo": "websocketpp",
-        "rev": "67405e1ab225f20835e4086f89b54b805dd43bae",
         "type": "github"
       }
     },

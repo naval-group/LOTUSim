@@ -32,6 +32,7 @@
 #include <list>
 #include <sdf/Sensor.hh>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 
@@ -45,6 +46,8 @@
 #include "lotusim_sensor_msgs/msg/collisions.hpp"
 #include "radar_sensor/radar_sensor.hpp"
 #include "sector_scanner_sensor/sector_scanner.hpp"
+#include "lotusim_common/spin_thread.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
@@ -63,6 +66,7 @@ class LotusimSensorPlugin : public gz::sim::System,
                             public gz::sim::ISystemPostUpdate {
 public:
     LotusimSensorPlugin();
+    ~LotusimSensorPlugin() override;
 
     void Configure(
         const gz::sim::Entity& _entity,
@@ -152,6 +156,11 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 
     rclcpp::Node::SharedPtr m_ros_node;
+
+    //executor servicing m_ros_node, spun on its own thread so sensors never
+    //drain the node from Gazebo's update
+    rclcpp::executors::SingleThreadedExecutor::SharedPtr m_ros_executor;
+    std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
 
     std::unordered_map<gz::sim::Entity, std::shared_ptr<CustomSensor>>
         m_entity_sensor_map;

@@ -51,14 +51,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+# spdlog is linked as a target, not through ament_target_dependencies: its
+# CMake package only exports spdlog::spdlog, so ament would add no libraries,
+# and Ubuntu's spdlog needs the external fmt it brings in.
 target_link_libraries(${PROJECT_NAME}
   stdc++fs
   gz-sim8::gz-sim8
+  spdlog::spdlog
 )
 
 ament_target_dependencies(${PROJECT_NAME}
   std_msgs
-  spdlog
 )
 
 #============================================================================
@@ -101,6 +104,28 @@ if(BUILD_TESTING)
       gz-sim8::gz-sim8
     )
   endif()
+
+  ament_add_gtest(test_logger test/test_logger.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_logger)
+    # The test logs through spdlog itself, so it links spdlog (and fmt).
+    target_link_libraries(test_logger
+      ${PROJECT_NAME}
+      gz-sim8::gz-sim8
+      spdlog::spdlog
+    )
+  endif()
+
+  # SpinThread start/stop, against a real executor.
+  find_package(rclcpp REQUIRED)
+  ament_add_gtest(test_spin_thread test/test_spin_thread.cpp TIMEOUT 120)
+  if(TARGET test_spin_thread)
+    target_include_directories(test_spin_thread PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(test_spin_thread rclcpp::rclcpp)
+  endif()
+
 endif()
 
 #============================================================================
