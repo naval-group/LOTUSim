@@ -268,6 +268,7 @@ private:
      * about, this warning is only logged once
      */
     bool m_geo_warned{false};
+    bool m_origin_warned{false};
 
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 

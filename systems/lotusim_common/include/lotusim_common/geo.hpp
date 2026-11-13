@@ -14,8 +14,7 @@
 #include <gz/math/Vector3.hh>
 
 /**
- * @brief The one conversion step between what LOTUSim exposes and Gazebo's
- * world.
+ * @brief The one conversion step between what LOTUSim exposes and Gazebo's world.
  *
  * Exposed (MASCmd, VesselPosition, scenario files, AIS, GPS): WGS84 latitude
  * and longitude in degrees, altitude in metres from sea level, positive up
@@ -39,13 +38,18 @@ namespace lotusim::common::geo {
 /// An angle in degrees brought into [0, 360).
 double wrapDegrees(double degrees);
 
-/// Heading (degrees from true North, clockwise) to ENU yaw (radians from
-/// East, counter-clockwise).
+/// Heading (degrees from true North, clockwise) to ENU yaw (radians from East, counter-clockwise)
 double headingToYaw(double heading_deg);
 
 /// ENU yaw (radians from East, counter-clockwise) to heading (degrees from
 /// true North, clockwise, in [0, 360)).
 double yawToHeading(double yaw_rad);
+
+/// course()' value when it's not defined (AIS's "not available")
+constexpr double kCourseNotAvailable = 360.0;
+
+/// angle in deg as a float32 kept in [0, 360)
+float toFloatDegrees(double degrees);
 
 /// Course over ground (degrees from true North, clockwise, in [0, 360)) of
 /// an ENU velocity; 360, AIS's "not available", below kMinCourseSpeed.
@@ -62,8 +66,7 @@ gz::math::Vector3d geoToLocal(
     double longitude_deg,
     double altitude_m);
 
-/// The inverse of geoToLocal: (latitude deg, longitude deg, altitude m) of a
-/// local ENU position.
+/// The inverse of geoToLocal: (latitude deg, longitude deg, altitude m) of a local ENU position
 gz::math::Vector3d localToGeo(
     const gz::math::SphericalCoordinates& origin,
     const gz::math::Vector3d& local);

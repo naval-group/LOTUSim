@@ -20,6 +20,14 @@ constexpr double kDegToRad = kPi / 180.0;
 
 using gz::math::SphericalCoordinates;
 
+// TODO: a non-zero <heading_deg> is ignored for now
+SphericalCoordinates withoutHeadingOffset(const SphericalCoordinates& origin)
+{
+    SphericalCoordinates copy = origin;
+    copy.SetHeadingOffset(gz::math::Angle(0.0));
+    return copy;
+}
+
 }  // namespace
 
 double wrapDegrees(double degrees)
@@ -46,17 +54,24 @@ double yawToHeading(double yaw_rad)
 double courseOf(double east_mps, double north_mps)
 {
     if (std::hypot(east_mps, north_mps) < kMinCourseSpeed) {
-        return 360.0;
+        return kCourseNotAvailable;
     }
     return wrapDegrees(std::atan2(east_mps, north_mps) / kDegToRad);
 }
 
+float toFloatDegrees(double degrees)
+{
+    const float f = static_cast<float>(wrapDegrees(degrees));
+    return f >= 360.0f ? 0.0f : f;
+}
+
 gz::math::Vector3d geoToLocal(
-    const SphericalCoordinates& origin,
+    const SphericalCoordinates& world_origin,
     double latitude_deg,
     double longitude_deg,
     double altitude_m)
 {
+    const SphericalCoordinates origin = withoutHeadingOffset(world_origin);
     // The point on the reference surface, projected onto the tangent plane.
     const auto on_plane = origin.PositionTransform(
         {latitude_deg * kDegToRad,
@@ -68,14 +83,13 @@ gz::math::Vector3d geoToLocal(
 }
 
 gz::math::Vector3d localToGeo(
-    const SphericalCoordinates& origin,
+    const SphericalCoordinates& world_origin,
     const gz::math::Vector3d& local)
 {
-    // The point of the reference surface whose projection is (x, y): on the
-    // origin's vertical through (x, y), where the elevation is the
-    // reference's. The elevation grows with z at a rate close to 1, so each
-    // step removes almost all of the error; a few steps reach a micrometre
-    // at 1000 km.
+    const SphericalCoordinates origin = withoutHeadingOffset(world_origin);
+    // Reference surface point at (x, y) with the reference's elevation.
+    // since elevation grows almost linearly with z, a few iterations reduce
+    // the error to micrometre precision, even at 1000 km
     double z = 0.0;
     gz::math::Vector3d spherical;
     for (int i = 0; i < 8; ++i) {
