@@ -244,12 +244,13 @@ std_msgs::msg::Header generateHeaderMessage(
     const std::chrono::steady_clock::duration& _time);
 
 /**
- * @brief Convert latitude/longitude/altitude to local XYZ (ENU metres).
+ * @brief Convert latitude/longitude/altitude to local XYZ (ENU metres), with
+ * the world's projection (see geo.hpp): z is the altitude.
  *
  * @param _ecm
  * @param lat degrees
  * @param lon degrees
- * @param alt altitude in metres (default 0)
+ * @param alt metres from sea level, negative when submerged (default 0)
  * @return std::optional<std::tuple<double, double, double>> (x, y, z)
  */
 std::optional<std::tuple<double, double, double>> LatLongToXY(
@@ -259,7 +260,8 @@ std::optional<std::tuple<double, double, double>> LatLongToXY(
     double alt = 0.0);
 
 /**
- * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude.
+ * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude, the
+ * inverse of LatLongToXY: the altitude is z.
  *
  * @param _ecm Entity Component Manager used to retrieve spherical coordinates
  * @param x Local X coordinate in metres
@@ -275,8 +277,8 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
     double z = 0.0);
 
 /**
- * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude, for
- * callers that already hold the world entity.
+ * @brief Convert local XYZ (ENU metres) to latitude/longitude/altitude, the
+ * inverse of LatLongToXY, for callers that already hold the world entity.
  *
  * @param _ecm Entity Component Manager used to retrieve spherical coordinates
  * @param worldEntity World entity holding the spherical coordinates

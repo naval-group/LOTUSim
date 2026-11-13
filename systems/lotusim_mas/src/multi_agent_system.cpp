@@ -9,6 +9,8 @@
  */
 #include "lotusim_mas/multi_agent_system.hpp"
 
+#include "lotusim_common/geo.hpp"
+
 #include <gz/sim/components/LinearVelocity.hh>
 
 namespace lotusim::gazebo {
@@ -470,6 +472,15 @@ void MultiAgentSystem::publishPose(
         static_cast<uint32_t>(simTimeNs % 1000000000);
     array_msg.header.frame_id = "world";
 
+    const auto* sph = _ecm.Component<gz::sim::components::SphericalCoordinates>(m_world_entity);
+    if (sph && !m_origin_warned && std::abs(sph->Data().HeadingOffset().Radian()) > 1e-9) {
+        m_origin_warned = true;
+        m_logger->warn(
+            "MultiAgentSystem::publishPose: World '{}' has heading_deg != 0; "
+            "LOTUSim ignores it and treats local +x as East and +y as North.",
+            m_world_name);
+    }
+
     // Geo conversion depends on the world, not on any individual vessel.
     if (!m_geo_warned &&
         !_ecm.Component<gz::sim::components::SphericalCoordinates>(
@@ -504,13 +515,11 @@ void MultiAgentSystem::publishPose(
         msg.model_name =
             (model_it != models.end()) ? model_it->second : std::string{};
 
-        msg.pose.position.x = pose.X();
-        msg.pose.position.y = pose.Y();
-        msg.pose.position.z = pose.Z();
-        msg.pose.orientation.w = pose.Rot().W();
-        msg.pose.orientation.x = pose.Rot().X();
-        msg.pose.orientation.y = pose.Rot().Y();
-        msg.pose.orientation.z = pose.Rot().Z();
+        msg.heading = common::geo::toFloatDegrees(common::geo::yawToHeading(pose.Rot().Yaw()));
+        const double course = common::geo::courseOf(vx, vy);
+        msg.course = course == common::geo::kCourseNotAvailable
+            ? 360.0f
+            : common::geo::toFloatDegrees(course);
 
         if (latLonEle) {
             msg.geo_point.latitude = std::get<0>(latLonEle.value());

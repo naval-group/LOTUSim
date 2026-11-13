@@ -26,7 +26,7 @@ struct Agent {
     std::string name;   ///< key from YAML map (e.g. "lrauv1")
     std::string model;  ///< model asset name
     GeoPoint position;
-    double heading{0.0};  /// heading → yaw (Z-up, East=0, right-hand rule)
+    double heading{0.0};  /// degrees from true North, clockwise
 
     /// Fully-formed <lotus_param>…</lotus_param> XML string,
     /// built by ScenarioParser from physics_interface + render_interface.

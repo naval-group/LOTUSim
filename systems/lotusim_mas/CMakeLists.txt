@@ -76,6 +76,7 @@ gz_find_package(gz-common5
 add_library(multi_agent_system_plugin 
   SHARED 
   src/entity_spawner.cpp
+  src/move_pose.cpp
   src/scenario_parser.cpp
   src/scenario_manager.cpp
   src/multi_agent_system.cpp
@@ -121,6 +122,27 @@ install(
   PATTERN "*.h"
   PATTERN ".~" EXCLUDE
 )
+
+#============================================================================
+# Testing
+#============================================================================
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # The pose a MASCmd asks for, against a stand-in projection.
+  ament_add_gtest(test_move_pose
+    test/test_move_pose.cpp
+    src/move_pose.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_move_pose)
+    target_include_directories(test_move_pose PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(test_move_pose
+      gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
+    ament_target_dependencies(test_move_pose lotusim_msgs lotusim_common)
+  endif()
+endif()
 
 #============================================================================
 # Export

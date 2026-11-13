@@ -159,7 +159,7 @@ Talks to the renderer over ROS 2 topics instead of raw sockets. Publishers use `
 | Topic | Type | Published |
 |---|---|---|
 | `renderer_cmd` | `lotusim_msgs/msg/RendererCmd` | On vessel create/destroy (`CREATE_CMD` / `DELETE_CMD`) |
-| `renderer_poses` | `lotusim_msgs/msg/VesselPositionArray` | Every `PostUpdate` tick |
+| `renderer_poses` | `lotusim_msgs/msg/VesselPoseArray` (local ENU pose) | Every `PostUpdate` tick |
 
 `configureInterface()` ignores the plugin SDF entirely - the connection is implicit via ROS 2 discovery, so `ip` / `udp_port` / `tcp_port` only apply when `connection_protocol` is `TCPUDP`.
 

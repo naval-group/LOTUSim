@@ -1,7 +1,7 @@
 # Built in commands
 int8 CREATE_CMD = 0 # only fill in sdf_string        
 int8 DELETE_CMD = 1 # only fill in entity or vessel_name
-int8 MOVE_CMD   = 2 # only fill in (entity or vessel_name) and vessel_position
+int8 MOVE_CMD   = 2 # only fill in (entity or vessel_name), geo_point and heading
 uint8 cmd_type
 
 # sdf definition in string if creation type
@@ -23,10 +23,12 @@ string vessel_name
 # During creation, the entity entered does not matter and will be overwritten
 uint16 entity
 
-# vessel position if create or modify cmd
-geometry_msgs/Pose vessel_position
-
-# Having geographic coordinate system or heading replace Pose
+# Where the vessel is placed, for a create or a move command, always given
+# (0 is a value: the equator, the Greenwich meridian, the sea surface):
+# WGS84 latitude and longitude in degrees, altitude in metres from sea level,
+# positive up, negative when submerged (a submarine at 30 m is at -30).
 geographic_msgs/GeoPoint geo_point
-# Yaw in radians, ENU (counter-clockwise from East). Applied with geo_point
+
+# Heading, where the bow points: degrees from true North, clockwise
+# (0 = North, 90 = East), for a create or a move command, always given.
 float32 heading
