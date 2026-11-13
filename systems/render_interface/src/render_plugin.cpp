@@ -48,6 +48,18 @@ void RenderPlugin::Configure(
         CreateRenderInterface(connection_protocol, m_world_name, m_logger);
     m_render_interface->configureInterface(_sdf);
 
+    // Cap the wall-clock rate at which poses are pushed to the renderer so a
+    // high real_time_factor does not flood the bridge (see m_render_min_period_s).
+    double render_rate_hz = 60.0;
+    if (sdfPtr->HasElement("render_rate_hz")) {
+        render_rate_hz = sdfPtr->Get<double>("render_rate_hz");
+    }
+    m_render_min_period_s =
+        render_rate_hz > 0.0 ? 1.0 / render_rate_hz : 0.0;
+    m_logger->info(
+        "RenderPlugin::Configure: render send rate capped at {} Hz (wall).",
+        render_rate_hz);
+
     m_logger->info("RenderPlugin::Configure: RenderPlugin started.");
 }
 
@@ -135,19 +147,37 @@ void RenderPlugin::PostUpdate(
         return;
     }
 
-    std::vector<std::pair<std::string, gz::math::Pose3d>> vessel_pose;
-    // get a vector of vessel name, pose
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        for (auto&& entity : m_vessel_entity) {
-            gz::math::Pose3d pose =
-                _ecm.Component<gz::sim::components::Pose>(entity.second)
-                    ->Data();
-
-            vessel_pose.push_back({entity.first, pose});
+    // Wall-clock rate cap: skip the pose send if the last one was too recent,
+    // so a high real_time_factor cannot flood the renderer bridge. customUpdates
+    // still runs every step (unchanged).
+    bool send_pose = true;
+    if (m_render_min_period_s > 0.0) {
+        auto now = std::chrono::steady_clock::now();
+        if (m_render_started &&
+            std::chrono::duration<double>(now - m_last_render_time).count() <
+                m_render_min_period_s) {
+            send_pose = false;
+        } else {
+            m_last_render_time = now;
+            m_render_started = true;
         }
     }
-    m_render_interface->sendPosition(_info.simTime, vessel_pose);
+
+    if (send_pose) {
+        std::vector<std::pair<std::string, gz::math::Pose3d>> vessel_pose;
+        // get a vector of vessel name, pose
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            for (auto&& entity : m_vessel_entity) {
+                gz::math::Pose3d pose =
+                    _ecm.Component<gz::sim::components::Pose>(entity.second)
+                        ->Data();
+
+                vessel_pose.push_back({entity.first, pose});
+            }
+        }
+        m_render_interface->sendPosition(_info.simTime, vessel_pose);
+    }
     m_render_interface->customUpdates(_info, _ecm);
 }
 }  // namespace lotusim::gazebo

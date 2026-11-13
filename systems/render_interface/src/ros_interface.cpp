@@ -36,13 +36,24 @@ bool ROSInterface::configureInterface(
     rclcpp::QoS qos_profile(10);
     qos_profile.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
+    // renderer_cmd carries one message per vessel CREATE/DELETE event, not a
+    // cumulative snapshot. A late-connecting subscriber replays the
+    // TRANSIENT_LOCAL history buffer, so a fixed KeepLast depth drops the
+    // earliest CREATE commands once a scenario spawns more vessels than that.
+    // KeepAll retains every command, bounded only by DDS resource limits.
+    rclcpp::QoS renderer_cmd_qos_profile{rclcpp::KeepAll()};
+    renderer_cmd_qos_profile.durability(
+        RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
     m_renderer_cmd_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::RendererCmd>(
-            "renderer_cmd", qos_profile);
+            "renderer_cmd",
+            renderer_cmd_qos_profile);
 
     m_pose_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
-            "renderer_poses", qos_profile);
+            "renderer_poses",
+            qos_profile);
     return true;
 }
 
@@ -129,6 +140,7 @@ void ROSInterface::sendCreateMessage(
     const std::string& type)
 {
     lotusim_msgs::msg::RendererCmd render_msg;
+    render_msg.header.stamp = m_ros_node->now();
     render_msg.cmd_type = lotusim_msgs::msg::RendererCmd::CREATE_CMD;
     render_msg.renderer_obj_name = type;
     render_msg.vessel_name = name;
