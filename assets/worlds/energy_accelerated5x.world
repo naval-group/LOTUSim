@@ -2,8 +2,7 @@
 <!-- Energy Gz World, real_time_factor 5 (target 5 simulated seconds per
      wall-clock second). Identical to energy.world otherwise; max_step_size is
      unchanged at 0.1 s. The world name is kept "energy" so all /energy/... topics
-     and the lotusimenergy Unity build are unchanged.
-     See doc/ACCELERATED_SIMULATION.md. -->
+     are unchanged. -->
 <sdf version="1.9">
     <world name="energy">
         <light type="directional" name="sun">

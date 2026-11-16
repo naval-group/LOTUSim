@@ -2,11 +2,10 @@
 <!-- Energy Gz World, real_time_factor 50 (target 50 simulated seconds per
      wall-clock second). Identical to energy.world otherwise; max_step_size is
      unchanged at 0.1 s. The world name is kept "energy" so all /energy/... topics
-     and the lotusimenergy Unity build are unchanged.
+     are unchanged.
 
-     At 50x a wall-clock control loop gives ~0.4 update/sim-second, so the paired
-     scenario (waypoint_solo_accelerated50x.json) sets "guidance_clock": "pose".
-     See doc/ACCELERATED_SIMULATION.md. -->
+     At 50x, a controller that runs on the wall clock updates only about 0.4
+     times per simulated second: drive the vehicles from the simulation time. -->
 <sdf version="1.9">
     <world name="energy">
         <light type="directional" name="sun">
