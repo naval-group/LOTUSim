@@ -10,6 +10,8 @@
 
 #include "lotusim_sensor_plugin/lotusim_sensor_plugin.hpp"
 
+#include "lotusim_common/transforms.hpp"
+
 namespace lotusim::sensor {
 
 LotusimSensorPlugin::LotusimSensorPlugin() {}

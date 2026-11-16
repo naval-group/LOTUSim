@@ -10,6 +10,8 @@
 
 #include "waypoint_follower/waypoint_follower.hpp"
 
+#include "lotusim_common/transforms.hpp"
+
 namespace lotusim::gazebo {
 using namespace std::placeholders;
 
@@ -190,9 +192,9 @@ bool WaypointFollowerPlugin::load(
         m_waypoints[_entity] = waypoint;
 
         for (auto&& point : waypoint) {
-            gz::math::Vector3d latlong =
-                m_origin_spherical.SphericalFromLocalPosition(
-                    {point.X(), point.Y(), 0});
+            const gz::math::Vector3d latlong = lotusim::common::localToGeo(
+                m_origin_spherical,
+                {point.X(), point.Y(), 0.0});
             geographic_msgs::msg::GeoPoint point_msg;
             point_msg.latitude = latlong.X();
             point_msg.longitude = latlong.Y();
@@ -286,28 +288,10 @@ void WaypointFollowerPlugin::Configure(
         m_logger->error(
             "WaypointFollowerPlugin::Configure: RCLCPP context shutdown.");
     }
-    // Get spherical coordinates
-    gz::math::Angle lat0, lon0;
-    gz::sim::Entity worldEntity;
-    _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity& _entity,
-            const gz::sim::components::Name*,
-            const gz::sim::components::World*) -> bool {
-            worldEntity = _entity;
-            return true;
-        });
-    if (_ecm.Component<gz::sim::components::SphericalCoordinates>(
-            worldEntity)) {
-        auto sphComp =
-            _ecm.Component<gz::sim::components::SphericalCoordinates>(
-                worldEntity);
-        lat0 = sphComp->Data().LatitudeReference();
-        lon0 = sphComp->Data().LongitudeReference();
+    // The world's origin, for the same conversions as the vessel positions.
+    if (const auto origin = lotusim::common::worldOrigin(_ecm)) {
+        m_origin_spherical = *origin;
     }
-    // Create SphericalCoordinates helper
-    m_origin_spherical.SetLatitudeReference(lat0);
-    m_origin_spherical.SetLongitudeReference(lon0);
-    m_origin_spherical.SetElevationReference(0);
 
     m_logger->info(
         "WaypointFollowerPlugin::Configure: Waypoint follower started.");
@@ -318,6 +302,13 @@ void WaypointFollowerPlugin::Update(
     const gz::sim::UpdateInfo& _info,
     gz::sim::EntityComponentManager& _ecm)
 {
+    // A scenario's reference_position moves the world's origin.
+    if (const auto origin = lotusim::common::worldOrigin(_ecm);
+        origin && !(*origin == m_origin_spherical)) {
+        std::lock_guard<std::mutex> lock(m_waypoint_mutex);
+        m_origin_spherical = *origin;
+    }
+
     _ecm.EachNew<
         gz::sim::components::ModelSdf>([this, &_ecm](
                                            const gz::sim::Entity& _entity,
@@ -721,9 +712,11 @@ void WaypointFollowerPlugin::setupRosForModel(
                 m_loop[entity] = request->loop;
 
                 for (const auto& geo_point : request->path) {
-                    gz::math::Vector3d xyz =
-                        m_origin_spherical.LocalFromSphericalPosition(
-                            {geo_point.latitude, geo_point.longitude, 0});
+                    const gz::math::Vector3d xyz = lotusim::common::geoToLocal(
+                        m_origin_spherical,
+                        geo_point.latitude,
+                        geo_point.longitude,
+                        0.0);
 
                     m_waypoints[entity].push_back({xyz.X(), xyz.Y()});
                 }

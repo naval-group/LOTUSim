@@ -106,7 +106,7 @@ Owns the vessel name↔entity maps and exposes `addEntity()` / `moveEntity()` / 
   - `model_name` set → loads `$LOTUSIM_MODELS_PATH/<model_name>/<sdf_file or model.sdf>` from disk; if `sdf_string` is also set, its `<lotus_param>` block is parsed and injected into the loaded model's XML before spawning.
 
   The final vessel name comes from `vessel_name`, falling back to the SDF's own model name, then passed through `resolveUniqueName()` (appends `_0`, `_1`, … if already taken). On success the entity is created, parented to the world, and immediately moved to the requested pose via an internal `moveEntity()` call.
-- **`moveEntity()`** - resolves the target by `entity` or `vessel_name`, then sets its `Pose` component from `geo_point` and `heading` (`resolveMovePose`): x and y projected from latitude and longitude around the world's spherical-coordinates origin, z the altitude, yaw from the heading (see `lotusim_common/geo.hpp`). It fails if the world has no `<spherical_coordinates>`.
+- **`moveEntity()`** - resolves the target by `entity` or `vessel_name`, then sets its `Pose` component from `geo_point` and `heading` (`geoToPose`): x and y projected from latitude and longitude around the world's spherical-coordinates origin, z the altitude, yaw from the heading (see `lotusim_common/transforms.hpp`). It fails if the world has no `<spherical_coordinates>`.
 - **`deleteEntity()` / `deleteAllEntities()`** - remove the vessel from the internal maps immediately, then request removal via `SdfEntityCreator`; Gazebo actually removes the entity on the next update step.
 - **Thread-safety** - `addEntity` / `moveEntity` / `deleteEntity` run only on the Gazebo `PreUpdate` thread, so ECM writes need no locking. The name↔entity maps themselves are protected by a `shared_mutex` since they're also read from the pose-publishing path in `PostUpdate`.
 
@@ -116,7 +116,7 @@ Owns the vessel name↔entity maps and exposes `addEntity()` / `moveEntity()` / 
 
 `ScenarioManager` is a plain helper owned by `MultiAgentSystem`. It exposes the `launch_scenario` / `stop_scenario` services:
 
-- **`launch_scenario`** - looks up `$LOTUSIM_SCENARIOS_PATH/<request.data>` (falling back to `~/lotusim_ws/src/LOTUSim/assets/scenarios` with a warning if the env var isn't set), refuses if a scenario is already running, parses the YAML via `ScenarioParser`, applies `reference_position` to the world's spherical-coordinates origin, then spawns every agent via `EntitySpawner`.
+- **`launch_scenario`** - looks up `$LOTUSIM_SCENARIOS_PATH/<request.data>` (falling back to `~/lotusim_ws/src/LOTUSim/assets/scenarios` with a warning if the env var isn't set), refuses if a scenario is already running, parses the YAML via `ScenarioParser`, applies the latitude and longitude of `reference_position` to the world's spherical-coordinates origin (its `altitude` is ignored with a warning when not 0: positions are relative to sea level), then spawns every agent via `EntitySpawner`.
 - **`stop_scenario`** - despawns every agent spawned by the active scenario and clears the current-scenario state.
 
 `ScenarioParser` is a stateless YAML → `ScenarioConfig` converter. For each agent, its `render_interface` / `physics_interface` / `waypoint_interface` YAML blocks are converted **directly** into a `<lotus_param>` XML string.
