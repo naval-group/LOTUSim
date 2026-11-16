@@ -28,12 +28,14 @@ enum class InterfaceType
 {
     XDynWebSocket,
     ROS2Interface,
+    Kinematic,
     Unknown
 };
 
 static std::unordered_map<std::string, InterfaceType> InterfaceTypeMap{
     {"XDYNWEBSOCKET", InterfaceType::XDynWebSocket},
     {"ROS2", InterfaceType::ROS2Interface},
+    {"KINEMATIC", InterfaceType::Kinematic},
     {"UNKNOWN", InterfaceType::Unknown}};
 
 enum class DomainType
