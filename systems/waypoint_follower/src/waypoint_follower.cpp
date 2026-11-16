@@ -10,8 +10,6 @@
 
 #include "waypoint_follower/waypoint_follower.hpp"
 
-#include "waypoint_follower/control_step.hpp"
-
 namespace lotusim::gazebo {
 using namespace std::placeholders;
 
@@ -401,12 +399,12 @@ void WaypointFollowerPlugin::Update(
         it = m_model_load_queue.erase(it);
     }
 
-    // Nothing moves while paused, and the controller divides by dt.
-    const auto step = controlStepSeconds(_info);
-    if (!step) {
+    // Gazebo keeps calling Update while paused with dt = 0; the controller
+    // divides by dt (derivative terms), so skip to avoid 0/0 = NaN.
+    const double dt_s = std::chrono::duration<double>(_info.dt).count();
+    if (_info.paused || dt_s <= 0.0) {
         return;
     }
-    const double dt_s = *step;
 
     for (auto&& temp : m_waypoints) {
         gz::sim::Entity _entity = temp.first;
