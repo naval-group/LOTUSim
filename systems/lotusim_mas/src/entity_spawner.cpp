@@ -22,7 +22,7 @@
 #include <sdf/Root.hh>
 
 #include "lotusim_common/common.hpp"
-#include "lotusim_mas/move_pose.hpp"
+#include "lotusim_common/transforms.hpp"
 
 namespace lotusim::mas {
 
@@ -224,12 +224,8 @@ bool EntitySpawner::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             return false;
         }
 
-        const auto pose = resolveMovePose(
-            msg,
-            [this](double lat, double lon, double alt) {
-                return lotusim::common::LatLongToXY(m_ecm, lat, lon, alt);
-            });
-        if (!pose) {
+        const auto origin = lotusim::common::worldOrigin(m_ecm);
+        if (!origin) {
             m_logger->error(
                 "EntitySpawner::moveEntity: the world has no "
                 "<spherical_coordinates>, cannot place vessel '{}' at "
@@ -249,9 +245,15 @@ bool EntitySpawner::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
             msg.geo_point.altitude,
             msg.heading);
 
+        const auto pose = lotusim::common::geoToPose(
+            *origin,
+            msg.geo_point.latitude,
+            msg.geo_point.longitude,
+            msg.geo_point.altitude,
+            msg.heading);
         if (!m_ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel_entity,
-                *pose)) {
+                pose)) {
             m_logger->warn(
                 "EntitySpawner::moveEntity: SetComponentData failed "
                 "(vessel='{}', entity={})",

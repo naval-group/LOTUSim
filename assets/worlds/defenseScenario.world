@@ -32,7 +32,6 @@
             <latitude_deg>1.2421</latitude_deg>
             <longitude_deg>103.7198</longitude_deg>
             <elevation>0</elevation>
-            <heading_deg>0</heading_deg>
         </spherical_coordinates> -->
 
         <spherical_coordinates>
@@ -41,7 +40,6 @@
             <latitude_deg>50.32879166666667</latitude_deg>
             <longitude_deg>-4.195226666666667</longitude_deg>
             <elevation>0</elevation>
-            <heading_deg>0</heading_deg>
         </spherical_coordinates>
 
         <!-- Core Plugins -->
