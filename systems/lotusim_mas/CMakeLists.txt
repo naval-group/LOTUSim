@@ -102,6 +102,18 @@ ament_target_dependencies(multi_agent_system_plugin
   lotusim_common
 )
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # Escaping in the generated <lotus_param>. Own main() (see the test file).
+  ament_add_gtest(test_scenario_escaping test/test_scenario_escaping.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_scenario_escaping)
+    target_link_libraries(test_scenario_escaping multi_agent_system_plugin)
+  endif()
+endif()
+
 #============================================================================
 # Install
 #============================================================================
