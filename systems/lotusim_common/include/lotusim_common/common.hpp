@@ -30,6 +30,9 @@
 
 #include "gz/math/SphericalCoordinates.hh"
 #include "std_msgs/msg/header.hpp"
+// The angle, frame and geographic conversions used to be declared here;
+// kept so that code including common.hpp still compiles.
+#include "lotusim_common/transforms.hpp"
 
 namespace lotusim::common {
 
