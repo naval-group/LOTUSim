@@ -119,24 +119,30 @@ std::optional<std::tuple<uint16_t, std::string>> EntitySpawner::addEntity(
                 return std::nullopt;
             }
 
-            // Readers take the first <lotus_param> of the model, so a model
-            // that already has one (e.g. its power_system) gets the
-            // scenario's blocks merged in, the scenario winning on the same
-            // block, instead of a second <lotus_param> nobody reads.
+            // The spawn command's <lotus_param> overwrites the model's own
+            // <lotus_param>, block by block: each block in the command
+            // replaces the model's blocks with the same tag, and the model's
+            // other blocks (e.g. its <power_system>) are kept.
             tinyxml2::XMLElement* model_lotus =
                 model_elem->FirstChildElement("lotus_param");
-            if (!model_lotus) {
-                model_elem->InsertEndChild(lotus_elem->DeepClone(&sdf_doc));
-            } else {
-                for (const tinyxml2::XMLElement* block =
-                         lotus_elem->FirstChildElement();
-                     block;
-                     block = block->NextSiblingElement()) {
-                    while (tinyxml2::XMLElement* same =
-                               model_lotus->FirstChildElement(block->Name()))
-                        model_lotus->DeleteChild(same);
-                    model_lotus->InsertEndChild(block->DeepClone(&sdf_doc));
-                }
+            if (!model_lotus)
+                model_lotus = model_elem->InsertNewChildElement("lotus_param");
+
+            // Delete everything first, then insert, so that repeated scenario
+            // blocks with the same tag (e.g. several <sensor>) are all kept.
+            for (const tinyxml2::XMLElement* block =
+                     lotus_elem->FirstChildElement();
+                 block;
+                 block = block->NextSiblingElement()) {
+                while (tinyxml2::XMLElement* old =
+                           model_lotus->FirstChildElement(block->Name()))
+                    model_lotus->DeleteChild(old);
+            }
+            for (const tinyxml2::XMLElement* block =
+                     lotus_elem->FirstChildElement();
+                 block;
+                 block = block->NextSiblingElement()) {
+                model_lotus->InsertEndChild(block->DeepClone(&sdf_doc));
             }
 
             tinyxml2::XMLPrinter printer;
