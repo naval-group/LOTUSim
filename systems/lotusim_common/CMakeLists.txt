@@ -44,7 +44,7 @@ add_library(${PROJECT_NAME} SHARED
   src/logger.cpp
   src/common.cpp
   src/entity_group.cpp
-  src/geo.cpp
+  src/transforms.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

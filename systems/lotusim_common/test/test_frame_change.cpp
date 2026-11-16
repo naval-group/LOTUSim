@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-#include "lotusim_common/common.hpp"
+#include "lotusim_common/transforms.hpp"
 
 #include <gz/math/Rand.hh>
 #include <gtest/gtest.h>
