@@ -9,9 +9,9 @@
  */
 #include "lotusim_mas/multi_agent_system.hpp"
 
-#include "lotusim_common/transforms.hpp"
-
 #include <gz/sim/components/LinearVelocity.hh>
+
+#include "lotusim_common/transforms.hpp"
 
 namespace lotusim::gazebo {
 
@@ -54,9 +54,8 @@ void MultiAgentSystem::Configure(
     m_ecm = &_ecm;
     const std::string logger_name =
         logger::worldLoggerName(m_world_name, "mas");
-    m_logger = logger::createConsoleAndFileLogger(
-        logger_name,
-        logger_name + ".txt");
+    m_logger =
+        logger::createConsoleAndFileLogger(logger_name, logger_name + ".txt");
     if (!MultiAgentSystem::initROSNode()) {
         m_logger->error(
             "MultiAgentSystem::Configure: RCLCPP context shutdown.");
@@ -91,6 +90,16 @@ void MultiAgentSystem::Configure(
         }
     }
 
+    m_legacy_local_interface =
+        _sdf->Get<bool>("legacy_local_interface", true).first;
+    if (m_legacy_local_interface && m_ros_node) {
+        m_local_pose_pub =
+            m_ros_node->create_publisher<lotusim_msgs::msg::VesselPoseArray>(
+                "local_poses",
+                rclcpp::QoS(10));
+    }
+    publishWorldOrigin(_ecm);
+
     customUserConfiguration(_sdf);
     m_logger->info("MultiAgentSystem::Configure: MAS started.");
 }
@@ -105,7 +114,7 @@ bool MultiAgentSystem::initROSNode()
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
             "poses",
             rclcpp::QoS(10));
-        
+
     logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
 
     m_callback_group.push_back(m_ros_node->create_callback_group(
@@ -385,6 +394,7 @@ void MultiAgentSystem::PostUpdate(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
+    publishWorldOrigin(_ecm);
     publishPose(_info, _ecm);
 
     customUserPostUpdate();
@@ -466,6 +476,8 @@ void MultiAgentSystem::publishPose(
     const gz::sim::EntityComponentManager& _ecm)
 {
     lotusim_msgs::msg::VesselPositionArray array_msg;
+    lotusim_msgs::msg::VesselPoseArray local_array_msg;
+    const bool publish_local = static_cast<bool>(m_local_pose_pub);
     auto simTimeNs =
         std::chrono::duration_cast<std::chrono::nanoseconds>(_info.simTime)
             .count();
@@ -473,6 +485,18 @@ void MultiAgentSystem::publishPose(
     array_msg.header.stamp.nanosec =
         static_cast<uint32_t>(simTimeNs % 1000000000);
     array_msg.header.frame_id = "world";
+    local_array_msg.header = array_msg.header;
+
+    if (publish_local && !m_local_poses_warned &&
+        m_local_pose_pub->get_subscription_count() > 0) {
+        m_local_poses_warned = true;
+        m_logger->warn(
+            "MultiAgentSystem::publishPose: '{}/local_poses' (local ENU) is "
+            "deprecated and will be removed in a future release; use '{}/poses' "
+            "and lotusim transforms.",
+            m_world_name,
+            m_world_name);
+    }
 
     // Geo conversion depends on the world, not on any individual vessel.
     if (!m_geo_warned &&
@@ -524,8 +548,51 @@ void MultiAgentSystem::publishPose(
         msg.speed_over_ground = static_cast<float>(speedOverGround);
 
         array_msg.vessels.push_back(msg);
+
+        if (publish_local) {
+            lotusim_msgs::msg::VesselPose local_msg;
+            local_msg.vessel_name = name;
+            local_msg.pose.position.x = pose.X();
+            local_msg.pose.position.y = pose.Y();
+            local_msg.pose.position.z = pose.Z();
+            local_msg.pose.orientation.w = pose.Rot().W();
+            local_msg.pose.orientation.x = pose.Rot().X();
+            local_msg.pose.orientation.y = pose.Rot().Y();
+            local_msg.pose.orientation.z = pose.Rot().Z();
+            local_array_msg.vessels.push_back(local_msg);
+        }
     }
     m_pose_pub->publish(array_msg);
+    if (publish_local) {
+        m_local_pose_pub->publish(local_array_msg);
+    }
+}
+
+void MultiAgentSystem::publishWorldOrigin(
+    const gz::sim::EntityComponentManager& _ecm)
+{
+    if (!m_world_origin_pub) {
+        return;
+    }
+    const auto origin = lotusim::common::worldOrigin(_ecm);
+    if (!origin) {
+        return;
+    }
+    const std::pair<double, double> lat_lon{
+        origin->LatitudeReference().Degree(),
+        origin->LongitudeReference().Degree()};
+    if (m_published_origin == lat_lon) {
+        return;
+    }
+    m_published_origin = lat_lon;
+
+    // The projection uses the origin's latitude and longitude only, so the
+    // altitude is sea level.
+    geographic_msgs::msg::GeoPoint msg;
+    msg.latitude = lat_lon.first;
+    msg.longitude = lat_lon.second;
+    msg.altitude = 0.0;
+    m_world_origin_pub->publish(msg);
 }
 
 }  // namespace lotusim::gazebo
