@@ -179,8 +179,9 @@ void ScenarioParser::appendPhysicsEngineInterface(
             params ? getOrDefault<std::string>(params, "uri", "") : "";
 
         xml += "        <" + domain_key + ">\n";
-        // Scenario strings are escaped: a & in a uri used to make the whole
-        // <lotus_param> invalid, so the agent was not created.
+        // Scenario strings are escaped: a < in a uri used to make the whole
+        // <lotus_param> invalid (the agent was not created), and an entity
+        // such as &amp; was decoded.
         xml += "            <interface_type>" + xmlEscape(interface_type) +
                "</interface_type>\n";
         xml += "            <uri>" + xmlEscape(uri) + "</uri>\n";

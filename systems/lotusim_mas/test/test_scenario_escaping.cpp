@@ -44,10 +44,11 @@ agents:
 
 }  // namespace
 
-// A & in a uri used to make the whole <lotus_param> invalid XML.
-TEST(ScenarioEscaping, AmpersandStaysValidXml)
+// An entity such as &amp; in a uri used to be decoded (the uri came back as
+// "a&b"). A bare & is tolerated by tinyxml2, so it would not catch this.
+TEST(ScenarioEscaping, EntityInUriKeptLiteral)
 {
-    const auto xml = lotusParam("ws://host:12346/?a=1&b=2", "propeller");
+    const auto xml = lotusParam("ws://host:12346/?q=a&amp;b", "propeller");
     tinyxml2::XMLDocument doc;
     ASSERT_EQ(doc.Parse(xml.c_str()), tinyxml2::XML_SUCCESS) << xml;
     const auto* uri = doc.FirstChildElement("lotus_param")
@@ -55,7 +56,7 @@ TEST(ScenarioEscaping, AmpersandStaysValidXml)
                           ->FirstChildElement("underwater")
                           ->FirstChildElement("uri");
     ASSERT_NE(uri, nullptr);
-    EXPECT_STREQ(uri->GetText(), "ws://host:12346/?a=1&b=2");
+    EXPECT_STREQ(uri->GetText(), "ws://host:12346/?q=a&amp;b");
 }
 
 // A < in a name used to let a scenario inject elements.
