@@ -399,10 +399,12 @@ void WaypointFollowerPlugin::Update(
         it = m_model_load_queue.erase(it);
     }
 
-    double dt =
-        std::chrono::duration_cast<std::chrono::milliseconds>(_info.dt).count();
-    // dt in seconds
-    double dt_s = dt / 1000.0;
+    // Gazebo keeps calling Update while paused with dt = 0; the controller
+    // divides by dt (derivative terms), so skip to avoid 0/0 = NaN.
+    const double dt_s = std::chrono::duration<double>(_info.dt).count();
+    if (_info.paused || dt_s <= 0.0) {
+        return;
+    }
 
     for (auto&& temp : m_waypoints) {
         gz::sim::Entity _entity = temp.first;
