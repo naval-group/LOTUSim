@@ -235,12 +235,6 @@ protected:
     rclcpp::Node::SharedPtr m_ros_node;
 
     /**
-    * @brief ROS publisher for LOTUSim log messages
-    *
-    */
-    rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr m_log_pub;
-
-    /**
      * @brief GZ Entity Component Manager
      *
      */

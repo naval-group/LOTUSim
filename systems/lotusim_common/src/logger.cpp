@@ -9,6 +9,9 @@
  */
 #include "lotusim_common/logger.hpp"
 
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <mutex>
 #include <utility>
 
@@ -16,37 +19,83 @@ namespace lotusim::logger {
 
 namespace {  // private
 
-std::mutex g_log_callback_mutex;
-LogCallback g_log_callback;
+using DiagnosticArray = diagnostic_msgs::msg::DiagnosticArray;
+using DiagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus;
+
+std::mutex g_diagnostics_mutex;
+std::shared_ptr<rclcpp::Node> g_node;
+rclcpp::Publisher<DiagnosticArray>::SharedPtr g_diagnostics_pub;
+std::string g_hardware_id;
 
 std::mutex g_logger_creation_mutex;
 
-class CallbackSink : public spdlog::sinks::base_sink<std::mutex> {
+uint8_t toDiagnosticLevel(spdlog::level::level_enum level)
+{
+    switch (level) {
+        case spdlog::level::err:
+        case spdlog::level::critical:
+            return DiagnosticStatus::ERROR;
+        case spdlog::level::warn:
+            return DiagnosticStatus::WARN;
+        default:
+            return DiagnosticStatus::OK;
+    }
+}
+
+class DiagnosticsSink : public spdlog::sinks::base_sink<std::mutex> {
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override
     {
-        // only forward INFO and ERROR logs
-        if (msg.level != spdlog::level::info &&
-            msg.level != spdlog::level::err) {
-            return;
+        // copy the shared state
+        std::shared_ptr<rclcpp::Node> node;
+        rclcpp::Publisher<DiagnosticArray>::SharedPtr pub;
+        std::string hardware_id;
+        {
+            std::lock_guard<std::mutex> lock(g_diagnostics_mutex);
+            node = g_node;
+            pub = g_diagnostics_pub;
+            hardware_id = g_hardware_id;
         }
-        std::lock_guard<std::mutex> lock(g_log_callback_mutex);
-        if (!g_log_callback) {
-            return;
+        if (!node || !pub) {
+            return;  // diagnostics not enabled
         }
-        g_log_callback(
-            std::string(msg.logger_name.data(), msg.logger_name.size()),
-            msg.level,
-            std::string(msg.payload.data(), msg.payload.size()));
+
+        DiagnosticStatus status;
+        status.name.assign(msg.logger_name.data(), msg.logger_name.size());
+        status.message.assign(msg.payload.data(), msg.payload.size());
+        status.hardware_id = hardware_id;
+        status.level = toDiagnosticLevel(msg.level);
+
+        DiagnosticArray array_msg;
+        array_msg.header.stamp = node->now();
+        array_msg.status.push_back(std::move(status));
+        try{
+            pub->publish(array_msg);
+        } catch (...) {
+            // no log, swallow error
+        }
     }
     void flush_() override {}
 };
 }  // namespace
 
-void setLogCallback(LogCallback callback)
+void enableDiagnostics(
+    const std::shared_ptr<rclcpp::Node>& node, const std::string& hardware_id)
 {
-    std::lock_guard<std::mutex> lock(g_log_callback_mutex);
-    g_log_callback = std::move(callback);
+    auto pub = node->create_publisher<DiagnosticArray>(
+        "/diagnostics", rclcpp::QoS(10));
+
+    std::lock_guard<std::mutex> lock(g_diagnostics_mutex);
+    g_node = node;
+    g_diagnostics_pub = pub;
+    g_hardware_id = hardware_id;
+}
+
+void disableDiagnostics()
+{
+    std::lock_guard<std::mutex> lock(g_diagnostics_mutex);
+    g_diagnostics_pub.reset();
+    g_node.reset();
 }
 
 spdlog::level::level_enum getLogLevelFromEnv()
@@ -105,7 +154,7 @@ auto createConsoleAndFileLogger(
             file_path,
             true);
 
-        auto callback_sink = std::make_shared<CallbackSink>();
+        auto diagnostics_sink = std::make_shared<DiagnosticsSink>();
 
         try {
             std::filesystem::permissions(
@@ -122,7 +171,7 @@ auto createConsoleAndFileLogger(
         // creating logger manually
         logger = std::make_shared<spdlog::logger>(
             logger_name,
-            spdlog::sinks_init_list{file_sink, console_sink, callback_sink});
+            spdlog::sinks_init_list{file_sink, console_sink, diagnostics_sink});
 
         logger->set_level(getLogLevelFromEnv());
 

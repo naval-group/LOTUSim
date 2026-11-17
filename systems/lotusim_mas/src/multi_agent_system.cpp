@@ -29,7 +29,7 @@ MultiAgentSystem::~MultiAgentSystem()
 
 void MultiAgentSystem::shutdown()
 {
-    logger::setLogCallback(nullptr);
+    logger::disableDiagnostics();
     m_running.store(false);
     m_ros_node_thread.reset();
     m_executor.reset();
@@ -80,38 +80,8 @@ bool MultiAgentSystem::initROSNode()
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
             "poses",
             rclcpp::QoS(10));
-    m_log_pub = m_ros_node->create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
-        "/diagnostics",
-        rclcpp::QoS(10));
-
-    logger::setLogCallback([this](
-                               const std::string& logger_name,
-                               spdlog::level::level_enum level,
-                               const std::string& message) {
-         diagnostic_msgs::msg::DiagnosticStatus status;
-         status.name = logger_name;
-         status.message = message;
-         status.hardware_id = m_world_name;
-
-        switch (level) {
-            case spdlog::level::err:
-            case spdlog::level::critical:
-                status.level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
-                break;
-            case spdlog::level::warn:
-                status.level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
-                break;
-            default:
-                status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-                break;
-        }
-
-        diagnostic_msgs::msg::DiagnosticArray array_msg;
-        array_msg.header.stamp = m_ros_node->now();
-        array_msg.status.push_back(std::move(status));
-
-        m_log_pub->publish(array_msg);
-    });
+        
+    logger::enableDiagnostics(m_ros_node, m_world_name);
 
     m_callback_group.push_back(m_ros_node->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive));
