@@ -20,6 +20,7 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Sensor.hh>
+#include <chrono>
 #include <mutex>
 
 #include "lotusim_common/common.hpp"
@@ -108,6 +109,17 @@ private:
      *
      */
     std::shared_ptr<RenderInterfaceBase> m_render_interface;
+
+    /**
+     * @brief Minimum wall-clock period between pose sends to the renderer, in
+     * seconds. PostUpdate runs once per physics step, so the un-throttled send
+     * rate is (1/max_step_size)*real_time_factor Hz — e.g. 500 Hz at RTF 50 —
+     * which floods the ROS-TCP bridge to Unity. This caps the send rate in wall
+     * time. 0 disables the cap. Set via <render_rate_hz> (default 60).
+     */
+    double m_render_min_period_s = 1.0 / 60.0;
+    std::chrono::steady_clock::time_point m_last_render_time{};
+    bool m_render_started = false;
 };
 
 }  // namespace lotusim::gazebo
