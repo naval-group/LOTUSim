@@ -21,7 +21,6 @@
             <latitude_deg>1.2421</latitude_deg>
             <longitude_deg>103.7198</longitude_deg>
             <elevation>0</elevation>
-            <heading_deg>0</heading_deg>
         </spherical_coordinates>
         <plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem">
         </plugin>

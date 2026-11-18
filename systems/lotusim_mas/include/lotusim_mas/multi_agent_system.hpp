@@ -22,8 +22,11 @@
 #include <thread>
 #include <cmath>
 #include <unordered_map>
+#include <optional>
+#include <utility>
 #include <chrono>
 
+#include "geographic_msgs/msg/geo_point.hpp"
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
 #include "lotusim_common/spin_thread.hpp"
@@ -33,6 +36,7 @@
 #include "lotusim_msgs/action/mas_cmd_array.hpp"
 #include "lotusim_msgs/msg/mas_cmd.hpp"
 #include "lotusim_msgs/msg/log.hpp"
+#include "lotusim_msgs/msg/vessel_pose_array.hpp"
 #include "lotusim_msgs/msg/vessel_position_array.hpp"
 
 using GoalHandleMASCmdArray =
@@ -179,6 +183,15 @@ private:
         const gz::sim::UpdateInfo& _info,
         const gz::sim::EntityComponentManager& _ecm);
 
+    /**
+     * @brief Publishes the world origin on world_origin when it differs from
+     * the last one published (at configure, then after a scenario's
+     * reference_position moves it)
+     *
+     * @param _ecm
+     */
+    void publishWorldOrigin(const gz::sim::EntityComponentManager& _ecm);
+
 private:
     // MASCmd Array action server functions
     rclcpp_action::GoalResponse handleMASCmdArrayGoal(
@@ -269,6 +282,23 @@ private:
      */
     bool m_geo_warned{false};
 
+    /**
+     * @brief Whether local_poses is published (SDF parameter
+     * legacy_local_interface, default true)
+     */
+    bool m_legacy_local_interface{true};
+
+    /**
+     * @brief Whether the deprecation of local_poses was warned about, once
+     * it has a subscriber
+     */
+    bool m_local_poses_warned{false};
+
+    /**
+     * @brief Latitude and longitude last published on world_origin, in deg
+     */
+    std::optional<std::pair<double, double>> m_published_origin;
+
     std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
 
     std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
@@ -281,6 +311,12 @@ private:
 
     rclcpp::Publisher<lotusim_msgs::msg::VesselPositionArray>::SharedPtr
         m_pose_pub;
+
+    rclcpp::Publisher<lotusim_msgs::msg::VesselPoseArray>::SharedPtr
+        m_local_pose_pub;
+
+    rclcpp::Publisher<geographic_msgs::msg::GeoPoint>::SharedPtr
+        m_world_origin_pub;
 
     rclcpp_action::Server<lotusim_msgs::action::MASCmdArray>::SharedPtr
         m_cmd_array_action;

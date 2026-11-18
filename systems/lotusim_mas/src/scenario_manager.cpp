@@ -10,6 +10,9 @@
 #include "lotusim_mas/scenario_manager.hpp"
 
 #include "lotusim_common/common.hpp"
+#include "lotusim_common/transforms.hpp"
+
+#include <gz/sim/Util.hh>
 
 namespace lotusim::scenario {
 
@@ -163,14 +166,7 @@ lotusim_msgs::msg::MASCmd ScenarioManager::agentToMASCmd(
     cmd.geo_point.latitude = agent.position.latitude;
     cmd.geo_point.longitude = agent.position.longitude;
     cmd.geo_point.altitude = agent.position.altitude;
-    // compass bearing (deg, 0 = North, clockwise) -> ENU yaw (rad, East = 0, CCW)
-    const double yaw = (90.0 - agent.heading) * M_PI / 180.0;  
-    cmd.heading = static_cast<float>(yaw);  // as moveEntity expects it
-
-    cmd.vessel_position.orientation.w = std::cos(yaw / 2.0);
-    cmd.vessel_position.orientation.x = 0.0;
-    cmd.vessel_position.orientation.y = 0.0;
-    cmd.vessel_position.orientation.z = std::sin(yaw / 2.0);
+    cmd.heading = static_cast<float>(agent.heading);
 
     // lotus_param XML was built by ScenarioParser — pass it straight through.
     // MAS::addEntity expects it in sdf_string when model_name is set.
@@ -181,17 +177,8 @@ lotusim_msgs::msg::MASCmd ScenarioManager::agentToMASCmd(
 
 void ScenarioManager::applyReferencePosition(const GeoPoint& ref)
 {
-    gz::sim::Entity worldEntity = gz::sim::kNullEntity;
-    m_ecm->Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity& _entity,
-            const gz::sim::components::Name*,
-            const gz::sim::components::World*) -> bool {
-            worldEntity = _entity;
-            return true;
-        });
-
     auto* sphComp = m_ecm->Component<gz::sim::components::SphericalCoordinates>(
-        worldEntity);
+        gz::sim::worldEntity(*m_ecm));
     if (sphComp == nullptr) {
         m_logger->warn(
             "ScenarioManager::applyReferencePosition: SphericalCoordinates "
@@ -203,14 +190,19 @@ void ScenarioManager::applyReferencePosition(const GeoPoint& ref)
         gz::math::Angle(lotusim::common::degToRad(ref.latitude)));
     sphComp->Data().SetLongitudeReference(
         gz::math::Angle(lotusim::common::degToRad(ref.longitude)));
-    sphComp->Data().SetElevationReference(ref.altitude);
+    // z is the altitude from sea level: the origin's elevation moves nothing.
+    if (ref.altitude != 0.0) {
+        m_logger->warn(
+            "ScenarioManager::applyReferencePosition: reference altitude "
+            "{:.2f} m ignored, positions are relative to sea level.",
+            ref.altitude);
+    }
 
     m_logger->info(
         "ScenarioManager::applyReferencePosition: World reference set to "
-        "lat={:.6f} lon={:.6f} alt={:.2f}",
+        "lat={:.6f} deg lon={:.6f} deg",
         ref.latitude,
-        ref.longitude,
-        ref.altitude);
+        ref.longitude);
 }
 
 }  // namespace lotusim::scenario

@@ -10,6 +10,8 @@
 
 #include "physics_engine_interface/vessel_information.hpp"
 
+#include "lotusim_common/transforms.hpp"
+
 #include <gz/math/Rand.hh>
 #include <gtest/gtest.h>
 #include <cmath>

@@ -64,19 +64,27 @@ Declared once in the world SDF:
 
 ```xml
 <plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem">
+  <!-- Optional, default true: also publish local_poses (deprecated) -->
+  <legacy_local_interface>true</legacy_local_interface>
 </plugin>
 ```
+
+| SDF parameter | Default | Effect |
+|---|---|---|
+| `legacy_local_interface` | `true` | Also publish `local_poses`, the local ENU pose of every vessel, as `poses` did before it became geographic. Deprecated: a warning is logged once when `local_poses` has a subscriber. Set it to `false` once your clients use `poses` and `world_origin`. |
 
 - **`Configure()`** - creates the plugin's logger and ROS 2 node, an `SdfEntityCreator`, an `EntitySpawner`, and a `ScenarioManager`; starts a `MultiThreadedExecutor` spinning on its own thread (so action/service callbacks don't block the simulation loop); calls `customUserConfiguration()`.
 - **`PreUpdate()`** - action goals arrive asynchronously on the executor thread and are queued (`m_mas_cmds` / `m_mas_cmds_array`). Each tick, the queue is drained, **shuffled into random order** (so no client can rely on execution order when multiple commands land in the same tick), processed one by one through `handleMASCmd()`, and each goal is completed with its result. Then calls `customUserPreUpdate()`.
 - **`Update()`** - `EachNew<ModelSdf>` / `EachRemoved<ModelSdf>` track *every* vessel that appears or disappears in the world, not just ones spawned through MAS, and keep `EntitySpawner`'s name↔entity maps in sync via `registerNewEntity()` / `unregisterEntity()`.
-- **`PostUpdate()`** - publishes `poses` (pose + geo-point for every tracked vessel), then calls `customUserPostUpdate()`.
+- **`PostUpdate()`** - publishes `world_origin` again if a scenario's `reference_position` moved it, publishes `poses` (and `local_poses` when `legacy_local_interface` is on) for every tracked vessel, then calls `customUserPostUpdate()`.
 
 **Published / served interfaces:**
 
 | Interface | Type | Direction | Purpose |
 |---|---|---|---|
-| `poses` | Topic - `lotusim_msgs/msg/VesselPositionArray` | Publishes | Pose + geo-point of every tracked vessel, every tick |
+| `poses` | Topic - `lotusim_msgs/msg/VesselPositionArray` | Publishes | Geo-point (altitude in m from sea level), heading and course (deg from true North, clockwise) and speed over ground (m/s) of every tracked vessel, every tick |
+| `world_origin` | Topic - `geographic_msgs/msg/GeoPoint` | Publishes | Latitude and longitude of the world origin (`<spherical_coordinates>`), altitude 0: what a client needs to convert geographic positions to local x East, y North. Published at configure and whenever a scenario's `reference_position` moves it, with QoS depth 1, reliable, transient local. Subscribe with transient local durability too, or you won't receive the origin published before you joined |
+| `local_poses` | Topic - `lotusim_msgs/msg/VesselPoseArray` | Publishes | Deprecated, only with `legacy_local_interface` (default on): name and local ENU pose (x East, y North, z up, metres) of every tracked vessel, every tick. Will be removed in a future release: use `poses` and the conversions of `lotusim_common/transforms.hpp` |
 | `mas_cmd` | Action - `lotusim_msgs/action/MASCmd` | Server | Single create / move / delete command |
 | `mas_cmd_array` | Action - `lotusim_msgs/action/MASCmdArray` | Server | Batch of commands, executed together in one tick |
 | `launch_scenario` | Service - `lotusim_msgs/srv/String` | Server | Load and spawn every agent in a YAML scenario file |
@@ -92,8 +100,8 @@ Declared once in the world SDF:
 | `sdf_file` | Optional SDF filename inside the model folder - defaults to `model.sdf` |
 | `vessel_name` | Target vessel - required unless `entity` is set. Must not start with a digit or contain characters other than letters, digits, `_` |
 | `entity` | Target vessel by entity ID (delete / move); ignored and overwritten on create |
-| `vessel_position` | Cartesian pose (create / move) |
-| `geo_point` + `heading` | Geographic pose (create / move) - takes priority over `vessel_position` when non-zero |
+| `geo_point` | Position (create / move), always given: WGS84 latitude and longitude in degrees, altitude in metres from sea level, negative when submerged |
+| `heading` | Where the bow points (create / move), always given: degrees from true North, clockwise (90 = East) |
 
 ---
 
@@ -106,7 +114,7 @@ Owns the vessel name↔entity maps and exposes `addEntity()` / `moveEntity()` / 
   - `model_name` set → loads `$LOTUSIM_MODELS_PATH/<model_name>/<sdf_file or model.sdf>` from disk; if `sdf_string` is also set, its `<lotus_param>` block is parsed and injected into the loaded model's XML before spawning.
 
   The final vessel name comes from `vessel_name`, falling back to the SDF's own model name, then passed through `resolveUniqueName()` (appends `_0`, `_1`, … if already taken). On success the entity is created, parented to the world, and immediately moved to the requested pose via an internal `moveEntity()` call.
-- **`moveEntity()`** - resolves the target by `entity` or `vessel_name`, then sets its `Pose` component. If a non-zero `geo_point` or `heading` is present, it's converted to world XY via the world's spherical-coordinates reference and overrides the Cartesian pose.
+- **`moveEntity()`** - resolves the target by `entity` or `vessel_name`, then sets its `Pose` component from `geo_point` and `heading` (`geoToPose`): x and y projected from latitude and longitude around the world's spherical-coordinates origin, z the altitude, yaw from the heading (see `lotusim_common/transforms.hpp`). It fails if the world has no `<spherical_coordinates>`.
 - **`deleteEntity()` / `deleteAllEntities()`** - remove the vessel from the internal maps immediately, then request removal via `SdfEntityCreator`; Gazebo actually removes the entity on the next update step.
 - **Thread-safety** - `addEntity` / `moveEntity` / `deleteEntity` run only on the Gazebo `PreUpdate` thread, so ECM writes need no locking. The name↔entity maps themselves are protected by a `shared_mutex` since they're also read from the pose-publishing path in `PostUpdate`.
 
@@ -116,7 +124,7 @@ Owns the vessel name↔entity maps and exposes `addEntity()` / `moveEntity()` / 
 
 `ScenarioManager` is a plain helper owned by `MultiAgentSystem`. It exposes the `launch_scenario` / `stop_scenario` services:
 
-- **`launch_scenario`** - looks up `$LOTUSIM_SCENARIOS_PATH/<request.data>` (falling back to `~/lotusim_ws/src/LOTUSim/assets/scenarios` with a warning if the env var isn't set), refuses if a scenario is already running, parses the YAML via `ScenarioParser`, applies `reference_position` to the world's spherical-coordinates origin, then spawns every agent via `EntitySpawner`.
+- **`launch_scenario`** - looks up `$LOTUSIM_SCENARIOS_PATH/<request.data>` (falling back to `~/lotusim_ws/src/LOTUSim/assets/scenarios` with a warning if the env var isn't set), refuses if a scenario is already running, parses the YAML via `ScenarioParser`, applies the latitude and longitude of `reference_position` to the world's spherical-coordinates origin (its `altitude` is ignored with a warning when not 0: positions are relative to sea level), then spawns every agent via `EntitySpawner`.
 - **`stop_scenario`** - despawns every agent spawned by the active scenario and clears the current-scenario state.
 
 `ScenarioParser` is a stateless YAML → `ScenarioConfig` converter. For each agent, its `render_interface` / `physics_interface` / `waypoint_interface` YAML blocks are converted **directly** into a `<lotus_param>` XML string.

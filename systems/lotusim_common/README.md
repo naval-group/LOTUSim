@@ -11,6 +11,7 @@ Used by: `lotusim_mas`, `physics_engine_interface`, `render_interface`, and the 
 ```
 lotusim_common
     ├── common.{hpp,cpp}        — ECM/SDF helper functions (namespace lotusim::common)
+    ├── transforms.{hpp,cpp}    — angle, frame and geographic conversions (namespace lotusim::common)
     ├── entity_group.{hpp,cpp}  — EntityGraph: union-find for linked entities (namespace lotusim::common)
     └── logger.{hpp,cpp}        — spdlog console/file logger setup (namespace lotusim::logger)
 ```
@@ -24,13 +25,32 @@ General-purpose helpers for working with Gazebo's `EntityComponentManager` (ECM)
 | Function | Description |
 |---|---|
 | `pose3Eql(a, b)` | Compares two `gz::math::Pose3d` for equality within a `1e-6` tolerance (position and each quaternion component) - use instead of exact float equality when checking if a pose changed |
-| `getWorldName(ecm)` | Returns the name of the (first) entity with both `Name` and `World` components |
+| `getWorldName(ecm)` | Returns the name of the world entity (`gz::sim::worldEntity`) |
 | `getModelName(ecm, entity)` | Walks up the `ParentEntity` chain from `entity` until it finds an ancestor with a `Model` component, returning that entity + its name. Use this to resolve "which vessel does this sensor/link belong to" from a child entity |
 | `generateHeaderMessage(time)` | Builds a `std_msgs::msg::Header` from a `steady_clock::duration` (splits into `sec`/`nanosec`). **`frame_id` is hardcoded to `"wgs84"`** regardless of the actual frame |
-| `XYFromLatLong(ecm, lat, lon)` | Converts a lat/lon pair to local `(x, y)` using the world's `SphericalCoordinates` origin. Returns `std::nullopt` if the world has no spherical coordinates configured |
 | `getElementCaseInsensitive(parent, name)` | Finds a child SDF element by name, case-insensitively |
 | `toUpper(str)` | Simple uppercase conversion, used internally by `getElementCaseInsensitive` |
 | `shuffleOrder<T>(vector, type)` | Shuffles a `std::vector<T>` in place via `std::shuffle` |
+
+---
+
+## `transforms.hpp` / `transforms.cpp` - conversions
+
+Every conversion between what LOTUSim exposes (WGS84 degrees, altitude in metres from sea level, negative when submerged, angles in degrees from true North, clockwise) and Gazebo's flat ENU world (sea surface at z = 0, yaw in radians from East, counter-clockwise), and between axis conventions. The pure functions take the world origin (`gz::math::SphericalCoordinates`) as an argument and need no ECM, so they are unit tested on their own (`test_geo`, `test_frame_change`); the ECM wrappers look the world's origin up and call them.
+
+The world's x axis points East. The projection uses the latitude and longitude of `<spherical_coordinates>` only: `<heading_deg>` is not supported and `<elevation>` moves nothing, as z is the altitude from sea level. The MAS logs a warning at load when a world sets either.
+
+| Function | Description |
+|---|---|
+| `geoToLocal(origin, lat, lon, alt)` / `localToGeo(origin, xyz)` | The world's map projection and its exact inverse: x and y are the projection of latitude and longitude onto the plane tangent at the origin, z is the altitude. Gazebo's own conversion gives the 3D point on that plane, whose z drops with the Earth's curvature (about 785 m at 100 km); the projection keeps altitude 0 at the surface. Local scale error about d²/2R² (1e-4 at 100 km) |
+| `geoToPose(origin, lat, lon, alt, heading)` | The level ENU pose of a vessel at a geographic position with a heading |
+| `headingToYaw(deg)` / `yawToHeading(rad)` | Heading (degrees from true North, clockwise) to and from ENU yaw |
+| `courseOf(east, north)` | Course over ground of a velocity, degrees from true North, clockwise; 360 below 0.05 m/s, as AIS does |
+| `wrapDegrees(deg)` / `toFloatDegrees(deg)` | An angle brought into [0, 360), as a double or as a float32 |
+| `degToRad` / `radToDeg` | Angle units |
+| `quatChangeFrame`, `poseChangeFrame`, `vecBodyChangeFrame`, `pseudoVecBodyChangeFrame`, `worldVelToTargetBody`, `targetBodyVelToWorld` | Changes between axis conventions (ENU/FLU, NED/FRD, EUN/FUL, NEU/FRU), with the `kWorld*` / `kBody*` matrices |
+| `worldOrigin(ecm)` | The world's `<spherical_coordinates>`, or `std::nullopt` |
+| `LatLongToXY(ecm, lat, lon, alt)` / `XYToLatLong(ecm, x, y, z)` | `geoToLocal` / `localToGeo` with the world's origin; `std::nullopt` if the world has no spherical coordinates |
 
 ---
 
