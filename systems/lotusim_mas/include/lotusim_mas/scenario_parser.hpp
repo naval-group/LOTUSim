@@ -65,6 +65,9 @@ private:
     /** "underwater" → "Underwater", etc. */
     static std::string capitaliseDomain(const std::string& domain);
 
+    /// Text escaped for an XML element: & < > " '.
+    static std::string xmlEscape(const std::string& text);
+
     template <typename T>
     static T
     getOrDefault(const YAML::Node& node, const std::string& key, T default_val);

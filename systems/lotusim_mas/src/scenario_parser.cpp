@@ -137,7 +137,7 @@ void ScenarioParser::appendRenderInterface(
     xml += "    <render_interface>\n";
     xml += "        <publish_render>" +
            std::string(enabled ? "true" : "false") + "</publish_render>\n";
-    xml += "        <renderer_type_name>" + renderer_type +
+    xml += "        <renderer_type_name>" + xmlEscape(renderer_type) +
            "</renderer_type_name>\n";
     xml += "    </render_interface>\n";
 }
@@ -179,9 +179,12 @@ void ScenarioParser::appendPhysicsEngineInterface(
             params ? getOrDefault<std::string>(params, "uri", "") : "";
 
         xml += "        <" + domain_key + ">\n";
-        xml += "            <interface_type>" + interface_type +
+        // Scenario strings are escaped: a < in a uri used to make the whole
+        // <lotus_param> invalid (the agent was not created), and an entity
+        // such as &amp; was decoded.
+        xml += "            <interface_type>" + xmlEscape(interface_type) +
                "</interface_type>\n";
-        xml += "            <uri>" + uri + "</uri>\n";
+        xml += "            <uri>" + xmlEscape(uri) + "</uri>\n";
 
         if (params && params["thrusters"] && params["thrusters"].IsSequence()) {
             xml += "            <thrusters>\n";
@@ -189,9 +192,12 @@ void ScenarioParser::appendPhysicsEngineInterface(
             for (const auto& t : params["thrusters"]) {
                 const std::string name =
                     getOrDefault<std::string>(t, "name", "");
-                xml += "                <thrusters" + std::to_string(idx++) +
-                       ">" + name + "</thrusters" + std::to_string(idx - 1) +
-                       ">\n";
+                // One tag for both ends: idx++ and idx - 1 in one expression
+                // are unsequenced, and could close <thrusters1> with
+                // </thrusters0>.
+                const std::string tag = "thrusters" + std::to_string(idx++);
+                xml += "                <" + tag + ">" + xmlEscape(name) +
+                       "</" + tag + ">\n";
             }
             xml += "            </thrusters>\n";
         }
@@ -262,6 +268,34 @@ std::string ScenarioParser::capitaliseDomain(const std::string& domain)
     std::string out = domain;
     out[0] =
         static_cast<char>(std::toupper(static_cast<unsigned char>(out[0])));
+    return out;
+}
+
+std::string ScenarioParser::xmlEscape(const std::string& text)
+{
+    std::string out;
+    out.reserve(text.size());
+    for (const char c : text) {
+        switch (c) {
+            case '&':
+                out += "&amp;";
+                break;
+            case '<':
+                out += "&lt;";
+                break;
+            case '>':
+                out += "&gt;";
+                break;
+            case '"':
+                out += "&quot;";
+                break;
+            case '\'':
+                out += "&apos;";
+                break;
+            default:
+                out += c;
+        }
+    }
     return out;
 }
 
