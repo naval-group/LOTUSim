@@ -22,11 +22,6 @@ namespace {  // private
 using DiagnosticArray = diagnostic_msgs::msg::DiagnosticArray;
 using DiagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus;
 
-std::mutex g_diagnostics_mutex;
-std::shared_ptr<rclcpp::Node> g_node;
-rclcpp::Publisher<DiagnosticArray>::SharedPtr g_diagnostics_pub;
-std::string g_hardware_id;
-
 std::mutex g_logger_creation_mutex;
 
 uint8_t toDiagnosticLevel(spdlog::level::level_enum level)
@@ -43,34 +38,44 @@ uint8_t toDiagnosticLevel(spdlog::level::level_enum level)
 }
 
 class DiagnosticsSink : public spdlog::sinks::base_sink<std::mutex> {
+private:
+    std::shared_ptr<rclcpp::Node> m_node;
+    rclcpp::Publisher<DiagnosticArray>::SharedPtr m_diagnostics_pub;
+    std::string m_hardware_id;
+
+public:
+    void enable(const std::shared_ptr<rclcpp::Node>& node, const std::string& hardware_id)
+    {
+        auto pub = node->create_publisher<DiagnosticArray>("/diagnostics", rclcpp::QoS(10));
+        std::lock_guard<std::mutex> lock(mutex_);
+        m_node = node;
+        m_hardware_id = hardware_id;
+        m_diagnostics_pub = pub;
+    }
+    void disable()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        m_diagnostics_pub.reset();
+        m_node.reset();
+    }
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override
     {
-        // copy the shared state
-        std::shared_ptr<rclcpp::Node> node;
-        rclcpp::Publisher<DiagnosticArray>::SharedPtr pub;
-        std::string hardware_id;
-        {
-            std::lock_guard<std::mutex> lock(g_diagnostics_mutex);
-            node = g_node;
-            pub = g_diagnostics_pub;
-            hardware_id = g_hardware_id;
-        }
-        if (!node || !pub) {
-            return;  // diagnostics not enabled
+        if (!m_node || !m_diagnostics_pub) {
+            return;  // in case diagnostics are not enabled for this logger
         }
 
         DiagnosticStatus status;
         status.name.assign(msg.logger_name.data(), msg.logger_name.size());
         status.message.assign(msg.payload.data(), msg.payload.size());
-        status.hardware_id = hardware_id;
+        status.hardware_id = m_hardware_id;
         status.level = toDiagnosticLevel(msg.level);
 
         DiagnosticArray array_msg;
-        array_msg.header.stamp = node->now();
+        array_msg.header.stamp = m_node->now();
         array_msg.status.push_back(std::move(status));
         try{
-            pub->publish(array_msg);
+            m_diagnostics_pub->publish(array_msg);
         } catch (...) {
             // no log, swallow error
         }
@@ -79,23 +84,27 @@ protected:
 };
 }  // namespace
 
-void enableDiagnostics(
-    const std::shared_ptr<rclcpp::Node>& node, const std::string& hardware_id)
+bool enableDiagnostics(
+    const std::shared_ptr<spdlog::logger>& logger, const std::shared_ptr<rclcpp::Node>& node, const std::string& hardware_id)
 {
-    auto pub = node->create_publisher<DiagnosticArray>(
-        "/diagnostics", rclcpp::QoS(10));
-
-    std::lock_guard<std::mutex> lock(g_diagnostics_mutex);
-    g_node = node;
-    g_diagnostics_pub = pub;
-    g_hardware_id = hardware_id;
+    if (!logger || !node) return false;
+    for (auto& sink : logger->sinks()) {
+        if (auto diag = std::dynamic_pointer_cast<DiagnosticsSink>(sink)) {
+            diag->enable(node, hardware_id);
+            return true;
+        }
+    }
+    return false; 
 }
 
-void disableDiagnostics()
+void disableDiagnostics(const std::shared_ptr<spdlog::logger>& logger)
 {
-    std::lock_guard<std::mutex> lock(g_diagnostics_mutex);
-    g_diagnostics_pub.reset();
-    g_node.reset();
+    if (!logger) return;
+    for (auto& sink : logger->sinks()) {
+        if (auto diag = std::dynamic_pointer_cast<DiagnosticsSink>(sink)) {
+            diag->disable();
+        }
+    }
 }
 
 spdlog::level::level_enum getLogLevelFromEnv()

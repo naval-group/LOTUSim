@@ -16,16 +16,22 @@ namespace lotusim::gazebo {
 
 ROSInterface::ROSInterface(
     const std::string& world_name,
-    std::shared_ptr<spdlog::logger> logger)
-    : RenderInterfaceBase(world_name, std::move(logger))
+    std::shared_ptr<spdlog::logger> logger,
+    std::shared_ptr<rclcpp::Node> diag_node)
+    : RenderInterfaceBase(world_name, std::move(logger), std::move(diag_node))
 {
     m_ros_node = rclcpp::Node::make_shared("render_interface", m_world_name);
     m_logger = logger::createConsoleAndFileLogger(
         "ros2_render_interface",
         "ros2_render_interface.txt");
+    logger::enableDiagnostics(m_logger, m_diag_node, m_world_name);
 }
 
-ROSInterface::~ROSInterface() {}
+ROSInterface::~ROSInterface() {
+    m_logger->info(
+        "RenderROSInterface::~RenderROSInterface: Render's ROSInterface successfully shutdown.");
+    logger::disableDiagnostics(m_logger);
+}
 
 bool ROSInterface::configureInterface(
     const std::shared_ptr<const sdf::Element>&)

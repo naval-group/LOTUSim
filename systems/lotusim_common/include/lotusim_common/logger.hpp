@@ -31,12 +31,13 @@ namespace rclcpp { class Node; }
 namespace lotusim::logger {
 
 // Publish every log record of every logger as a DiagnosticArray on /diagnostics
-void enableDiagnostics(
+bool enableDiagnostics(
+    const std::shared_ptr<spdlog::logger>& logger,
     const std::shared_ptr<rclcpp::Node>& node,
     const std::string& hardware_id);
 
 // stop publishing. Call before the node is destroyed
-void disableDiagnostics();
+void disableDiagnostics(const std::shared_ptr<spdlog::logger>& logger);
 
 // If lotusim is compiled in debug mode, all debug logs will be triggered.
 #if defined(DEBUG)

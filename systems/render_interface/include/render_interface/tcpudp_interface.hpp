@@ -44,7 +44,8 @@ class TcpUdpInterface final : public RenderInterfaceBase {
 public:
     TcpUdpInterface(
         const std::string& world_name,
-        std::shared_ptr<spdlog::logger> logger);
+        std::shared_ptr<spdlog::logger> logger,
+        std::shared_ptr<rclcpp::Node> diag_node);
 
     ~TcpUdpInterface() override;
 

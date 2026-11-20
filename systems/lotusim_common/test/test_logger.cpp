@@ -122,10 +122,13 @@ std::string readFile(const std::filesystem::path& path)
 class DiagnosticsCapture
 {
 public:
-    explicit DiagnosticsCapture(const std::string& hardware_id = "test_world")
-        : m_node(rclcpp::Node::make_shared(
-              "logger_test_" + std::to_string(getpid()) + "_" +
-              std::to_string(s_counter++)))
+    explicit DiagnosticsCapture(
+    const std::string& hardware_id = "test_world",
+    std::shared_ptr<spdlog::logger> log = testLogger())
+    : m_log(std::move(log)),
+      m_node(rclcpp::Node::make_shared(
+            "logger_test_" + std::to_string(getpid()) + "_" +
+            std::to_string(s_counter++)))
     {
         m_sub = m_node->create_subscription<DiagnosticArray>(
             "/diagnostics",
@@ -138,21 +141,21 @@ public:
                 }
                 m_received.push_back(*msg);
             });
-        logger::enableDiagnostics(m_node, hardware_id);
+        logger::enableDiagnostics(m_log, m_node, hardware_id);
 
         // The first messages can be lost until publisher and subscriber have
         // found each other, so log until one comes through
         const auto deadline =
             std::chrono::steady_clock::now() + std::chrono::seconds(5);
         while (!m_warm && std::chrono::steady_clock::now() < deadline) {
-            testLogger()->info(kWarmup);
+            m_log->info(kWarmup);
             rclcpp::spin_some(m_node);
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
     }
     ~DiagnosticsCapture()
     {
-        logger::disableDiagnostics();
+        logger::disableDiagnostics(m_log);
     }
     DiagnosticsCapture(const DiagnosticsCapture&) = delete;
     DiagnosticsCapture& operator=(const DiagnosticsCapture&) = delete;
@@ -195,6 +198,7 @@ private:
     static constexpr const char* kWarmup = "__diagnostics_warmup__";
     static inline std::atomic<int> s_counter{0};
 
+    std::shared_ptr<spdlog::logger> m_log;  
     rclcpp::Node::SharedPtr m_node;
     rclcpp::Subscription<DiagnosticArray>::SharedPtr m_sub;
     std::vector<DiagnosticArray> m_received;
@@ -272,7 +276,7 @@ TEST(Diagnostics, NothingIsPublishedAfterDisable)
     DiagnosticsCapture capture;
     ASSERT_TRUE(capture.ready());
 
-    logger::disableDiagnostics();
+    logger::disableDiagnostics(testLogger());
     testLogger()->info("after disabling");
     testLogger()->error("also after disabling");
     capture.spinFor(std::chrono::milliseconds(300));
@@ -281,7 +285,7 @@ TEST(Diagnostics, NothingIsPublishedAfterDisable)
 
 TEST(Diagnostics, LoggingWithoutEnableDoesNothing)
 {
-    logger::disableDiagnostics();
+    logger::disableDiagnostics(testLogger());
     EXPECT_NO_THROW(testLogger()->info("diagnostics were never enabled"));
 }
 
@@ -299,8 +303,8 @@ TEST(Diagnostics, EnableAndDisableWhileOtherThreadsLog)
         });
     }
     for (int i = 0; i < 100; ++i) {
-        logger::enableDiagnostics(node, "busy_world");
-        logger::disableDiagnostics();
+        logger::enableDiagnostics(testLogger(), node, "busy_world");
+        logger::disableDiagnostics(testLogger());
     }
     stop = true;
     for (auto& t : loggers) {
@@ -341,22 +345,13 @@ TEST(LogLevel, UnsetUsesTheDefault)
 
 TEST(LoggerFactory, SameNameReturnsTheExistingLogger)
 {
-    // Logger names are process-wide: asking for a taken name returns the
-    // logger already registered under it, whichever factory made it. A basic
-    // file logger has no diagnostics sink, so its messages are not published.
-    auto basic = logger::createBasicFileLogger(
-        "test_same_name",
-        "test_same_name_basic.txt");
-    auto console = logger::createConsoleAndFileLogger(
-        "test_same_name",
-        "test_same_name_console.txt");
+    auto basic = logger::createBasicFileLogger("test_same_name", "test_same_name_basic.txt");
+    auto console = logger::createConsoleAndFileLogger("test_same_name", "test_same_name_console.txt");
     EXPECT_EQ(console, basic);
 
-    DiagnosticsCapture capture;
-    ASSERT_TRUE(capture.ready());
-    console->info("not published");
-    capture.spinFor(std::chrono::milliseconds(300));
-    EXPECT_TRUE(capture.received().empty());
+    // A basic file logger has no diagnostics sink, so enabling it fails
+    auto node = rclcpp::Node::make_shared("logger_test_same_name");
+    EXPECT_FALSE(logger::enableDiagnostics(console, node, "w"));
 }
 
 TEST(LoggerFactory, ConcurrentCreationOfOneName)
@@ -505,6 +500,29 @@ TEST(LoggerPattern, MessageOnlyBelowInfo)
     logger::setLoggerPattern(logger);
     logger->debug("hello");
     EXPECT_EQ(out.str(), "hello\n");
+}
+
+TEST(Diagnostics, DisablingOneLoggerLeavesAnotherPublishing)
+{
+    auto a = logger::createConsoleAndFileLogger("test_diag_a", "test_diag_a.txt");
+    auto b = logger::createConsoleAndFileLogger("test_diag_b", "test_diag_b.txt");
+
+    DiagnosticsCapture capture_a("world_a", a);
+    DiagnosticsCapture capture_b("world_b", b);
+    ASSERT_TRUE(capture_a.ready());
+    ASSERT_TRUE(capture_b.ready());
+
+    logger::disableDiagnostics(a);
+    a->error("from a");
+    b->error("from b");
+
+    ASSERT_TRUE(capture_b.waitFor(1));
+    EXPECT_EQ(capture_b.received()[0].status[0].message, "from b");
+}
+
+TEST(Diagnostics, EnableFailsWithoutSinkOrNode)
+{
+    EXPECT_FALSE(logger::enableDiagnostics(nullptr, nullptr, "w"));
 }
 
 // gz-sim's dependency chain can crash during static teardown (see

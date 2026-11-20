@@ -26,6 +26,7 @@ PowerManager::PowerManager()
 PowerManager::~PowerManager()
 {
     m_spin_thread.reset();
+    logger::disableDiagnostics(m_logger);
     m_logger->info(
         "PowerManager::~PowerManager: PowerManager successfully shutdown.");
 }
@@ -50,6 +51,8 @@ void PowerManager::Configure(
     m_ros_node = rclcpp::Node::make_shared(
         m_world_name + "_power_manager",
         m_world_name);
+
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
 
     m_logger->info(
         "PowerManager::Configure: power subsystem started for world [{}]",

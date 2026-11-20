@@ -22,6 +22,8 @@
 
 #include "lotusim_common/logger.hpp"
 
+namespace rclcpp { class Node; }
+
 namespace lotusim::gazebo {
 
 /**
@@ -34,8 +36,9 @@ class RenderInterfaceBase {
 public:
     RenderInterfaceBase(
         const std::string& world_name,
-        std::shared_ptr<spdlog::logger> logger)
-        : m_logger(logger), m_world_name(world_name) {};
+        std::shared_ptr<spdlog::logger> logger,
+        std::shared_ptr<rclcpp::Node> diag_node)
+        : m_logger(logger), m_world_name(world_name), m_diag_node(std::move(diag_node)) {};
 
     virtual ~RenderInterfaceBase() = default;
 
@@ -119,6 +122,7 @@ public:
 protected:
     std::shared_ptr<spdlog::logger> m_logger;
     std::string m_world_name;
+    std::shared_ptr<rclcpp::Node> m_diag_node;
 };
 
 }  // namespace lotusim::gazebo

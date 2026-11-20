@@ -29,12 +29,12 @@ MultiAgentSystem::~MultiAgentSystem()
 
 void MultiAgentSystem::shutdown()
 {
-    logger::disableDiagnostics();
     m_running.store(false);
     m_ros_node_thread.reset();
     m_executor.reset();
     m_logger->info(
         "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
+    logger::disableDiagnostics(m_logger);
 }
 
 void MultiAgentSystem::Configure(
@@ -81,7 +81,7 @@ bool MultiAgentSystem::initROSNode()
             "poses",
             rclcpp::QoS(10));
         
-    logger::enableDiagnostics(m_ros_node, m_world_name);
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
 
     m_callback_group.push_back(m_ros_node->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive));
