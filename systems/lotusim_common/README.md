@@ -40,17 +40,21 @@ Every conversion between what LOTUSim exposes (WGS84 degrees, altitude in metres
 
 The world's x axis points East. The projection uses the latitude and longitude of `<spherical_coordinates>` only: `<heading_deg>` is not supported and `<elevation>` moves nothing, as z is the altitude from sea level. The MAS logs a warning at load when a world sets either.
 
+Geographic positions have their own types in `geo_types.hpp` (header-only, no gz-sim): `GeoPoint {latitude, longitude, altitude}` in WGS84 degrees and metres from sea level, and `GeoPose {position, orientation}` with the attitude in the ENU world frame, as `geographic_msgs/GeoPose`. A latitude can then never be read as an x. Local positions and attitudes stay `gz::math::Vector3d` and `gz::math::Quaterniond`.
+
 | Function | Description |
 |---|---|
-| `geoToLocal(origin, lat, lon, alt)` / `localToGeo(origin, xyz)` | The world's map projection and its exact inverse: x and y are the projection of latitude and longitude onto the plane tangent at the origin, z is the altitude. Gazebo's own conversion gives the 3D point on that plane, whose z drops with the Earth's curvature (about 785 m at 100 km); the projection keeps altitude 0 at the surface. Local scale error about d²/2R² (1e-4 at 100 km) |
-| `geoToPose(origin, lat, lon, alt, heading)` | The level ENU pose of a vessel at a geographic position with a heading |
+| `geoToLocal(origin, GeoPoint)` / `localToGeo(origin, xyz)` → `GeoPoint` | The world's map projection and its exact inverse: x and y are the projection of latitude and longitude onto the plane tangent at the origin, z is the altitude. Gazebo's own conversion gives the 3D point on that plane, whose z drops with the Earth's curvature (about 785 m at 100 km); the projection keeps altitude 0 at the surface. Local scale error about d²/2R² (1e-4 at 100 km) |
+| `geoToPose(origin, GeoPoint, heading)` | The level ENU pose of a vessel at a geographic position with a heading |
+| `localToGeoPose(origin, pose)` → `GeoPose` | `localToGeo` of the position; the ENU attitude is kept as is |
 | `headingToYaw(deg)` / `yawToHeading(rad)` | Heading (degrees from true North, clockwise) to and from ENU yaw |
 | `courseOf(east, north)` | Course over ground of a velocity, degrees from true North, clockwise; 360 below 0.05 m/s, as AIS does |
 | `wrapDegrees(deg)` / `toFloatDegrees(deg)` | An angle brought into [0, 360), as a double or as a float32 |
 | `degToRad` / `radToDeg` | Angle units |
 | `quatChangeFrame`, `poseChangeFrame`, `vecBodyChangeFrame`, `pseudoVecBodyChangeFrame`, `worldVelToTargetBody`, `targetBodyVelToWorld` | Changes between axis conventions (ENU/FLU, NED/FRD, EUN/FUL, NEU/FRU), with the `kWorld*` / `kBody*` matrices |
 | `worldOrigin(ecm)` | The world's `<spherical_coordinates>`, or `std::nullopt` |
-| `LatLongToXY(ecm, lat, lon, alt)` / `XYToLatLong(ecm, x, y, z)` | `geoToLocal` / `localToGeo` with the world's origin; `std::nullopt` if the world has no spherical coordinates |
+| `worldGeoPose(entity, ecm)` → `std::optional<GeoPose>` | `localToGeoPose` of the entity's world pose with the world's origin; `std::nullopt` if the world has no spherical coordinates |
+| `LatLongToXY(ecm, GeoPoint)` → `std::optional<Vector3d>` / `XYToLatLong(ecm, [worldEntity,] xyz)` → `std::optional<GeoPoint>` | `geoToLocal` / `localToGeo` with the world's origin; `std::nullopt` if the world has no spherical coordinates |
 
 ---
 

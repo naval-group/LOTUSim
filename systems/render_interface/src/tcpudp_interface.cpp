@@ -118,25 +118,21 @@ bool TcpUdpInterface::configureInterface(
     return true;
 }
 
-bool TcpUdpInterface::sendPosition(
+bool TcpUdpInterface::sendWorldState(
     const std::chrono::steady_clock::duration& runTime,
-    const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
+    const std::vector<std::pair<std::string, GeoPose>>& poses)
 {
-    float secs =
-        std::chrono::duration_cast<std::chrono::duration<float>>(runTime)
-            .count();
+    std::vector<RendererVessel> vessels;
+    vessels.reserve(poses.size());
+    for (const auto& [name, pose] : poses) {
+        const auto it = m_renderer_obj_names.find(name);
+        vessels.push_back(
+            {name,
+             it != m_renderer_obj_names.end() ? it->second : "",
+             pose});
+    }
+    const std::string msgs = formatStateMessage(runTime, vessels);
     boost::system::error_code err;
-    std::string msgs =
-        R"({"time": )" + std::to_string(secs) + R"(, "VesselsInfo": [)";
-    for (auto&& temp : poses) {
-        msgs += formatPositionMessage(temp.first, temp.second) + ",";
-    }
-
-    // Remove the trailing comma and finalize the JSON structure
-    if (!msgs.empty() && msgs.back() == ',') {
-        msgs.pop_back();
-    }
-    msgs += "]}";
     m_udp_socket_ptr
         ->send_to(boost::asio::buffer(msgs), m_udp_endpoint, 0, err);
 
@@ -169,7 +165,7 @@ bool TcpUdpInterface::checkTcpOpen()
  */
 bool TcpUdpInterface::createVessel(
     const std::string& vessel_name,
-    const gz::math::Pose3d& pose,
+    const GeoPose& pose,
     sdf::ElementPtr sdfptr)
 {
     std::string renderer_type_name = "";
@@ -178,6 +174,7 @@ bool TcpUdpInterface::createVessel(
     }
     m_logger->info("RenderPlugin checking model: {}", vessel_name);
 
+    m_renderer_obj_names[vessel_name] = renderer_type_name;
     // If renderer fails to spawn vessel, no point adding model to list to
     // update
     return sendCreateMessage(vessel_name, pose, renderer_type_name);
@@ -185,6 +182,7 @@ bool TcpUdpInterface::createVessel(
 
 bool TcpUdpInterface::destroyVessel(const std::string& vessel_name)
 {
+    m_renderer_obj_names.erase(vessel_name);
     sendDestroyMessage(vessel_name);
     // Always true as we will still remove models from updating list
     return true;
@@ -205,7 +203,7 @@ bool TcpUdpInterface::customUpdates(
 
 bool TcpUdpInterface::sendCreateMessage(
     const std::string& name,
-    const gz::math::Pose3d& pose,
+    const GeoPose& pose,
     const std::string& type)
 {
     if (!checkTcpOpen()) {

@@ -15,7 +15,7 @@ namespace lotusim::gazebo {
 
 std::string formatCreateMessage(
     const std::string& name,
-    const gz::math::Pose3d& pose,
+    const GeoPose& pose,
     const std::string& type)
 {
     return fmt::format(
@@ -23,16 +23,16 @@ std::string formatCreateMessage(
         "cmd": "create",
         "name": "{}",
         "pose": {{
-            "x": {},
-            "y": {},
-            "z": {}
+            "latitude": {},
+            "longitude": {},
+            "altitude": {}
         }},
         "type": "{}"
     }})"),
         name,
-        pose.X(),
-        pose.Y(),
-        pose.Z(),
+        pose.position.latitude,
+        pose.position.longitude,
+        pose.position.altitude,
         type);
 }
 
@@ -58,35 +58,41 @@ std::string formatExplodeMessage(const std::string& name)
         name);
 }
 
-std::string formatPositionMessage(
-    const std::string& name,
-    const gz::math::Pose3d& pose)
+std::string formatStateMessage(
+    const std::chrono::steady_clock::duration& runTime,
+    const std::vector<RendererVessel>& vessels)
 {
-    return fmt::format(
-        FMT_STRING(R"(
-        {{
-            "name": "{}",
-            "position": {{
-                "x": {},
-                "y": {},
-                "z": {}
-            }},
-            "rotation": {{
-                "x": {},
-                "y": {},
-                "z": {},
-                "w": {}
-            }},
-            "thrusters": [
-                    ]}})"),
-        name,
-        pose.X(),
-        pose.Y(),
-        pose.Z(),
-        pose.Rot().X(),
-        pose.Rot().Y(),
-        pose.Rot().Z(),
-        pose.Rot().W());
+    const auto ns =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(runTime).count();
+    std::string msg = fmt::format(
+        FMT_STRING(
+            R"({{"header":{{"stamp":{{"sec":{},"nanosec":{}}},"frame_id":"world"}},"vessels":[)"),
+        ns / 1000000000,
+        ns % 1000000000);
+    bool first = true;
+    for (const auto& vessel : vessels) {
+        if (!first) {
+            msg += ',';
+        }
+        first = false;
+        const GeoPose& pose = vessel.vessel_pose;
+        msg += fmt::format(
+            // No whitespace: the state goes out as one UDP datagram, so
+            // every byte per vessel lowers the vessel count it can carry.
+            FMT_STRING(
+                R"({{"vessel_name":"{}","renderer_obj_name":"{}","vessel_pose":{{"position":{{"latitude":{},"longitude":{},"altitude":{}}},"orientation":{{"x":{},"y":{},"z":{},"w":{}}}}}}})"),
+            vessel.vessel_name,
+            vessel.renderer_obj_name,
+            pose.position.latitude,
+            pose.position.longitude,
+            pose.position.altitude,
+            pose.orientation.X(),
+            pose.orientation.Y(),
+            pose.orientation.Z(),
+            pose.orientation.W());
+    }
+    msg += "]}";
+    return msg;
 }
 
 }  // namespace lotusim::gazebo

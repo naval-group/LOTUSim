@@ -90,14 +90,6 @@ void MultiAgentSystem::Configure(
         }
     }
 
-    m_legacy_local_interface =
-        _sdf->Get<bool>("legacy_local_interface", true).first;
-    if (m_legacy_local_interface && m_ros_node) {
-        m_local_pose_pub =
-            m_ros_node->create_publisher<lotusim_msgs::msg::VesselPoseArray>(
-                "local_poses",
-                rclcpp::QoS(10));
-    }
     publishWorldOrigin(_ecm);
 
     customUserConfiguration(_sdf);
@@ -390,10 +382,13 @@ void MultiAgentSystem::Update(
             return true;
         });
 }
+
 void MultiAgentSystem::PostUpdate(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
+    // TODO: temporary solution. The origin is compared every tick so that it
+    // is published again after a scenario's reference_position moves it.
     publishWorldOrigin(_ecm);
     publishPose(_info, _ecm);
 
@@ -476,8 +471,6 @@ void MultiAgentSystem::publishPose(
     const gz::sim::EntityComponentManager& _ecm)
 {
     lotusim_msgs::msg::VesselPositionArray array_msg;
-    lotusim_msgs::msg::VesselPoseArray local_array_msg;
-    const bool publish_local = static_cast<bool>(m_local_pose_pub);
     auto simTimeNs =
         std::chrono::duration_cast<std::chrono::nanoseconds>(_info.simTime)
             .count();
@@ -485,23 +478,10 @@ void MultiAgentSystem::publishPose(
     array_msg.header.stamp.nanosec =
         static_cast<uint32_t>(simTimeNs % 1000000000);
     array_msg.header.frame_id = "world";
-    local_array_msg.header = array_msg.header;
-
-    if (publish_local && !m_local_poses_warned &&
-        m_local_pose_pub->get_subscription_count() > 0) {
-        m_local_poses_warned = true;
-        m_logger->warn(
-            "MultiAgentSystem::publishPose: '{}/local_poses' (local ENU) is "
-            "deprecated and will be removed in a future release; use '{}/poses' "
-            "and lotusim transforms.",
-            m_world_name,
-            m_world_name);
-    }
 
     // Geo conversion depends on the world, not on any individual vessel.
-    if (!m_geo_warned &&
-        !_ecm.Component<gz::sim::components::SphericalCoordinates>(
-            m_world_entity)) {
+    const auto origin = common::worldOrigin(_ecm);
+    if (!origin && !m_geo_warned) {
         m_geo_warned = true;
         m_logger->warn(
             "MultiAgentSystem::publishPose: World '{}' has no spherical coordinates;"
@@ -513,18 +493,9 @@ void MultiAgentSystem::publishPose(
     const auto& models = m_entity_spawner->vesselModels();
 
     for (auto& [entity, name] : m_entity_spawner->vesselNames()) {
-        auto pose = worldPose(entity, _ecm);
-        // Speed over ground is the horizontal component of world velocity.
+        const auto pose = gz::sim::worldPose(entity, _ecm);
         const auto [vx, vy, vz] =
             m_entity_spawner->getVesselLinearVelocity(entity);
-        const double speedOverGround = std::hypot(vx, vy);
-
-        auto latLonEle = lotusim::common::XYToLatLong(
-            _ecm,
-            m_world_entity,
-            pose.X(),
-            pose.Y(),
-            pose.Z());
 
         lotusim_msgs::msg::VesselPosition msg;
         msg.vessel_name = name;
@@ -532,40 +503,32 @@ void MultiAgentSystem::publishPose(
         msg.model_name =
             (model_it != models.end()) ? model_it->second : std::string{};
 
+        if (origin) {
+            const auto geo = common::localToGeo(*origin, pose.Pos());
+            msg.geo_point.latitude = geo.latitude;
+            msg.geo_point.longitude = geo.longitude;
+            msg.geo_point.altitude = geo.altitude;
+        }
+        msg.pose.position.x = pose.X();
+        msg.pose.position.y = pose.Y();
+        msg.pose.position.z = pose.Z();
+        msg.pose.orientation.w = pose.Rot().W();
+        msg.pose.orientation.x = pose.Rot().X();
+        msg.pose.orientation.y = pose.Rot().Y();
+        msg.pose.orientation.z = pose.Rot().Z();
+
         msg.heading =
             common::toFloatDegrees(common::yawToHeading(pose.Rot().Yaw()));
         const double course = common::courseOf(vx, vy);
         msg.course = course == common::kCourseNotAvailable
                          ? 360.0f
                          : common::toFloatDegrees(course);
+        // Speed over ground is the horizontal component of world velocity.
+        msg.speed_over_ground = static_cast<float>(std::hypot(vx, vy));
 
-        if (latLonEle) {
-            msg.geo_point.latitude = std::get<0>(latLonEle.value());
-            msg.geo_point.longitude = std::get<1>(latLonEle.value());
-            msg.geo_point.altitude = std::get<2>(latLonEle.value());
-        }
-
-        msg.speed_over_ground = static_cast<float>(speedOverGround);
-
-        array_msg.vessels.push_back(msg);
-
-        if (publish_local) {
-            lotusim_msgs::msg::VesselPose local_msg;
-            local_msg.vessel_name = name;
-            local_msg.pose.position.x = pose.X();
-            local_msg.pose.position.y = pose.Y();
-            local_msg.pose.position.z = pose.Z();
-            local_msg.pose.orientation.w = pose.Rot().W();
-            local_msg.pose.orientation.x = pose.Rot().X();
-            local_msg.pose.orientation.y = pose.Rot().Y();
-            local_msg.pose.orientation.z = pose.Rot().Z();
-            local_array_msg.vessels.push_back(local_msg);
-        }
+        array_msg.vessels.push_back(std::move(msg));
     }
     m_pose_pub->publish(array_msg);
-    if (publish_local) {
-        m_local_pose_pub->publish(local_array_msg);
-    }
 }
 
 void MultiAgentSystem::publishWorldOrigin(

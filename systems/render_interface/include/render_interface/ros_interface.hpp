@@ -14,11 +14,14 @@
 
 #include <boost/asio.hpp>
 #include <gz/sim/components/Name.hh>
+#include <map>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 
 #include "gz/sim/Util.hh"
 #include "lotusim_msgs/msg/renderer_cmd.hpp"
-#include "lotusim_msgs/msg/vessel_pose_array.hpp"
+#include "lotusim_msgs/msg/renderer_state.hpp"
+#include "lotusim_msgs/msg/renderer_vessel.hpp"
 #include "render_interface/render_interface.hpp"
 
 namespace lotusim::gazebo {
@@ -39,9 +42,13 @@ public:
     bool configureInterface(
         const std::shared_ptr<const sdf::Element>& _sdf) override final;
 
-    bool sendPosition(
+    /**
+     * @brief Publish the renderer_state snapshot: every live vessel with its
+     * current geographic pose.
+     */
+    bool sendWorldState(
         const std::chrono::steady_clock::duration& runTime,
-        const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
+        const std::vector<std::pair<std::string, GeoPose>>& poses)
         override final;
 
     /**
@@ -55,7 +62,7 @@ public:
      */
     bool createVessel(
         const std::string& vessel_name,
-        const gz::math::Pose3d& pose,
+        const GeoPose& pose,
         sdf::ElementPtr sdfptr) override final;
 
     bool destroyVessel(const std::string& vessel_name) override final;
@@ -69,22 +76,31 @@ public:
         const gz::sim::EntityComponentManager& _ecm) override final;
 
 private:
-    void sendCreateMessage(
-        const std::string& name,
-        const gz::math::Pose3d& pose,
-        const std::string& type);
-
-    void sendDestroyMessage(const std::string& name);
-
     void sendExplodeMessage(const std::string& name);
 
 private:
     rclcpp::Node::SharedPtr m_ros_node;
 
+    /**
+     * @brief Snapshot of every live vessel and its pose, published by
+     * sendWorldState (KeepLast(1), TRANSIENT_LOCAL)
+     */
+    rclcpp::Publisher<lotusim_msgs::msg::RendererState>::SharedPtr
+        m_renderer_state_pub;
+
+    /**
+     * @brief One-off renderer events such as EXPLODE (VOLATILE, KeepLast)
+     */
     rclcpp::Publisher<lotusim_msgs::msg::RendererCmd>::SharedPtr
         m_renderer_cmd_pub;
-    rclcpp::Publisher<lotusim_msgs::msg::VesselPoseArray>::SharedPtr
-        m_pose_pub;
+
+    /**
+     * @brief Vessels currently alive, keyed by name: the renderer object
+     * name of each, filled into the renderer_state snapshot with its pose.
+     */
+    std::map<std::string, lotusim_msgs::msg::RendererVessel> m_live_vessels;
+
+    std::mutex m_state_mutex;
 };
 
 }  // namespace lotusim::gazebo

@@ -63,7 +63,7 @@ bool ROS2Interface::configureInterface(
     if (m_namespace.find(_namespace) == m_namespace.end()) {
         auto pose_sub =
             m_ros_node
-                ->create_subscription<lotusim_msgs::msg::VesselPoseArray>(
+                ->create_subscription<lotusim_msgs::msg::VesselPositionArray>(
                     _namespace + "/poses",
                     1,
                     std::bind(
@@ -87,7 +87,7 @@ bool ROS2Interface::removeInterface(
 }
 
 void ROS2Interface::aerialPosesCB(
-    const lotusim_msgs::msg::VesselPoseArray::ConstSharedPtr& msg)
+    const lotusim_msgs::msg::VesselPositionArray::ConstSharedPtr& msg)
 {
     for (auto& vessel : msg->vessels) {
         m_vessel_pose_map[vessel.vessel_name] = vessel.pose;

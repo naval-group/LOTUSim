@@ -9,6 +9,8 @@
  */
 #include "render_interface/render_plugin.hpp"
 
+#include "lotusim_common/transforms.hpp"
+
 namespace lotusim::gazebo {
 
 RenderPlugin::RenderPlugin()
@@ -64,13 +66,13 @@ void RenderPlugin::Configure(
     m_render_interface->configureInterface(_sdf);
 
     // Cap the wall-clock rate at which poses are pushed to the renderer so a
-    // high real_time_factor does not flood the bridge (see m_render_min_period_s).
+    // high real_time_factor does not flood the bridge (see
+    // m_render_min_period_s).
     double render_rate_hz = 60.0;
     if (sdfPtr->HasElement("render_rate_hz")) {
         render_rate_hz = sdfPtr->Get<double>("render_rate_hz");
     }
-    m_render_min_period_s =
-        render_rate_hz > 0.0 ? 1.0 / render_rate_hz : 0.0;
+    m_render_min_period_s = render_rate_hz > 0.0 ? 1.0 / render_rate_hz : 0.0;
     m_logger->info(
         "RenderPlugin::Configure: render send rate capped at {} Hz (wall).",
         render_rate_hz);
@@ -111,23 +113,29 @@ void RenderPlugin::PreUpdate(
                     ->Get<bool>("publish_render")) {
                 auto name_opt =
                     _ecm.Component<gz::sim::components::Name>(_entity);
-                if (name_opt) {
-                    std::lock_guard<std::mutex> lock(m_mutex);
-                    m_vessel_entity[name_opt->Data()] = _entity;
-                } else {
+                if (!name_opt) {
                     m_logger->warn(
                         "RenderPlugin::PreUpdate: Vessel entity {} name not found. Not publishing rendering.",
                         _entity);
                     return true;
                 }
+                const auto pose = lotusim::common::worldGeoPose(_entity, _ecm);
+                if (!pose) {
+                    m_logger->error(
+                        "RenderPlugin::PreUpdate: Vessel {} not rendered: the world has no spherical coordinates.",
+                        name_opt->Data());
+                    return true;
+                }
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_model_entity[name_opt->Data()] = _entity;
+                }
                 m_logger->info(
                     "RenderPlugin::PreUpdate: Creation detected of vessel named {}",
                     name_opt->Data());
-                gz::math::Pose3d pose =
-                    _ecm.Component<gz::sim::components::Pose>(_entity)->Data();
                 return m_render_interface->createVessel(
                     name_opt->Data(),
-                    pose,
+                    *pose,
                     includeptr->GetElement("lotus_param")
                         ->GetElement("render_interface"));
             }
@@ -140,13 +148,12 @@ void RenderPlugin::PreUpdate(
             const gz::sim::components::ModelSdf*,
             const gz::sim::components::ParentEntity*) -> bool {
             auto name_opt = _ecm.Component<gz::sim::components::Name>(_entity);
-            if (m_vessel_entity.find(name_opt->Data()) !=
-                m_vessel_entity.end()) {
+            if (m_model_entity.find(name_opt->Data()) != m_model_entity.end()) {
                 m_logger->info(
                     "RenderPlugin::PreUpdate: Destruction detected of vessel named {}",
                     name_opt->Data());
                 std::lock_guard<std::mutex> lock(m_mutex);
-                m_vessel_entity.erase(name_opt->Data());
+                m_model_entity.erase(name_opt->Data());
                 return m_render_interface->destroyVessel(name_opt->Data());
             }
             return true;
@@ -163,8 +170,8 @@ void RenderPlugin::PostUpdate(
     }
 
     // Wall-clock rate cap: skip the pose send if the last one was too recent,
-    // so a high real_time_factor cannot flood the renderer bridge. customUpdates
-    // still runs every step (unchanged).
+    // so a high real_time_factor cannot flood the renderer bridge.
+    // customUpdates still runs every step (unchanged).
     bool send_pose = true;
     if (m_render_min_period_s > 0.0) {
         auto now = std::chrono::steady_clock::now();
@@ -179,19 +186,24 @@ void RenderPlugin::PostUpdate(
     }
 
     if (send_pose) {
-        std::vector<std::pair<std::string, gz::math::Pose3d>> vessel_pose;
-        // get a vector of vessel name, pose
+        std::vector<std::pair<std::string, GeoPose>> vessel_pose;
+        // get a vector of vessel name, geographic pose
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            for (auto&& entity : m_vessel_entity) {
-                gz::math::Pose3d pose =
-                    _ecm.Component<gz::sim::components::Pose>(entity.second)
-                        ->Data();
-
-                vessel_pose.push_back({entity.first, pose});
+            vessel_pose.reserve(m_model_entity.size());
+            for (auto&& entity : m_model_entity) {
+                // Tracked vessels were placed at creation, so the world has
+                // spherical coordinates; skip defensively if they went away.
+                const auto pose =
+                    lotusim::common::worldGeoPose(entity.second, _ecm);
+                if (pose) {
+                    vessel_pose.push_back({entity.first, *pose});
+                }
             }
         }
-        m_render_interface->sendPosition(_info.simTime, vessel_pose);
+        // Sent even when empty: for ROS2 this snapshot is the set of live
+        // vessels, so an empty one tells the renderer to remove the last.
+        m_render_interface->sendWorldState(_info.simTime, vessel_pose);
     }
     m_render_interface->customUpdates(_info, _ecm);
 }

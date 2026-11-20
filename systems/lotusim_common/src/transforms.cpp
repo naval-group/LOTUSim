@@ -144,19 +144,17 @@ gz::math::Vector3d targetBodyVelToWorld(
 
 gz::math::Vector3d geoToLocal(
     const SphericalCoordinates& origin,
-    double latitude_deg,
-    double longitude_deg,
-    double altitude_m)
+    const GeoPoint& geo)
 {
     // The point at sea level, projected onto the tangent plane.
     const auto on_plane = tangentPlaneAt(origin).PositionTransform(
-        {degToRad(latitude_deg), degToRad(longitude_deg), 0.0},
+        {degToRad(geo.latitude), degToRad(geo.longitude), 0.0},
         SphericalCoordinates::SPHERICAL,
         SphericalCoordinates::LOCAL2);
-    return {on_plane.X(), on_plane.Y(), altitude_m};
+    return {on_plane.X(), on_plane.Y(), geo.altitude};
 }
 
-gz::math::Vector3d localToGeo(
+GeoPoint localToGeo(
     const SphericalCoordinates& origin,
     const gz::math::Vector3d& local)
 {
@@ -182,15 +180,19 @@ gz::math::Vector3d localToGeo(
 
 gz::math::Pose3d geoToPose(
     const SphericalCoordinates& origin,
-    double latitude_deg,
-    double longitude_deg,
-    double altitude_m,
+    const GeoPoint& geo,
     double heading_deg)
 {
-    const auto xyz =
-        geoToLocal(origin, latitude_deg, longitude_deg, altitude_m);
+    const auto xyz = geoToLocal(origin, geo);
     return gz::math::Pose3d(
         xyz.X(), xyz.Y(), xyz.Z(), 0.0, 0.0, headingToYaw(heading_deg));
+}
+
+GeoPose localToGeoPose(
+    const SphericalCoordinates& origin,
+    const gz::math::Pose3d& local)
+{
+    return {localToGeo(origin, local.Pos()), local.Rot()};
 }
 
 //============================================================================
@@ -209,35 +211,39 @@ std::optional<SphericalCoordinates> worldOrigin(
     return sphComp->Data();
 }
 
-std::optional<std::tuple<double, double, double>> LatLongToXY(
-    const gz::sim::EntityComponentManager& _ecm,
-    double lat,
-    double lon,
-    double alt)
+std::optional<GeoPose> worldGeoPose(
+    const gz::sim::Entity& entity,
+    const gz::sim::EntityComponentManager& _ecm)
 {
     const auto origin = worldOrigin(_ecm);
     if (!origin) {
         return std::nullopt;
     }
-    const auto xyz = geoToLocal(*origin, lat, lon, alt);
-    return std::make_tuple(xyz.X(), xyz.Y(), xyz.Z());
+    return localToGeoPose(*origin, gz::sim::worldPose(entity, _ecm));
 }
 
-std::optional<std::tuple<double, double, double>> XYToLatLong(
+std::optional<gz::math::Vector3d> LatLongToXY(
     const gz::sim::EntityComponentManager& _ecm,
-    double x,
-    double y,
-    double z)
+    const GeoPoint& geo)
 {
-    return XYToLatLong(_ecm, gz::sim::worldEntity(_ecm), x, y, z);
+    const auto origin = worldOrigin(_ecm);
+    if (!origin) {
+        return std::nullopt;
+    }
+    return geoToLocal(*origin, geo);
 }
 
-std::optional<std::tuple<double, double, double>> XYToLatLong(
+std::optional<GeoPoint> XYToLatLong(
+    const gz::sim::EntityComponentManager& _ecm,
+    const gz::math::Vector3d& local)
+{
+    return XYToLatLong(_ecm, gz::sim::worldEntity(_ecm), local);
+}
+
+std::optional<GeoPoint> XYToLatLong(
     const gz::sim::EntityComponentManager& _ecm,
     const gz::sim::Entity& worldEntity,
-    double x,
-    double y,
-    double z)
+    const gz::math::Vector3d& local)
 {
     const auto* sphComp =
         _ecm.Component<gz::sim::components::SphericalCoordinates>(
@@ -245,8 +251,7 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
     if (sphComp == nullptr) {
         return std::nullopt;
     }
-    const auto geo = localToGeo(sphComp->Data(), {x, y, z});
-    return std::make_tuple(geo.X(), geo.Y(), geo.Z());
+    return localToGeo(sphComp->Data(), local);
 }
 
 }  // namespace lotusim::common

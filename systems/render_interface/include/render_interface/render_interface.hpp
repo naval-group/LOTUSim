@@ -11,9 +11,7 @@
 #define LOTUSIM_RENDER_INTERFACE_HPP_
 
 #include <chrono>
-#include <gz/math/Pose3.hh>
 #include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/components/Pose.hh>
 #include <memory>
 #include <sdf/sdf.hh>
 #include <string>
@@ -21,6 +19,7 @@
 #include <vector>
 
 #include "lotusim_common/logger.hpp"
+#include "lotusim_common/geo_types.hpp"
 
 namespace rclcpp {
 class Node;
@@ -28,11 +27,15 @@ class Node;
 
 namespace lotusim::gazebo {
 
+using lotusim::common::GeoPose;
+
 /**
  * @brief Base class for Render Interface.
  * All different type of render interface must be able to handle all these
  * cases.
  *
+ * The render interface is responsible of keeping track of the state of the
+ * rendering world based on these functions calls
  */
 class RenderInterfaceBase {
 public:
@@ -60,13 +63,13 @@ public:
      * @brief Send the simulation frame update to renderer
      *
      * @param runTime Current simulation time
-     * @param poses Vector of vessel names and their poses
+     * @param poses Vector of vessel names and their geographic poses
      * @return true if send successful
      * @return false otherwise
      */
-    virtual bool sendPosition(
+    virtual bool sendWorldState(
         const std::chrono::steady_clock::duration& runTime,
-        const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses) = 0;
+        const std::vector<std::pair<std::string, GeoPose>>& poses) = 0;
 
     /**
      * @brief Create a Vessel in the simulation.
@@ -74,14 +77,14 @@ public:
      * will like to interface
      *
      * @param vessel_name
-     * @param pose
+     * @param pose Geographic pose at spawn time
      * @param sdfptr lotus_param sdfptr
      * @return true
      * @return false
      */
     virtual bool createVessel(
         const std::string& vessel_name,
-        const gz::math::Pose3d& pose,
+        const GeoPose& pose,
         sdf::ElementPtr sdfptr) = 0;
 
     /**

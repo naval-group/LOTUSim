@@ -63,20 +63,13 @@ MultiAgentSystem  (Gazebo world System plugin)
 Declared once in the world SDF:
 
 ```xml
-<plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem">
-  <!-- Optional, default true: also publish local_poses (deprecated) -->
-  <legacy_local_interface>true</legacy_local_interface>
-</plugin>
+<plugin filename="multi_agent_system_plugin" name="lotusim::gazebo::MultiAgentSystem"/>
 ```
-
-| SDF parameter | Default | Effect |
-|---|---|---|
-| `legacy_local_interface` | `true` | Also publish `local_poses`, the local ENU pose of every vessel, as `poses` did before it became geographic. Deprecated: a warning is logged once when `local_poses` has a subscriber. Set it to `false` once your clients use `poses` and `world_origin`. |
 
 - **`Configure()`** - creates the plugin's logger and ROS 2 node, an `SdfEntityCreator`, an `EntitySpawner`, and a `ScenarioManager`; starts a `MultiThreadedExecutor` spinning on its own thread (so action/service callbacks don't block the simulation loop); calls `customUserConfiguration()`.
 - **`PreUpdate()`** - action goals arrive asynchronously on the executor thread and are queued (`m_mas_cmds` / `m_mas_cmds_array`). Each tick, the queue is drained, **shuffled into random order** (so no client can rely on execution order when multiple commands land in the same tick), processed one by one through `handleMASCmd()`, and each goal is completed with its result. Then calls `customUserPreUpdate()`.
 - **`Update()`** - `EachNew<ModelSdf>` / `EachRemoved<ModelSdf>` track *every* vessel that appears or disappears in the world, not just ones spawned through MAS, and keep `EntitySpawner`'s name↔entity maps in sync via `registerNewEntity()` / `unregisterEntity()`.
-- **`PostUpdate()`** - publishes `world_origin` again if a scenario's `reference_position` moved it, publishes `poses` (and `local_poses` when `legacy_local_interface` is on) for every tracked vessel, then calls `customUserPostUpdate()`.
+- **`PostUpdate()`** - publishes `world_origin` again if a scenario's `reference_position` moved it, publishes `poses` for every tracked vessel, then calls `customUserPostUpdate()`.
 
 **Published / served interfaces:**
 
@@ -84,7 +77,6 @@ Declared once in the world SDF:
 |---|---|---|---|
 | `poses` | Topic - `lotusim_msgs/msg/VesselPositionArray` | Publishes | Geo-point (altitude in m from sea level), heading and course (deg from true North, clockwise) and speed over ground (m/s) of every tracked vessel, every tick |
 | `world_origin` | Topic - `geographic_msgs/msg/GeoPoint` | Publishes | Latitude and longitude of the world origin (`<spherical_coordinates>`), altitude 0: what a client needs to convert geographic positions to local x East, y North. Published at configure and whenever a scenario's `reference_position` moves it, with QoS depth 1, reliable, transient local. Subscribe with transient local durability too, or you won't receive the origin published before you joined |
-| `local_poses` | Topic - `lotusim_msgs/msg/VesselPoseArray` | Publishes | Deprecated, only with `legacy_local_interface` (default on): name and local ENU pose (x East, y North, z up, metres) of every tracked vessel, every tick. Will be removed in a future release: use `poses` and the conversions of `lotusim_common/transforms.hpp` |
 | `mas_cmd` | Action - `lotusim_msgs/action/MASCmd` | Server | Single create / move / delete command |
 | `mas_cmd_array` | Action - `lotusim_msgs/action/MASCmdArray` | Server | Batch of commands, executed together in one tick |
 | `launch_scenario` | Service - `lotusim_msgs/srv/String` | Server | Load and spawn every agent in a YAML scenario file |

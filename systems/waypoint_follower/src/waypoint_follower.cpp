@@ -192,12 +192,12 @@ bool WaypointFollowerPlugin::load(
         m_waypoints[_entity] = waypoint;
 
         for (auto&& point : waypoint) {
-            const gz::math::Vector3d latlong = lotusim::common::localToGeo(
+            const lotusim::common::GeoPoint geo = lotusim::common::localToGeo(
                 m_origin_spherical,
                 {point.X(), point.Y(), 0.0});
             geographic_msgs::msg::GeoPoint point_msg;
-            point_msg.latitude = latlong.X();
-            point_msg.longitude = latlong.Y();
+            point_msg.latitude = geo.latitude;
+            point_msg.longitude = geo.longitude;
 
             m_waypoints_geo[_entity].push_back(point_msg);
         }
@@ -714,9 +714,7 @@ void WaypointFollowerPlugin::setupRosForModel(
                 for (const auto& geo_point : request->path) {
                     const gz::math::Vector3d xyz = lotusim::common::geoToLocal(
                         m_origin_spherical,
-                        geo_point.latitude,
-                        geo_point.longitude,
-                        0.0);
+                        {geo_point.latitude, geo_point.longitude, 0.0});
 
                     m_waypoints[entity].push_back({xyz.X(), xyz.Y()});
                 }

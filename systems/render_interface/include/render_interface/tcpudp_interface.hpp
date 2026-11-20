@@ -11,10 +11,10 @@
 #define LOTUSIM_TCP_UDP_RENDER_INTERFACE_HPP_
 
 #include <boost/asio.hpp>
-#include <gz/math/Pose3.hh>
 #include <gz/sim/Entity.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/Name.hh>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -53,16 +53,16 @@ public:
         const std::shared_ptr<const sdf::Element>& _sdf) override;
 
     /**
-     * @brief Inherited sendPosition method
+     * @brief Inherited sendWorldState method
      *
      * @param runTime
-     * @param poses
+     * @param poses Geographic poses of every tracked vessel
      * @return true
      * @return false
      */
-    bool sendPosition(
+    bool sendWorldState(
         const std::chrono::steady_clock::duration& runTime,
-        const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
+        const std::vector<std::pair<std::string, GeoPose>>& poses)
         override;
 
     /**
@@ -76,7 +76,7 @@ public:
      */
     bool createVessel(
         const std::string& vessel_name,
-        const gz::math::Pose3d& pose,
+        const GeoPose& pose,
         sdf::ElementPtr sdfptr) override;
 
     bool destroyVessel(const std::string& vessel_name) override;
@@ -102,14 +102,14 @@ private:
      * @brief Send vessel creation message via TCP
      *
      * @param name Vessel name
-     * @param pose Initial pose
+     * @param pose Initial geographic pose
      * @param type Vessel type
      * @return true if send successful
      * @return false otherwise
      */
     bool sendCreateMessage(
         const std::string& name,
-        const gz::math::Pose3d& pose,
+        const GeoPose& pose,
         const std::string& type);
 
     /**
@@ -160,6 +160,13 @@ private:
      *
      */
     ip::tcp::endpoint m_tcp_endpoint;
+
+    /**
+     * @brief renderer_obj_name of each vessel the renderer created, for the
+     * world state
+     *
+     */
+    std::map<std::string, std::string> m_renderer_obj_names;
 };
 
 }  // namespace lotusim::gazebo

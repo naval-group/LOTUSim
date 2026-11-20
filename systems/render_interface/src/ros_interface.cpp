@@ -11,8 +11,22 @@
 
 namespace lotusim::gazebo {
 
-// TODO: create explosion pipeline. Create default function update for special
-// commands
+namespace {
+
+geographic_msgs::msg::GeoPose toGeoPoseMsg(const GeoPose& pose)
+{
+    geographic_msgs::msg::GeoPose msg;
+    msg.position.latitude = pose.position.latitude;
+    msg.position.longitude = pose.position.longitude;
+    msg.position.altitude = pose.position.altitude;
+    msg.orientation.w = pose.orientation.W();
+    msg.orientation.x = pose.orientation.X();
+    msg.orientation.y = pose.orientation.Y();
+    msg.orientation.z = pose.orientation.Z();
+    return msg;
+}
+
+}  // namespace
 
 ROSInterface::ROSInterface(
     const std::string& world_name,
@@ -44,58 +58,58 @@ bool ROSInterface::configureInterface(
     m_logger->info(
         "ROSInterface::configureInterface : ROS renderer interface created");
 
-    rclcpp::QoS qos_profile(10);
-    qos_profile.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+    // renderer_state is a latched snapshot of the vessels alive right now and
+    // their poses, sent by sendWorldState. A late-joining renderer receives
+    // the current world in one message whose size depends only on the
+    // current number of vessels.
+    rclcpp::QoS renderer_state_qos_profile{rclcpp::KeepLast(1)};
+    renderer_state_qos_profile.reliable();
+    renderer_state_qos_profile.transient_local();
 
-    // renderer_cmd carries one message per vessel CREATE/DELETE event, not a
-    // cumulative snapshot. A late-connecting subscriber replays the
-    // TRANSIENT_LOCAL history buffer, so a fixed KeepLast depth drops the
-    // earliest CREATE commands once a scenario spawns more vessels than that.
-    // KeepAll retains every command, bounded only by DDS resource limits.
-    rclcpp::QoS renderer_cmd_qos_profile{rclcpp::KeepAll()};
-    renderer_cmd_qos_profile.durability(
-        RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+    m_renderer_state_pub =
+        m_ros_node->create_publisher<lotusim_msgs::msg::RendererState>(
+            "renderer_state",
+            renderer_state_qos_profile);
+
+    // renderer_cmd is a plain event stream for one-off events (EXPLODE).
+    rclcpp::QoS renderer_cmd_qos_profile{rclcpp::KeepLast(10)};
+    renderer_cmd_qos_profile.reliable();
+    renderer_cmd_qos_profile.durability_volatile();
 
     m_renderer_cmd_pub =
         m_ros_node->create_publisher<lotusim_msgs::msg::RendererCmd>(
             "renderer_cmd",
             renderer_cmd_qos_profile);
 
-    m_pose_pub =
-        m_ros_node->create_publisher<lotusim_msgs::msg::VesselPoseArray>(
-            "renderer_poses",
-            qos_profile);
     return true;
 }
 
-bool ROSInterface::sendPosition(
+bool ROSInterface::sendWorldState(
     const std::chrono::steady_clock::duration& runTime,
-    const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
+    const std::vector<std::pair<std::string, GeoPose>>& poses)
 {
-    lotusim_msgs::msg::VesselPoseArray array_msg;
+    lotusim_msgs::msg::RendererState state_msg;
     auto simTimeNs =
         std::chrono::duration_cast<std::chrono::nanoseconds>(runTime).count();
-    array_msg.header.stamp.sec = static_cast<int32_t>(simTimeNs / 1000000000);
-    array_msg.header.stamp.nanosec =
+    state_msg.header.stamp.sec = static_cast<int32_t>(simTimeNs / 1000000000);
+    state_msg.header.stamp.nanosec =
         static_cast<uint32_t>(simTimeNs % 1000000000);
-    array_msg.header.frame_id = "world";
+    state_msg.header.frame_id = "world";
 
-    for (const auto& pair : poses) {
-        lotusim_msgs::msg::VesselPose msg;
-        msg.vessel_name = pair.first;
-
-        const gz::math::Pose3d& pose = pair.second;
-        msg.pose.position.x = pose.X();
-        msg.pose.position.y = pose.Y();
-        msg.pose.position.z = pose.Z();
-        msg.pose.orientation.w = pose.Rot().W();
-        msg.pose.orientation.x = pose.Rot().X();
-        msg.pose.orientation.y = pose.Rot().Y();
-        msg.pose.orientation.z = pose.Rot().Z();
-
-        array_msg.vessels.push_back(msg);
+    {
+        std::lock_guard<std::mutex> lock(m_state_mutex);
+        state_msg.vessels.reserve(poses.size());
+        for (const auto& [name, pose] : poses) {
+            const auto it = m_live_vessels.find(name);
+            if (it == m_live_vessels.end()) {
+                continue;
+            }
+            lotusim_msgs::msg::RendererVessel vessel = it->second;
+            vessel.vessel_pose = toGeoPoseMsg(pose);
+            state_msg.vessels.push_back(std::move(vessel));
+        }
     }
-    m_pose_pub->publish(array_msg);
+    m_renderer_state_pub->publish(state_msg);
     return true;
 }
 
@@ -110,7 +124,7 @@ bool ROSInterface::sendPosition(
  */
 bool ROSInterface::createVessel(
     const std::string& vessel_name,
-    const gz::math::Pose3d& pose,
+    const GeoPose& pose,
     sdf::ElementPtr sdfptr)
 {
     std::string renderer_type_name = "";
@@ -119,15 +133,22 @@ bool ROSInterface::createVessel(
     }
     m_logger->info("RenderPlugin checking model: {}", vessel_name);
 
-    // If renderer fails to spawn vessel, no point adding model to list to
-    // update
-    sendCreateMessage(vessel_name, pose, renderer_type_name);
+    lotusim_msgs::msg::RendererVessel vessel;
+    vessel.vessel_name = vessel_name;
+    vessel.renderer_obj_name = renderer_type_name;
+    vessel.vessel_pose = toGeoPoseMsg(pose);
+
+    // Only record the vessel; it appears in the next renderer_state snapshot
+    // sent by sendWorldState.
+    std::lock_guard<std::mutex> lock(m_state_mutex);
+    m_live_vessels[vessel_name] = std::move(vessel);
     return true;
 }
 
 bool ROSInterface::destroyVessel(const std::string& vessel_name)
 {
-    sendDestroyMessage(vessel_name);
+    std::lock_guard<std::mutex> lock(m_state_mutex);
+    m_live_vessels.erase(vessel_name);
     // Always true as we will still remove models from updating list
     return true;
 }
@@ -143,39 +164,6 @@ bool ROSInterface::customUpdates(
     const gz::sim::EntityComponentManager&)
 {
     return true;
-}
-
-void ROSInterface::sendCreateMessage(
-    const std::string& name,
-    const gz::math::Pose3d& pose,
-    const std::string& type)
-{
-    lotusim_msgs::msg::RendererCmd render_msg;
-    render_msg.header.stamp = m_ros_node->now();
-    render_msg.cmd_type = lotusim_msgs::msg::RendererCmd::CREATE_CMD;
-    render_msg.renderer_obj_name = type;
-    render_msg.vessel_name = name;
-
-    geometry_msgs::msg::Pose p;
-    p.position.x = pose.X();
-    p.position.y = pose.Y();
-    p.position.z = pose.Z();
-    p.orientation.x = pose.Rot().X();
-    p.orientation.y = pose.Rot().Y();
-    p.orientation.z = pose.Rot().Z();
-    p.orientation.w = pose.Rot().W();
-
-    render_msg.vessel_position = p;
-    m_renderer_cmd_pub->publish(render_msg);
-}
-
-void ROSInterface::sendDestroyMessage(const std::string& name)
-{
-    lotusim_msgs::msg::RendererCmd render_msg;
-    render_msg.header.stamp = m_ros_node->now();
-    render_msg.cmd_type = lotusim_msgs::msg::RendererCmd::DELETE_CMD;
-    render_msg.vessel_name = name;
-    m_renderer_cmd_pub->publish(render_msg);
 }
 
 void ROSInterface::sendExplodeMessage(const std::string& name)

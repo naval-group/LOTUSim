@@ -275,18 +275,6 @@ private:
     bool m_geo_warned{false};
 
     /**
-     * @brief Whether local_poses is published (SDF parameter
-     * legacy_local_interface, default true)
-     */
-    bool m_legacy_local_interface{true};
-
-    /**
-     * @brief Whether the deprecation of local_poses was warned about, once
-     * it has a subscriber
-     */
-    bool m_local_poses_warned{false};
-
-    /**
      * @brief Latitude and longitude last published on world_origin, in deg
      */
     std::optional<std::pair<double, double>> m_published_origin;
@@ -303,9 +291,6 @@ private:
 
     rclcpp::Publisher<lotusim_msgs::msg::VesselPositionArray>::SharedPtr
         m_pose_pub;
-
-    rclcpp::Publisher<lotusim_msgs::msg::VesselPoseArray>::SharedPtr
-        m_local_pose_pub;
 
     rclcpp::Publisher<geographic_msgs::msg::GeoPoint>::SharedPtr
         m_world_origin_pub;

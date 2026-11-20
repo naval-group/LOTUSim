@@ -17,8 +17,8 @@ The `render_interface` (built as `render_plugin`) is a Gazebo world plugin that 
 │    EachRemoved<ModelSdf> ──► tracked vessel removed ──► destroyVessel│
 │                                                                      │
 │  PostUpdate                                                          │
-│    collect {vessel_name, pose} for every tracked vessel              │
-│    ──► sendPosition()                                                │
+│    collect {vessel_name, GeoPose} for every tracked vessel           │
+│    ──► sendWorldState()                                              │
 │                                                                      │
 │                  ┌────────────────────────────────┐                  │
 │                  │      RenderInterfaceBase       │ (one instance)   │
@@ -29,6 +29,15 @@ The `render_interface` (built as `render_plugin`) is a Gazebo world plugin that 
 ```
 
 Only vessels whose SDF sets `publish_render` to `true` under `<lotus_param><render_interface>` are tracked. Everything else is ignored by this plugin.
+
+### Poses sent to the renderer
+
+The renderer never receives Gazebo's local Cartesian coordinates. Every pose is a `lotusim::common::GeoPose` (`lotusim_common/geo_types.hpp`):
+
+- **Position**: WGS84 `latitude` and `longitude` in degrees, `altitude` in metres from sea level (positive up, negative when submerged). It is converted from the vessel's world pose with `lotusim::common::worldGeoPose` (`localToGeo` underneath), the same conversion MAS uses for `VesselPosition`, so the renderer and MAS report the same position for a vessel.
+- **Orientation**: the world-frame attitude quaternion, ENU (x East, y North, z Up) with body FLU, as in `geographic_msgs/GeoPose`.
+
+The world must declare `<spherical_coordinates>`. Without it, vessels are not created in the renderer and no poses are sent; the plugin logs this.
 
 ---
 
@@ -55,9 +64,9 @@ The top-level Gazebo system plugin. Declared once in the world SDF.
 - **`Configure()`** - reads `<connection_protocol>` from the plugin SDF, builds the matching `RenderInterfaceBase` via `CreateRenderInterface()`, and calls `configureInterface()` on it.
 - **`PreUpdate()`**
   - Calls `customPreUpdates()` on the active interface.
-  - `EachNew<ModelSdf, ParentEntity>`: for every newly spawned model, checks whether `<lotus_param><render_interface><publish_render>` is present and `true`. If so, registers the vessel entity and calls `createVessel()`.
+  - `EachNew<ModelSdf, ParentEntity>`: for every newly spawned model, checks whether `<lotus_param><render_interface><publish_render>` is present and `true`. If so, registers the vessel entity and calls `createVessel()` with its spawn `GeoPose`.
   - `EachRemoved<ModelSdf, ParentEntity>`: for any tracked vessel that disappears, calls `destroyVessel()` and stops tracking it.
-- **`PostUpdate()`** - builds a `{vessel_name, pose}` list for every tracked vessel, calls `sendPosition()`, then `customUpdates()`.
+- **`PostUpdate()`** - builds a `{vessel_name, GeoPose}` list for every tracked vessel, calls `sendWorldState()`, then `customUpdates()`.
 
 **World SDF declaration:**
 
@@ -92,8 +101,8 @@ Defines the contract every renderer connection must implement:
 | Method | Description |
 |---|---|
 | `configureInterface(sdf)` | Parse plugin-level SDF params (ip, ports ...) |
-| `sendPosition(runTime, poses)` | Push the current pose of every tracked vessel |
-| `createVessel(name, pose, sdfptr)` | Notify the renderer a vessel was spawned |
+| `sendWorldState(runTime, poses)` | Push the current `GeoPose` of every tracked vessel |
+| `createVessel(name, pose, sdfptr)` | Notify the renderer a vessel was spawned at `pose` (`GeoPose`) |
 | `destroyVessel(name)` | Notify the renderer a vessel was removed |
 | `customPreUpdates(info, ecm)` | Optional hook run every `PreUpdate` tick (default: no-op) |
 | `customUpdates(info, ecm)` | Optional hook run every `PostUpdate` tick (default: no-op) |
@@ -104,17 +113,19 @@ Defines the contract every renderer connection must implement:
 
 Talks to an external renderer over raw sockets: **UDP** for per-tick pose broadcasts, **TCP** for create/destroy commands. Every TCP command is synchronous - it blocks until it reads a `\r`-terminated response, and only returns `true` if that response is exactly `"ACK"`.
 
-**Pose broadcast (UDP, sent every tick):**
+**World state (UDP, every PostUpdate tick, capped by `render_rate_hz`):** the same layout as `lotusim_msgs/RendererState`. Each datagram is the full set of live vessels; a vessel missing from it has been removed.
 
 ```json
 {
-  "time": 12.34,
-  "VesselsInfo": [
+  "header": {"stamp": {"sec": 12, "nanosec": 340000000}, "frame_id": "world"},
+  "vessels": [
     {
-      "name": "lrauv_0",
-      "position": {"x": 0, "y": 0, "z": 0},
-      "rotation": {"x": 0, "y": 0, "z": 0, "w": 1},
-      "thrusters": []
+      "vessel_name": "lrauv_0",
+      "renderer_obj_name": "lrauv",
+      "vessel_pose": {
+        "position": {"latitude": 43.1, "longitude": 5.9, "altitude": 0},
+        "orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
+      }
     }
   ]
 }
@@ -126,7 +137,7 @@ Talks to an external renderer over raw sockets: **UDP** for per-tick pose broadc
 {
   "cmd": "create",
   "name": "lrauv_0",
-  "pose": {"x": 0, "y": 0, "z": 0},
+  "pose": {"latitude": 43.1, "longitude": 5.9, "altitude": 0},
   "type": "lrauv"
 }
 ```
@@ -152,23 +163,25 @@ Talks to an external renderer over raw sockets: **UDP** for per-tick pose broadc
 
 ### `ROSInterface`
 
-Talks to the renderer over ROS 2 topics instead of raw sockets. Publishers use `TRANSIENT_LOCAL` durability, so a renderer that connects after vessels have already spawned still receives the last create/destroy commands on subscribe.
+Talks to the renderer over ROS 2 topics instead of raw sockets. Every `sendWorldState()` publishes one snapshot on `renderer_state` (`KeepLast(1)`, `TRANSIENT_LOCAL`) holding every live vessel and its current pose, so a renderer that connects late receives the current world in a single message. The rate follows `PostUpdate`, capped by `render_rate_hz`; a snapshot is sent even when no vessel is left. `renderer_cmd` is a plain event stream (`VOLATILE`, `KeepLast(10)`) for one-off events such as explosions.
 
 **Published topics:**
 
 | Topic | Type | Published |
 |---|---|---|
-| `renderer_cmd` | `lotusim_msgs/msg/RendererCmd` | On vessel create/destroy (`CREATE_CMD` / `DELETE_CMD`) |
-| `renderer_poses` | `lotusim_msgs/msg/VesselPoseArray` (local ENU pose) | Every `PostUpdate` tick |
+| `renderer_state` | `lotusim_msgs/msg/RendererState` | Every `PostUpdate` tick, capped by `render_rate_hz` (latched) |
+| `renderer_cmd` | `lotusim_msgs/msg/RendererCmd` | One-off events (`EXPLODE_CMD`) |
 
 `configureInterface()` ignores the plugin SDF entirely - the connection is implicit via ROS 2 discovery, so `ip` / `udp_port` / `tcp_port` only apply when `connection_protocol` is `TCPUDP`.
+
+**`RendererState.msg`:** `header` plus `RendererVessel[] vessels`, where each `RendererVessel` has `vessel_name`, `renderer_obj_name` and `vessel_pose` (`geographic_msgs/GeoPose`, the vessel's current pose). Each message replaces the previous one: the renderer spawns vessels it does not have yet, moves the ones it has, and removes the ones that are no longer listed.
 
 **`RendererCmd.msg` command types:**
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `CREATE_CMD` | 0 | Spawn a vessel - fills `renderer_obj_name`, `vessel_name`, `vessel_position` |
-| `DELETE_CMD` | 1 | Remove a vessel - fills `vessel_name` only |
+| `CREATE_CMD` | 0 | Not sent by `ROSInterface`; vessel creation is carried by `renderer_state` |
+| `DELETE_CMD` | 1 | Not sent by `ROSInterface`; vessel deletion is carried by `renderer_state` |
 | `EXPLODE_CMD` | 2 | Explosion effect - fills `vessel_name` only |
 
 ---
@@ -176,6 +189,6 @@ Talks to the renderer over ROS 2 topics instead of raw sockets. Publishers use `
 ## Adding a New Render Interface
 
 1. Create a subclass of `RenderInterfaceBase`.
-2. Implement `configureInterface()`, `sendPosition()`, `createVessel()`, `destroyVessel()`. Override `customPreUpdates()` / `customUpdates()` only if you need extra per-tick work.
+2. Implement `configureInterface()`, `sendWorldState()`, `createVessel()`, `destroyVessel()`. Override `customPreUpdates()` / `customUpdates()` only if you need extra per-tick work.
 3. Add a branch for your protocol name in `CreateRenderInterface()` (`render_plugin.hpp`).
 4. Add the new `.cpp` to `CMakeLists.txt`.

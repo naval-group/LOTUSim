@@ -10,6 +10,7 @@
 #ifndef LOTUSIM_RENDER_PLUGIN_HPP_
 #define LOTUSIM_RENDER_PLUGIN_HPP_
 
+#include <chrono>
 #include <gz/common/Util.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/System.hh>
@@ -20,7 +21,6 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Sensor.hh>
-#include <chrono>
 #include <mutex>
 
 #include "lotusim_common/common.hpp"
@@ -108,10 +108,10 @@ private:
     std::mutex m_mutex;
 
     /**
-     * @brief Mapping of vessel name to model entity
+     * @brief Mapping of model name to model entity
      *
      */
-    std::unordered_map<std::string, gz::sim::Entity> m_vessel_entity;
+    std::unordered_map<std::string, gz::sim::Entity> m_model_entity;
 
     /**
      * @brief Render interface implementation

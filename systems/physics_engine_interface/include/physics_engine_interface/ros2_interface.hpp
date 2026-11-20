@@ -19,7 +19,7 @@
 #include <unordered_map>
 
 #include "lotusim_common/spin_thread.hpp"
-#include "lotusim_msgs/msg/vessel_pose_array.hpp"
+#include "lotusim_msgs/msg/vessel_position_array.hpp"
 #include "physics_engine_interface/physics_interface_base.hpp"
 
 namespace lotusim::gazebo {
@@ -74,7 +74,7 @@ public:
 
 private:
     void aerialPosesCB(
-        const lotusim_msgs::msg::VesselPoseArray::ConstSharedPtr& msg);
+        const lotusim_msgs::msg::VesselPositionArray::ConstSharedPtr& msg);
 
 private:
     static std::shared_ptr<ROS2Interface> m_instance;
@@ -97,7 +97,7 @@ private:
     std::unique_ptr<lotusim::common::SpinThread> m_ros_node_thread;
 
     std::vector<
-        rclcpp::Subscription<lotusim_msgs::msg::VesselPoseArray>::SharedPtr>
+        rclcpp::Subscription<lotusim_msgs::msg::VesselPositionArray>::SharedPtr>
         m_pose_sub;
 
     mutable std::shared_mutex m_variable_mutex;

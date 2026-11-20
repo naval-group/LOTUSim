@@ -267,17 +267,10 @@ void LotusimSensorPlugin::PostUpdate(
 
             // The world's projection, as for the vessels' positions: the
             // altitude is z.
-            const auto lat_long = common::XYToLatLong(
-                _ecm,
-                world_entity,
-                world_pos.X(),
-                world_pos.Y(),
-                world_pos.Z());
-            if (lat_long) {
-                sensor->LatLong(
-                    {std::get<0>(*lat_long),
-                     std::get<1>(*lat_long),
-                     std::get<2>(*lat_long)});
+            const auto geo =
+                common::XYToLatLong(_ecm, world_entity, world_pos.Pos());
+            if (geo) {
+                sensor->GeoPosition(*geo);
             }
             sensor->UpdateSensor(_info, _ecm);
         }

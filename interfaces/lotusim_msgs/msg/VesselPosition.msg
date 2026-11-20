@@ -5,6 +5,10 @@ string model_name
 # positive up, negative when submerged.
 geographic_msgs/GeoPoint geo_point
 
+# Pose in the simulation's local frame: x East, y North, z Up in metres, the
+# sea surface at z = 0; orientation of the body frame front-left-up.
+geometry_msgs/Pose pose
+
 # Heading, where the bow points: degrees from true North, clockwise, in
 # [0, 360).
 float32 heading

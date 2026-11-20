@@ -97,8 +97,10 @@ if(BUILD_TESTING)
     src/tcpudp_messages.cpp
   )
   if(TARGET test_tcpudp_messages)
+    # lotusim_common for the header-only geo_types.hpp; nothing to link.
     target_include_directories(test_tcpudp_messages PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${lotusim_common_INCLUDE_DIRS}
     )
     target_link_libraries(test_tcpudp_messages
       fmt::fmt
