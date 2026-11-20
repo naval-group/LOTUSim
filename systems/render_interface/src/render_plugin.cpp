@@ -17,6 +17,7 @@ RenderPlugin::~RenderPlugin()
 {
     m_logger->info(
         "RenderPlugin::~RenderPlugin: RenderPlugin successfully shutdown.");
+    logger::disableDiagnostics(m_logger);
 }
 
 void RenderPlugin::Configure(
@@ -29,6 +30,12 @@ void RenderPlugin::Configure(
     m_logger = logger::createConsoleAndFileLogger(
         "render_plugin",
         m_world_name + "_render_plugin.txt");
+
+    // node used only to pub /diagnostics, so it works in every connection mode
+    m_diag_node = rclcpp::Node::make_shared(
+        "render_plugin_diagnostics",
+        m_world_name);
+    logger::enableDiagnostics(m_logger, m_diag_node, m_world_name);
 
     auto sdfPtr = const_cast<sdf::Element*>(_sdf.get());
 
@@ -45,7 +52,7 @@ void RenderPlugin::Configure(
     }
 
     m_render_interface =
-        CreateRenderInterface(connection_protocol, m_world_name, m_logger);
+        CreateRenderInterface(connection_protocol, m_world_name, m_logger, m_diag_node);
     m_render_interface->configureInterface(_sdf);
 
     m_logger->info("RenderPlugin::Configure: RenderPlugin started.");

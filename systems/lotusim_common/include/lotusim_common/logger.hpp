@@ -26,7 +26,18 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
+namespace rclcpp { class Node; }
+
 namespace lotusim::logger {
+
+// Publish every log record of every logger as a DiagnosticArray on /diagnostics
+bool enableDiagnostics(
+    const std::shared_ptr<spdlog::logger>& logger,
+    const std::shared_ptr<rclcpp::Node>& node,
+    const std::string& hardware_id);
+
+// stop publishing. Call before the node is destroyed
+void disableDiagnostics(const std::shared_ptr<spdlog::logger>& logger);
 
 // If lotusim is compiled in debug mode, all debug logs will be triggered.
 #if defined(DEBUG)
@@ -34,21 +45,6 @@ const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::trace;
 #else
 const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::info;
 #endif
-
-using LogCallback = std::function<void(
-    const std::string& logger_name,
-    spdlog::level::level_enum level,
-    const std::string& message)>;
-
-/**
- * @brief callback for forwarding log messages to external consumers like the UI
- *
- * One callback serves the whole process. Only INFO and ERROR messages from
- * loggers made by createConsoleAndFileLogger() are forwarded.
- * @param callback function called with the logger name, log level, and
- * message; nullptr stops forwarding
- */
-void setLogCallback(LogCallback callback);
 
 /**
  * @brief Get log level from environment variable or return default

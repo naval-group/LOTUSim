@@ -31,6 +31,7 @@ PhysicsInterfacePlugin::~PhysicsInterfacePlugin()
     XdynWebsocket::resetInstance();
     m_logger->info(
         "PhysicsInterfacePlugin::~PhysicsInterfacePlugin: PhysicsInterfacePlugin successfully shutdown.");
+    logger::disableDiagnostics(m_logger);
 }
 
 void PhysicsInterfacePlugin::Configure(
@@ -47,6 +48,7 @@ void PhysicsInterfacePlugin::Configure(
         m_world_name + "_physics_interface_plugin.txt");
 
     m_ros_node = rclcpp::Node::make_shared("physics_plugin", m_world_name);
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
     m_cmd_array_sub = m_ros_node->create_subscription<
         lotusim_msgs::msg::VesselCmdArray>(
         "vessel_cmd_array",

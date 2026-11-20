@@ -29,6 +29,7 @@ WaypointFollowerPlugin::~WaypointFollowerPlugin()
     m_executor.reset();
     m_logger->info(
         "WaypointFollowerPlugin::~WaypointFollowerPlugin: WaypointFollowerPlugin successfully shutdown.");
+    logger::disableDiagnostics(m_logger);
 }
 
 //////////////////////////////////////////////////
@@ -271,6 +272,7 @@ void WaypointFollowerPlugin::Configure(
 
     // Create ROS node
     m_ros_node = rclcpp::Node::make_shared("waypoint_follower", m_world_name);
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
     if (rclcpp::ok()) {
         m_executor =
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
