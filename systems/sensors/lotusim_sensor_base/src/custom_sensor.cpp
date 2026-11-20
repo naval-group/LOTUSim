@@ -126,10 +126,9 @@ void CustomSensor::Position(const gz::math::Vector3d& _pos)
     m_position = _pos;
 }
 
-void CustomSensor::LatLong(const gz::math::Vector3d& _pos)
+void CustomSensor::GeoPosition(const lotusim::common::GeoPoint& _geo)
 {
-    // TODO: to update position
-    m_lat_long = _pos;
+    m_geo_point = _geo;
 }
 
 void CustomSensor::Orientation(const gz::math::Quaterniond& _quad)

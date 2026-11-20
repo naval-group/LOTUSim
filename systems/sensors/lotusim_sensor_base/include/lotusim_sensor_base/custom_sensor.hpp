@@ -23,6 +23,7 @@
 #include <string>
 
 #include "gz/sensors/Sensor.hh"
+#include "lotusim_common/geo_types.hpp"
 #include "lotusim_common/logger.hpp"
 #include "lotusim_sensor_base/common.hpp"
 #include "lotusim_sensor_msgs/srv/activate_sensor.hpp"
@@ -78,7 +79,8 @@ public:
 
     void Position(const gz::math::Vector3d& _pos);
 
-    void LatLong(const gz::math::Vector3d& _pos);
+    /// WGS84 position of the sensor, refreshed every tick by the plugin.
+    void GeoPosition(const lotusim::common::GeoPoint& _geo);
 
     void Orientation(const gz::math::Quaterniond& _quad);
 
@@ -173,7 +175,11 @@ protected:
 
     gz::math::Vector3d m_position{std::nan(""), std::nan(""), std::nan("")};
 
-    gz::math::Vector3d m_lat_long{std::nan(""), std::nan(""), std::nan("")};
+    /// NaN until the plugin first sets it (no <spherical_coordinates>).
+    lotusim::common::GeoPoint m_geo_point{
+        std::nan(""),
+        std::nan(""),
+        std::nan("")};
 
     gz::math::Quaterniond m_quad{gz::math::Quaterniond::Identity};
 };

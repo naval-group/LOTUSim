@@ -270,9 +270,9 @@ bool EntitySpawner::moveEntity(const lotusim_msgs::msg::MASCmd& msg)
 
         const auto pose = lotusim::common::geoToPose(
             *origin,
-            msg.geo_point.latitude,
-            msg.geo_point.longitude,
-            msg.geo_point.altitude,
+            {msg.geo_point.latitude,
+             msg.geo_point.longitude,
+             msg.geo_point.altitude},
             msg.heading);
         if (!m_ecm.SetComponentData<gz::sim::components::Pose>(
                 vessel_entity,
