@@ -77,8 +77,8 @@ bool AISSensor::UpdateSensor(
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
 
     msg.name = m_vessel_name;
-    msg.longitude = m_lat_long.Y();
-    msg.latitude = m_lat_long.X();
+    msg.longitude = m_geo_point.longitude;
+    msg.latitude = m_geo_point.latitude;
 
     const auto vessel_pose = gz::sim::worldPose(m_vessel_entity, _ecm);
     msg.true_heading = toCompassRange(90.0 - vessel_pose.Rot().Yaw() * 180.0 / M_PI);

@@ -83,7 +83,7 @@ TEST(GeoAngles, Course)
 TEST(GeoProjection, OriginIsZero)
 {
     const auto origin = singaporeStrait();
-    const auto local = geoToLocal(origin, 1.26, 103.75, -30.0);
+    const auto local = geoToLocal(origin, {1.26, 103.75, -30.0});
     EXPECT_NEAR(local.X(), 0.0, 1e-6);
     EXPECT_NEAR(local.Y(), 0.0, 1e-6);
     EXPECT_EQ(local.Z(), -30.0);
@@ -100,14 +100,14 @@ TEST(GeoProjection, ZIsTheAltitudeFarFromTheOrigin)
     const auto gazebo = gazeboLocal(origin, lat, lon, 0.0);
     ASSERT_LT(gazebo.Z(), -700.0);
 
-    const auto local = geoToLocal(origin, lat, lon, 0.0);
+    const auto local = geoToLocal(origin, {lat, lon, 0.0});
     EXPECT_EQ(local.Z(), 0.0);
     EXPECT_NEAR(local.X(), gazebo.X(), 1e-6);
     EXPECT_NEAR(local.Y(), gazebo.Y(), 1e-6);
     EXPECT_NEAR(std::hypot(local.X(), local.Y()), 100e3, 1e3);
 
-    EXPECT_EQ(geoToLocal(origin, lat, lon, -12.5).Z(), -12.5);
-    EXPECT_EQ(geoToLocal(origin, lat, lon, 300.0).Z(), 300.0);
+    EXPECT_EQ(geoToLocal(origin, {lat, lon, -12.5}).Z(), -12.5);
+    EXPECT_EQ(geoToLocal(origin, {lat, lon, 300.0}).Z(), 300.0);
 }
 
 TEST(GeoProjection, RoundTrip)
@@ -122,9 +122,8 @@ TEST(GeoProjection, RoundTrip)
                     distance * std::cos(b),
                     altitude);
                 const auto geo = localToGeo(origin, local);
-                EXPECT_EQ(geo.Z(), altitude);
-                const auto back =
-                    geoToLocal(origin, geo.X(), geo.Y(), geo.Z());
+                EXPECT_EQ(geo.altitude, altitude);
+                const auto back = geoToLocal(origin, geo);
                 EXPECT_NEAR(back.X(), local.X(), 1e-5)
                     << distance << " m at " << bearing << " deg";
                 EXPECT_NEAR(back.Y(), local.Y(), 1e-5)
@@ -140,13 +139,13 @@ TEST(GeoProjection, NorthIsUp)
     // 1 km North of the origin: latitude grows, longitude does not.
     const auto origin = singaporeStrait();
     const auto geo = localToGeo(origin, {0.0, 1000.0, 0.0});
-    EXPECT_GT(geo.X(), 1.26 + 0.008);
-    EXPECT_LT(geo.X(), 1.26 + 0.010);
-    EXPECT_NEAR(geo.Y(), 103.75, 1e-9);
+    EXPECT_GT(geo.latitude, 1.26 + 0.008);
+    EXPECT_LT(geo.latitude, 1.26 + 0.010);
+    EXPECT_NEAR(geo.longitude, 103.75, 1e-9);
     // 1 km East: longitude grows.
     const auto east = localToGeo(origin, {1000.0, 0.0, 0.0});
-    EXPECT_GT(east.Y(), 103.75 + 0.008);
-    EXPECT_NEAR(east.X(), 1.26, 1e-6);
+    EXPECT_GT(east.longitude, 103.75 + 0.008);
+    EXPECT_NEAR(east.latitude, 1.26, 1e-6);
 }
 
 TEST(GeoAngles, FloatDegStayBelow360)
@@ -163,20 +162,20 @@ TEST(GeoProjection, ElevationIsLeftOut)
 {
     // z is the altitude from sea level: an <elevation> moves nothing.
     const auto origin = singaporeStrait(150.0);
-    const auto local = geoToLocal(origin, 1.26, 103.75, 0.0);
+    const auto local = geoToLocal(origin, {1.26, 103.75, 0.0});
     EXPECT_NEAR(local.X(), 0.0, 1e-6);
     EXPECT_NEAR(local.Y(), 0.0, 1e-6);
     EXPECT_EQ(local.Z(), 0.0);
 
     const double lat = 1.26 + 0.636;
     const double lon = 103.75 + 0.636;
-    const auto far = geoToLocal(origin, lat, lon, 0.0);
-    const auto at_sea_level = geoToLocal(singaporeStrait(), lat, lon, 0.0);
+    const auto far = geoToLocal(origin, {lat, lon, 0.0});
+    const auto at_sea_level = geoToLocal(singaporeStrait(), {lat, lon, 0.0});
     EXPECT_EQ(far.X(), at_sea_level.X());
     EXPECT_EQ(far.Y(), at_sea_level.Y());
 
     const auto geo = localToGeo(origin, {30e3, -40e3, -20.0});
-    const auto back = geoToLocal(origin, geo.X(), geo.Y(), geo.Z());
+    const auto back = geoToLocal(origin, geo);
     EXPECT_NEAR(back.X(), 30e3, 1e-5);
     EXPECT_NEAR(back.Y(), -40e3, 1e-5);
     EXPECT_EQ(back.Z(), -20.0);
@@ -185,12 +184,26 @@ TEST(GeoProjection, ElevationIsLeftOut)
 TEST(GeoPose, PositionAndHeading)
 {
     const auto origin = singaporeStrait();
-    const auto pose = geoToPose(origin, 1.26 + 0.01, 103.75, -30.0, 90.0);
-    const auto local = geoToLocal(origin, 1.26 + 0.01, 103.75, -30.0);
+    const auto pose = geoToPose(origin, {1.26 + 0.01, 103.75, -30.0}, 90.0);
+    const auto local = geoToLocal(origin, {1.26 + 0.01, 103.75, -30.0});
     EXPECT_EQ(pose.Pos(), local);
     EXPECT_NEAR(pose.Rot().Yaw(), 0.0, 1e-9);  // bow to the East
     EXPECT_NEAR(pose.Rot().Roll(), 0.0, 1e-9);
     EXPECT_NEAR(pose.Rot().Pitch(), 0.0, 1e-9);
+}
+
+TEST(GeoPose, LocalToGeoPoseKeepsAttitude)
+{
+    // The position goes through localToGeo, the ENU attitude is unchanged,
+    // roll and pitch included.
+    const auto origin = singaporeStrait();
+    const gz::math::Pose3d local(30e3, -40e3, -20.0, 0.1, -0.2, 1.3);
+    const auto geo_pose = localToGeoPose(origin, local);
+    const auto geo = localToGeo(origin, local.Pos());
+    EXPECT_EQ(geo_pose.position.latitude, geo.latitude);
+    EXPECT_EQ(geo_pose.position.longitude, geo.longitude);
+    EXPECT_EQ(geo_pose.position.altitude, -20.0);
+    EXPECT_EQ(geo_pose.orientation, local.Rot());
 }
 
 TEST(GeoPose, ZeroesAreValues)
@@ -203,7 +216,7 @@ TEST(GeoPose, ZeroesAreValues)
         gz::math::Angle(0.0),
         0.0,
         gz::math::Angle(0.0));
-    const auto pose = geoToPose(origin, 0.0, 0.0, 0.0, 0.0);
+    const auto pose = geoToPose(origin, {0.0, 0.0, 0.0}, 0.0);
     EXPECT_NEAR(pose.Pos().Length(), 0.0, 1e-6);
     EXPECT_NEAR(pose.Rot().Yaw(), kPi / 2.0, 1e-9);  // bow to the North
 }

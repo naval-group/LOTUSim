@@ -18,16 +18,20 @@ using nlohmann::json;
 
 TEST(TcpUdpMessages, CreateIsValidJson)
 {
-    const gz::math::Pose3d pose(1.5, -2.0, 3.25, 0, 0, 0);
+    GeoPose pose;
+    pose.position.latitude = 43.123456789;
+    pose.position.longitude = -5.987654321;
+    pose.position.altitude = -3.25;
     json msg;
     ASSERT_NO_THROW(
         msg = json::parse(formatCreateMessage("boat", pose, "fremm")));
     EXPECT_EQ(msg["cmd"], "create");
     EXPECT_EQ(msg["name"], "boat");
     EXPECT_EQ(msg["type"], "fremm");
-    EXPECT_DOUBLE_EQ(msg["pose"]["x"].get<double>(), 1.5);
-    EXPECT_DOUBLE_EQ(msg["pose"]["y"].get<double>(), -2.0);
-    EXPECT_DOUBLE_EQ(msg["pose"]["z"].get<double>(), 3.25);
+    // Full precision: at 1e-9 deg, a vessel is placed to about 0.1 mm.
+    EXPECT_DOUBLE_EQ(msg["pose"]["latitude"].get<double>(), 43.123456789);
+    EXPECT_DOUBLE_EQ(msg["pose"]["longitude"].get<double>(), -5.987654321);
+    EXPECT_DOUBLE_EQ(msg["pose"]["altitude"].get<double>(), -3.25);
 }
 
 TEST(TcpUdpMessages, DestroyIsValidJson)
@@ -46,26 +50,45 @@ TEST(TcpUdpMessages, ExplodeIsValidJson)
     EXPECT_EQ(msg["name"], "boat");
 }
 
-TEST(TcpUdpMessages, PositionIsValidJson)
+TEST(TcpUdpMessages, StateIsValidJson)
 {
-    const gz::math::Pose3d pose(
-        1.5,
-        -2.0,
-        3.25,
-        0.5,
-        0.5,
-        0.5,
-        0.5);  // w x y z
+    GeoPose pose;
+    pose.position.latitude = 1.5;
+    pose.position.longitude = -2.0;
+    pose.position.altitude = 3.25;
+    pose.orientation = gz::math::Quaterniond(0.5, 0.5, 0.5, 0.5);  // w x y z
+    const std::vector<RendererVessel> vessels{
+        {"boat", "fremm", pose},
+        {"drone", "", GeoPose{}}};
     json msg;
-    ASSERT_NO_THROW(msg = json::parse(formatPositionMessage("boat", pose)));
-    EXPECT_EQ(msg["name"], "boat");
-    EXPECT_DOUBLE_EQ(msg["position"]["x"].get<double>(), 1.5);
-    EXPECT_DOUBLE_EQ(msg["position"]["y"].get<double>(), -2.0);
-    EXPECT_DOUBLE_EQ(msg["position"]["z"].get<double>(), 3.25);
-    EXPECT_DOUBLE_EQ(msg["rotation"]["x"].get<double>(), 0.5);
-    EXPECT_DOUBLE_EQ(msg["rotation"]["y"].get<double>(), 0.5);
-    EXPECT_DOUBLE_EQ(msg["rotation"]["z"].get<double>(), 0.5);
-    EXPECT_DOUBLE_EQ(msg["rotation"]["w"].get<double>(), 0.5);
-    EXPECT_TRUE(msg["thrusters"].is_array());
-    EXPECT_TRUE(msg["thrusters"].empty());
+    ASSERT_NO_THROW(
+        msg = json::parse(formatStateMessage(
+            std::chrono::seconds(12) + std::chrono::nanoseconds(345),
+            vessels)));
+    EXPECT_EQ(msg["header"]["stamp"]["sec"], 12);
+    EXPECT_EQ(msg["header"]["stamp"]["nanosec"], 345);
+    EXPECT_EQ(msg["header"]["frame_id"], "world");
+    ASSERT_EQ(msg["vessels"].size(), 2u);
+    const auto& boat = msg["vessels"][0];
+    EXPECT_EQ(boat["vessel_name"], "boat");
+    EXPECT_EQ(boat["renderer_obj_name"], "fremm");
+    const auto& p = boat["vessel_pose"];
+    EXPECT_DOUBLE_EQ(p["position"]["latitude"].get<double>(), 1.5);
+    EXPECT_DOUBLE_EQ(p["position"]["longitude"].get<double>(), -2.0);
+    EXPECT_DOUBLE_EQ(p["position"]["altitude"].get<double>(), 3.25);
+    EXPECT_DOUBLE_EQ(p["orientation"]["x"].get<double>(), 0.5);
+    EXPECT_DOUBLE_EQ(p["orientation"]["y"].get<double>(), 0.5);
+    EXPECT_DOUBLE_EQ(p["orientation"]["z"].get<double>(), 0.5);
+    EXPECT_DOUBLE_EQ(p["orientation"]["w"].get<double>(), 0.5);
+    EXPECT_EQ(msg["vessels"][1]["vessel_name"], "drone");
+}
+
+TEST(TcpUdpMessages, EmptyStateIsValidJson)
+{
+    json msg;
+    ASSERT_NO_THROW(
+        msg = json::parse(formatStateMessage(
+            std::chrono::steady_clock::duration::zero(), {})));
+    EXPECT_TRUE(msg["vessels"].is_array());
+    EXPECT_TRUE(msg["vessels"].empty());
 }

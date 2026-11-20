@@ -16,9 +16,11 @@
 #include <gz/math/Quaternion.hh>
 #include <gz/math/SphericalCoordinates.hh>
 #include <gz/math/Vector3.hh>
+#include <gz/sim/Entity.hh>
 #include <gz/sim/EntityComponentManager.hh>
 #include <optional>
-#include <tuple>
+
+#include "lotusim_common/geo_types.hpp"
 
 /**
  * @brief Angle, frame and position conversions.
@@ -206,16 +208,13 @@ gz::math::Vector3d targetBodyVelToWorld(
 //============================================================================
 
 /// Local ENU position of a WGS84 point: x and y projected from latitude and
-/// longitude (degrees), z the altitude (metres from sea level).
+/// longitude, z the altitude.
 gz::math::Vector3d geoToLocal(
     const gz::math::SphericalCoordinates& origin,
-    double latitude_deg,
-    double longitude_deg,
-    double altitude_m);
+    const GeoPoint& geo);
 
-/// The inverse of geoToLocal: (latitude deg, longitude deg, altitude m) of a
-/// local ENU position.
-gz::math::Vector3d localToGeo(
+/// The inverse of geoToLocal: the WGS84 point of a local ENU position.
+GeoPoint localToGeo(
     const gz::math::SphericalCoordinates& origin,
     const gz::math::Vector3d& local);
 
@@ -223,10 +222,14 @@ gz::math::Vector3d localToGeo(
 /// true North, clockwise), level: no roll and no pitch.
 gz::math::Pose3d geoToPose(
     const gz::math::SphericalCoordinates& origin,
-    double latitude_deg,
-    double longitude_deg,
-    double altitude_m,
+    const GeoPoint& geo,
     double heading_deg);
+
+/// The geographic pose of a local ENU pose: the position through localToGeo,
+/// the attitude unchanged (it is already in the ENU world frame).
+GeoPose localToGeoPose(
+    const gz::math::SphericalCoordinates& origin,
+    const gz::math::Pose3d& local);
 
 //============================================================================
 // ECM wrappers: the same conversions with the world's origin
@@ -240,36 +243,41 @@ std::optional<gz::math::SphericalCoordinates> worldOrigin(
     const gz::sim::EntityComponentManager& _ecm);
 
 /**
+ * @brief Geographic pose of an entity: localToGeoPose of its world pose,
+ * with the world's origin.
+ *
+ * @param entity Entity whose world pose is converted
+ * @param _ecm
+ * @return std::optional<GeoPose> std::nullopt if the world has no spherical
+ * coordinates
+ */
+std::optional<GeoPose> worldGeoPose(
+    const gz::sim::Entity& entity,
+    const gz::sim::EntityComponentManager& _ecm);
+
+/**
  * @brief geoToLocal with the world's origin.
  *
  * @param _ecm
- * @param lat degrees
- * @param lon degrees
- * @param alt metres from sea level, negative when submerged (default 0)
- * @return std::optional<std::tuple<double, double, double>> (x, y, z), or
+ * @param geo WGS84 point
+ * @return std::optional<gz::math::Vector3d> local ENU position, or
  * std::nullopt if the world has no spherical coordinates
  */
-std::optional<std::tuple<double, double, double>> LatLongToXY(
+std::optional<gz::math::Vector3d> LatLongToXY(
     const gz::sim::EntityComponentManager& _ecm,
-    double lat,
-    double lon,
-    double alt = 0.0);
+    const GeoPoint& geo);
 
 /**
  * @brief localToGeo with the world's origin.
  *
  * @param _ecm Entity Component Manager used to retrieve spherical coordinates
- * @param x Local X coordinate in metres
- * @param y Local Y coordinate in metres
- * @param z Local Z coordinate in metres (default 0)
- * @return std::optional<std::tuple<double, double, double>> (lat deg, lon deg,
- * alt metres), or std::nullopt if the world has no spherical coordinates
+ * @param local Local ENU position in metres
+ * @return std::optional<GeoPoint> WGS84 point, or std::nullopt if the world
+ * has no spherical coordinates
  */
-std::optional<std::tuple<double, double, double>> XYToLatLong(
+std::optional<GeoPoint> XYToLatLong(
     const gz::sim::EntityComponentManager& _ecm,
-    double x,
-    double y,
-    double z = 0.0);
+    const gz::math::Vector3d& local);
 
 /**
  * @brief localToGeo with the origin of a world entity the caller already
@@ -277,18 +285,14 @@ std::optional<std::tuple<double, double, double>> XYToLatLong(
  *
  * @param _ecm Entity Component Manager used to retrieve spherical coordinates
  * @param worldEntity World entity holding the spherical coordinates
- * @param x Local X coordinate in metres
- * @param y Local Y coordinate in metres
- * @param z Local Z coordinate in metres (default 0)
- * @return std::optional<std::tuple<double, double, double>> (lat deg, lon deg,
- * alt metres), or std::nullopt if the world has no spherical coordinates
+ * @param local Local ENU position in metres
+ * @return std::optional<GeoPoint> WGS84 point, or std::nullopt if the world
+ * has no spherical coordinates
  */
-std::optional<std::tuple<double, double, double>> XYToLatLong(
+std::optional<GeoPoint> XYToLatLong(
     const gz::sim::EntityComponentManager& _ecm,
     const gz::sim::Entity& worldEntity,
-    double x,
-    double y,
-    double z = 0.0);
+    const gz::math::Vector3d& local);
 
 }  // namespace lotusim::common
 
