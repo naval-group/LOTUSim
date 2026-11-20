@@ -51,10 +51,21 @@ bool IMUSensor::UpdateSensor(
 
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
 
-    msg.orientation.x = m_quad.X();
-    msg.orientation.y = m_quad.Y();
-    msg.orientation.z = m_quad.Z();
-    msg.orientation.w = m_quad.W();
+    // SDF noise: a small rotation on the orientation (rad), and on each
+    // angular velocity (rad/s) and linear acceleration (m/s²) component.
+    // The covariances give its variance.
+    const gz::math::Quaterniond orientation =
+        m_quad * gz::math::Quaterniond(Noise(), Noise(), Noise());
+    msg.orientation.x = orientation.X();
+    msg.orientation.y = orientation.Y();
+    msg.orientation.z = orientation.Z();
+    msg.orientation.w = orientation.W();
+    const double variance = NoiseStdDev() * NoiseStdDev();
+    for (const int i : {0, 4, 8}) {
+        msg.orientation_covariance[i] = variance;
+        msg.angular_velocity_covariance[i] = variance;
+        msg.linear_acceleration_covariance[i] = variance;
+    }
 
     // Vessel velocity is stored on the model entity in the world frame.
     gz::math::Vector3d lin_vel_world;
@@ -73,9 +84,9 @@ bool IMUSensor::UpdateSensor(
     // Angular velocity in the sensor frame.
     const gz::math::Vector3d ang_vel =
         m_quad.RotateVectorReverse(ang_vel_world);
-    msg.angular_velocity.x = ang_vel.X();
-    msg.angular_velocity.y = ang_vel.Y();
-    msg.angular_velocity.z = ang_vel.Z();
+    msg.angular_velocity.x = ang_vel.X() + Noise();
+    msg.angular_velocity.y = ang_vel.Y() + Noise();
+    msg.angular_velocity.z = ang_vel.Z() + Noise();
 
     // Linear acceleration from the change in velocity since the last
     // measurement. Zero until two consecutive measurements have a velocity,
@@ -95,9 +106,9 @@ bool IMUSensor::UpdateSensor(
     // Gravity is excluded: the IMU is calibrated on a stationary surface,
     // so a vessel at rest reads zero acceleration.
     const gz::math::Vector3d accel = m_quad.RotateVectorReverse(accel_world);
-    msg.linear_acceleration.x = accel.X();
-    msg.linear_acceleration.y = accel.Y();
-    msg.linear_acceleration.z = accel.Z();
+    msg.linear_acceleration.x = accel.X() + Noise();
+    msg.linear_acceleration.y = accel.Y() + Noise();
+    msg.linear_acceleration.z = accel.Z() + Noise();
 
     m_sensor_pub->publish(msg);
     m_last_measurement_time = _info.simTime;

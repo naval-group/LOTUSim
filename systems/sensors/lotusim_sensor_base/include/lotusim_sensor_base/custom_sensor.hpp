@@ -64,6 +64,19 @@ public:
     double GetGaussianNoise(std::string _name, double _amp);
     double GetGaussianNoise(double _amp);
 
+    /// \brief Standard deviation of Noise(): noise_amplitude * noise_sigma.
+    double NoiseStdDev() const
+    {
+        return m_noise_amp * m_noise_sigma;
+    }
+
+    /// \brief A draw of the SDF noise, noise_amplitude * N(0, noise_sigma),
+    /// in the unit of the value it is added to.
+    double Noise()
+    {
+        return GetGaussianNoise(m_noise_amp);
+    }
+
     /// \brief Get status of the sensor
     bool IsOn();
 

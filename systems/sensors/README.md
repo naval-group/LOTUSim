@@ -87,7 +87,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 | `update_rate` / `is_on` SDF parsing | Parsed once in `Load()` |
 | `EnableMeasurement(now)` | Rate-limits updates to `update_rate` Hz and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
 | `<vessel>/<sensor>/change_state` ROS 2 service | Lets external code turn the sensor on/off at runtime |
-| `noise_sigma` / `noise_amplitude` SDF parsing + `GetGaussianNoise()` | Ready-to-use Gaussian noise helper |
+| `noise_sigma` / `noise_amplitude` SDF parsing + `GetGaussianNoise()`, `Noise()`, `NoiseStdDev()` | Ready-to-use Gaussian noise helper: `Noise()` draws `noise_amplitude × N(0, noise_sigma)`, in the unit of the value it is added to |
 | `Position()` / `LatLong()` / `Orientation()` | Called every tick by the plugin, so `m_position` / `m_lat_long` / `m_quad` are always current |
 
 **What each subclass must implement:**
@@ -104,7 +104,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 | Sensor | `gz:type` | Publishes | Notes |
 |---|---|---|---|
 | AIS | `ais` | `<vessel>/<sensor>/ais` (`lotusim_sensor_msgs/msg/AIS`) | Speed-over-ground and heading, derived from the `base_link`'s world velocity |
-| IMU | `imu` | `<vessel>/<sensor>/IMU` (`sensor_msgs/msg/Imu`) | Orientation, angular velocity, linear acceleration |
+| IMU | `imu` | `<vessel>/<sensor>/IMU` (`sensor_msgs/msg/Imu`) | Orientation, angular velocity, linear acceleration, each with the SDF noise; the covariances give its variance |
 | Radar | `radar` | see [Radar Sensor README](radar_sensor/README.md) | Needs a co-located `gpu_lidar` sensor on the same link |
 | Subsea Pressure | `subsea_pressure` | `<vessel>/<sensor>/pressure_sensor` (`lotusim_sensor_msgs/msg/PressureDepth`) | Pressure derived from depth; can optionally back-estimate depth from pressure |
 
