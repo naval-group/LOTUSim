@@ -47,13 +47,13 @@ SimpleBattery::SimpleBattery(
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
-    if (currentA > 0) {
-        m_remainingAh -= currentA * dt;
-        m_remainingAh = std::max(m_remainingAh, 0.0f);
-    } else {
-        m_remainingAh += currentA * dt;
-        m_remainingAh = std::min(m_remainingAh, m_capacityAh);
-    }
+    // currentA > 0 discharges, < 0 charges; dt is in seconds and the charge
+    // is counted in amp-hours, hence the 3600.
+    constexpr double seconds_per_hour = 3600.0;
+    m_remainingAh = std::clamp(
+        m_remainingAh - static_cast<double>(currentA) * dt / seconds_per_hour,
+        0.0,
+        static_cast<double>(m_capacityAh));
     updateVoltage();
     m_logger->debug(
         "SimpleBattery [{},{}]: received load {:.3f} A dt={:.4f} s "
@@ -85,12 +85,13 @@ float SimpleBattery::getStateOfCharge() const
     if (m_capacityAh <= 0.0f) {
         return 0.0f;
     }
-    return std::clamp(m_remainingAh / m_capacityAh, 0.0f, 1.0f);
+    return std::clamp(
+        static_cast<float>(m_remainingAh / m_capacityAh), 0.0f, 1.0f);
 }
 
 // for now - energy estimate in Wh
 float SimpleBattery::availablePowerW() const
 {
-    return voltage() * m_remainingAh;
+    return static_cast<float>(voltage() * m_remainingAh);
 }
 }  // namespace lotusim::gazebo
