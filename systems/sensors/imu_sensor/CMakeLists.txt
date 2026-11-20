@@ -88,6 +88,19 @@ ament_export_include_directories(include)
 ament_export_libraries(
   imu_sensor
 )
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # The noise on the published message. Own main() (see the test file).
+  ament_add_gtest(test_imu_noise test/test_imu_noise.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_imu_noise)
+    find_package(spdlog REQUIRED)
+    target_link_libraries(test_imu_noise imu_sensor spdlog::spdlog)
+  endif()
+endif()
+
 #============================================================================
 # Install the files for this package
 #============================================================================
