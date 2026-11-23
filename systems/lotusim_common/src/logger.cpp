@@ -44,16 +44,25 @@ private:
     std::string m_hardware_id;
 
 public:
+    // Off until enable(), so an unused sink costs one atomic load per log.
+    DiagnosticsSink() { set_level(spdlog::level::off); }
+
     void enable(const std::shared_ptr<rclcpp::Node>& node, const std::string& hardware_id)
     {
         auto pub = node->create_publisher<DiagnosticArray>("/diagnostics", rclcpp::QoS(10));
-        std::lock_guard<std::mutex> lock(mutex_);
-        m_node = node;
-        m_hardware_id = hardware_id;
-        m_diagnostics_pub = pub;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            m_node = node;
+            m_hardware_id = hardware_id;
+            m_diagnostics_pub = pub;
+        }
+        // Records below this level are dropped by the logger before reaching
+        // this sink (lock-free level check).
+        set_level(getLogLevelFromEnv());
     }
     void disable()
     {
+        set_level(spdlog::level::off);
         std::lock_guard<std::mutex> lock(mutex_);
         m_diagnostics_pub.reset();
         m_node.reset();

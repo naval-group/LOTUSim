@@ -21,9 +21,11 @@ ROSInterface::ROSInterface(
     : RenderInterfaceBase(world_name, std::move(logger), std::move(diag_node))
 {
     m_ros_node = rclcpp::Node::make_shared("render_interface", m_world_name);
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "ros2_render_interface");
     m_logger = logger::createConsoleAndFileLogger(
-        "ros2_render_interface",
-        "ros2_render_interface.txt");
+        logger_name,
+        logger_name + ".txt");
     logger::enableDiagnostics(m_logger, m_diag_node, m_world_name);
 }
 

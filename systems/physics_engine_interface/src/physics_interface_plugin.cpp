@@ -29,9 +29,11 @@ PhysicsInterfacePlugin::~PhysicsInterfacePlugin()
 {
     ROS2Interface::resetInstance();
     XdynWebsocket::resetInstance();
-    m_logger->info(
-        "PhysicsInterfacePlugin::~PhysicsInterfacePlugin: PhysicsInterfacePlugin successfully shutdown.");
-    logger::disableDiagnostics(m_logger);
+    if (m_logger) {
+        m_logger->info(
+            "PhysicsInterfacePlugin::~PhysicsInterfacePlugin: PhysicsInterfacePlugin successfully shutdown.");
+        logger::disableDiagnostics(m_logger);
+    }
 }
 
 void PhysicsInterfacePlugin::Configure(
@@ -43,9 +45,11 @@ void PhysicsInterfacePlugin::Configure(
     m_entity = _entity;
 
     m_world_name = lotusim::common::getWorldName(_ecm);
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "physics_interface_plugin");
     m_logger = logger::createConsoleAndFileLogger(
-        "physics_interface_plugin",
-        m_world_name + "_physics_interface_plugin.txt");
+        logger_name,
+        logger_name + ".txt");
 
     m_ros_node = rclcpp::Node::make_shared("physics_plugin", m_world_name);
     logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
@@ -328,7 +332,8 @@ void PhysicsInterfacePlugin::createDomainInterface(
         auto interface = PhysicsInterfaceBase::createInterface(
             interface_type,
             m_models_cmd_map_ptr,
-            m_logger);
+            m_logger,
+            m_world_name);
         if (!interface || !interface->configureInterface(
                               _entity,
                               _vessel_name,

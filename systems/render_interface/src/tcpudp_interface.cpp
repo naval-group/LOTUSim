@@ -22,9 +22,11 @@ TcpUdpInterface::TcpUdpInterface(
     std::shared_ptr<rclcpp::Node> diag_node)
     : RenderInterfaceBase(world_name, std::move(logger), std::move(diag_node))
 {
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "tcp_render_interface");
     m_logger = logger::createConsoleAndFileLogger(
-        "tcp_render_interface",
-        "tcp_render_interface.txt");
+        logger_name,
+        logger_name + ".txt");
     logger::enableDiagnostics(m_logger, m_diag_node, m_world_name);
 }
 

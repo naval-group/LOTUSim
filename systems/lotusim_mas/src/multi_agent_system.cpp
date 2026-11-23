@@ -23,8 +23,10 @@ MultiAgentSystem::MultiAgentSystem()
 MultiAgentSystem::~MultiAgentSystem()
 {
     shutdown();
-    m_logger->info(
-        "MultiAgentSystem::~MultiAgentSystem: MultiAgentSystem successfully shutdown.");
+    if (m_logger) {
+        m_logger->info(
+            "MultiAgentSystem::~MultiAgentSystem: MultiAgentSystem successfully shutdown.");
+    }
 }
 
 void MultiAgentSystem::shutdown()
@@ -32,9 +34,11 @@ void MultiAgentSystem::shutdown()
     m_running.store(false);
     m_ros_node_thread.reset();
     m_executor.reset();
-    m_logger->info(
-        "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
-    logger::disableDiagnostics(m_logger);
+    if (m_logger) {
+        m_logger->info(
+            "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
+        logger::disableDiagnostics(m_logger);
+    }
 }
 
 void MultiAgentSystem::Configure(
@@ -46,9 +50,11 @@ void MultiAgentSystem::Configure(
     m_world_entity = _entity;
     m_world_name = lotusim::common::getWorldName(_ecm);
     m_ecm = &_ecm;
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "mas");
     m_logger = logger::createConsoleAndFileLogger(
-        "mas",
-        m_world_name + "_mas_plugin.txt");
+        logger_name,
+        logger_name + ".txt");
     if (!MultiAgentSystem::initROSNode()) {
         m_logger->error(
             "MultiAgentSystem::Configure: RCLCPP context shutdown.");

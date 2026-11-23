@@ -26,9 +26,11 @@ PowerManager::PowerManager()
 PowerManager::~PowerManager()
 {
     m_spin_thread.reset();
-    logger::disableDiagnostics(m_logger);
-    m_logger->info(
-        "PowerManager::~PowerManager: PowerManager successfully shutdown.");
+    if (m_logger) {
+        logger::disableDiagnostics(m_logger);
+        m_logger->info(
+            "PowerManager::~PowerManager: PowerManager successfully shutdown.");
+    }
 }
 
 void PowerManager::Configure(
@@ -42,9 +44,11 @@ void PowerManager::Configure(
 
     m_world_name = lotusim::common::getWorldName(_ecm);
 
-    const std::string logger_name = m_world_name + "_power_manager";
-    m_logger =
-        logger::createConsoleAndFileLogger(logger_name, logger_name + ".txt");
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "power_manager");
+    m_logger = logger::createConsoleAndFileLogger(
+        logger_name,
+        logger_name + ".txt");
 
     // world-level ROS2 node used for publishing
     // per-vessel nodes are created inside each PlatformPowerManager
@@ -180,6 +184,7 @@ bool PowerManager::loadVessel(
         power_management_type,
         _entity,
         vesselName,
+        m_world_name,
         vesselNode,
         rootEl);
 

@@ -30,7 +30,10 @@ namespace rclcpp { class Node; }
 
 namespace lotusim::logger {
 
-// Publish every log record of every logger as a DiagnosticArray on /diagnostics
+// Publish this logger's records at or above getLogLevelFromEnv() as
+// DiagnosticArray on /diagnostics using `node`. Returns false if the logger has no diagnostics
+// sink (e.g. made by createBasicFileLogger()).
+// Call disableDiagnostics() before `node` is destroyed.
 bool enableDiagnostics(
     const std::shared_ptr<spdlog::logger>& logger,
     const std::shared_ptr<rclcpp::Node>& node,
@@ -53,6 +56,21 @@ const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::info;
  * @return spdlog::level::level_enum
  */
 spdlog::level::level_enum getLogLevelFromEnv();
+
+/**
+ * @brief Standard name for a logger that belongs to a world:
+ * "<world_name>_<name>"
+ *
+ * Use it as the logger_name of createConsoleAndFileLogger() /
+ * createBasicFileLogger(), and logger_name + ".txt" as the file_name, so
+ * loggers of different worlds never share a registry entry or a file.
+ */
+inline std::string worldLoggerName(
+    const std::string& world_name,
+    const std::string& name)
+{
+    return world_name + "_" + name;
+}
 
 /**
  * @brief Creates both console and file logger object

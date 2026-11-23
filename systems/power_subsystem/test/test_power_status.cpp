@@ -64,7 +64,11 @@ std::string activeProvider(const std::vector<Fields>& providers)
     static auto node = rclcpp::Node::make_shared("test_power_status");
     static int vessel = 0;
     DefaultPlatformPowerManager manager(
-        1, "vessel" + std::to_string(vessel++), node, modelSdf(providers));
+        1,
+        "vessel" + std::to_string(vessel++),
+        "test_world",
+        node,
+        modelSdf(providers));
     return manager.activeProviderName();
 }
 

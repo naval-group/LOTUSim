@@ -16,9 +16,15 @@ namespace lotusim::gazebo {
 DefaultPlatformPowerManager::DefaultPlatformPowerManager(
     const gz::sim::Entity& vessel_entity,
     const std::string& vessel_name,
+    const std::string& world_name,
     rclcpp::Node::SharedPtr node,
     sdf::ElementPtr sdfptr)
-    : PlatformPowerManagerBase(vessel_entity, vessel_name, node, sdfptr)
+    : PlatformPowerManagerBase(
+          vessel_entity,
+          vessel_name,
+          world_name,
+          node,
+          sdfptr)
 {
 }
 

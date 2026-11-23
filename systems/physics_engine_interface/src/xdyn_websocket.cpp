@@ -33,7 +33,8 @@ std::unordered_map<gz::sim::Entity, VesselInformation>
     XdynWebsocket::m_saved_state;
 std::unordered_map<gz::sim::Entity, DomainType> XdynWebsocket::m_current_domain;
 
-XdynWebsocket::XdynWebsocket() : PhysicsInterfaceBase("XdynWebsocket")
+XdynWebsocket::XdynWebsocket(const std::string& world_name)
+    : PhysicsInterfaceBase("XdynWebsocket", world_name)
 {
     m_client.clear_access_channels(websocketpp::log::alevel::all);
     m_client.clear_error_channels(websocketpp::log::elevel::all);
@@ -57,11 +58,12 @@ XdynWebsocket::~XdynWebsocket()
     m_thread->join();
 }
 
-std::shared_ptr<XdynWebsocket> XdynWebsocket::createInterface()
+std::shared_ptr<XdynWebsocket> XdynWebsocket::createInterface(
+    const std::string& world_name)
 {
     std::scoped_lock lock(m_instance_mutex);
     if (m_instance == nullptr) {
-        m_instance = std::make_shared<XdynWebsocket>();
+        m_instance = std::make_shared<XdynWebsocket>(world_name);
     }
     return m_instance;
 }

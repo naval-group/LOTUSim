@@ -24,9 +24,6 @@
 #include <unordered_map>
 #include <chrono>
 
-#include <diagnostic_msgs/msg/diagnostic_array.hpp>
-#include <diagnostic_msgs/msg/diagnostic_status.hpp>
-
 #include "lotusim_common/common.hpp"
 #include "lotusim_common/logger.hpp"
 #include "lotusim_common/spin_thread.hpp"

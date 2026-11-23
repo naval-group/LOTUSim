@@ -15,9 +15,11 @@ RenderPlugin::RenderPlugin() {}
 
 RenderPlugin::~RenderPlugin()
 {
-    m_logger->info(
-        "RenderPlugin::~RenderPlugin: RenderPlugin successfully shutdown.");
-    logger::disableDiagnostics(m_logger);
+    if (m_logger) {
+        m_logger->info(
+            "RenderPlugin::~RenderPlugin: RenderPlugin successfully shutdown.");
+        logger::disableDiagnostics(m_logger);
+    }
 }
 
 void RenderPlugin::Configure(
@@ -27,9 +29,11 @@ void RenderPlugin::Configure(
     gz::sim::EventManager&)
 {
     m_world_name = lotusim::common::getWorldName(_ecm);
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "render_plugin");
     m_logger = logger::createConsoleAndFileLogger(
-        "render_plugin",
-        m_world_name + "_render_plugin.txt");
+        logger_name,
+        logger_name + ".txt");
 
     // node used only to pub /diagnostics, so it works in every connection mode
     m_diag_node = rclcpp::Node::make_shared(

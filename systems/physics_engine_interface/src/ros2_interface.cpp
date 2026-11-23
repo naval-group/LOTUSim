@@ -13,15 +13,17 @@ namespace lotusim::gazebo {
 
 std::shared_ptr<ROS2Interface> ROS2Interface::m_instance = nullptr;
 
-std::shared_ptr<ROS2Interface> ROS2Interface::createInterface()
+std::shared_ptr<ROS2Interface> ROS2Interface::createInterface(
+    const std::string& world_name)
 {
     if (m_instance == nullptr) {
-        m_instance = std::make_shared<ROS2Interface>();
+        m_instance = std::make_shared<ROS2Interface>(world_name);
     }
     return m_instance;
 }
 
-ROS2Interface::ROS2Interface() : PhysicsInterfaceBase("Ros2Interface")
+ROS2Interface::ROS2Interface(const std::string& world_name)
+    : PhysicsInterfaceBase("Ros2Interface", world_name)
 {
     if (!rclcpp::ok()) {
         rclcpp::init(0, nullptr);
