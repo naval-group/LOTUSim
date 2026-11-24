@@ -24,7 +24,11 @@ namespace {
 /**
  * @brief The <lotusim_power> element a model.sdf would give the battery.
  */
-sdf::ElementPtr batterySdf(float capacity_ah, float initial_soc)
+sdf::ElementPtr batterySdf(
+    float capacity_ah,
+    float initial_soc,
+    float voltage_min = 36.0f,
+    float voltage_nominal = 48.0f)
 {
     auto element = std::make_shared<sdf::Element>();
     element->SetName("lotusim_power");
@@ -36,12 +40,16 @@ sdf::ElementPtr batterySdf(float capacity_ah, float initial_soc)
     };
     add("capacity_ah", capacity_ah);
     add("initial_soc", initial_soc);
-    add("voltage_min", 36.0f);
-    add("voltage_nominal", 48.0f);
+    add("voltage_min", voltage_min);
+    add("voltage_nominal", voltage_nominal);
     return element;
 }
 
-std::unique_ptr<SimpleBattery> makeBattery(float capacity_ah, float initial_soc)
+std::unique_ptr<SimpleBattery> makeBattery(
+    float capacity_ah,
+    float initial_soc,
+    float voltage_min = 36.0f,
+    float voltage_nominal = 48.0f)
 {
     auto logger = std::make_shared<spdlog::logger>(
         "test_simple_battery",
@@ -50,7 +58,7 @@ std::unique_ptr<SimpleBattery> makeBattery(float capacity_ah, float initial_soc)
     return std::make_unique<SimpleBattery>(
         "battery",
         "vessel",
-        batterySdf(capacity_ah, initial_soc),
+        batterySdf(capacity_ah, initial_soc, voltage_min, voltage_nominal),
         nullptr,
         logger);
 }
@@ -108,6 +116,38 @@ TEST(SimpleBattery, VoltageFollowsStateOfCharge)
     battery->receiveLoad(50.0f, 3600.0f);
     // halfway between voltage_min 36 V and voltage_nominal 48 V
     EXPECT_NEAR(battery->voltage(), 42.0f, 1e-4f);
+}
+
+// A capacity of 0 or less is replaced by 100 Ah.
+TEST(SimpleBattery, NonPositiveCapacityUses100)
+{
+    for (const float capacity : {0.0f, -50.0f}) {
+        auto battery = makeBattery(capacity, 1.0f);
+        battery->receiveLoad(10.0f, 3600.0f);
+        EXPECT_NEAR(battery->getStateOfCharge(), 0.9f, 1e-5f) << capacity;
+    }
+}
+
+// An initial_soc out of [0, 1] is clamped into it: the charge starts full
+// or empty, not at 150 Ah or -50 Ah of a 100 Ah battery.
+TEST(SimpleBattery, InitialSocClamped)
+{
+    auto over = makeBattery(100.0f, 1.5f);
+    over->receiveLoad(10.0f, 3600.0f);
+    EXPECT_NEAR(over->getStateOfCharge(), 0.9f, 1e-5f);
+    auto under = makeBattery(100.0f, -0.5f);
+    under->receiveLoad(-10.0f, 3600.0f);
+    EXPECT_NEAR(under->getStateOfCharge(), 0.1f, 1e-5f);
+}
+
+// voltage_nominal at or under voltage_min: the voltage stays voltage_min
+// instead of falling as the battery charges.
+TEST(SimpleBattery, NominalUnderMinGivesConstantVoltage)
+{
+    auto battery = makeBattery(100.0f, 0.5f, 36.0f, 30.0f);
+    EXPECT_NEAR(battery->voltage(), 36.0f, 1e-4f);
+    battery->receiveLoad(-50.0f, 3600.0f);
+    EXPECT_NEAR(battery->voltage(), 36.0f, 1e-4f);
 }
 
 // Same reason as physics_engine_interface's tests: gz-sim's dependency chain

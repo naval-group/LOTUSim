@@ -32,6 +32,17 @@ SimpleBattery::SimpleBattery(
     // capacity_ah and initial_soc as Battery read them.
     , m_remainingAh(static_cast<double>(m_capacityAh) * m_initialSoc)
 {
+    // The voltage rises from voltage_min to voltage_nominal as the battery
+    // charges: the other way round it would fall. Constant at voltage_min.
+    if (!(m_voltage_nominal > m_voltageMin)) {
+        m_logger->error(
+            "SimpleBattery [{}]: voltage_nominal must be > voltage_min (got {} "
+            "and {}), using a constant voltage_min",
+            m_provider_name,
+            m_voltage_nominal,
+            m_voltageMin);
+        m_voltage_nominal = m_voltageMin;
+    }
     updateVoltage();
     m_provider_type = ProviderType::SimpleBattery;
 
