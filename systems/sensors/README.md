@@ -104,7 +104,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 | Sensor | `gz:type` | Publishes | Notes |
 |---|---|---|---|
 | AIS | `ais` | `<vessel>/<sensor>/ais` (`lotusim_sensor_msgs/msg/AIS`) | Speed-over-ground and heading, derived from the `base_link`'s world velocity |
-| IMU | `imu` | `<vessel>/<sensor>/IMU` (`sensor_msgs/msg/Imu`) | Orientation, angular velocity, linear acceleration |
+| IMU | `imu` | `<vessel>/<sensor>/IMU` (`sensor_msgs/msg/Imu`) | Orientation, angular velocity, linear acceleration, each with its own Gaussian noise per axis (see below); the covariances give its variance |
 | Radar | `radar` | see [Radar Sensor README](radar_sensor/README.md) | Needs a co-located `gpu_lidar` sensor on the same link |
 | Subsea Pressure | `subsea_pressure` | `<vessel>/<sensor>/pressure_sensor` (`lotusim_sensor_msgs/msg/PressureDepth`) | Pressure derived from depth; can optionally back-estimate depth from pressure |
 
@@ -119,10 +119,42 @@ Minimal SDF for AIS and IMU:
 
 <sensor name="imu_sensor" type="custom" gz:type="imu">
     <update_rate>1</update_rate>
-    <noise_sigma>0.01</noise_sigma>
-    <noise_amplitude>0.01</noise_amplitude>
 </sensor>
 ```
+
+The IMU reads its noise from Gazebo's IMU tags, a Gaussian `mean` and `stddev` per axis: `<angular_velocity>` (rad/s) and `<linear_acceleration>` (m/s²), read by sdformat as for a Gazebo IMU. Gazebo has no orientation noise; `<orientation>` takes the same form, x y z being roll, pitch and yaw (rad). An axis without `<noise>` has none:
+
+```xml
+<sensor name="imu_sensor" type="custom" gz:type="imu">
+    <update_rate>10</update_rate>
+    <imu>
+        <orientation>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.01</stddev></noise></z>
+        </orientation>
+        <angular_velocity>
+            <x><noise type="gaussian"><mean>0</mean><stddev>2e-4</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>2e-4</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>2e-4</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+            <x><noise type="gaussian">
+                <mean>0</mean><stddev>1.7e-2</stddev>
+                <bias_mean>0.1</bias_mean><bias_stddev>1e-3</bias_stddev>
+            </noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>1.7e-2</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>1.7e-2</stddev></noise></z>
+        </linear_acceleration>
+    </imu>
+</sensor>
+```
+
+The noise model, shared by the sensors (`lotusim_sensor_base/noise_model.hpp`), follows Gazebo's Gaussian noise: each measurement is `value + bias + N(mean, stddev)`.
+
+- `bias_mean`, `bias_stddev`: the bias is drawn once, when the sensor loads, from N(`bias_mean`, `bias_stddev`), and is negative half of the time (`bias_mean` is its magnitude).
+- `dynamic_bias_stddev`, `dynamic_bias_correlation_time` (s): when both are set, the bias then drifts as a first-order Gauss-Markov process.
+- `precision`: when set, the measurement is rounded to a multiple of it.
+
+The covariances give `stddev²`; the bias is not part of them.
 
 Subsea pressure adds its own parameters:
 
