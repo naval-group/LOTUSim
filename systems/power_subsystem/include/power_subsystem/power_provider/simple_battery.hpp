@@ -79,8 +79,9 @@ private:
     // full-charge voltage from SDF voltage_nominal
     float m_voltage_nominal{48.0f};
 
-    // tracks remaining charge
-    float m_remainingAh{100.0f};
+    // tracks remaining charge. A double: a float near 100 Ah cannot take
+    // the few micro amp-hours of a small current over one step.
+    double m_remainingAh{100.0};
 };
 
 }  // namespace lotusim::gazebo

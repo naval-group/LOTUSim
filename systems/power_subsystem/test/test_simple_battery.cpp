@@ -74,6 +74,17 @@ TEST(SimpleBattery, IntegratesSmallStepsInAmpHours)
     EXPECT_NEAR(battery->getStateOfCharge(), 0.9f, 1e-3f);
 }
 
+TEST(SimpleBattery, SmallCurrentDrawsCharge)
+{
+    // 62 mA for one hour in 0.2 s steps: 3.4e-6 Ah a step, under half the
+    // spacing of floats near 100 (7.6e-6), so a float charge never moves.
+    auto battery = makeBattery(100.0f, 1.0f);
+    for (int i = 0; i < 18000; ++i) {
+        battery->receiveLoad(0.062f, 0.2f);
+    }
+    EXPECT_NEAR(battery->getStateOfCharge(), 1.0f - 0.062f / 100.0f, 1e-5f);
+}
+
 TEST(SimpleBattery, NegativeCurrentCharges)
 {
     auto battery = makeBattery(100.0f, 0.5f);
