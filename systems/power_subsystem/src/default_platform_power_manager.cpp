@@ -108,15 +108,8 @@ void DefaultPlatformPowerManager::distributeLoad(
     if (!m_all_batteries_depleted) {
         m_batteries[m_active_battery_index]->receiveLoad(total_current_a, dt);
 
-        int available_gen_count = 0;
-        for (const auto& g : m_generators)
-            if (!g->isDepleted())
-                available_gen_count++;
-
-        const bool can_charge = active_gen && (!m_all_batteries_depleted ||
-                                               available_gen_count > 1);
-
-        if (can_charge) {
+        // A generator with fuel left charges (firstActiveGenerator()).
+        if (active_gen) {
             auto charge_target = m_batteries[m_active_battery_index];
             if (charge_target->getStateOfCharge() >= 1.0f) {
                 charge_target = nullptr;

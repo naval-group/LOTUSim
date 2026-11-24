@@ -186,7 +186,6 @@ Extends `PowerProvider` with:
 Extends `PowerProvider` with:
 
 - `PowerLevel` computed from fuel ratio thresholds
-- `surplusChargingCurrent(busCurrentA)` computes available surplus for battery charging
 - Fuel tracking via `m_fuel_level` and `m_fuel_capacity`
 
 **PowerLevel thresholds:**

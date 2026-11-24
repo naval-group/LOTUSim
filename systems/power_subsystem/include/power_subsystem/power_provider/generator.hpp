@@ -107,26 +107,6 @@ public:
         return isDepleted() ? 0.0f : m_voltage_nominal;
     }
 
-    /**
-     * @brief compute surplus charging current available
-     *
-     * called by PowerManager after receiveLoad() to determine how much
-     * charge to push to the active battery
-     *
-     * @param busCurrentA  total current drawn by all active consumers (A)
-     * returns surplus current available for charging (A), 0 if none
-     */
-    // AHOY merge this with receiving load. no point having this
-    float surplusChargingCurrent(float busCurrentA) const
-    {
-        if (isDepleted()) {
-            return 0.0f;
-        }
-        const float demandW = busCurrentA * m_voltage_nominal;
-        const float surplusW = availablePowerW() - demandW;
-        return surplusW > 0.0f ? (surplusW / m_voltage_nominal) : 0.0f;
-    }
-
     float fuelRatio() const
     {
         if (m_fuel_capacity <= 0.0f) {
