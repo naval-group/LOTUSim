@@ -204,7 +204,7 @@ Extends `PowerProvider` with:
 Minimal battery implementation for testing. Models linear voltage drain:
 
 ```
-remaining_ah -= currentA × dt
+remaining_ah -= currentA × dt / 3600     (dt in s)
 voltage = voltage_min + SOC × (voltage_nominal - voltage_min)
 ```
 
