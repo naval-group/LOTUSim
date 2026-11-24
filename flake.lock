@@ -81,11 +81,11 @@
         "src-yaml-cpp": "src-yaml-cpp"
       },
       "locked": {
-        "lastModified": 1795055811,
-        "narHash": "sha256-Ot0bNJ6R9lpEUW7CjQOa39ffp1iIuOm//0APcc+udhg=",
+        "lastModified": 1795491089,
+        "narHash": "sha256-mlyPXaZDfdYchmxGMQYe/C01f5Z4Qtv25nyQRB23S18=",
         "owner": "naval-group",
         "repo": "lxdyn",
-        "rev": "a2123e5e163554710660c7089e96659fd44c0403",
+        "rev": "3b41fd1d52282dd266ea9b7fe70b2a0c6a3ce583",
         "type": "github"
       },
       "original": {
