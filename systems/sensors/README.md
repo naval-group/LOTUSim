@@ -85,6 +85,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 | Feature | Description |
 |---|---|
 | `update_rate` / `is_on` SDF parsing | Parsed once in `Load()` |
+| `seed` SDF parsing | Optional: seeds `m_rnd_gen`, before `CustomSensorLoad()`, so a noisy run can be repeated; seeded from the clock without it |
 | `EnableMeasurement(now)` | Rate-limits updates to `update_rate` Hz and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
 | `<vessel>/<sensor>/change_state` ROS 2 service | Lets external code turn the sensor on/off at runtime |
 | `m_rnd_gen` + `CreateNoiseModel()` (`noise_model.hpp`) | Gazebo's Gaussian noise, from an SDF `<noise>` element (see the IMU below) |

@@ -28,7 +28,9 @@ namespace {
  */
 class RateProbe : public lotusim::sensor::CustomSensor {
 public:
-    explicit RateProbe(const std::string& update_rate)
+    explicit RateProbe(
+        const std::string& update_rate,
+        const std::string& extra_sdf = "")
         : CustomSensor(
               std::make_shared<spdlog::logger>(
                   "test_custom_sensor",
@@ -45,7 +47,8 @@ public:
                             "<sensor name='probe' type='custom' gz:type='probe'>"
                             "<update_rate>" +
                             update_rate +
-                            "</update_rate></sensor></link></model></sdf>")
+                            "</update_rate>" + extra_sdf +
+                            "</sensor></link></model></sdf>")
                         .empty());
         Load(*root.Model()->LinkByIndex(0)->SensorByIndex(0));
     }
@@ -65,6 +68,18 @@ public:
         return count;
     }
 
+    /// The draw CustomSensorLoad() took, as a noise model drawing its bias.
+    unsigned loadDraw() const
+    {
+        return m_load_draw;
+    }
+
+    /// The next draw of the sensor's random engine.
+    unsigned draw()
+    {
+        return m_rnd_gen();
+    }
+
     void turnOff()
     {
         m_is_on = false;
@@ -80,6 +95,7 @@ public:
 protected:
     bool CustomSensorLoad(const sdf::Sensor&) override
     {
+        m_load_draw = m_rnd_gen();
         return true;
     }
 
@@ -91,6 +107,7 @@ private:
         return node;
     }
     static inline int s_count = 0;
+    unsigned m_load_draw{0};
 };
 
 }  // namespace
@@ -137,6 +154,24 @@ TEST(CustomSensorRate, OffSensorNeverMeasures)
     RateProbe sensor("10");
     sensor.turnOff();
     EXPECT_EQ(sensor.measurementsOver(10s, 200ms), 0);
+}
+
+// Two sensors with the same <seed> draw the same values, from Load() on.
+TEST(CustomSensorSeed, SameSeedSameDraws)
+{
+    RateProbe a("1", "<seed>42</seed>");
+    RateProbe b("1", "<seed>42</seed>");
+    EXPECT_EQ(a.loadDraw(), b.loadDraw());
+    for (int i = 0; i < 10; ++i) {
+        EXPECT_EQ(a.draw(), b.draw());
+    }
+}
+
+TEST(CustomSensorSeed, DifferentSeedsDifferentDraws)
+{
+    RateProbe a("1", "<seed>42</seed>");
+    RateProbe b("1", "<seed>43</seed>");
+    EXPECT_NE(a.loadDraw(), b.loadDraw());
 }
 
 // gz-sim's dependency chain can crash during static teardown (see

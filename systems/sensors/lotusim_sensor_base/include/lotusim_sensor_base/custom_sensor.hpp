@@ -135,7 +135,7 @@ protected:
     double m_update_rate;
 
     /// \brief Pseudo random number generator, shared by the sensor's noise
-    /// models
+    /// models; seeded from <seed>, else from the clock
     std::default_random_engine m_rnd_gen;
 
     /// \brief Flag to control the generation of output messages

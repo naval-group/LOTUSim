@@ -37,6 +37,13 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
 {
     gz::sensors::Sensor::Load(_sdf);
 
+    // An optional <seed>, so a noisy run can be repeated. Applied before
+    // CustomSensorLoad(), where the noise models draw their bias.
+    const sdf::ElementPtr elem = _sdf.Element();
+    if (elem && elem->HasElement("seed")) {
+        m_rnd_gen.seed(elem->Get<unsigned>("seed"));
+    }
+
     CustomSensorLoad(_sdf);
 
     m_type = gz::sensors::customType(_sdf);
