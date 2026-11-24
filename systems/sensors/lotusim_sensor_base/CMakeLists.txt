@@ -91,6 +91,7 @@ find_package(lotusim_common REQUIRED)
 add_library(lotusim_sensor_base
 SHARED
 src/custom_sensor.cpp
+src/noise_model.cpp
 )
 target_include_directories(lotusim_sensor_base
   PUBLIC
@@ -123,6 +124,17 @@ if(BUILD_TESTING)
   )
   if(TARGET test_custom_sensor)
     target_link_libraries(test_custom_sensor lotusim_sensor_base spdlog::spdlog)
+  endif()
+
+  # Built from the source alone: linking lotusim_sensor_base pulls in
+  # gz-sim, whose static teardown can crash (see test_custom_sensor).
+  ament_add_gtest(test_noise_model
+    test/test_noise_model.cpp
+    src/noise_model.cpp
+  )
+  if(TARGET test_noise_model)
+    target_include_directories(test_noise_model PRIVATE include)
+    target_link_libraries(test_noise_model sdformat${SDF_VER}::sdformat${SDF_VER})
   endif()
 endif()
 
