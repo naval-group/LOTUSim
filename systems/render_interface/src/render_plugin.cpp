@@ -11,8 +11,12 @@
 
 namespace lotusim::gazebo {
 
-RenderPlugin::RenderPlugin() {}
-
+RenderPlugin::RenderPlugin()
+{
+    if (!rclcpp::ok()) {
+        rclcpp::init(0, nullptr);
+    }
+}
 RenderPlugin::~RenderPlugin()
 {
     if (m_logger) {
