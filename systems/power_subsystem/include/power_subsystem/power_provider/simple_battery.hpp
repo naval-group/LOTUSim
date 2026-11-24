@@ -25,10 +25,15 @@ namespace lotusim::gazebo {
  * replace receiveLoad(), voltage() and receiveCharge() with
  * FMU calls once the FMU wrapper interface is available
  *
- * SDF format (inside <plugin> tag):
- *   <provider name="test_battery" type="simple_battery"
- *             capacity_ah="100" initial_soc="1.0"
- *             voltage_min="36.0" voltage_nominal="48.0"/>
+ * SDF format (a <lotusim_power> element of the vessel's model):
+ *   <lotusim_power>
+ *       <name>main_battery</name>
+ *       <type>simple_battery</type>
+ *       <capacity_ah>100</capacity_ah>
+ *       <initial_soc>1.0</initial_soc>
+ *       <voltage_min>36.0</voltage_min>
+ *       <voltage_nominal>48.0</voltage_nominal>
+ *   </lotusim_power>
  */
 class SimpleBattery : public Battery {
 public:

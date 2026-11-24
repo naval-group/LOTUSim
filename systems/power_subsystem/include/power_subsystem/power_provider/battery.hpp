@@ -20,19 +20,20 @@ namespace lotusim::gazebo {
  *
  * Inherits from PowerProvider and adds battery-specific behaviour:
  *   - charge from generator surplus
- *   - PowerLevel computation from voltage vs voltage_min thresholds
- *   - SOC tracking (initial value only for now —> FMU does not output SOC)
+ *   - PowerLevel computation from state of charge thresholds
+ *   - SOC tracking, integrated by the concrete battery (SimpleBattery:
+ *     coulomb counting in amp-hours)
  *
  * SDF parameters read by Battery:
  *   capacity_ah  : battery capacity in Amp-hours
  *   initial_soc  : starting state of charge (0.0–1.0)
- *   voltage_min  : voltage below which battery is considered depleted (Volts)
+ *   voltage_min  : voltage of an empty battery (Volts)
  *
  * PowerLevel thresholds (hardcoded):
  *   NORMAL   : SOC > 0.20
  *   WARN     : 0.10 < SOC <= 0.20
- *   CRITICAL : 0.0  < SOC <= 0.10
- *   DEPLETED : SOC <= 0.0
+ *   CRITICAL : 0.001 < SOC <= 0.10
+ *   DEPLETED : SOC <= 0.001
  */
 class Battery : public PowerProvider {
 public:
@@ -71,7 +72,7 @@ public:
     }
 
     /**
-     * @brief returns initial_soc for now
+     * @brief initial_soc; concrete batteries return the integrated charge
      */
     float getStateOfCharge() const override
     {
@@ -168,11 +169,10 @@ protected:
     float m_capacityAh{0.0f};
 
     // Initial state of charge (0 - 1.0) from SDF initial_soc
-    //  just returning initial value for now -----------------
     float m_initialSoc{1.0f};
 
-    // min operating voltage from voltage_min
-    // PowerLevel thresholds are derived from this value
+    // min operating voltage from voltage_min: the voltage of an empty
+    // battery
     float m_voltageMin{0.0f};
 };
 }  // namespace lotusim::gazebo
