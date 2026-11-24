@@ -87,7 +87,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 | `update_rate` / `is_on` SDF parsing | Parsed once in `Load()` |
 | `EnableMeasurement(now)` | Rate-limits updates to `update_rate` Hz and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
 | `<vessel>/<sensor>/change_state` ROS 2 service | Lets external code turn the sensor on/off at runtime |
-| `noise_sigma` / `noise_amplitude` SDF parsing + `GetGaussianNoise()` | Ready-to-use Gaussian noise helper |
+| `m_rnd_gen` + `CreateNoiseModel()` (`noise_model.hpp`) | Gazebo's Gaussian noise, from an SDF `<noise>` element (see the IMU below) |
 | `Position()` / `LatLong()` / `Orientation()` | Called every tick by the plugin, so `m_position` / `m_lat_long` / `m_quad` are always current |
 
 **What each subclass must implement:**
@@ -113,8 +113,6 @@ Minimal SDF for AIS and IMU:
 ```xml
 <sensor name="ais_sensor" type="custom" gz:type="ais">
     <update_rate>1</update_rate>
-    <noise_sigma>0.01</noise_sigma>
-    <noise_amplitude>0.01</noise_amplitude>
 </sensor>
 
 <sensor name="imu_sensor" type="custom" gz:type="imu">
@@ -165,6 +163,9 @@ Subsea pressure adds its own parameters:
     <estimate_depth_on>true</estimate_depth_on>
     <standard_pressure>101.325</standard_pressure>  <!-- kPa at surface -->
     <kPa_per_meter>9.80638</kPa_per_meter>
+    <pressure>                                  <!-- as Gazebo's air pressure sensor -->
+        <noise type="gaussian"><mean>0</mean><stddev>0.1</stddev></noise>  <!-- kPa -->
+    </pressure>
 </sensor>
 ```
 
@@ -195,6 +196,7 @@ Model `CMakeLists.txt` on `imu_sensor/CMakeLists.txt`: it needs `find_package(lo
 ```cpp
 // my_sensor.hpp
 #include "lotusim_sensor_base/custom_sensor.hpp"
+#include "lotusim_sensor_base/noise_model.hpp"
 #include "my_msgs/msg/my_reading.hpp"
 
 namespace lotusim::sensor {
@@ -219,6 +221,8 @@ private:
     virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) final;
 
     rclcpp::Publisher<my_msgs::msg::MyReading>::SharedPtr m_sensor_pub;
+    double m_my_param;
+    std::unique_ptr<NoiseModel> m_noise;  // nullptr: no noise
 };
 
 }  // namespace lotusim::sensor
@@ -231,6 +235,13 @@ bool MySensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 {
     sdf::ElementPtr sdfptr = _sdf.Element();
     GetSDFParam<double>(sdfptr, "my_param", m_my_param, /*default=*/1.0);
+
+    // An optional <noise> element, Gazebo's form; type none without it.
+    sdf::Noise noise;
+    if (sdfptr->HasElement("noise")) {
+        noise.Load(sdfptr->GetElement("noise"));
+    }
+    m_noise = CreateNoiseModel(noise, m_rnd_gen);
 
     m_sensor_pub = m_ros_node->create_publisher<my_msgs::msg::MyReading>(
         m_vessel_name + "/" + m_sensor_name + "/my_reading",
@@ -251,7 +262,10 @@ bool MySensor::UpdateSensor(
 
     my_msgs::msg::MyReading msg;
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
-    msg.value = m_my_param + GetGaussianNoise(m_noise_amp);
+    const double dt = std::chrono::duration<double>(
+                          _info.simTime - m_last_measurement_time)
+                          .count();
+    msg.value = m_noise ? m_noise->Apply(m_my_param, dt) : m_my_param;
 
     m_sensor_pub->publish(msg);
     m_last_measurement_time = _info.simTime;

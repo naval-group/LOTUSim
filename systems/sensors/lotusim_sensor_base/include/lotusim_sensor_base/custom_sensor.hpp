@@ -17,7 +17,6 @@
 #include <gz/sensors/SensorTypes.hh>
 #include <gz/sensors/Util.hh>
 #include <gz/sim/System.hh>
-#include <map>
 #include <mutex>
 #include <random>
 #include <string>
@@ -29,18 +28,6 @@
 #include "rclcpp/rclcpp.hpp"
 
 namespace lotusim::sensor {
-
-/*
-   <pose relative_to='lidar_frame'>0 0 0 0 0 0</pose>
-   <topic>lidar</topic>
-   <update_rate>10</update_rate>
-
-   <robot_namespace>${namespace}</robot_namespace>
-   <noise_sigma>${noise_sigma}</noise_sigma>
-   <noise_amplitude>${noise_amplitude}</noise_amplitude>
-
-   <sensor_param> </sensor_param>
-*/
 
 class CustomSensor : public gz::sensors::Sensor {
 public:
@@ -58,11 +45,6 @@ public:
 
     /// \brief Update callback from simulation.
     // virtual bool OnUpdate(const gz::sim::UpdateInfo &info) = 0;
-
-    /// \brief Add noise normal distribution to the list
-    bool AddNoiseModel(std::string _name, double _sigma);
-    double GetGaussianNoise(std::string _name, double _amp);
-    double GetGaussianNoise(double _amp);
 
     /// \brief Get status of the sensor
     bool IsOn();
@@ -152,16 +134,9 @@ protected:
     /// \brief Sensor update rate (Hz); 0 or less: every simulation step
     double m_update_rate;
 
-    /// \brief Noise standard deviation
-    double m_noise_sigma;
-
-    /// \brief Noise amplitude
-    double m_noise_amp;
-
-    /// \brief Pseudo random number generator
+    /// \brief Pseudo random number generator, shared by the sensor's noise
+    /// models
     std::default_random_engine m_rnd_gen;
-
-    std::map<std::string, std::normal_distribution<double>> m_noise_models;
 
     /// \brief Flag to control the generation of output messages
     std::atomic<bool> m_is_on;

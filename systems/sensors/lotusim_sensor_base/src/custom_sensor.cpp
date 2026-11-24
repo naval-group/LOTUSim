@@ -60,20 +60,6 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
                 }
                 ChangeSensorState(req, res);
             });
-
-    GetSDFParam<double>(_sdfptr, "noise_sigma", m_noise_sigma, 0.0);
-    if (m_noise_sigma < 0.0) {
-        m_logger->warn("Signal noise sigma must be greater or equal to zero");
-        m_noise_sigma = 0.0;
-    }
-
-    GetSDFParam<double>(_sdfptr, "noise_amplitude", m_noise_amp, 0.0);
-    if (m_noise_amp < 0.0) {
-        m_logger->warn(
-            "Signal noise amplitude must be greater or equal to zero");
-        m_noise_amp = 0.0;
-    }
-    AddNoiseModel("default", m_noise_sigma);
     return true;
 }
 
@@ -84,29 +70,6 @@ bool CustomSensor::ChangeSensorState(
 {
     m_is_on = _req->activate;
     _res->success = true;
-    return true;
-}
-
-double CustomSensor::GetGaussianNoise(std::string _name, double _amp)
-{
-    if (!m_noise_models.count(_name)) {
-        m_logger->warn("Gaussian noise model does not exist");
-        return 0;
-    }
-    return _amp * m_noise_models[_name](m_rnd_gen);
-}
-
-double CustomSensor::GetGaussianNoise(double _amp)
-{
-    return _amp * m_noise_models["default"](m_rnd_gen);
-}
-
-bool CustomSensor::AddNoiseModel(std::string _name, double _sigma)
-{
-    if (m_noise_models.count(_name))
-        return false;
-
-    m_noise_models[_name] = std::normal_distribution<double>(0.0, _sigma);
     return true;
 }
 

@@ -16,8 +16,11 @@
 #ifndef SUBSEA_PRESSURE_ROS_PLUGIN_HH_
 #define SUBSEA_PRESSURE_ROS_PLUGIN_HH_
 
+#include <memory>
+
 #include "lotusim_common/common.hpp"
 #include "lotusim_sensor_base/custom_sensor.hpp"
+#include "lotusim_sensor_base/noise_model.hpp"
 #include "lotusim_sensor_msgs/msg/pressure_depth.hpp"
 
 namespace lotusim::sensor {
@@ -59,7 +62,9 @@ private:
     rclcpp::Publisher<lotusim_sensor_msgs::msg::PressureDepth>::SharedPtr
         m_sensor_pub;
 
-    gz::sensors::NoisePtr noise{nullptr};
+    /// \brief Noise on the pressure (kPa), from <pressure><noise>; nullptr
+    /// for none
+    std::unique_ptr<NoiseModel> m_pressure_noise;
 };
 
 }  // namespace lotusim::sensor

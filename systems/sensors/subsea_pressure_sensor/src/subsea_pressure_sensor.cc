@@ -9,6 +9,9 @@
  */
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
 
+#include <cmath>
+#include <sdf/Noise.hh>
+
 namespace lotusim::sensor {
 
 SubseaPressureSensor::SubseaPressureSensor(
@@ -41,6 +44,14 @@ bool SubseaPressureSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
         m_standard_pressure,
         101.325);
     GetSDFParam<double>(_sdfptr, "kPa_per_meter", m_kPa_per_m, 9.80638);
+    // In the form of Gazebo's air pressure sensor: <pressure><noise>.
+    sdf::Noise pressure_noise;
+    if (_sdfptr && _sdfptr->HasElement("pressure") &&
+        _sdfptr->GetElement("pressure")->HasElement("noise")) {
+        pressure_noise.Load(
+            _sdfptr->GetElement("pressure")->GetElement("noise"));
+    }
+    m_pressure_noise = CreateNoiseModel(pressure_noise, m_rnd_gen);
     m_sensor_pub =
         m_ros_node->create_publisher<lotusim_sensor_msgs::msg::PressureDepth>(
             m_vessel_name + "/" + m_sensor_name + "/pressure_sensor",
@@ -63,7 +74,12 @@ bool SubseaPressureSensor::UpdateSensor(
         pressure += depth * m_kPa_per_m;
     }
 
-    pressure += GetGaussianNoise(m_noise_amp);
+    if (m_pressure_noise) {
+        const double dt = std::chrono::duration<double>(
+                              _info.simTime - m_last_measurement_time)
+                              .count();
+        pressure = m_pressure_noise->Apply(pressure, dt);
+    }
     double inferredDepth = 0.0;
     // Estimate depth, if enabled
     if (m_estimate_depth) {
@@ -73,7 +89,8 @@ bool SubseaPressureSensor::UpdateSensor(
     lotusim_sensor_msgs::msg::PressureDepth msg;
     msg.depth = inferredDepth;
     msg.pressure = pressure;
-    msg.stddev = m_noise_sigma;
+    msg.stddev =
+        m_pressure_noise ? std::sqrt(m_pressure_noise->Variance()) : 0.0;
 
     msg.header = lotusim::common::generateHeaderMessage(_info.simTime);
 

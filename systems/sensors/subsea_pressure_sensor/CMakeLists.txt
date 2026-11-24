@@ -71,6 +71,19 @@ ament_target_dependencies(subsea_pressure_sensor
   lotusim_msgs
   lotusim_sensor_msgs
 )
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(spdlog REQUIRED)
+
+  # The noise on the published message. Own main() (see the test file).
+  ament_add_gtest(test_pressure_noise test/test_pressure_noise.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_pressure_noise)
+    target_link_libraries(test_pressure_noise subsea_pressure_sensor spdlog::spdlog)
+  endif()
+endif()
+
 ament_export_targets(
   export_subsea_pressure_sensor
 )
