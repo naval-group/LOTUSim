@@ -71,7 +71,7 @@ TEST(SimpleBattery, IntegratesSmallStepsInAmpHours)
     for (int i = 0; i < 18000; ++i) {
         battery->receiveLoad(10.0f, 0.2f);
     }
-    EXPECT_NEAR(battery->getStateOfCharge(), 0.9f, 1e-3f);
+    EXPECT_NEAR(battery->getStateOfCharge(), 0.9f, 1e-5f);
 }
 
 TEST(SimpleBattery, SmallCurrentDrawsCharge)
