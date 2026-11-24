@@ -29,12 +29,10 @@ SimpleBattery::SimpleBattery(
           logger)
     , m_voltage(0.0f)
     , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
-    , m_remainingAh(
-          _sdf->Get<float>("capacity_ah", 100.0f).first *
-          _sdf->Get<float>("initial_soc", 1.0f).first)
+    // capacity_ah and initial_soc as Battery read them.
+    , m_remainingAh(static_cast<double>(m_capacityAh) * m_initialSoc)
 {
-    m_voltage =
-        m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
+    updateVoltage();
     m_provider_type = ProviderType::SimpleBattery;
 
     m_logger->info(
