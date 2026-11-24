@@ -149,8 +149,8 @@ protected:
     /// generated.
     std::chrono::steady_clock::duration m_last_measurement_time;
 
-    /// \brief Sensor update rate
-    int m_update_rate;
+    /// \brief Sensor update rate (Hz); 0 or less: every simulation step
+    double m_update_rate;
 
     /// \brief Noise standard deviation
     double m_noise_sigma;

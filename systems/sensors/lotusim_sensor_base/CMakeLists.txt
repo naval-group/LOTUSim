@@ -112,6 +112,20 @@ ament_target_dependencies(lotusim_sensor_base
   lotusim_common
 )
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(spdlog REQUIRED)
+
+  # Measurement timing (update_rate). Own main() (see the test file), so
+  # gtest_main is not linked.
+  ament_add_gtest(test_custom_sensor test/test_custom_sensor.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_custom_sensor)
+    target_link_libraries(test_custom_sensor lotusim_sensor_base spdlog::spdlog)
+  endif()
+endif()
+
 #============================================================================
 # Install the files for this package
 #============================================================================

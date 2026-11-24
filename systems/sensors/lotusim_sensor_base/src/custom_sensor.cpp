@@ -44,7 +44,7 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
     sdf::ElementPtr _sdfptr = _sdf.Element();
 
     bool isSensorOn;
-    GetSDFParam<int>(_sdfptr, "update_rate", m_update_rate, 1);
+    GetSDFParam<double>(_sdfptr, "update_rate", m_update_rate, 1.0);
     GetSDFParam<bool>(_sdfptr, "is_on", isSensorOn, true);
     m_is_on = isSensorOn;
 
@@ -140,10 +140,16 @@ void CustomSensor::Orientation(const gz::math::Quaterniond& _quad)
 bool CustomSensor::EnableMeasurement(
     const std::chrono::steady_clock::duration& _now) const
 {
-    double dt = std::chrono::duration_cast<std::chrono::seconds>(
-                    _now - m_last_measurement_time)
-                    .count();
-    return dt >= 1.0 / m_update_rate && m_is_on;
+    if (!m_is_on) {
+        return false;
+    }
+    // As in SDF, a rate of 0 or less means: every simulation step.
+    if (m_update_rate <= 0.0) {
+        return true;
+    }
+    const double dt =
+        std::chrono::duration<double>(_now - m_last_measurement_time).count();
+    return dt >= 1.0 / m_update_rate;
 }
 
 }  // namespace lotusim::sensor
