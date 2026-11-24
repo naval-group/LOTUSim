@@ -103,7 +103,7 @@ constexpr unsigned short DEFAULT_WEBSOCKET_TIMEOUT = 5;
 
 class XdynWebsocket : public PhysicsInterfaceBase {
 public:
-    XdynWebsocket();
+    explicit XdynWebsocket(const std::string& world_name);
 
     ~XdynWebsocket();
 
@@ -111,7 +111,8 @@ public:
 
     XdynWebsocket(XdynWebsocket& other) = delete;
 
-    static std::shared_ptr<XdynWebsocket> createInterface();
+    static std::shared_ptr<XdynWebsocket> createInterface(
+        const std::string& world_name);
 
     static void resetInstance()
     {

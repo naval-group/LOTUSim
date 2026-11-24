@@ -31,7 +31,7 @@ namespace lotusim::gazebo {
  */
 class ROS2Interface : public PhysicsInterfaceBase {
 public:
-    ROS2Interface();
+    explicit ROS2Interface(const std::string& world_name);
     ~ROS2Interface();
 
     /**
@@ -40,7 +40,8 @@ public:
      * @param _sdf SDF of the plugin
      * @return std::shared_ptr<ROS2Interface>
      */
-    static std::shared_ptr<ROS2Interface> createInterface();
+    static std::shared_ptr<ROS2Interface> createInterface(
+        const std::string& world_name);
     
     static void resetInstance() { m_instance.reset(); }
 

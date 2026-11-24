@@ -32,7 +32,6 @@
 #include "lotusim_msgs/action/mas_cmd.hpp"
 #include "lotusim_msgs/action/mas_cmd_array.hpp"
 #include "lotusim_msgs/msg/mas_cmd.hpp"
-#include "lotusim_msgs/msg/log.hpp"
 #include "lotusim_msgs/msg/vessel_position_array.hpp"
 
 using GoalHandleMASCmdArray =
@@ -231,12 +230,6 @@ protected:
      *
      */
     rclcpp::Node::SharedPtr m_ros_node;
-
-    /**
-    * @brief ROS publisher for LOTUSim log messages
-    *
-    */
-    rclcpp::Publisher<lotusim_msgs::msg::Log>::SharedPtr m_log_pub;
 
     /**
      * @brief GZ Entity Component Manager

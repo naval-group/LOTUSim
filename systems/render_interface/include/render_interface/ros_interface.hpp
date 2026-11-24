@@ -32,7 +32,8 @@ class ROSInterface : public RenderInterfaceBase {
 public:
     ROSInterface(
         const std::string& world_name,
-        std::shared_ptr<spdlog::logger> logger);
+        std::shared_ptr<spdlog::logger> logger,
+        std::shared_ptr<rclcpp::Node> diag_node);
     ~ROSInterface();
 
     bool configureInterface(

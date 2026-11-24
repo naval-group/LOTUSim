@@ -19,6 +19,7 @@ public:
     DefaultPlatformPowerManager(
         const gz::sim::Entity& vessel_entity,
         const std::string& vessel_name,
+        const std::string& world_name,
         rclcpp::Node::SharedPtr node,
         sdf::ElementPtr sdfptr);
 
