@@ -64,9 +64,13 @@ static std::unordered_map<DomainType, std::string> DomainTypeToStringMap{
  */
 class PhysicsInterfaceBase {
 public:
-    PhysicsInterfaceBase(const std::string& interface_name = "")
+    PhysicsInterfaceBase(
+        const std::string& interface_name,
+        const std::string& world_name)
     {
-        std::string logger_name = interface_name + "_physics_engine_output";
+        const std::string logger_name = logger::worldLoggerName(
+            world_name,
+            interface_name + "_physics_engine_output");
         m_engine_logger = logger::createConsoleAndFileLogger(
             logger_name,
             logger_name + ".txt");
@@ -83,13 +87,15 @@ public:
      * @param sdf
      * @param cmd
      * @param logger
-     * @param domain_type
+     * @param world_name world name, used for the engine log file name. Only
+     * used when the interface singleton is first created.
      * @return std::shared_ptr<PhysicsInterfaceBase>
      */
     static std::shared_ptr<PhysicsInterfaceBase> createInterface(
         const InterfaceType& protocol_type,
         std::shared_ptr<std::unordered_map<gz::sim::Entity, std::string>> cmd,
-        std::shared_ptr<spdlog::logger> logger);
+        std::shared_ptr<spdlog::logger> logger,
+        const std::string& world_name);
 
     /**
      * @brief Configure Interface upon creation

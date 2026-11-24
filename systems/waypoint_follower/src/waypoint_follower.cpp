@@ -14,12 +14,7 @@ namespace lotusim::gazebo {
 using namespace std::placeholders;
 
 //////////////////////////////////////////////////
-WaypointFollowerPlugin::WaypointFollowerPlugin() : m_running{false}
-{
-    m_logger = logger::createConsoleAndFileLogger(
-        "waypoint_follower",
-        "waypoint_follower.txt");
-}
+WaypointFollowerPlugin::WaypointFollowerPlugin() : m_running{false} {}
 
 //////////////////////////////////////////////////
 WaypointFollowerPlugin::~WaypointFollowerPlugin()
@@ -27,8 +22,11 @@ WaypointFollowerPlugin::~WaypointFollowerPlugin()
     m_running.store(false);
     m_ros_node_thread.reset();
     m_executor.reset();
-    m_logger->info(
-        "WaypointFollowerPlugin::~WaypointFollowerPlugin: WaypointFollowerPlugin successfully shutdown.");
+    if (m_logger) {
+        m_logger->info(
+            "WaypointFollowerPlugin::~WaypointFollowerPlugin: WaypointFollowerPlugin successfully shutdown.");
+        logger::disableDiagnostics(m_logger);
+    }
 }
 
 //////////////////////////////////////////////////
@@ -256,6 +254,11 @@ void WaypointFollowerPlugin::Configure(
 {
     m_world_entity = _entity;
     m_world_name = lotusim::common::getWorldName(_ecm);
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "waypoint_follower");
+    m_logger = logger::createConsoleAndFileLogger(
+        logger_name,
+        logger_name + ".txt");
 
     m_status_update_period = 10;
     auto sdfPtr = const_cast<sdf::Element*>(_sdf.get());
@@ -271,6 +274,7 @@ void WaypointFollowerPlugin::Configure(
 
     // Create ROS node
     m_ros_node = rclcpp::Node::make_shared("waypoint_follower", m_world_name);
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
     if (rclcpp::ok()) {
         m_executor =
             std::make_shared<rclcpp::executors::MultiThreadedExecutor>();

@@ -38,13 +38,15 @@ namespace lotusim::gazebo {
 PlatformPowerManagerBase::PlatformPowerManagerBase(
     const gz::sim::Entity& vessel_entity,
     const std::string& vessel_name,
+    const std::string& world_name,
     rclcpp::Node::SharedPtr node,
     sdf::ElementPtr sdfptr)
     : m_vessel_entity(vessel_entity)
     , m_vessel_name(vessel_name)
     , m_node(std::move(node))
 {
-    const std::string loggerName = m_vessel_name + "_power";
+    const std::string loggerName =
+        logger::worldLoggerName(world_name, m_vessel_name + "_power");
     m_logger =
         logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
 

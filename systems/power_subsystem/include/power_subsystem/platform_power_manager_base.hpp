@@ -90,11 +90,13 @@ public:
     /**
      * @param m_vessel_entity  Gazebo model entity for this vessel
      * @param m_vessel_name    vessel name
+     * @param world_name       world name, used for the log file name
      * @param node             shared ROS2 node
      */
     PlatformPowerManagerBase(
         const gz::sim::Entity& m_vessel_entity,
         const std::string& m_vessel_name,
+        const std::string& world_name,
         rclcpp::Node::SharedPtr node,
         sdf::ElementPtr sdfptr);
 
@@ -130,6 +132,7 @@ public:
         PlatformPowerManagerType type,
         gz::sim::Entity vessel_entity,
         const std::string& vessel_name,
+        const std::string& world_name,
         rclcpp::Node::SharedPtr node,
         sdf::ElementPtr sdfptr);
 

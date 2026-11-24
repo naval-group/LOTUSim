@@ -28,18 +28,21 @@
 #include "render_interface/ros_interface.hpp"
 #include "render_interface/tcpudp_interface.hpp"
 
+namespace rclcpp { class Node; }
+
 namespace lotusim::gazebo {
 
 std::shared_ptr<RenderInterfaceBase> CreateRenderInterface(
     const std::string& protocol,
     const std::string& world_name,
-    std::shared_ptr<spdlog::logger> logger)
+    std::shared_ptr<spdlog::logger> logger,
+    std::shared_ptr<rclcpp::Node> diag_node)
 {
     if (protocol == "TCPUDP") {
-        return std::make_shared<TcpUdpInterface>(world_name, logger);
+        return std::make_shared<TcpUdpInterface>(world_name, logger, diag_node);
     }
     if (protocol == "ROS2") {
-        return std::make_shared<ROSInterface>(world_name, logger);
+        return std::make_shared<ROSInterface>(world_name, logger, diag_node);
     }
     return nullptr;
 };
@@ -88,6 +91,12 @@ private:
      *
      */
     std::shared_ptr<spdlog::logger> m_logger;
+
+    /**
+     * @brief for Diagnostics msgs
+     *
+     */
+    rclcpp::Node::SharedPtr m_diag_node;
 
     /**
      * @brief World name

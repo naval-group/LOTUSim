@@ -23,18 +23,22 @@ MultiAgentSystem::MultiAgentSystem()
 MultiAgentSystem::~MultiAgentSystem()
 {
     shutdown();
-    m_logger->info(
-        "MultiAgentSystem::~MultiAgentSystem: MultiAgentSystem successfully shutdown.");
+    if (m_logger) {
+        m_logger->info(
+            "MultiAgentSystem::~MultiAgentSystem: MultiAgentSystem successfully shutdown.");
+    }
 }
 
 void MultiAgentSystem::shutdown()
 {
-    logger::setLogCallback(nullptr);
     m_running.store(false);
     m_ros_node_thread.reset();
     m_executor.reset();
-    m_logger->info(
-        "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
+    if (m_logger) {
+        m_logger->info(
+            "MultiAgentSystem::shutdown: MultiAgentSystem shutdown complete");
+        logger::disableDiagnostics(m_logger);
+    }
 }
 
 void MultiAgentSystem::Configure(
@@ -46,9 +50,11 @@ void MultiAgentSystem::Configure(
     m_world_entity = _entity;
     m_world_name = lotusim::common::getWorldName(_ecm);
     m_ecm = &_ecm;
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "mas");
     m_logger = logger::createConsoleAndFileLogger(
-        "mas",
-        m_world_name + "_mas_plugin.txt");
+        logger_name,
+        logger_name + ".txt");
     if (!MultiAgentSystem::initROSNode()) {
         m_logger->error(
             "MultiAgentSystem::Configure: RCLCPP context shutdown.");
@@ -80,29 +86,8 @@ bool MultiAgentSystem::initROSNode()
         m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
             "poses",
             rclcpp::QoS(10));
-    m_log_pub = m_ros_node->create_publisher<lotusim_msgs::msg::Log>(
-        "/lotusim/logs",
-        rclcpp::QoS(10));
-
-    logger::setLogCallback([this](
-                               const std::string& logger_name,
-                               spdlog::level::level_enum level,
-                               const std::string& message) {
-        lotusim_msgs::msg::Log log_msg;
-        log_msg.stamp = m_ros_node->now();
-        log_msg.logger = logger_name;
-        log_msg.message = message;
-
-        if (level == spdlog::level::info) {
-            log_msg.level = lotusim_msgs::msg::Log::INFO;
-        } else if (level == spdlog::level::err) {
-            log_msg.level = lotusim_msgs::msg::Log::ERROR;
-        } else {
-            return;
-        }
-
-        m_log_pub->publish(log_msg);
-    });
+        
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
 
     m_callback_group.push_back(m_ros_node->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive));
