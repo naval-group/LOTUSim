@@ -13,7 +13,9 @@
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -116,6 +118,23 @@ TEST(SimpleBattery, VoltageFollowsStateOfCharge)
     battery->receiveLoad(50.0f, 3600.0f);
     // halfway between voltage_min 36 V and voltage_nominal 48 V
     EXPECT_NEAR(battery->voltage(), 42.0f, 1e-4f);
+}
+
+// A step of 0 (or NaN) and a NaN or infinite current leave the charge as
+// it was.
+TEST(SimpleBattery, InvalidLoadLeavesTheCharge)
+{
+    auto battery = makeBattery(100.0f, 0.5f);
+    battery->receiveLoad(10.0f, 0.0f);
+    battery->receiveLoad(10.0f, std::nanf(""));
+    battery->receiveLoad(std::nanf(""), 1.0f);
+    battery->receiveLoad(std::numeric_limits<float>::infinity(), 1.0f);
+    battery->receiveLoad(-std::numeric_limits<float>::infinity(), 1.0f);
+    EXPECT_FLOAT_EQ(battery->getStateOfCharge(), 0.5f);
+    EXPECT_NEAR(battery->voltage(), 42.0f, 1e-4f);
+    // And it still integrates.
+    battery->receiveLoad(10.0f, 3600.0f);
+    EXPECT_NEAR(battery->getStateOfCharge(), 0.4f, 1e-5f);
 }
 
 // A capacity of 0 or less is replaced by 100 Ah.
