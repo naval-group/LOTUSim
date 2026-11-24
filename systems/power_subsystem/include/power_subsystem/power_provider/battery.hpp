@@ -9,6 +9,9 @@
  */
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+
 #include "power_subsystem/power_provider/power_provider.hpp"
 
 namespace lotusim::gazebo {
@@ -140,6 +143,25 @@ protected:
         m_capacityAh = sdf->Get<float>("capacity_ah", 100.0f).first;
         m_initialSoc = sdf->Get<float>("initial_soc", 1.0f).first;
         m_voltageMin = sdf->Get<float>("voltage_min", 36.0f).first;
+        // A capacity of 0 or less makes the clamp of the charge undefined,
+        // and an initial_soc out of [0, 1] a wrong charge without a word.
+        if (!(m_capacityAh > 0.0f)) {
+            m_logger->error(
+                "Battery [{}]: capacity_ah must be > 0 (got {}), using 100",
+                m_provider_name,
+                m_capacityAh);
+            m_capacityAh = 100.0f;
+        }
+        if (!(m_initialSoc >= 0.0f && m_initialSoc <= 1.0f)) {
+            m_logger->error(
+                "Battery [{}]: initial_soc must be in [0, 1] (got {}), clamping",
+                m_provider_name,
+                m_initialSoc);
+            // NaN: clamp keeps it, so it is taken as empty.
+            m_initialSoc = std::isnan(m_initialSoc)
+                               ? 0.0f
+                               : std::clamp(m_initialSoc, 0.0f, 1.0f);
+        }
     }
 
     // battery capacity in Amp-hour from SDF
