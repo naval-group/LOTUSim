@@ -10,6 +10,7 @@
 #include "power_subsystem/power_provider/simple_battery.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 #include "lotusim_common/common.hpp"
 
@@ -56,6 +57,20 @@ SimpleBattery::SimpleBattery(
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
+    // !(dt > 0) also catches a NaN step.
+    if (!(dt > 0.0f)) {
+        return;
+    }
+    // A NaN or infinite current would make the charge NaN for good: every
+    // comparison then false, the battery would read normal forever.
+    if (!std::isfinite(currentA)) {
+        // debug: this runs every tick
+        m_logger->debug(
+            "SimpleBattery [{},{}]: non-finite current ignored",
+            m_provider_name,
+            m_vessel_name);
+        return;
+    }
     // currentA > 0 discharges, < 0 charges; dt is in seconds and the charge
     // is counted in amp-hours, hence the 3600.
     constexpr double seconds_per_hour = 3600.0;
