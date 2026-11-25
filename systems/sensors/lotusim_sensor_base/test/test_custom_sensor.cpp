@@ -58,8 +58,17 @@ public:
         std::chrono::steady_clock::duration duration,
         std::chrono::steady_clock::duration step)
     {
+        return measurementsBetween(0s, duration, step);
+    }
+
+    /// The same, from the step after `from` to `to`.
+    int measurementsBetween(
+        std::chrono::steady_clock::duration from,
+        std::chrono::steady_clock::duration to,
+        std::chrono::steady_clock::duration step)
+    {
         int count = 0;
-        for (auto now = step; now <= duration; now += step) {
+        for (auto now = from + step; now <= to; now += step) {
             if (ShouldMeasure(now)) {
                 m_last_measurement_time = now;
                 ++count;
@@ -83,6 +92,11 @@ public:
     void turnOff()
     {
         m_is_on = false;
+    }
+
+    void turnOn()
+    {
+        m_is_on = true;
     }
 
     bool UpdateSensor(
@@ -129,6 +143,35 @@ TEST(CustomSensorRate, FasterThanTheStepMeasuresEveryStep)
     // LOTUSim worlds step at 0.2 s: a 1000 Hz IMU measures 5 times a second.
     RateProbe sensor("1000.0");
     EXPECT_EQ(sensor.measurementsOver(10s, 200ms), 50);
+}
+
+// A period that is not a whole number of steps: each measurement lands on
+// the step after it is due, and the next is due a period after that due
+// time, so the rate holds on average. Measured from the last measurement,
+// 4 Hz and 3 Hz both gave 2.5 Hz at 0.2 s steps.
+TEST(CustomSensorRate, FourHertzOnAFifthOfASecondStep)
+{
+    RateProbe sensor("4");
+    EXPECT_EQ(sensor.measurementsOver(100s, 200ms), 400);
+}
+
+TEST(CustomSensorRate, ThreeHertzOnAFifthOfASecondStep)
+{
+    RateProbe sensor("3");
+    EXPECT_NEAR(sensor.measurementsOver(100s, 200ms), 300, 1);
+}
+
+// Turned back on after 10 s off, a sensor measures once, then at its rate:
+// it does not take the 40 measurements it missed in a row.
+TEST(CustomSensorRate, BackOnMeasuresOnceThenAtItsRate)
+{
+    RateProbe sensor("4");
+    EXPECT_EQ(sensor.measurementsOver(10s, 200ms), 40);
+    sensor.turnOff();
+    EXPECT_EQ(sensor.measurementsBetween(10s, 20s, 200ms), 0);
+    sensor.turnOn();
+    EXPECT_EQ(sensor.measurementsBetween(20s, 20200ms, 200ms), 1);
+    EXPECT_EQ(sensor.measurementsBetween(20200ms, 30200ms, 200ms), 40);
 }
 
 TEST(CustomSensorRate, OneHertz)

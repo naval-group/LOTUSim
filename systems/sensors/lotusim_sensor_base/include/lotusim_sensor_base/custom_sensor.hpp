@@ -85,14 +85,17 @@ protected:
     virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) = 0;
 
     /**
-     * @brief Check if it's time to enable measurement or sensor is off
+     * @brief Whether a measurement is due at _now: the sensor is on, and
+     * a period of <update_rate> has passed since the last one was due.
      *
-     * @param _now
-     * @return true
-     * @return false
+     * The next measurement is due one period after the previous due time,
+     * not after the step that took it, so the rate holds on average whatever
+     * the step. A sensor that fell behind (turned off for a while) takes one
+     * measurement and skips the ones it missed.
+     *
+     * @param _now The simulation time
      */
-    bool ShouldMeasure(
-        const std::chrono::steady_clock::duration& _now) const;
+    bool ShouldMeasure(const std::chrono::steady_clock::duration& _now);
 
     // shared with callbacks so they can detect that the sensor was removed
     struct CallbackGuard {
@@ -133,6 +136,13 @@ protected:
 
     /// \brief Sensor update rate (Hz); 0 or less: every simulation step
     double m_update_rate;
+
+    /// \brief 1 / m_update_rate, in whole nanoseconds so that due times
+    /// add up exactly
+    std::chrono::steady_clock::duration m_update_period{0};
+
+    /// \brief (Simulation) time the next measurement is due
+    std::chrono::steady_clock::duration m_next_measurement_time{0};
 
     /// \brief Pseudo random number generator, shared by the sensor's noise
     /// models; seeded from <seed>, else from the clock

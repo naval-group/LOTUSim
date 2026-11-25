@@ -10,6 +10,9 @@
 
 #include "lotusim_sensor_base/custom_sensor.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 namespace lotusim::sensor {
 CustomSensor::CustomSensor(
     std::shared_ptr<spdlog::logger> logger,
@@ -54,6 +57,13 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
     GetSDFParam<double>(_sdfptr, "update_rate", m_update_rate, 1.0);
     GetSDFParam<bool>(_sdfptr, "is_on", isSensorOn, true);
     m_is_on = isSensorOn;
+    if (m_update_rate > 0.0) {
+        // Capped at about 30 years, so a tiny rate fits the duration.
+        m_update_period = std::chrono::duration_cast<
+            std::chrono::steady_clock::duration>(std::chrono::nanoseconds(
+            std::llround(std::min(1e9 / m_update_rate, 1e18))));
+        m_next_measurement_time = m_update_period;
+    }
 
     m_sensor_activate_service =
         m_ros_node->create_service<lotusim_sensor_msgs::srv::ActivateSensor>(
@@ -108,7 +118,7 @@ void CustomSensor::Orientation(const gz::math::Quaterniond& _quad)
 }
 
 bool CustomSensor::ShouldMeasure(
-    const std::chrono::steady_clock::duration& _now) const
+    const std::chrono::steady_clock::duration& _now)
 {
     if (!m_is_on) {
         return false;
@@ -117,9 +127,18 @@ bool CustomSensor::ShouldMeasure(
     if (m_update_rate <= 0.0) {
         return true;
     }
-    const double dt =
-        std::chrono::duration<double>(_now - m_last_measurement_time).count();
-    return dt >= 1.0 / m_update_rate;
+    if (_now < m_next_measurement_time) {
+        return false;
+    }
+    // As Gazebo does: the next one is due a period after this one was, and
+    // a sensor that fell behind moves past _now instead of catching up.
+    m_next_measurement_time += m_update_period;
+    if (m_next_measurement_time <= _now) {
+        m_next_measurement_time +=
+            ((_now - m_next_measurement_time) / m_update_period + 1) *
+            m_update_period;
+    }
+    return true;
 }
 
 }  // namespace lotusim::sensor
