@@ -17,7 +17,6 @@
 #include <gz/sensors/SensorTypes.hh>
 #include <gz/sensors/Util.hh>
 #include <gz/sim/System.hh>
-#include <map>
 #include <mutex>
 #include <random>
 #include <string>
@@ -29,18 +28,6 @@
 #include "rclcpp/rclcpp.hpp"
 
 namespace lotusim::sensor {
-
-/*
-   <pose relative_to='lidar_frame'>0 0 0 0 0 0</pose>
-   <topic>lidar</topic>
-   <update_rate>10</update_rate>
-
-   <robot_namespace>${namespace}</robot_namespace>
-   <noise_sigma>${noise_sigma}</noise_sigma>
-   <noise_amplitude>${noise_amplitude}</noise_amplitude>
-
-   <sensor_param> </sensor_param>
-*/
 
 class CustomSensor : public gz::sensors::Sensor {
 public:
@@ -58,11 +45,6 @@ public:
 
     /// \brief Update callback from simulation.
     // virtual bool OnUpdate(const gz::sim::UpdateInfo &info) = 0;
-
-    /// \brief Add noise normal distribution to the list
-    bool AddNoiseModel(std::string _name, double _sigma);
-    double GetGaussianNoise(std::string _name, double _amp);
-    double GetGaussianNoise(double _amp);
 
     /// \brief Get status of the sensor
     bool IsOn();
@@ -103,14 +85,22 @@ protected:
     virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) = 0;
 
     /**
-     * @brief Check if it's time to enable measurement or sensor is off
+     * @brief Whether a measurement is due at _now: the sensor is on, and
+     * a period of <update_rate> has passed since the last one was due.
      *
-     * @param _now
-     * @return true
-     * @return false
+     * The next measurement is due one period after the previous due time,
+     * not after the step that took it, so the rate holds on average whatever
+     * the step. A sensor that fell behind (turned off for a while) takes one
+     * measurement and skips the ones it missed.
+     *
+     * A true result commits the sensor to measuring at this step: the next
+     * due time has moved on already. Check first anything else the
+     * measurement needs (new data from another sensor, for instance), and
+     * call this last.
+     *
+     * @param _now The simulation time
      */
-    bool EnableMeasurement(
-        const std::chrono::steady_clock::duration& _now) const;
+    bool ShouldMeasure(const std::chrono::steady_clock::duration& _now);
 
     // shared with callbacks so they can detect that the sensor was removed
     struct CallbackGuard {
@@ -149,19 +139,19 @@ protected:
     /// generated.
     std::chrono::steady_clock::duration m_last_measurement_time;
 
-    /// \brief Sensor update rate
-    int m_update_rate;
+    /// \brief Sensor update rate (Hz); 0 or less: every simulation step
+    double m_update_rate;
 
-    /// \brief Noise standard deviation
-    double m_noise_sigma;
+    /// \brief 1 / m_update_rate, in whole nanoseconds so that due times
+    /// add up exactly
+    std::chrono::steady_clock::duration m_update_period{0};
 
-    /// \brief Noise amplitude
-    double m_noise_amp;
+    /// \brief (Simulation) time the next measurement is due
+    std::chrono::steady_clock::duration m_next_measurement_time{0};
 
-    /// \brief Pseudo random number generator
+    /// \brief Pseudo random number generator, shared by the sensor's noise
+    /// models; seeded from <seed>, else from the clock
     std::default_random_engine m_rnd_gen;
-
-    std::map<std::string, std::normal_distribution<double>> m_noise_models;
 
     /// \brief Flag to control the generation of output messages
     std::atomic<bool> m_is_on;
