@@ -103,7 +103,7 @@ void RpmGenerator::receiveLoad(float /*currentA*/, float dt)
     const float energyDensity = getFuelEnergyDensity(m_fuel_type);
     const float fuelConsumed = (power_w * dt) / (m_efficiency * energyDensity);
 
-    m_fuel_level = std::max(0.0f, m_fuel_level - fuelConsumed);
+    m_fuel_level = std::max(0.0, m_fuel_level - static_cast<double>(fuelConsumed));
 
     m_logger->debug(
         "RpmGenerator [{}]: rpm={:.1f} power={:.1f} W "

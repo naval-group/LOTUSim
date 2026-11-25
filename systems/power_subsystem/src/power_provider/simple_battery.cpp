@@ -33,8 +33,7 @@ SimpleBattery::SimpleBattery(
     // capacity_ah and initial_soc as Battery read them.
     , m_remainingAh(static_cast<double>(m_capacityAh) * m_initialSoc)
 {
-    // The voltage rises from voltage_min to voltage_nominal as the battery
-    // charges: the other way round it would fall. Constant at voltage_min.
+    // Voltage rises from voltage_min to voltage_nominal as the battery charges
     if (!(m_voltage_nominal > m_voltageMin)) {
         m_logger->error(
             "SimpleBattery [{}]: voltage_nominal must be > voltage_min (got {} "
@@ -57,12 +56,9 @@ SimpleBattery::SimpleBattery(
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
-    // !(dt > 0) also catches a NaN step.
-    if (!(dt > 0.0f)) {
+    if (!(dt > 0.0f) || !std::isfinite(dt)) {
         return;
     }
-    // A NaN or infinite current would make the charge NaN for good: every
-    // comparison then false, the battery would read normal forever.
     if (!std::isfinite(currentA)) {
         // debug: this runs every tick
         m_logger->debug(
@@ -71,8 +67,7 @@ void SimpleBattery::receiveLoad(float currentA, float dt)
             m_vessel_name);
         return;
     }
-    // currentA > 0 discharges, < 0 charges; dt is in seconds and the charge
-    // is counted in amp-hours, hence the 3600.
+    // currentA > 0 discharges, < 0 charges; dt in seconds and the charge is in Ah
     constexpr double seconds_per_hour = 3600.0;
     m_remainingAh = std::clamp(
         m_remainingAh - static_cast<double>(currentA) * dt / seconds_per_hour,
@@ -93,8 +88,7 @@ void SimpleBattery::receiveLoad(float currentA, float dt)
 
 void SimpleBattery::updateVoltage()
 {
-    // voltage scales linearly with SOC between voltage_min and voltage_nominal
-    // this is a simplification
+    // simplified linear voltage SOC between voltage_min and voltage_nominal
     m_voltage =
         m_voltageMin + getStateOfCharge() * (m_voltage_nominal - m_voltageMin);
 }
@@ -106,9 +100,6 @@ float SimpleBattery::voltage() const
 
 float SimpleBattery::getStateOfCharge() const
 {
-    if (m_capacityAh <= 0.0f) {
-        return 0.0f;
-    }
     return std::clamp(
         static_cast<float>(m_remainingAh / m_capacityAh), 0.0f, 1.0f);
 }

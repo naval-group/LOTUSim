@@ -170,6 +170,8 @@ protected:
      */
     virtual void handlePowerUpdate(float dt) = 0;
 
+    std::shared_ptr<Generator> firstActiveGenerator() const;
+
 protected:
     gz::sim::Entity m_vessel_entity;
     std::string m_vessel_name;

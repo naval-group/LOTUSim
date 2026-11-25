@@ -28,14 +28,6 @@ DefaultPlatformPowerManager::DefaultPlatformPowerManager(
 {
 }
 
-std::shared_ptr<Generator> DefaultPlatformPowerManager::firstActiveGenerator()
-{
-    for (auto& g : m_generators)
-        if (!g->isDepleted())
-            return g;
-    return nullptr;
-}
-
 void DefaultPlatformPowerManager::handlePowerUpdate(float dt)
 {
     // Step 1: sum consumer demand
@@ -81,13 +73,8 @@ void DefaultPlatformPowerManager::handlePowerUpdate(float dt)
     }
 
     // Step 6: push updated voltage to all consumers
-    std::shared_ptr<Generator> active_gen;
-    for (auto& g : m_generators) {
-        if (!g->isDepleted()) {
-            active_gen = g;
-            break;
-        }
-    }
+    auto active_gen = firstActiveGenerator();
+
     const float voltage = m_all_batteries_depleted
                               ? (active_gen ? active_gen->voltage() : 0.0f)
                               : m_batteries[m_active_battery_index]->voltage();
@@ -127,14 +114,12 @@ void DefaultPlatformPowerManager::distributeLoad(
                         "after load, skipping charge",
                         charge_target->name());
                 } else {
-                    const float charge_current = computeChargeCurrentA(
-                        active_gen,
-                        charge_target,
-                        bus_voltage);
-                    if (charge_current > 1e-6f) {
-                        active_gen->receiveLoad(charge_current, dt);
-                        // Negative: the battery receives this current.
-                        charge_target->receiveLoad(-charge_current, dt);
+                    const float charge_W = computeChargePowerW(active_gen, charge_target);
+                    const float bat_v = charge_target->voltage();
+                    const float gen_v = active_gen->voltage();
+                    if (charge_W > 1e-3f && bat_v > 1e-3f && gen_v > 1e-3f) {
+                        active_gen->receiveLoad(charge_W / gen_v, dt); // generator-side amps
+                        charge_target->receiveLoad(-charge_W / bat_v, dt); // battery-side amps (negative = charge)
                     }
                 }
             }
@@ -199,36 +184,34 @@ bool DefaultPlatformPowerManager::handleDepleted(
             bus_voltage = 1.0f;
 
         const float gen_available_W = active_gen->availablePowerW();
-        const float gen_available_A = gen_available_W / bus_voltage;
 
-        float demand_A = 0.0f;
-        for (const auto& consumer : m_consumers) {
+        float demand_W = 0.0f;
+        for (const auto& consumer : m_consumers)
             if (consumer->isActive())
-                demand_A += consumer->nominalPowerW() / bus_voltage;
-        }
+                demand_W += consumer->nominalPowerW();
 
-        if (demand_A > gen_available_A) {
+        if (demand_W > gen_available_W) {
             m_logger->warn(
                 "DefaultPlatformPowerManager: generator [{}] cannot cover "
-                "all consumers ({:.3f} A demand vs {:.3f} A available) – shedding",
+                "all consumers ({:.3f} W demand vs {:.3f} W available) – shedding",
                 active_gen->name(),
-                demand_A,
-                gen_available_A);
+                demand_W,
+                gen_available_W);
 
             for (int group = 4; group >= 2; --group) {
                 for (auto it = m_consumers.rbegin(); it != m_consumers.rend();
                      ++it) {
                     if (!(*it)->isActive() || (*it)->priority() != group)
                         continue;
-                    demand_A -= (*it)->drawnCurrent();
+                    demand_W -= (*it)->nominalPowerW();
                     (*it)->deactivate();
                     m_logger->warn(
                         "DefaultPlatformPowerManager: shed [{}] (priority {}), "
-                        "remaining demand {:.3f} A",
+                        "remaining demand {:.3f} W",
                         (*it)->name(),
                         group,
-                        demand_A);
-                    if (demand_A <= gen_available_A)
+                        demand_W);
+                    if (demand_W <= gen_available_W)
                         goto done_shedding;
                 }
             }
@@ -262,20 +245,27 @@ void DefaultPlatformPowerManager::shedLoads(PowerLevel level)
         }
     }
 
-    // if a generator is available to cover the load, no shedding needed
+    // if a generator can carry the load when the battery runs out, no shedding needed
+    float demand_W = 0.0f;
+    for (const auto& consumer : m_consumers) {
+        if (consumer->isActive())
+            demand_W += consumer->nominalPowerW();
+    }
+
     auto active_gen = firstActiveGenerator();
-    if (active_gen && !active_gen->isDepleted()) {
+    if (active_gen && active_gen->availablePowerW() >= demand_W) {
         m_logger->debug(
-            "DefaultPlatformPowerManager: battery low, but generator [{}] available, "
-            "skipping shedding",
-            active_gen->name());
+            "DefaultPlatformPowerManager: battery low, generator [{}] can cover "
+            "{:.1f} W demand ({:.1f} W available), skipping shedding",
+            active_gen->name(),
+            demand_W,
+            active_gen->availablePowerW());
         return;
     }
 
-    // WARN → shed priority 4; CRITICAL → shed priority 3 and below; one per
-    // tick
-    const int max_group = (level == PowerLevel::WARN) ? 4 : 3;
-    for (int group = max_group; group >= 2; --group) {
+    // WARN → shed priority 4; CRITICAL → shed priority 4, 3, 2; one per tick
+    const int min_group = (level == PowerLevel::WARN) ? 4 : 2;
+    for (int group = 4; group >= min_group; --group) {
         for (auto it = m_consumers.rbegin(); it != m_consumers.rend(); ++it) {
             if ((*it)->isActive() && (*it)->priority() == group) {
                 (*it)->deactivate();
@@ -291,22 +281,18 @@ void DefaultPlatformPowerManager::shedLoads(PowerLevel level)
         "DefaultPlatformPowerManager: critical, only safety-critical consumers remain");
 }
 
-float DefaultPlatformPowerManager::computeChargeCurrentA(
+float DefaultPlatformPowerManager::computeChargePowerW(
     std::shared_ptr<Generator> gen,
-    std::shared_ptr<Battery> bat,
-    float safe_voltage) const
+    std::shared_ptr<Battery> bat) const
 {
-    if (!gen || !bat || gen->isDepleted())
-        return 0.0f;
-    if (bat->isDepleted())
+    if (!gen || !bat || gen->isDepleted() || bat->isDepleted())
         return 0.0f;
     if (bat->getStateOfCharge() >= 1.0f)
         return 0.0f;
 
+    const float available_W = gen->availablePowerW();
     const float deficit = 1.0f - bat->getStateOfCharge();
-    const float needed_W = deficit * gen->availablePowerW();
-    const float max_charge_W = gen->availablePowerW() * 0.1f;
-    return std::min(needed_W, max_charge_W) / safe_voltage;
+    return std::min(deficit * available_W, 0.1f * available_W);
 }
 
 void DefaultPlatformPowerManager::reactivateIfPossible(

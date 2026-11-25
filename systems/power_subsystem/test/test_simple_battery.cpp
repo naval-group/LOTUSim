@@ -120,8 +120,7 @@ TEST(SimpleBattery, VoltageFollowsStateOfCharge)
     EXPECT_NEAR(battery->voltage(), 42.0f, 1e-4f);
 }
 
-// A step of 0 (or NaN) and a NaN or infinite current leave the charge as
-// it was.
+// A step of 0 and a NaN or infinite current leave the charge as it was.
 TEST(SimpleBattery, InvalidLoadLeavesTheCharge)
 {
     auto battery = makeBattery(100.0f, 0.5f);
@@ -130,6 +129,9 @@ TEST(SimpleBattery, InvalidLoadLeavesTheCharge)
     battery->receiveLoad(std::nanf(""), 1.0f);
     battery->receiveLoad(std::numeric_limits<float>::infinity(), 1.0f);
     battery->receiveLoad(-std::numeric_limits<float>::infinity(), 1.0f);
+    battery->receiveLoad(10.0f, -1.0f);
+    battery->receiveLoad(0.0f, std::numeric_limits<float>::infinity());
+    battery->receiveLoad(10.0f, std::numeric_limits<float>::infinity());
     EXPECT_FLOAT_EQ(battery->getStateOfCharge(), 0.5f);
     EXPECT_NEAR(battery->voltage(), 42.0f, 1e-4f);
     // And it still integrates.
@@ -167,6 +169,13 @@ TEST(SimpleBattery, NominalUnderMinGivesConstantVoltage)
     EXPECT_NEAR(battery->voltage(), 36.0f, 1e-4f);
     battery->receiveLoad(-50.0f, 3600.0f);
     EXPECT_NEAR(battery->voltage(), 36.0f, 1e-4f);
+}
+
+TEST(SimpleBattery, InitialStateFollowsSdf)
+{
+    auto battery = makeBattery(100.0f, 0.45f, 4.0f, 12.0f);
+    EXPECT_NEAR(battery->getStateOfCharge(), 0.45f, 1e-6f);
+    EXPECT_NEAR(battery->voltage(), 4.0f + 0.45f * 8.0f, 1e-4f);  // 7.6 V
 }
 
 // Same reason as physics_engine_interface's tests: gz-sim's dependency chain
