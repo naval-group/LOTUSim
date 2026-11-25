@@ -19,7 +19,8 @@ namespace lotusim::sensor {
 /**
  * @brief Noise on one scalar measurement, read from an SDF <noise> element.
  *
- * Sensors hold one model per measured axis and pass each true value through
+ * Sensors hold one model per measured axis with noise (CreateNoiseModel()
+ * returns nullptr for an axis without), and pass each true value through
  * Apply(). The random engine is the sensor's: it must outlive the model.
  */
 class NoiseModel {
