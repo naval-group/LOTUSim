@@ -110,16 +110,23 @@ void PlatformPowerManagerBase::Update(float dt)
     handlePowerUpdate(dt);
 }
 
+std::shared_ptr<Generator> PlatformPowerManagerBase::firstActiveGenerator() const
+{
+    for (const auto& g : m_generators)
+        if (!g->isDepleted() && g->availablePowerW() > 0.0f)
+            return g;
+    return nullptr;
+}
+
 float PlatformPowerManagerBase::activeBusVoltage() const
 {
     if (!m_all_batteries_depleted)
         return m_batteries[m_active_battery_index]->voltage();
 
-    for (auto& g : m_generators)
-        if (!g->isDepleted())
-            return g->voltage();
+    if (auto g = firstActiveGenerator())
+        return g->voltage();
 
-    return 1.0f;  // no source available
+    return 1.0f;// no source available
 }
 
 bool PlatformPowerManagerBase::initPowerProvider(sdf::ElementPtr sdfptr)
@@ -296,11 +303,9 @@ std::string PlatformPowerManagerBase::activeProviderName() const
         m_active_battery_index < static_cast<int>(m_batteries.size())) {
         return m_batteries[m_active_battery_index]->name();
     }
-    for (const auto& generator : m_generators) {
-        if (!generator->isDepleted()) {
-            return generator->name();
-        }
-    }
+    if (auto g = firstActiveGenerator())
+        return g->name();
+
     return "";
 }
 
