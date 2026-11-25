@@ -86,7 +86,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 |---|---|
 | `update_rate` / `is_on` SDF parsing | Parsed once in `Load()` |
 | `seed` SDF parsing | Optional: seeds `m_rnd_gen`, before `CustomSensorLoad()`, so a noisy run can be repeated; seeded from the clock without it |
-| `EnableMeasurement(now)` | Rate-limits updates to `update_rate` Hz and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
+| `ShouldMeasure(now)` | Rate-limits updates to `update_rate` Hz and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
 | `<vessel>/<sensor>/change_state` ROS 2 service | Lets external code turn the sensor on/off at runtime |
 | `m_rnd_gen` + `CreateNoiseModel()` (`noise_model.hpp`) | Gazebo's Gaussian noise, from an SDF `<noise>` element (see the IMU below) |
 | `Position()` / `LatLong()` / `Orientation()` | Called every tick by the plugin, so `m_position` / `m_lat_long` / `m_quad` are always current |
@@ -251,14 +251,14 @@ bool MySensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 }
 ```
 
-**4. Implement `UpdateSensor()`** - guard with `EnableMeasurement()`, read whatever you need from the ECM (or the base class's `m_position` / `m_lat_long` / `m_quad`, already refreshed for you every tick), publish, and stamp `m_last_measurement_time`:
+**4. Implement `UpdateSensor()`** - guard with `ShouldMeasure()`, read whatever you need from the ECM (or the base class's `m_position` / `m_lat_long` / `m_quad`, already refreshed for you every tick), publish, and stamp `m_last_measurement_time`:
 
 ```cpp
 bool MySensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager&)
 {
-    if (!EnableMeasurement(_info.simTime))
+    if (!ShouldMeasure(_info.simTime))
         return false;
 
     my_msgs::msg::MyReading msg;

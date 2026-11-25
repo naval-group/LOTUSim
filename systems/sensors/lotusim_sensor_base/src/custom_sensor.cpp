@@ -107,7 +107,7 @@ void CustomSensor::Orientation(const gz::math::Quaterniond& _quad)
     m_quad = _quad;
 }
 
-bool CustomSensor::EnableMeasurement(
+bool CustomSensor::ShouldMeasure(
     const std::chrono::steady_clock::duration& _now) const
 {
     if (!m_is_on) {

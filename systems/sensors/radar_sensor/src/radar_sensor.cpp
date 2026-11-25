@@ -101,7 +101,7 @@ void RadarSensor::OnPointCloud(const gz::msgs::PointCloudPacked& _msg)
 // ═══════════════════════════════════════════════════════════════════════════
 // UpdateSensor
 //  if (first time)  →  subscribe to gz topic lidar_sensor using world name from
-//  ECM if (!EnableMeasurement)  →  return false process + publishs
+//  ECM if (!ShouldMeasure)  →  return false process + publishs
 // ═══════════════════════════════════════════════════════════════════════════
 bool RadarSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
@@ -132,8 +132,8 @@ bool RadarSensor::UpdateSensor(
         m_subscribed = true;
     }
 
-    // ── EnableMeasurement ───────────────────────────────────────────
-    if (!EnableMeasurement(_info.simTime))
+    // ── ShouldMeasure ───────────────────────────────────────────
+    if (!ShouldMeasure(_info.simTime))
         return false;
 
     // ── Grab latest cloud ─────────────────────────────────────────────────

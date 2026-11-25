@@ -91,7 +91,7 @@ protected:
      * @return true
      * @return false
      */
-    bool EnableMeasurement(
+    bool ShouldMeasure(
         const std::chrono::steady_clock::duration& _now) const;
 
     // shared with callbacks so they can detect that the sensor was removed

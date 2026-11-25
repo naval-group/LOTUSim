@@ -83,7 +83,7 @@ bool IMUSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
-    if (!EnableMeasurement(_info.simTime))
+    if (!ShouldMeasure(_info.simTime))
         return false;
 
     sensor_msgs::msg::Imu msg;

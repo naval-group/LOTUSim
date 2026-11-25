@@ -64,7 +64,7 @@ bool SubseaPressureSensor::UpdateSensor(
     const gz::sim::EntityComponentManager&)
 {
     // Need to rewrite
-    if (!EnableMeasurement(_info.simTime))
+    if (!ShouldMeasure(_info.simTime))
         return false;
 
     double depth = std::abs(m_position.Z());

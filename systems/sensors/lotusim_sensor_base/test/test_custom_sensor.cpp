@@ -24,7 +24,7 @@ namespace {
 
 /**
  * @brief The smallest concrete CustomSensor, loaded from an SDF sensor with
- * the given <update_rate>; exposes EnableMeasurement().
+ * the given <update_rate>; exposes ShouldMeasure().
  */
 class RateProbe : public lotusim::sensor::CustomSensor {
 public:
@@ -60,7 +60,7 @@ public:
     {
         int count = 0;
         for (auto now = step; now <= duration; now += step) {
-            if (EnableMeasurement(now)) {
+            if (ShouldMeasure(now)) {
                 m_last_measurement_time = now;
                 ++count;
             }
