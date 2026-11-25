@@ -229,6 +229,8 @@ private:
 }  // namespace lotusim::sensor
 ```
 
+Above the class, document the full `<sensor>` element it reads: every attribute and tag, with its unit and default, including the ones `CustomSensor` reads (`update_rate`, `is_on`, `seed`) and its `<noise>` elements. `imu_sensor.hpp` and `subsea_pressure_sensor.hh` show the form.
+
 **3. Implement `CustomSensorLoad()`** - parse any sensor-specific SDF parameters with `GetSDFParam<T>()` and create your publisher. Keep the `<vessel>/<sensor>/<topic>` naming convention used by every existing sensor:
 
 ```cpp

@@ -24,6 +24,56 @@
 #include "lotusim_sensor_msgs/msg/pressure_depth.hpp"
 
 namespace lotusim::sensor {
+
+/**
+ * @brief Subsea pressure: the pressure at the sensor's depth, with noise,
+ * and optionally the depth estimated back from it.
+ *
+ * Publishes lotusim_sensor_msgs/msg/PressureDepth on
+ * <vessel>/<sensor name>/pressure_sensor; its stddev is the noise's (kPa),
+ * 0 without noise.
+ *
+ * SDF, every tag optional unless noted:
+ *
+ * <sensor name="pressure_sensor"     <!-- required; part of the topic -->
+ *         type="custom"              <!-- required -->
+ *         gz:type="subsea_pressure"> <!-- required -->
+ *
+ *   <!-- Read by CustomSensor, as for every custom sensor -->
+ *   <update_rate>10</update_rate>    <!-- Hz, default 1; 0 or less: every step -->
+ *   <is_on>true</is_on>              <!-- default true; also set at runtime
+ *                                         by <vessel>/<sensor>/change_state -->
+ *   <seed>42</seed>                  <!-- unsigned; default: from the clock -->
+ *
+ *   <!-- The sensor's own -->
+ *   <standard_pressure>101.325</standard_pressure>  <!-- kPa at the surface -->
+ *   <kPa_per_meter>9.80638</kPa_per_meter>          <!-- kPa per m of depth -->
+ *   <estimate_depth_on>false</estimate_depth_on>    <!-- publish the depth
+ *                                                        estimated from the
+ *                                                        measured pressure -->
+ *   <saturation>3000</saturation>                   <!-- kPa, output cap,
+ *                                                        noise included;
+ *                                                        <m_saturation> also
+ *                                                        read -->
+ *
+ *   <!-- Noise, in the form of Gazebo's air pressure sensor -->
+ *   <pressure>
+ *     <noise type="gaussian">        <!-- none | gaussian | gaussian_quantized -->
+ *       <mean>0</mean>               <!-- kPa; all values default 0 -->
+ *       <stddev>0.1</stddev>         <!-- kPa, white noise each measurement -->
+ *       <bias_mean>0.05</bias_mean>  <!-- kPa, magnitude; sign drawn at load -->
+ *       <bias_stddev>0.01</bias_stddev>
+ *       <dynamic_bias_stddev>0.001</dynamic_bias_stddev>
+ *       <dynamic_bias_correlation_time>600</dynamic_bias_correlation_time>
+ *                                    <!-- s; with dynamic_bias_stddev, the bias
+ *                                         drifts (Gauss-Markov) -->
+ *       <precision>0.01</precision>  <!-- kPa; output rounded to a multiple -->
+ *     </noise>
+ *   </pressure>
+ * </sensor>
+ *
+ * See lotusim_sensor_base/noise_model.hpp for the noise model.
+ */
 class SubseaPressureSensor : public CustomSensor {
 public:
     /// \brief Class constructor

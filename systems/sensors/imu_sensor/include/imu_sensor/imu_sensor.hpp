@@ -23,6 +23,60 @@
 
 namespace lotusim::sensor {
 
+/**
+ * @brief IMU: orientation, angular velocity and linear acceleration of the
+ * vessel, in the sensor frame, each with its own noise per axis.
+ *
+ * Publishes sensor_msgs/msg/Imu on <vessel>/<sensor name>/IMU. The diagonal
+ * of each covariance is its axis' noise variance (stddev²); 0 without noise.
+ * Gravity is not included in the linear acceleration.
+ *
+ * SDF, every tag optional unless noted:
+ *
+ * <sensor name="imu_sensor"          <!-- required; part of the topic -->
+ *         type="custom"              <!-- required -->
+ *         gz:type="imu">             <!-- required -->
+ *
+ *   <!-- Read by CustomSensor, as for every custom sensor -->
+ *   <update_rate>10</update_rate>    <!-- Hz, default 1; 0 or less: every step -->
+ *   <is_on>true</is_on>              <!-- default true; also set at runtime
+ *                                         by <vessel>/<sensor>/change_state -->
+ *   <seed>42</seed>                  <!-- unsigned; default: from the clock -->
+ *
+ *   <!-- Noise: Gazebo's IMU tags, read by sdformat's sdf::Imu -->
+ *   <imu>
+ *     <orientation>                  <!-- LOTUSim only, same form; x y z are
+ *                                         roll pitch yaw (rad), applied as a
+ *                                         small rotation; precision has no
+ *                                         effect here -->
+ *       <x>...</x> <y>...</y> <z>...</z>
+ *     </orientation>
+ *     <angular_velocity>             <!-- rad/s -->
+ *       <x>...</x> <y>...</y> <z>...</z>
+ *     </angular_velocity>
+ *     <linear_acceleration>          <!-- m/s² -->
+ *       <x>...</x> <y>...</y> <z>...</z>
+ *     </linear_acceleration>
+ *   </imu>
+ * </sensor>
+ *
+ * Each <x>, <y>, <z> above holds one <noise>; an axis without it has no noise.
+ * All values are in the axis' unit, default 0:
+ *
+ * <noise type="gaussian">            <!-- none | gaussian | gaussian_quantized -->
+ *   <mean>0</mean>                   <!-- added to every measurement -->
+ *   <stddev>2e-4</stddev>            <!-- white noise, drawn each measurement -->
+ *   <bias_mean>1e-3</bias_mean>      <!-- bias magnitude; sign drawn at load -->
+ *   <bias_stddev>1e-4</bias_stddev>  <!-- spread of the bias drawn at load -->
+ *   <dynamic_bias_stddev>1e-5</dynamic_bias_stddev>
+ *   <dynamic_bias_correlation_time>400</dynamic_bias_correlation_time>
+ *                                    <!-- s; with dynamic_bias_stddev, the bias
+ *                                         drifts (Gauss-Markov) -->
+ *   <precision>1e-4</precision>      <!-- output rounded to a multiple; 0: off -->
+ * </noise>
+ *
+ * See lotusim_sensor_base/noise_model.hpp for the noise model.
+ */
 class IMUSensor : public CustomSensor {
 public:
     IMUSensor(
