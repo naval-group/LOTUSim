@@ -86,7 +86,7 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 |---|---|
 | `update_rate` / `is_on` SDF parsing | Parsed once in `Load()` |
 | `seed` SDF parsing | Optional: seeds `m_rnd_gen`, before `CustomSensorLoad()`, so a noisy run can be repeated; seeded from the clock without it. Two sensors with the same seed draw the same noise (two IMUs on one vessel, for instance): give each its own. A run repeats only on the same build, as `std::default_random_engine` and `std::normal_distribution` are implementation-defined |
-| `ShouldMeasure(now)` | Rate-limits updates to `update_rate` Hz, on average whatever the step, and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
+| `ShouldMeasure(now)` | Rate-limits updates to `update_rate` Hz, on average whatever the step, and respects the on/off state - call this as a guard at the top of `UpdateSensor()`, after any other check: a true result commits the sensor to measuring at that step |
 | `<vessel>/<sensor>/change_state` ROS 2 service | Lets external code turn the sensor on/off at runtime |
 | `m_rnd_gen` + `CreateNoiseModel()` (`noise_model.hpp`) | Gazebo's Gaussian noise, from an SDF `<noise>` element (see the IMU below) |
 | `Position()` / `LatLong()` / `Orientation()` | Called every tick by the plugin, so `m_position` / `m_lat_long` / `m_quad` are always current |

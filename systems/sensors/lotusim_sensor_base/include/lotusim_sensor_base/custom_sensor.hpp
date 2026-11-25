@@ -93,6 +93,11 @@ protected:
      * the step. A sensor that fell behind (turned off for a while) takes one
      * measurement and skips the ones it missed.
      *
+     * A true result commits the sensor to measuring at this step: the next
+     * due time has moved on already. Check first anything else the
+     * measurement needs (new data from another sensor, for instance), and
+     * call this last.
+     *
      * @param _now The simulation time
      */
     bool ShouldMeasure(const std::chrono::steady_clock::duration& _now);
