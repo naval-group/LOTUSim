@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <sdf/Root.hh>
+#include <string>
 #include <vector>
 
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
@@ -37,8 +38,20 @@ constexpr char kSdf[] = R"(
   </model>
 </sdf>)";
 
-/// The messages of a sensor 10 m deep, one per simulated second.
-std::vector<lotusim_sensor_msgs::msg::PressureDepth> measure(int count)
+/// A sensor without noise, with the given tags.
+std::string plainSdf(const std::string& tags)
+{
+    return "<sdf version='1.9'><model name='vessel'><link name='base_link'>"
+           "<sensor name='pressure' type='custom' gz:type='subsea_pressure'>"
+           "<update_rate>1</update_rate>" +
+           tags + "</sensor></link></model></sdf>";
+}
+
+/// The messages of a sensor `depth` metres deep, one per simulated second.
+std::vector<lotusim_sensor_msgs::msg::PressureDepth> measure(
+    int count,
+    const std::string& sdf_string = kSdf,
+    double depth = 10.0)
 {
     auto node = rclcpp::Node::make_shared("test_pressure_noise");
     std::vector<lotusim_sensor_msgs::msg::PressureDepth> received;
@@ -51,7 +64,7 @@ std::vector<lotusim_sensor_msgs::msg::PressureDepth> measure(int count)
             });
 
     sdf::Root root;
-    EXPECT_TRUE(root.LoadSdfString(kSdf).empty());
+    EXPECT_TRUE(root.LoadSdfString(sdf_string).empty());
     const sdf::Sensor& sdf = *root.Model()->LinkByIndex(0)->SensorByIndex(0);
 
     SubseaPressureSensor sensor(
@@ -62,7 +75,7 @@ std::vector<lotusim_sensor_msgs::msg::PressureDepth> measure(int count)
         "vessel",
         "pressure");
     sensor.Load(sdf);
-    sensor.Position({0.0, 0.0, -10.0});
+    sensor.Position({0.0, 0.0, -depth});
 
     rclcpp::executors::SingleThreadedExecutor executor;
     executor.add_node(node);
@@ -102,6 +115,27 @@ TEST(PressureNoise, NoiseFromThePressureElement)
     EXPECT_NEAR(mean, 101.325 + 10 * 9.80638, 0.25 * 0.5);
     EXPECT_NEAR(std::sqrt(variance), 0.5, 0.2 * 0.5);
     EXPECT_DOUBLE_EQ(msgs.at(0).stddev, 0.5);
+}
+
+// 400 m deep is about 4024 kPa: the sensor reads at most <saturation>,
+// 3000 kPa by default, and still reads <m_saturation>, its former name.
+TEST(PressureSaturation, CapsThePressure)
+{
+    EXPECT_DOUBLE_EQ(measure(1, plainSdf(""), 400.0).at(0).pressure, 3000.0);
+    EXPECT_DOUBLE_EQ(
+        measure(1, plainSdf("<saturation>2000</saturation>"), 400.0)
+            .at(0)
+            .pressure,
+        2000.0);
+    EXPECT_DOUBLE_EQ(
+        measure(1, plainSdf("<m_saturation>2500</m_saturation>"), 400.0)
+            .at(0)
+            .pressure,
+        2500.0);
+    // Below it, the pressure is the depth's.
+    EXPECT_DOUBLE_EQ(
+        measure(1, plainSdf(""), 10.0).at(0).pressure,
+        101.325 + 10 * 9.80638);
 }
 
 // gz-sim's dependency chain can crash during static teardown (see

@@ -46,7 +46,7 @@ public:
 private:
     virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) final;
 
-    /// \brief Sensor m_saturation (max. value for output pressure in Pa)
+    /// \brief The most the sensor reads (kPa), from <saturation>
     double m_saturation;
 
     /// \brief If flag is set to true, estimate depth according to pressure

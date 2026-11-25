@@ -9,6 +9,7 @@
  */
 #include "subsea_pressure_sensor/subsea_pressure_sensor.hh"
 
+#include <algorithm>
 #include <cmath>
 #include <sdf/Noise.hh>
 
@@ -36,7 +37,10 @@ SubseaPressureSensor::~SubseaPressureSensor() {}
 bool SubseaPressureSensor::CustomSensorLoad(const sdf::Sensor& _sdf)
 {
     sdf::ElementPtr _sdfptr = _sdf.Element();
-    GetSDFParam<double>(_sdfptr, "m_saturation", m_saturation, 3000);
+    // <saturation>, or <m_saturation> as SDFs named it before.
+    if (!GetSDFParam<double>(_sdfptr, "saturation", m_saturation, 3000.0)) {
+        GetSDFParam<double>(_sdfptr, "m_saturation", m_saturation, 3000.0);
+    }
     GetSDFParam<bool>(_sdfptr, "estimate_depth_on", m_estimate_depth, false);
     GetSDFParam<double>(
         _sdfptr,
@@ -80,6 +84,8 @@ bool SubseaPressureSensor::UpdateSensor(
                               .count();
         pressure = m_pressure_noise->Apply(pressure, dt);
     }
+    // The most the sensor reads, noise included.
+    pressure = std::min(pressure, m_saturation);
     double inferredDepth = 0.0;
     // Estimate depth, if enabled
     if (m_estimate_depth) {

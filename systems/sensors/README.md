@@ -160,7 +160,7 @@ Subsea pressure adds its own parameters:
 ```xml
 <sensor name="pressure_sensor" type="custom" gz:type="subsea_pressure">
     <update_rate>1</update_rate>
-    <m_saturation>3000</m_saturation>          <!-- kPa, output cap -->
+    <saturation>3000</saturation>              <!-- kPa, output cap; <m_saturation> also read -->
     <estimate_depth_on>true</estimate_depth_on>
     <standard_pressure>101.325</standard_pressure>  <!-- kPa at surface -->
     <kPa_per_meter>9.80638</kPa_per_meter>
