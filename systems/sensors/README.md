@@ -85,8 +85,8 @@ Every sensor type derives from `CustomSensor`, itself a `gz::sensors::Sensor`. I
 | Feature | Description |
 |---|---|
 | `update_rate` / `is_on` SDF parsing | Parsed once in `Load()` |
-| `seed` SDF parsing | Optional: seeds `m_rnd_gen`, before `CustomSensorLoad()`, so a noisy run can be repeated; seeded from the clock without it |
-| `ShouldMeasure(now)` | Rate-limits updates to `update_rate` Hz and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
+| `seed` SDF parsing | Optional: seeds `m_rnd_gen`, before `CustomSensorLoad()`, so a noisy run can be repeated; seeded from the clock without it. Two sensors with the same seed draw the same noise (two IMUs on one vessel, for instance): give each its own. A run repeats only on the same build, as `std::default_random_engine` and `std::normal_distribution` are implementation-defined |
+| `ShouldMeasure(now)` | Rate-limits updates to `update_rate` Hz, on average whatever the step, and respects the on/off state - call this as a guard at the top of `UpdateSensor()` |
 | `<vessel>/<sensor>/change_state` ROS 2 service | Lets external code turn the sensor on/off at runtime |
 | `m_rnd_gen` + `CreateNoiseModel()` (`noise_model.hpp`) | Gazebo's Gaussian noise, from an SDF `<noise>` element (see the IMU below) |
 | `Position()` / `LatLong()` / `Orientation()` | Called every tick by the plugin, so `m_position` / `m_lat_long` / `m_quad` are always current |
@@ -121,7 +121,7 @@ Minimal SDF for AIS and IMU:
 </sensor>
 ```
 
-The IMU reads its noise from Gazebo's IMU tags, a Gaussian `mean` and `stddev` per axis: `<angular_velocity>` (rad/s) and `<linear_acceleration>` (m/s²), read by sdformat as for a Gazebo IMU. Gazebo has no orientation noise; `<orientation>` takes the same form, x y z being roll, pitch and yaw (rad). An axis without `<noise>` has none:
+The IMU reads its noise from Gazebo's IMU tags, a Gaussian `mean` and `stddev` per axis: `<angular_velocity>` (rad/s) and `<linear_acceleration>` (m/s²), read by sdformat as for a Gazebo IMU. Gazebo has no orientation noise; `<orientation>` takes the same form, x y z being roll, pitch and yaw (rad), applied as a small rotation, so `precision` has no effect there. An axis without `<noise>` has none:
 
 ```xml
 <sensor name="imu_sensor" type="custom" gz:type="imu">
@@ -151,7 +151,7 @@ The noise model, shared by the sensors (`lotusim_sensor_base/noise_model.hpp`), 
 
 - `bias_mean`, `bias_stddev`: the bias is drawn once, when the sensor loads, from N(`bias_mean`, `bias_stddev`), and is negative half of the time (`bias_mean` is its magnitude).
 - `dynamic_bias_stddev`, `dynamic_bias_correlation_time` (s): when both are set, the bias then drifts as a first-order Gauss-Markov process.
-- `precision`: when set, the measurement is rounded to a multiple of it.
+- `precision`: when set, the measurement is rounded to a multiple of it (not on `<orientation>`, see above).
 
 The covariances give `stddev²`; the bias is not part of them.
 
