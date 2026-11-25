@@ -48,8 +48,6 @@ AISSensor::AISSensor(
           sensor_entity,
           parent_name,
           sensor_name)
-    , m_update_period(std::chrono::seconds(2))
-    , m_last_pub(std::chrono::seconds(0))
 {
     m_logger->info(
         "AISSensor::AISSensor: Created for vessel {} sensor {}",
