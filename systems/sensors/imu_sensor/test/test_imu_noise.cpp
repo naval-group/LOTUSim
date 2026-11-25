@@ -22,13 +22,15 @@ using lotusim::sensor::IMUSensor;
 namespace {
 
 // One value per quantity and axis, as in Gazebo's IMU tags, plus
-// <orientation> in the same form.
+// <orientation> in the same form. The SDFs fix <seed>, so the statistics
+// below give the same result on every run.
 constexpr char kSdf[] = R"(
 <sdf version="1.9">
   <model name="vessel">
     <link name="base_link">
       <sensor name="imu" type="custom" gz:type="imu">
         <update_rate>1</update_rate>
+        <seed>42</seed>
         <imu>
           <orientation>
             <z><noise type="gaussian"><mean>0</mean><stddev>0.3</stddev></noise></z>
@@ -53,6 +55,7 @@ constexpr char kBiasSdf[] = R"(
     <link name="base_link">
       <sensor name="imu" type="custom" gz:type="imu">
         <update_rate>1</update_rate>
+        <seed>42</seed>
         <imu>
           <linear_acceleration>
             <x><noise type="gaussian">

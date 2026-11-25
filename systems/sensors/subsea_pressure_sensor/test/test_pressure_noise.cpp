@@ -20,13 +20,15 @@ using lotusim::sensor::SubseaPressureSensor;
 
 namespace {
 
-/// The pressure's noise, in the form of Gazebo's air pressure sensor.
+/// The pressure's noise, in the form of Gazebo's air pressure sensor. A
+/// fixed <seed>, so the statistics give the same result on every run.
 constexpr char kSdf[] = R"(
 <sdf version="1.9">
   <model name="vessel">
     <link name="base_link">
       <sensor name="pressure" type="custom" gz:type="subsea_pressure">
         <update_rate>1</update_rate>
+        <seed>42</seed>
         <pressure>
           <noise type="gaussian"><mean>0</mean><stddev>0.5</stddev></noise>
         </pressure>
