@@ -98,6 +98,9 @@ apt-get -y install \
   nlohmann-json3-dev \
   libreadline-dev \
   libcli11-dev \
+  pkg-config \
+  libzip-dev \
+  libtinyxml2-dev \
   >/dev/null || { echo -e "\n❌ Error installing packages." >&2; exit 1; }
   
 # Set Clang as default C++

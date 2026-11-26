@@ -202,6 +202,23 @@ void ScenarioParser::appendPhysicsEngineInterface(
             xml += "            </thrusters>\n";
         }
 
+        // FMU interface: the .fmu, and parameters set before initialization.
+        if (params && params["fmu"]) {
+            xml += "            <fmu>" +
+                   xmlEscape(params["fmu"].as<std::string>()) + "</fmu>\n";
+        }
+        if (params && params["fmu_parameters"] &&
+            params["fmu_parameters"].IsMap()) {
+            xml += "            <fmu_parameters>\n";
+            for (const auto& kv : params["fmu_parameters"]) {
+                xml += "                <parameter name=\"" +
+                       xmlEscape(kv.first.as<std::string>()) + "\">" +
+                       xmlEscape(kv.second.as<std::string>()) +
+                       "</parameter>\n";
+            }
+            xml += "            </fmu_parameters>\n";
+        }
+
         xml += "        </" + domain_key + ">\n";
     }
 
