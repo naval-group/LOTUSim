@@ -73,7 +73,7 @@ Define only the domains your vessel actually needs (e.g. a submarine only needs 
 
 > ℹ️ **`interface_type` vs. `connection_type`:** the plugin accepts **both** tag names - `connection_type` is explicitly marked in source as the legacy tag, kept for backward compatibility, with `interface_type` as the current name.
 
-Recognised `interface_type`/`connection_type` values: `XDYNWEBSOCKET` → `XdynWebSocket`, `ROS2` → `ROS2Interface` (case-insensitive). Anything else fails with an "unknown interface_type" error and physics is disabled for that vessel/domain.
+Recognised `interface_type`/`connection_type` values: `XDYNWEBSOCKET` → `XdynWebSocket`, `ROS2` → `ROS2Interface`, `FMU` → `FmuInterface` (case-insensitive). Anything else fails with an "unknown interface_type" error and physics is disabled for that vessel/domain.
 
 ---
 
@@ -86,6 +86,41 @@ A **singleton** WebSocket client connecting to xdyn - one shared client instance
 **Per-tick protocol** (`getNewState`): builds a co-simulation request - `Dt` (converted from milliseconds to seconds), one `states` entry (the vessel's current pose/velocity converted to NED), and `commands` (pulled from the shared command map, populated by `<thrusters>` config or later overridden via ROS commands). The reply's `z` value is used to infer which domain the vessel *should* be in next: `z ≥ 10` → Aerial, `z ≤ -10` → Underwater, otherwise Surface (`z` is NED, so positive is down - this is why deep values map to Underwater and negative/high values map to Aerial).
 
 **Default thruster commands on spawn:** every declared `<thruster>` starts at **`rpm: 50.0`, P/D: `0.79`, beta: `0.0`**.
+
+---
+
+## `FmuInterface`
+
+Computes the vessel's physics with an **FMI 2.0 Co-Simulation FMU** loaded in the simulator's process: no server to start, no port, no message per step. Each tick is one `fmi2DoStep(t, Dt)`, the way `XdynWebsocket` sends one request to xdyn.
+
+```xml
+<surface>
+  <interface_type>FMU</interface_type>
+  <fmu>dtmb_hull/dtmb.fmu</fmu>
+  <fmu_parameters>
+    <parameter name="xdyn.dt">0.2</parameter>
+  </fmu_parameters>
+</surface>
+```
+
+From a scenario: `interface_type: FMU`, then `interface_params: {fmu: dtmb_hull/dtmb.fmu, fmu_parameters: {xdyn.dt: 0.2}}`.
+
+- **`<fmu>`**: absolute, or relative to `LOTUSIM_MODELS_PATH`, then to each `GZ_SIM_RESOURCE_PATH` directory.
+- **`<fmu_parameters>`** (optional): set before initialization, any FMI type, values as text; an Enumeration by item name (`<parameter name="xdyn.solver">rk4</parameter>`).
+
+**The FMU's variables** follow lxdyn's FMU (`xdyn_wrapper_fmi`), so an xdyn model packed with its `make_fmu.py` fits as is. `<body>` is the body's name in the xdyn YAML, found as the one prefix under which all 13 states are outputs:
+
+| Variables | Causality | |
+|---|---|---|
+| `<body>.x` … `<body>.qk` (`x y z u v w p q r qr qi qj qk`) | output (Real), required | NED position, FRD body velocities and rates, attitude quaternion |
+| `<body>.reset_state`, `<body>.reset_x` … `<body>.reset_qk` | input, optional | when present, Gazebo's state is imposed before every step (`reset_state` set to false then true, the FMU resetting on that edge): teleports and domain changes carry over, as with xdyn-for-cs. Without them, the FMU keeps its own state (a warning says so) |
+| the input whose description is the vessel's command, e.g. `<body>.PSPropRudd.rpm` for `PSPropRudd(rpm)`; or the input of that name | input (Real) | from the shared command map. `(rpm)` commands are converted to rad/s, as for xdyn. A command the FMU lacks is ignored, with one warning |
+
+The domain for the next tick follows the FMU's altitude, with the same thresholds as `XdynWebsocket`.
+
+**Instances.** There is one instance per vessel and domain. Each one unpacks the `.fmu` into its own temporary directory and loads its own copy of the library, so instances share no state and are stepped in parallel. The directory is removed with the instance.
+
+**Platforms and dependencies.** Linux 64-bit binaries are used (`binaries/linux64`). `libzip` unpacks the archive and `tinyxml2` reads `modelDescription.xml`. The FMI 2.0 headers are in `third_party/fmi2` (BSD-2-Clause, Modelica Association).
 
 ---
 

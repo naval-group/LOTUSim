@@ -11,6 +11,7 @@
 #include <tinyxml2.h>
 
 #include <cstdlib>
+#include <map>
 #include <string>
 
 #include "lotusim_mas/scenario_parser.hpp"
@@ -81,6 +82,46 @@ TEST(ScenarioEscaping, RendererTypeEscaped)
     EXPECT_NE(
         xml.find("<renderer_type_name>a&amp;b</renderer_type_name>"),
         std::string::npos);
+}
+
+// The FMU interface's path and parameters reach the SDF as written.
+TEST(ScenarioEscaping, FmuParametersKeptLiteral)
+{
+    const auto cfg = ScenarioParser::fromString(R"(
+agents:
+  boat:
+    model: lrauv
+    physics_interface:
+      init_domain: surface
+      domains:
+        - domain: surface
+          interface_type: FMU
+          interface_params:
+            fmu: "R&D/dtmb.fmu"
+            fmu_parameters: {xdyn.dt: 0.2, "a\"b": "<rk4>"}
+)");
+    ASSERT_TRUE(cfg && !cfg->agents.empty());
+    const std::string& xml = cfg->agents.front().lotus_param;
+    tinyxml2::XMLDocument doc;
+    ASSERT_EQ(doc.Parse(xml.c_str()), tinyxml2::XML_SUCCESS) << xml;
+    const auto* surface = doc.FirstChildElement("lotus_param")
+                              ->FirstChildElement("physics_engine_interface")
+                              ->FirstChildElement("surface");
+    ASSERT_NE(surface, nullptr);
+    ASSERT_NE(surface->FirstChildElement("fmu"), nullptr) << xml;
+    EXPECT_STREQ(surface->FirstChildElement("fmu")->GetText(), "R&D/dtmb.fmu");
+    std::map<std::string, std::string> parameters;
+    const auto* list = surface->FirstChildElement("fmu_parameters");
+    ASSERT_NE(list, nullptr) << xml;
+    for (const auto* p = list->FirstChildElement("parameter"); p;
+         p = p->NextSiblingElement("parameter")) {
+        parameters[p->Attribute("name")] = p->GetText();
+    }
+    EXPECT_EQ(
+        parameters,
+        (std::map<std::string, std::string>{
+            {"xdyn.dt", "0.2"},
+            {"a\"b", "<rk4>"}}));
 }
 
 // gz-sim's dependency chain can crash during static teardown (see

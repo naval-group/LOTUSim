@@ -41,6 +41,13 @@ find_package(yaml-cpp REQUIRED)
 # boost_system component, so requesting it fails once CMP0167 drops FindBoost.
 find_package(Boost REQUIRED)
 find_package(websocketpp REQUIRED)
+# FMI 2.0 FMUs (fmu_interface): unpacked with libzip, modelDescription.xml
+# read with tinyxml2, the FMU's library dlopen'ed. libzip through pkg-config:
+# Ubuntu's libzip CMake package also imports the zipcmp, zipmerge and ziptool
+# executables, and fails when those packages are not installed.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBZIP REQUIRED IMPORTED_TARGET libzip)
+find_package(tinyxml2 REQUIRED)
 
 find_package(gz-cmake3 REQUIRED)
 
@@ -57,10 +64,13 @@ add_library(physics_interface_plugin SHARED
   src/xdyn_websocket.cpp
   src/ros2_interface.cpp
   src/vessel_information.cpp
+  src/fmi2_slave.cpp
+  src/fmu_interface.cpp
 )
 
 target_include_directories(physics_interface_plugin PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmi2>
   $<INSTALL_INTERFACE:include>
 )
 
@@ -70,6 +80,9 @@ target_link_libraries(physics_interface_plugin
   websocketpp::websocketpp
   Boost::boost
   yaml-cpp
+  PkgConfig::LIBZIP
+  tinyxml2::tinyxml2
+  ${CMAKE_DL_LIBS}
 )
 
 ament_target_dependencies(physics_interface_plugin
@@ -87,6 +100,13 @@ install(
   DESTINATION include
   FILES_MATCHING
   PATTERN "*.hpp"
+  PATTERN "*.h"
+)
+
+install(
+  DIRECTORY third_party/fmi2/
+  DESTINATION include
+  FILES_MATCHING
   PATTERN "*.h"
 )
 
@@ -133,6 +153,50 @@ if(BUILD_TESTING)
     target_link_libraries(test_ned_enu_conversions
       vessel_information_test
       gz-sim8::gz-sim8
+    )
+  endif()
+
+  # FMU loading and FmuInterface, against a small FMU built here
+  # (test/fmu/test_vessel.c) and packed into an .fmu by the tests.
+  enable_language(C)
+  add_library(test_vessel_fmu MODULE test/fmu/test_vessel.c)
+  target_include_directories(test_vessel_fmu PRIVATE third_party/fmi2)
+  set_target_properties(test_vessel_fmu PROPERTIES PREFIX "" C_VISIBILITY_PRESET default)
+  target_link_libraries(test_vessel_fmu m)
+
+  add_library(fmu_interface_test STATIC
+    src/fmi2_slave.cpp
+    src/fmu_interface.cpp
+    src/vessel_information.cpp
+  )
+  set_target_properties(fmu_interface_test PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  target_include_directories(fmu_interface_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmi2>
+  )
+  find_package(spdlog REQUIRED)
+  target_link_libraries(fmu_interface_test
+    gz-sim8::gz-sim8
+    spdlog::spdlog
+    PkgConfig::LIBZIP
+    tinyxml2::tinyxml2
+    ${CMAKE_DL_LIBS}
+  )
+  ament_target_dependencies(fmu_interface_test
+    lotusim_common
+  )
+
+  ament_add_gtest(test_fmu_interface test/test_fmu_interface.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_fmu_interface)
+    add_dependencies(test_fmu_interface test_vessel_fmu)
+    target_compile_definitions(test_fmu_interface PRIVATE
+      TEST_FMU_LIBRARY="$<TARGET_FILE:test_vessel_fmu>")
+    target_link_libraries(test_fmu_interface
+      fmu_interface_test
+      gz-sim8::gz-sim8
+      PkgConfig::LIBZIP
     )
   endif()
 endif()

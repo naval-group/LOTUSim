@@ -88,9 +88,11 @@
         # version in the closure for ~170 MB.
         thirdParty = [ ros.boost ] ++ (with pkgs; [
           eigen
+          libzip      # FMUs: unpacking the .fmu archive
           nlohmann_json
           readline
           spdlog
+          tinyxml-2   # FMUs: modelDescription.xml
           websocketpp
           yaml-cpp
         ]);

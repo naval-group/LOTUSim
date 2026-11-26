@@ -1,5 +1,6 @@
 #include "physics_engine_interface/physics_interface_base.hpp"
 
+#include "physics_engine_interface/fmu_interface.hpp"
 #include "physics_engine_interface/ros2_interface.hpp"
 #include "physics_engine_interface/xdyn_websocket.hpp"
 
@@ -23,6 +24,10 @@ std::shared_ptr<PhysicsInterfaceBase> PhysicsInterfaceBase::createInterface(
             }
             case InterfaceType::ROS2Interface: {
                 client = ROS2Interface::createInterface(world_name);
+                break;
+            }
+            case InterfaceType::FMU: {
+                client = FmuInterface::createInterface(world_name);
                 break;
             }
             default: {
