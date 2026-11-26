@@ -10,6 +10,7 @@
 #include "power_subsystem/power_provider/simple_battery.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 #include "lotusim_common/common.hpp"
 
@@ -29,12 +30,20 @@ SimpleBattery::SimpleBattery(
           logger)
     , m_voltage(0.0f)
     , m_voltage_nominal(_sdf->Get<float>("voltage_nominal", 48.0f).first)
-    , m_remainingAh(
-          _sdf->Get<float>("capacity_ah", 100.0f).first *
-          _sdf->Get<float>("initial_soc", 1.0f).first)
+    // capacity_ah and initial_soc as Battery read them.
+    , m_remainingAh(static_cast<double>(m_capacityAh) * m_initialSoc)
 {
-    m_voltage =
-        m_voltageMin + m_initialSoc * (m_voltage_nominal - m_voltageMin);
+    // Voltage rises from voltage_min to voltage_nominal as the battery charges
+    if (!(m_voltage_nominal > m_voltageMin)) {
+        m_logger->error(
+            "SimpleBattery [{}]: voltage_nominal must be > voltage_min (got {} "
+            "and {}), using a constant voltage_min",
+            m_provider_name,
+            m_voltage_nominal,
+            m_voltageMin);
+        m_voltage_nominal = m_voltageMin;
+    }
+    updateVoltage();
     m_provider_type = ProviderType::SimpleBattery;
 
     m_logger->info(
@@ -47,13 +56,23 @@ SimpleBattery::SimpleBattery(
 
 void SimpleBattery::receiveLoad(float currentA, float dt)
 {
-    if (currentA > 0) {
-        m_remainingAh -= currentA * dt;
-        m_remainingAh = std::max(m_remainingAh, 0.0f);
-    } else {
-        m_remainingAh += currentA * dt;
-        m_remainingAh = std::min(m_remainingAh, m_capacityAh);
+    if (!(dt > 0.0f) || !std::isfinite(dt)) {
+        return;
     }
+    if (!std::isfinite(currentA)) {
+        // debug: this runs every tick
+        m_logger->debug(
+            "SimpleBattery [{},{}]: non-finite current ignored",
+            m_provider_name,
+            m_vessel_name);
+        return;
+    }
+    // currentA > 0 discharges, < 0 charges; dt in seconds and the charge is in Ah
+    constexpr double seconds_per_hour = 3600.0;
+    m_remainingAh = std::clamp(
+        m_remainingAh - static_cast<double>(currentA) * dt / seconds_per_hour,
+        0.0,
+        static_cast<double>(m_capacityAh));
     updateVoltage();
     m_logger->debug(
         "SimpleBattery [{},{}]: received load {:.3f} A dt={:.4f} s "
@@ -69,8 +88,7 @@ void SimpleBattery::receiveLoad(float currentA, float dt)
 
 void SimpleBattery::updateVoltage()
 {
-    // voltage scales linearly with SOC between voltage_min and voltage_nominal
-    // this is a simplification
+    // simplified linear voltage SOC between voltage_min and voltage_nominal
     m_voltage =
         m_voltageMin + getStateOfCharge() * (m_voltage_nominal - m_voltageMin);
 }
@@ -82,15 +100,13 @@ float SimpleBattery::voltage() const
 
 float SimpleBattery::getStateOfCharge() const
 {
-    if (m_capacityAh <= 0.0f) {
-        return 0.0f;
-    }
-    return std::clamp(m_remainingAh / m_capacityAh, 0.0f, 1.0f);
+    return std::clamp(
+        static_cast<float>(m_remainingAh / m_capacityAh), 0.0f, 1.0f);
 }
 
 // for now - energy estimate in Wh
 float SimpleBattery::availablePowerW() const
 {
-    return voltage() * m_remainingAh;
+    return static_cast<float>(voltage() * m_remainingAh);
 }
 }  // namespace lotusim::gazebo

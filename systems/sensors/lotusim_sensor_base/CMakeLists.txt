@@ -91,6 +91,7 @@ find_package(lotusim_common REQUIRED)
 add_library(lotusim_sensor_base
 SHARED
 src/custom_sensor.cpp
+src/noise_model.cpp
 )
 target_include_directories(lotusim_sensor_base
   PUBLIC
@@ -111,6 +112,31 @@ ament_target_dependencies(lotusim_sensor_base
   lotusim_sensor_msgs
   lotusim_common
 )
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(spdlog REQUIRED)
+
+  # Measurement timing (update_rate). Own main() (see the test file), so
+  # gtest_main is not linked.
+  ament_add_gtest(test_custom_sensor test/test_custom_sensor.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_custom_sensor)
+    target_link_libraries(test_custom_sensor lotusim_sensor_base spdlog::spdlog)
+  endif()
+
+  # Built from the source alone: linking lotusim_sensor_base pulls in
+  # gz-sim, whose static teardown can crash (see test_custom_sensor).
+  ament_add_gtest(test_noise_model
+    test/test_noise_model.cpp
+    src/noise_model.cpp
+  )
+  if(TARGET test_noise_model)
+    target_include_directories(test_noise_model PRIVATE include)
+    target_link_libraries(test_noise_model sdformat${SDF_VER}::sdformat${SDF_VER})
+  endif()
+endif()
 
 #============================================================================
 # Install the files for this package

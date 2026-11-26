@@ -8,7 +8,8 @@ namespace lotusim::gazebo {
 std::shared_ptr<PhysicsInterfaceBase> PhysicsInterfaceBase::createInterface(
     const InterfaceType& protocol_type,
     std::shared_ptr<std::unordered_map<gz::sim::Entity, std::string>> cmd,
-    std::shared_ptr<spdlog::logger> logger)
+    std::shared_ptr<spdlog::logger> logger,
+    const std::string& world_name)
 {
     try {
         std::shared_ptr<PhysicsInterfaceBase> client;
@@ -17,11 +18,11 @@ std::shared_ptr<PhysicsInterfaceBase> PhysicsInterfaceBase::createInterface(
             // therefore created through Static method. For other design, please
             // pass on the arguments to interface as deemed fit
             case InterfaceType::XDynWebSocket: {
-                client = XdynWebsocket::createInterface();
+                client = XdynWebsocket::createInterface(world_name);
                 break;
             }
             case InterfaceType::ROS2Interface: {
-                client = ROS2Interface::createInterface();
+                client = ROS2Interface::createInterface(world_name);
                 break;
             }
             default: {

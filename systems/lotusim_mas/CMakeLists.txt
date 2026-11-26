@@ -45,6 +45,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 find_package(lotusim_common REQUIRED)
 find_package(lotusim_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -98,9 +99,22 @@ ament_target_dependencies(multi_agent_system_plugin
   rclcpp_action
   geometry_msgs
   geographic_msgs
+  diagnostic_msgs
   lotusim_msgs
   lotusim_common
 )
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # Escaping in the generated <lotus_param>. Own main() (see the test file).
+  ament_add_gtest(test_scenario_escaping test/test_scenario_escaping.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_scenario_escaping)
+    target_link_libraries(test_scenario_escaping multi_agent_system_plugin)
+  endif()
+endif()
 
 #============================================================================
 # Install
@@ -131,6 +145,7 @@ ament_export_dependencies(
   rclcpp_action
   geometry_msgs
   geographic_msgs
+  diagnostic_msgs
   lotusim_msgs
   lotusim_common
   gz-sim8
