@@ -29,10 +29,13 @@ ROSInterface::ROSInterface(
     logger::enableDiagnostics(m_logger, m_diag_node, m_world_name);
 }
 
-ROSInterface::~ROSInterface() {
-    m_logger->info(
-        "RenderROSInterface::~RenderROSInterface: Render's ROSInterface successfully shutdown.");
-    logger::disableDiagnostics(m_logger);
+ROSInterface::~ROSInterface()
+{
+    if (m_logger) {
+        m_logger->info(
+            "ROSInterface::~ROSInterface: ROSInterface successfully shutdown.");
+        logger::disableDiagnostics(m_logger);
+    }
 }
 
 bool ROSInterface::configureInterface(

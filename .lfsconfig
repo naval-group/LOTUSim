@@ -1,0 +1,5 @@
+# Only CI's dev image needs the xdyn binary, so clones and checkouts leave it as
+# a small pointer file. To fetch it anyway:
+#   git lfs pull --include=physics/xdyn-for-cs --exclude=""
+[lfs]
+	fetchexclude = physics/
