@@ -107,6 +107,21 @@ if(BUILD_TESTING)
   endif()
 endif()
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  # SimpleBattery's charge integration. Own main() (see the test file), so
+  # gtest_main is not linked.
+  ament_add_gtest(test_simple_battery test/test_simple_battery.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+  )
+  if(TARGET test_simple_battery)
+    # The test builds its own spdlog logger, so it links spdlog itself.
+    find_package(spdlog REQUIRED)
+    target_link_libraries(test_simple_battery power_subsystem spdlog::spdlog)
+  endif()
+endif()
+
 #============================================================================
 # Install the files for this package
 #============================================================================

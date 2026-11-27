@@ -85,10 +85,6 @@ The radar sensor requires a lidar sensor on the same link to provide point cloud
         <psf_ellipse_width>15000</psf_ellipse_width>
         <psf_ellipse_height>5000</psf_ellipse_height>
         <psf_range_factor>0.2</psf_range_factor>
-
-        <!-- Sensor noise -->
-        <noise_sigma>0.01</noise_sigma>
-        <noise_amplitude>0.01</noise_amplitude>
     </sensor>
 
 </link>
@@ -105,8 +101,6 @@ The radar sensor requires a lidar sensor on the same link to provide point cloud
 | `psf_ellipse_width` | px | 15000 | PSF ellipse width — controls azimuth smear |
 | `psf_ellipse_height` | px | 5000 | PSF ellipse height — controls range smear |
 | `psf_range_factor` | float | 0.2 | Scales PSF ellipse size with target range |
-| `noise_sigma` | float | 0.0 | Gaussian noise standard deviation |
-| `noise_amplitude` | float | 0.0 | Gaussian noise amplitude |
 
 **Tuning the PSF:**
 - Increase `psf_ellipse_width` for more azimuth smearing (wider sweeps per target)

@@ -111,6 +111,12 @@ jobs:
         with:
           path: LOTUSim
 
+      # physics/xdyn-for-cs is in LFS, and .lfsconfig excludes it from fetches;
+      # the explicit --include/--exclude override that for the image build.
+      - name: Fetch the xdyn binary from LFS
+        working-directory: LOTUSim
+        run: git lfs pull --include=physics/xdyn-for-cs --exclude=""
+
       # The revisions the flake pins, so this UI matches the Nix `ui`.
       - name: Read the pinned UI revisions
         id: ui

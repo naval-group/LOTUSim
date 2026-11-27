@@ -186,7 +186,6 @@ Extends `PowerProvider` with:
 Extends `PowerProvider` with:
 
 - `PowerLevel` computed from fuel ratio thresholds
-- `surplusChargingCurrent(busCurrentA)` computes available surplus for battery charging
 - Fuel tracking via `m_fuel_level` and `m_fuel_capacity`
 
 **PowerLevel thresholds:**
@@ -205,7 +204,7 @@ Extends `PowerProvider` with:
 Minimal battery implementation for testing. Models linear voltage drain:
 
 ```
-remaining_ah -= currentA × dt
+remaining_ah -= currentA × dt / 3600     (dt in s)
 voltage = voltage_min + SOC × (voltage_nominal - voltage_min)
 ```
 

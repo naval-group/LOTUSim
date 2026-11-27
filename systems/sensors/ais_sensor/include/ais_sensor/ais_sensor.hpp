@@ -40,9 +40,6 @@ private:
     virtual bool CustomSensorLoad(const sdf::Sensor& _sdf) final;
 
 private:
-    // Sensor params
-    std::chrono::steady_clock::duration m_update_period;
-    std::chrono::steady_clock::duration m_last_pub;
     rclcpp::Publisher<lotusim_sensor_msgs::msg::AIS>::SharedPtr m_sensor_pub;
 };
 

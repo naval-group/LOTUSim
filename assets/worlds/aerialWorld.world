@@ -25,16 +25,16 @@
     </spherical_coordinates>
 
     <!-- Core Simulation Plugins -->
+    <plugin filename="aerial_demo_mas" name="lotusim::gazebo::AerialMAS">
+      <aerial_namespace>aerialWorld</aerial_namespace>
+    </plugin>
+    
     <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
     <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer" />
     <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" />
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
 
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
-
-    <plugin filename="aerial_demo_mas" name="lotusim::gazebo::AerialMAS">
-      <aerial_namespace>aerialWorld</aerial_namespace>
-    </plugin>
 
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
 

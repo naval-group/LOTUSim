@@ -18,6 +18,11 @@ LotusimSensorPlugin::LotusimSensorPlugin() {}
 
 LotusimSensorPlugin::~LotusimSensorPlugin()
 {
+    if (m_logger) {
+        m_logger->info(
+            "LotusimSensorPlugin::~LotusimSensorPlugin: LotusimSensorPlugin successfully shutdown.");
+        logger::disableDiagnostics(m_logger);
+    }
     m_ros_node_thread.reset();
 }
 
@@ -32,14 +37,18 @@ void LotusimSensorPlugin::Configure(
     m_ecm = &_ecm;
     m_world_name = lotusim::common::getWorldName(_ecm);
 
-    std::string logger_name = m_world_name + "_lotusim_sensors";
-
-    m_logger =
-        logger::createConsoleAndFileLogger(logger_name, logger_name + ".txt");
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "lotusim_sensors");
+    m_logger = logger::createConsoleAndFileLogger(
+        logger_name,
+        logger_name + ".txt");
 
     m_ros_node = rclcpp::Node::make_shared(
         m_world_name + "_sensor_system",
         m_world_name);
+
+    logger::enableDiagnostics(m_logger, m_ros_node, m_world_name);
+    
     m_collision_pub =
         m_ros_node->create_publisher<lotusim_sensor_msgs::msg::Collisions>(
             "collisions",

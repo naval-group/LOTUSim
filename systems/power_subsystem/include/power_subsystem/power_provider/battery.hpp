@@ -9,6 +9,9 @@
  */
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+
 #include "power_subsystem/power_provider/power_provider.hpp"
 
 namespace lotusim::gazebo {
@@ -17,19 +20,20 @@ namespace lotusim::gazebo {
  *
  * Inherits from PowerProvider and adds battery-specific behaviour:
  *   - charge from generator surplus
- *   - PowerLevel computation from voltage vs voltage_min thresholds
- *   - SOC tracking (initial value only for now —> FMU does not output SOC)
+ *   - PowerLevel computation from state of charge thresholds
+ *   - SOC tracking, integrated by the concrete battery (SimpleBattery:
+ *     coulomb counting in amp-hours)
  *
  * SDF parameters read by Battery:
  *   capacity_ah  : battery capacity in Amp-hours
  *   initial_soc  : starting state of charge (0.0–1.0)
- *   voltage_min  : voltage below which battery is considered depleted (Volts)
+ *   voltage_min  : voltage of an empty battery (Volts)
  *
  * PowerLevel thresholds (hardcoded):
  *   NORMAL   : SOC > 0.20
  *   WARN     : 0.10 < SOC <= 0.20
- *   CRITICAL : 0.0  < SOC <= 0.10
- *   DEPLETED : SOC <= 0.0
+ *   CRITICAL : 0.001 < SOC <= 0.10
+ *   DEPLETED : SOC <= 0.001
  */
 class Battery : public PowerProvider {
 public:
@@ -60,15 +64,18 @@ public:
     }
 
     /**
-     * @brief Returns true when soc is 0
-     */
+    * @brief true when SOC <= 0.0 (nothing left to draw)
+    *        Deliberately stricter than powerLevel(): the level reports
+    *        DEPLETED from SOC <= 0.001 so that the manager reacts slightly
+    *        before the cell is truly empty
+    */
     bool isDepleted() const override
     {
         return getStateOfCharge() <= 0.0f;
     }
 
     /**
-     * @brief returns initial_soc for now
+     * @brief initial_soc; concrete batteries return the integrated charge
      */
     float getStateOfCharge() const override
     {
@@ -76,13 +83,11 @@ public:
     }
 
     /**
-     * @brief approximate remaining energy in Wh
-     *         TODO - it should be voltage() * current_capacity_A ------------
-     */
-    float availablePowerW() const override
-    {
-        return voltage() * m_capacityAh;
-    }
+    * @brief approximate remaining energy of the battery (Wh)
+    *        Each battery implements it from its own remaining charge
+    *        e.g.: voltage() * remaining_ah for SimpleBattery.
+    */
+    float availablePowerW() const override = 0;
 
     /**
      * @brief update current voltage
@@ -118,8 +123,8 @@ protected:
     /**
      * @brief subclasses call this
      *
-     * @param name        battery name from SDF
-     * @param node        node from PowerManager
+     * @param battery_name battery name from SDF
+     * @param node         node from PowerManager
      * @param capacity_ah  battery capacity from SDF capacity_ah
      * @param initial_soc  initial state of charge from SDF initial_soc (0–1)
      * @param voltage_min  depletion voltage from SDF voltage_min (V)
@@ -140,17 +145,33 @@ protected:
         m_capacityAh = sdf->Get<float>("capacity_ah", 100.0f).first;
         m_initialSoc = sdf->Get<float>("initial_soc", 1.0f).first;
         m_voltageMin = sdf->Get<float>("voltage_min", 36.0f).first;
+        // capacity <= 0 or initial_soc out of [0, 1] leads to invalid charge
+        if (!(m_capacityAh > 0.0f)) {
+            m_logger->error(
+                "Battery [{}]: capacity_ah must be > 0 (got {}), using 100",
+                m_provider_name,
+                m_capacityAh);
+            m_capacityAh = 100.0f;
+        }
+        if (!(m_initialSoc >= 0.0f && m_initialSoc <= 1.0f)) {
+            m_logger->error(
+                "Battery [{}]: initial_soc must be in [0, 1] (got {}), clamping",
+                m_provider_name,
+                m_initialSoc);
+            // NaN: clamp keeps it, so it is taken as empty
+            m_initialSoc = std::isnan(m_initialSoc)
+                               ? 0.0f
+                               : std::clamp(m_initialSoc, 0.0f, 1.0f);
+        }
     }
 
     // battery capacity in Amp-hour from SDF
     float m_capacityAh{0.0f};
 
     // Initial state of charge (0 - 1.0) from SDF initial_soc
-    //  just returning initial value for now -----------------
     float m_initialSoc{1.0f};
 
-    // min operating voltage from voltage_min
-    // PowerLevel thresholds are derived from this value
+    // min operating voltage (empty battery voltage)
     float m_voltageMin{0.0f};
 };
 }  // namespace lotusim::gazebo

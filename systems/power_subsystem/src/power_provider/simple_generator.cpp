@@ -63,7 +63,7 @@ void SimpleGenerator::receiveLoad(float currentA, float dt)
     const float energyDensity = getFuelEnergyDensity(m_fuel_type);
     const float fuel_consumed = (powerW * dt) / (m_efficiency * energyDensity);
 
-    m_fuel_level = std::max(0.0f, m_fuel_level - fuel_consumed);
+    m_fuel_level = std::max(0.0, m_fuel_level - static_cast<double>(fuel_consumed));
 
     m_logger->debug(
         "SimpleGenerator [{}]: load={:.3f} A power={:.1f} W "

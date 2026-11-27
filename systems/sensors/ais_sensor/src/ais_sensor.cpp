@@ -48,8 +48,6 @@ AISSensor::AISSensor(
           sensor_entity,
           parent_name,
           sensor_name)
-    , m_update_period(std::chrono::seconds(2))
-    , m_last_pub(std::chrono::seconds(0))
 {
     m_logger->info(
         "AISSensor::AISSensor: Created for vessel {} sensor {}",
@@ -70,7 +68,7 @@ bool AISSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm)
 {
-    if (!EnableMeasurement(_info.simTime))
+    if (!ShouldMeasure(_info.simTime))
         return false;
 
     lotusim_sensor_msgs::msg::AIS msg;

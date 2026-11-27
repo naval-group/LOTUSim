@@ -64,7 +64,11 @@ std::string activeProvider(const std::vector<Fields>& providers)
     static auto node = rclcpp::Node::make_shared("test_power_status");
     static int vessel = 0;
     DefaultPlatformPowerManager manager(
-        1, "vessel" + std::to_string(vessel++), node, modelSdf(providers));
+        1,
+        "vessel" + std::to_string(vessel++),
+        "test_world",
+        node,
+        modelSdf(providers));
     return manager.activeProviderName();
 }
 
@@ -89,6 +93,38 @@ TEST(PowerStatus, ActiveBattery)
 TEST(PowerStatus, NoProvider)
 {
     EXPECT_EQ(activeProvider({battery("main", "0")}), "");
+}
+
+namespace {
+
+/// The manager, with its batteries' state of charge readable.
+class Probe : public DefaultPlatformPowerManager {
+public:
+    using DefaultPlatformPowerManager::DefaultPlatformPowerManager;
+    float stateOfCharge(std::size_t battery) const
+    {
+        return m_batteries.at(battery)->getStateOfCharge();
+    }
+};
+
+}  // namespace
+
+TEST(PowerCharge, GeneratorChargesTheActiveBattery)
+{
+    // The charge current used to reach the battery as a load, so a vessel
+    // with a generator ran its battery down faster than without one.
+    static auto node = rclcpp::Node::make_shared("test_power_charge");
+    Probe manager(
+        1,
+        "charging",
+        "test_world",
+        node,
+        modelSdf({battery("main", "0.5"), kGenerator}));
+    const float before = manager.stateOfCharge(0);
+    for (int i = 0; i < 60; ++i) {
+        manager.Update(1.0f);
+    }
+    EXPECT_GT(manager.stateOfCharge(0), before);
 }
 
 // gz-sim's dependency chain can crash during static teardown (see

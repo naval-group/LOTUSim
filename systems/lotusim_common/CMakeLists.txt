@@ -36,6 +36,8 @@ find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(gz-sim8 REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 
 #============================================================================
 # Library
@@ -63,6 +65,8 @@ target_link_libraries(${PROJECT_NAME}
 
 ament_target_dependencies(${PROJECT_NAME}
   std_msgs
+  rclcpp
+  diagnostic_msgs
 )
 
 #============================================================================
@@ -148,6 +152,8 @@ ament_export_dependencies(
   std_msgs
   spdlog
   gz-sim8
+  diagnostic_msgs
+  rclcpp
 )
 ament_export_include_directories(include)
 
