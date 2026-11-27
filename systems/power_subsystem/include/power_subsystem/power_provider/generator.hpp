@@ -8,8 +8,13 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #pragma once
+#include <algorithm>
+#include <cmath>
+#include <cctype>
+#include <stdexcept>
 
 #include "power_subsystem/power_provider/power_provider.hpp"
+#include "power_subsystem/power_provider/fuel_properties.hpp"
 
 namespace lotusim::gazebo {
 
@@ -18,13 +23,9 @@ namespace lotusim::gazebo {
  *
  * Inherits from PowerProvider and adds generator behaviour:
  *   - fuel consumption tracking
- *   - surplus energy computation for battery charging
  *   - PowerLevel computation from fuel ratio thresholds
  *
  * A generator produces a stable nominal voltage as long as it has fuel
- * If the generator output exceeds the current demand, the surplus
- * is forwarded to PowerManager which calls receiveCharge() on the
- * active battery
  *
  * SDF parameters read by Generator:
  *   fuel_capacity    : full size tank in litres
@@ -34,10 +35,10 @@ namespace lotusim::gazebo {
  *   voltage_nominal  : stable output voltage (Volts)
  *
  * PowerLevel thresholds (from fuel ratio):
- *   NORMAL   : fuel > 25%
- *   WARN     : 10% < fuel <= 25%
- *   CRITICAL : 5%  < fuel <= 10%
- *   DEPLETED : fuel <= 5%
+ *   NORMAL   : fuel > 20%
+ *   WARN     : 10% < fuel <= 20%
+ *   CRITICAL : 1%  < fuel <= 10%
+ *   DEPLETED : fuel <= 1%
  */
 class Generator : public PowerProvider {
 public:
@@ -46,8 +47,9 @@ public:
     // ----------------------------------------------------------------
     /**
      * @brief returns health level based on remaining fuel ratio
-     *   NORMAL   : fuel > 25%
-     *   WARN     : 10% < fuel <= 25%
+     * PowerLevel thresholds (from fuel ratio):
+     *   NORMAL   : fuel > 20%
+     *   WARN     : 10% < fuel <= 20%
      *   CRITICAL : 1%  < fuel <= 10%
      *   DEPLETED : fuel <= 1%
      */
@@ -67,7 +69,7 @@ public:
     }
 
     /**
-     * @brief returns true when fuel has dropped to or below 5%
+     * @brief returns true when fuel has dropped to or below 1%
      */
     bool isDepleted() const override
     {
@@ -105,26 +107,6 @@ public:
     float voltage() const override
     {
         return isDepleted() ? 0.0f : m_voltage_nominal;
-    }
-
-    /**
-     * @brief compute surplus charging current available
-     *
-     * called by PowerManager after receiveLoad() to determine how much
-     * charge to push to the active battery
-     *
-     * @param busCurrentA  total current drawn by all active consumers (A)
-     * returns surplus current available for charging (A), 0 if none
-     */
-    // AHOY merge this with receiving load. no point having this
-    float surplusChargingCurrent(float busCurrentA) const
-    {
-        if (isDepleted()) {
-            return 0.0f;
-        }
-        const float demandW = busCurrentA * m_voltage_nominal;
-        const float surplusW = availablePowerW() - demandW;
-        return surplusW > 0.0f ? (surplusW / m_voltage_nominal) : 0.0f;
     }
 
     float fuelRatio() const
@@ -174,16 +156,60 @@ protected:
               std::move(node),
               logger)
     {
-        m_fuel_level = _sdf->Get<float>("fuel_level_start", 400.0f).first;
         m_fuel_capacity = _sdf->Get<float>("fuel_capacity", 500.0f).first;
+        m_fuel_level = _sdf->Get<double>("fuel_level_start", 400.0).first;
         m_rated_output_W = _sdf->Get<float>("rated_output_w", 5000.0f).first;
         m_efficiency = _sdf->Get<float>("efficiency", 0.35f).first;
         m_voltage_nominal = _sdf->Get<float>("voltage_nominal", 48.0f).first;
         m_fuel_type = _sdf->Get<std::string>("fuel_type", "diesel").first;
+        if (!(m_fuel_capacity > 0.0f)) {
+            m_logger->error(
+                "Generator [{}]: fuel_capacity must be > 0 (got {}), using 500",
+                m_provider_name, m_fuel_capacity);
+            m_fuel_capacity = 500.0f;
+        }
+        if (std::isnan(m_fuel_level)) {
+            m_logger->error(
+                "Generator [{}]: fuel_level_start is not a number, starting empty",
+                m_provider_name);
+            m_fuel_level = 0.0;
+        } else if (m_fuel_level < 0.0 || m_fuel_level > static_cast<double>(m_fuel_capacity)) {
+            m_logger->error(
+                "Generator [{}]: fuel_level_start must be in [0, fuel_capacity={}] "
+                "(got {}), clamping",
+                m_provider_name, m_fuel_capacity, m_fuel_level);
+            m_fuel_level = std::clamp(m_fuel_level, 0.0, static_cast<double>(m_fuel_capacity));
+        }
+        if (!(m_efficiency > 0.0f && m_efficiency <= 1.0f)) {
+            m_logger->error(
+                "Generator [{}]: efficiency must be in (0, 1] (got {}), using 0.35",
+                m_provider_name, m_efficiency);
+            m_efficiency = 0.35f;
+        }
+        if (!(m_voltage_nominal > 0.0f)) {
+            m_logger->error(
+                "Generator [{}]: voltage_nominal must be > 0 (got {}), using 48",
+                m_provider_name, m_voltage_nominal);
+            m_voltage_nominal = 48.0f;
+        }
+        if (!(m_rated_output_W >= 0.0f)) {
+            m_logger->error(
+                "Generator [{}]: rated_output_w must be >= 0 (got {}), using 0",
+                m_provider_name, m_rated_output_W);
+            m_rated_output_W = 0.0f;
+        }
+        std::transform(m_fuel_type.begin(), m_fuel_type.end(), m_fuel_type.begin(),
+               [](unsigned char c) { return std::tolower(c); });
+        try {
+            (void)getFuelEnergyDensity(m_fuel_type);
+        } catch (const std::invalid_argument& e) {
+            m_logger->error("Generator [{}]: {} -> using diesel", m_provider_name, e.what());
+            m_fuel_type = "diesel";
+        }
     }
 
     // current fuel level
-    float m_fuel_level{0.0f};
+    double m_fuel_level{0.0};
 
     // full tank capacity
     float m_fuel_capacity{0.0f};

@@ -38,13 +38,15 @@ namespace lotusim::gazebo {
 PlatformPowerManagerBase::PlatformPowerManagerBase(
     const gz::sim::Entity& vessel_entity,
     const std::string& vessel_name,
+    const std::string& world_name,
     rclcpp::Node::SharedPtr node,
     sdf::ElementPtr sdfptr)
     : m_vessel_entity(vessel_entity)
     , m_vessel_name(vessel_name)
     , m_node(std::move(node))
 {
-    const std::string loggerName = m_vessel_name + "_power";
+    const std::string loggerName =
+        logger::worldLoggerName(world_name, m_vessel_name + "_power");
     m_logger =
         logger::createConsoleAndFileLogger(loggerName, loggerName + ".txt");
 
@@ -108,16 +110,23 @@ void PlatformPowerManagerBase::Update(float dt)
     handlePowerUpdate(dt);
 }
 
+std::shared_ptr<Generator> PlatformPowerManagerBase::firstActiveGenerator() const
+{
+    for (const auto& g : m_generators)
+        if (!g->isDepleted() && g->availablePowerW() > 0.0f)
+            return g;
+    return nullptr;
+}
+
 float PlatformPowerManagerBase::activeBusVoltage() const
 {
     if (!m_all_batteries_depleted)
         return m_batteries[m_active_battery_index]->voltage();
 
-    for (auto& g : m_generators)
-        if (!g->isDepleted())
-            return g->voltage();
+    if (auto g = firstActiveGenerator())
+        return g->voltage();
 
-    return 1.0f;  // no source available
+    return 1.0f;// no source available
 }
 
 bool PlatformPowerManagerBase::initPowerProvider(sdf::ElementPtr sdfptr)
@@ -294,11 +303,9 @@ std::string PlatformPowerManagerBase::activeProviderName() const
         m_active_battery_index < static_cast<int>(m_batteries.size())) {
         return m_batteries[m_active_battery_index]->name();
     }
-    for (const auto& generator : m_generators) {
-        if (!generator->isDepleted()) {
-            return generator->name();
-        }
-    }
+    if (auto g = firstActiveGenerator())
+        return g->name();
+
     return "";
 }
 

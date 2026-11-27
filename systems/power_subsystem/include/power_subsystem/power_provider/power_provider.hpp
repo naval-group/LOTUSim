@@ -64,12 +64,12 @@ inline std::optional<ProviderType> providerTypeFromString(std::string_view s)
  *
  * Below are the defaults
  *
- * | Level    |    Battery (vs voltage_min)        | Generator (fuel ratio)  |
- * |----------|------------------------------------|-------------------------|
- * | NORMAL   | voltage > voltage_min * 1.15       | fuel_ratio > 0.15       |
- * | WARN     | voltage_min*1.05 < v <= *1.15      | 0.05 < ratio <= 0.15    |
- * | CRITICAL | voltage_min < v <= voltage_min*1.05| 0.0 < ratio <= 0.05     |
- * | DEPLETED | voltage <= voltage_min             | fuel_ratio <= 0.0       |
+ * | Level    | Battery (state of charge) | Generator (fuel ratio) |
+ * |----------|---------------------------|------------------------|
+ * | NORMAL   | soc > 0.20                | ratio > 0.20           |
+ * | WARN     | 0.10 < soc <= 0.20        | 0.10 < ratio <= 0.20   |
+ * | CRITICAL | 0.001 < soc <= 0.10       | 0.01 < ratio <= 0.10   |
+ * | DEPLETED | soc <= 0.001              | ratio <= 0.01          |
  *
  * PlatformPowerManager response per level:
  *   NORMAL   : no action
@@ -103,8 +103,9 @@ enum class PowerLevel
  *
  * receiveLoad() takes dt (seconds) because providers need to integrate
  * over time to compute physically correct SOC and fuel consumption:
- *   Battery   : soc -= (currentA * dt) / capacity_ah
- *   Generator : fuel -= (power * dt) / (efficiency * 3600)
+ *   Battery   : remaining_ah -= currentA * dt / 3600
+ *   Generator : fuel -= power * dt / (efficiency * energy density),
+ *               the energy density from getFuelEnergyDensity() (J/L)
  */
 
 class PowerProvider {

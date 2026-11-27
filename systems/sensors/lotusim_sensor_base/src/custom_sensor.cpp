@@ -10,6 +10,9 @@
 
 #include "lotusim_sensor_base/custom_sensor.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 namespace lotusim::sensor {
 CustomSensor::CustomSensor(
     std::shared_ptr<spdlog::logger> logger,
@@ -37,6 +40,13 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
 {
     gz::sensors::Sensor::Load(_sdf);
 
+    // An optional <seed>, so a noisy run can be repeated. Applied before
+    // CustomSensorLoad(), where the noise models draw their bias.
+    const sdf::ElementPtr elem = _sdf.Element();
+    if (elem && elem->HasElement("seed")) {
+        m_rnd_gen.seed(elem->Get<unsigned>("seed"));
+    }
+
     CustomSensorLoad(_sdf);
 
     m_type = gz::sensors::customType(_sdf);
@@ -44,9 +54,16 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
     sdf::ElementPtr _sdfptr = _sdf.Element();
 
     bool isSensorOn;
-    GetSDFParam<int>(_sdfptr, "update_rate", m_update_rate, 1);
+    GetSDFParam<double>(_sdfptr, "update_rate", m_update_rate, 1.0);
     GetSDFParam<bool>(_sdfptr, "is_on", isSensorOn, true);
     m_is_on = isSensorOn;
+    if (m_update_rate > 0.0) {
+        // Capped at about 30 years, so a tiny rate fits the duration.
+        m_update_period = std::chrono::duration_cast<
+            std::chrono::steady_clock::duration>(std::chrono::nanoseconds(
+            std::llround(std::min(1e9 / m_update_rate, 1e18))));
+        m_next_measurement_time = m_update_period;
+    }
 
     m_sensor_activate_service =
         m_ros_node->create_service<lotusim_sensor_msgs::srv::ActivateSensor>(
@@ -60,20 +77,6 @@ bool CustomSensor::Load(const sdf::Sensor& _sdf)
                 }
                 ChangeSensorState(req, res);
             });
-
-    GetSDFParam<double>(_sdfptr, "noise_sigma", m_noise_sigma, 0.0);
-    if (m_noise_sigma < 0.0) {
-        m_logger->warn("Signal noise sigma must be greater or equal to zero");
-        m_noise_sigma = 0.0;
-    }
-
-    GetSDFParam<double>(_sdfptr, "noise_amplitude", m_noise_amp, 0.0);
-    if (m_noise_amp < 0.0) {
-        m_logger->warn(
-            "Signal noise amplitude must be greater or equal to zero");
-        m_noise_amp = 0.0;
-    }
-    AddNoiseModel("default", m_noise_sigma);
     return true;
 }
 
@@ -84,29 +87,6 @@ bool CustomSensor::ChangeSensorState(
 {
     m_is_on = _req->activate;
     _res->success = true;
-    return true;
-}
-
-double CustomSensor::GetGaussianNoise(std::string _name, double _amp)
-{
-    if (!m_noise_models.count(_name)) {
-        m_logger->warn("Gaussian noise model does not exist");
-        return 0;
-    }
-    return _amp * m_noise_models[_name](m_rnd_gen);
-}
-
-double CustomSensor::GetGaussianNoise(double _amp)
-{
-    return _amp * m_noise_models["default"](m_rnd_gen);
-}
-
-bool CustomSensor::AddNoiseModel(std::string _name, double _sigma)
-{
-    if (m_noise_models.count(_name))
-        return false;
-
-    m_noise_models[_name] = std::normal_distribution<double>(0.0, _sigma);
     return true;
 }
 
@@ -137,13 +117,28 @@ void CustomSensor::Orientation(const gz::math::Quaterniond& _quad)
     m_quad = _quad;
 }
 
-bool CustomSensor::EnableMeasurement(
-    const std::chrono::steady_clock::duration& _now) const
+bool CustomSensor::ShouldMeasure(
+    const std::chrono::steady_clock::duration& _now)
 {
-    double dt = std::chrono::duration_cast<std::chrono::seconds>(
-                    _now - m_last_measurement_time)
-                    .count();
-    return dt >= 1.0 / m_update_rate && m_is_on;
+    if (!m_is_on) {
+        return false;
+    }
+    // As in SDF, a rate of 0 or less means: every simulation step.
+    if (m_update_rate <= 0.0) {
+        return true;
+    }
+    if (_now < m_next_measurement_time) {
+        return false;
+    }
+    // As Gazebo does: the next one is due a period after this one was, and
+    // a sensor that fell behind moves past _now instead of catching up.
+    m_next_measurement_time += m_update_period;
+    if (m_next_measurement_time <= _now) {
+        m_next_measurement_time +=
+            ((_now - m_next_measurement_time) / m_update_period + 1) *
+            m_update_period;
+    }
+    return true;
 }
 
 }  // namespace lotusim::sensor

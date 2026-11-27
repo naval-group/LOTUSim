@@ -18,12 +18,16 @@ namespace lotusim::gazebo {
 
 TcpUdpInterface::TcpUdpInterface(
     const std::string& world_name,
-    std::shared_ptr<spdlog::logger> logger)
-    : RenderInterfaceBase(world_name, std::move(logger))
+    std::shared_ptr<spdlog::logger> logger,
+    std::shared_ptr<rclcpp::Node> diag_node)
+    : RenderInterfaceBase(world_name, std::move(logger), std::move(diag_node))
 {
+    const std::string logger_name =
+        logger::worldLoggerName(m_world_name, "tcp_render_interface");
     m_logger = logger::createConsoleAndFileLogger(
-        "tcp_render_interface",
-        "tcp_render_interface.txt");
+        logger_name,
+        logger_name + ".txt");
+    logger::enableDiagnostics(m_logger, m_diag_node, m_world_name);
 }
 
 TcpUdpInterface::~TcpUdpInterface()
@@ -51,6 +55,7 @@ TcpUdpInterface::~TcpUdpInterface()
     }
     // Stop the io_context to cancel any outstanding asynchronous operations
     m_io_context.stop();
+    logger::disableDiagnostics(m_logger);
 }
 
 bool TcpUdpInterface::configureInterface(

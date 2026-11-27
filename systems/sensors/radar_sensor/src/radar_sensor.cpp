@@ -101,7 +101,7 @@ void RadarSensor::OnPointCloud(const gz::msgs::PointCloudPacked& _msg)
 // ═══════════════════════════════════════════════════════════════════════════
 // UpdateSensor
 //  if (first time)  →  subscribe to gz topic lidar_sensor using world name from
-//  ECM if (!EnableMeasurement)  →  return false process + publishs
+//  ECM if (!new cloud || !ShouldMeasure)  →  return false process + publishs
 // ═══════════════════════════════════════════════════════════════════════════
 bool RadarSensor::UpdateSensor(
     const gz::sim::UpdateInfo& _info,
@@ -132,16 +132,16 @@ bool RadarSensor::UpdateSensor(
         m_subscribed = true;
     }
 
-    // ── EnableMeasurement ───────────────────────────────────────────
-    if (!EnableMeasurement(_info.simTime))
-        return false;
-
-    // ── Grab latest cloud ─────────────────────────────────────────────────
+    // ── Grab latest cloud, if a scan is due ───────────────────────────────
+    // A new cloud first: a true ShouldMeasure() commits to a scan at this
+    // step, and moves the next due time a period on.
     gz::msgs::PointCloudPacked cloud_copy;
     {
         std::lock_guard<std::mutex> lock(m_cloud_mutex);
         if (!m_cloud_received)
-            return true;
+            return false;
+        if (!ShouldMeasure(_info.simTime))
+            return false;
         cloud_copy = m_latest_cloud;
         m_cloud_received = false;
     }

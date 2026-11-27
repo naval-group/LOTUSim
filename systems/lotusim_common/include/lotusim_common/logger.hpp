@@ -26,7 +26,21 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
+namespace rclcpp { class Node; }
+
 namespace lotusim::logger {
+
+// Publish this logger's records at or above getLogLevelFromEnv() as
+// DiagnosticArray on /diagnostics using `node`. Returns false if the logger has no diagnostics
+// sink (e.g. made by createBasicFileLogger()).
+// Call disableDiagnostics() before `node` is destroyed.
+bool enableDiagnostics(
+    const std::shared_ptr<spdlog::logger>& logger,
+    const std::shared_ptr<rclcpp::Node>& node,
+    const std::string& hardware_id);
+
+// stop publishing. Call before the node is destroyed
+void disableDiagnostics(const std::shared_ptr<spdlog::logger>& logger);
 
 // If lotusim is compiled in debug mode, all debug logs will be triggered.
 #if defined(DEBUG)
@@ -35,21 +49,6 @@ const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::trace;
 const spdlog::level::level_enum DEFAULT_LOG_LEVEL = spdlog::level::info;
 #endif
 
-using LogCallback = std::function<void(
-    const std::string& logger_name,
-    spdlog::level::level_enum level,
-    const std::string& message)>;
-
-/**
- * @brief callback for forwarding log messages to external consumers like the UI
- *
- * One callback serves the whole process. Only INFO and ERROR messages from
- * loggers made by createConsoleAndFileLogger() are forwarded.
- * @param callback function called with the logger name, log level, and
- * message; nullptr stops forwarding
- */
-void setLogCallback(LogCallback callback);
-
 /**
  * @brief Get log level from environment variable or return default
  * Supports: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL, OFF
@@ -57,6 +56,21 @@ void setLogCallback(LogCallback callback);
  * @return spdlog::level::level_enum
  */
 spdlog::level::level_enum getLogLevelFromEnv();
+
+/**
+ * @brief Standard name for a logger that belongs to a world:
+ * "<world_name>_<name>"
+ *
+ * Use it as the logger_name of createConsoleAndFileLogger() /
+ * createBasicFileLogger(), and logger_name + ".txt" as the file_name, so
+ * loggers of different worlds never share a registry entry or a file.
+ */
+inline std::string worldLoggerName(
+    const std::string& world_name,
+    const std::string& name)
+{
+    return world_name + "_" + name;
+}
 
 /**
  * @brief Creates both console and file logger object

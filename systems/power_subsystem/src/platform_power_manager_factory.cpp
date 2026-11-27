@@ -16,6 +16,7 @@ std::unique_ptr<PlatformPowerManagerBase> PlatformPowerManagerBase::create(
     PlatformPowerManagerType type,
     gz::sim::Entity vessel_entity,
     const std::string& vessel_name,
+    const std::string& world_name,
     rclcpp::Node::SharedPtr node,
     sdf::ElementPtr sdfptr)
 {
@@ -25,6 +26,7 @@ std::unique_ptr<PlatformPowerManagerBase> PlatformPowerManagerBase::create(
             return std::make_unique<DefaultPlatformPowerManager>(
                 vessel_entity,
                 vessel_name,
+                world_name,
                 std::move(node),
                 sdfptr);
     }

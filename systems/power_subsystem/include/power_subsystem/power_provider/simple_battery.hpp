@@ -16,18 +16,24 @@ namespace lotusim::gazebo {
 /**
  * @brief minimal battery for integration testing
  *
- * For now, testing: stubs out FMU interaction with a simple linear voltage
- * drain:
+ * For now, testing: stubs out FMU interaction with coulomb counting and a
+ * voltage linear in the state of charge:
  *
- *   voltage -= (currentA * dt) / capacity_ah
+ *   remaining_ah -= currentA * dt / 3600     (dt in s; currentA < 0 charges)
+ *   voltage = voltage_min + soc * (voltage_nominal - voltage_min)
  *
  * replace receiveLoad(), voltage() and receiveCharge() with
  * FMU calls once the FMU wrapper interface is available
  *
- * SDF format (inside <plugin> tag):
- *   <provider name="test_battery" type="simple_battery"
- *             capacity_ah="100" initial_soc="1.0"
- *             voltage_min="36.0" voltage_nominal="48.0"/>
+ * SDF format (a <lotusim_power> element of the vessel's model):
+ *   <lotusim_power>
+ *       <name>main_battery</name>
+ *       <type>simple_battery</type>
+ *       <capacity_ah>100</capacity_ah>
+ *       <initial_soc>1.0</initial_soc>
+ *       <voltage_min>36.0</voltage_min>
+ *       <voltage_nominal>48.0</voltage_nominal>
+ *   </lotusim_power>
  */
 class SimpleBattery : public Battery {
 public:
@@ -51,7 +57,8 @@ public:
     // ----------------------------------------------------------------
 
     /**
-     * @brief Drains voltage proportionally to current load over dt
+     * @brief Integrates the charge over dt: currentA > 0 discharges,
+     *        currentA < 0 charges, clamped to [0, capacity_ah]
      *        stub for FMU call — replace when wrapper is available
      * -----------------
      */
@@ -77,8 +84,9 @@ private:
     // full-charge voltage from SDF voltage_nominal
     float m_voltage_nominal{48.0f};
 
-    // tracks remaining charge
-    float m_remainingAh{100.0f};
+    // tracks remaining charge. A double: a float near 100 Ah cannot take
+    // the few micro amp-hours of a small current over one step.
+    double m_remainingAh{100.0};
 };
 
 }  // namespace lotusim::gazebo

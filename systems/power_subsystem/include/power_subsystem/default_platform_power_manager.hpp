@@ -19,11 +19,11 @@ public:
     DefaultPlatformPowerManager(
         const gz::sim::Entity& vessel_entity,
         const std::string& vessel_name,
+        const std::string& world_name,
         rclcpp::Node::SharedPtr node,
         sdf::ElementPtr sdfptr);
 
 private:
-    std::shared_ptr<Generator> firstActiveGenerator();
 
     void handlePowerUpdate(float dt) final;
 
@@ -33,10 +33,9 @@ private:
 
     void shedLoads(PowerLevel level);
 
-    float computeChargeCurrentA(
+    float computeChargePowerW(
         std::shared_ptr<Generator> gen,
-        std::shared_ptr<Battery> bat,
-        float safe_voltage) const;
+        std::shared_ptr<Battery> bat) const;
 
     void reactivateIfPossible(float available_w, float bus_voltage);
 };

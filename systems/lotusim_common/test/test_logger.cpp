@@ -8,19 +8,19 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include <gtest/gtest.h>
-
-#include <atomic>
-#include <chrono>
 #include <spdlog/sinks/ostream_sink.h>
 #include <unistd.h>
 
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <optional>
+#include <rclcpp/rclcpp.hpp>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -34,11 +34,14 @@ using namespace lotusim;
 
 namespace {
 
+using DiagnosticArray = diagnostic_msgs::msg::DiagnosticArray;
+using DiagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus;
+
 std::shared_ptr<spdlog::logger> testLogger()
 {
     static auto logger = logger::createConsoleAndFileLogger(
-        "test_log_callback",
-        "test_log_callback.txt");
+        "test_diagnostics",
+        "test_diagnostics.txt");
     return logger;
 }
 
@@ -113,38 +116,184 @@ std::string readFile(const std::filesystem::path& path)
     return content.str();
 }
 
+// Enables diagnostics on a private node, subscribes to /diagnostics and
+// collects what arrives. Disables diagnostics again on destruction, like
+// MultiAgentSystem::shutdown does.
+class DiagnosticsCapture
+{
+public:
+    explicit DiagnosticsCapture(
+    const std::string& hardware_id = "test_world",
+    std::shared_ptr<spdlog::logger> log = testLogger())
+    : m_log(std::move(log)),
+      m_node(rclcpp::Node::make_shared(
+            "logger_test_" + std::to_string(getpid()) + "_" +
+            std::to_string(s_counter++)))
+    {
+        m_sub = m_node->create_subscription<DiagnosticArray>(
+            "/diagnostics",
+            10,
+            [this](DiagnosticArray::SharedPtr msg) {
+                if (!msg->status.empty() &&
+                    msg->status[0].message == kWarmup) {
+                    m_warm = true;
+                    return;
+                }
+                m_received.push_back(*msg);
+            });
+        logger::enableDiagnostics(m_log, m_node, hardware_id);
+
+        // The first messages can be lost until publisher and subscriber have
+        // found each other, so log until one comes through
+        const auto deadline =
+            std::chrono::steady_clock::now() + std::chrono::seconds(5);
+        while (!m_warm && std::chrono::steady_clock::now() < deadline) {
+            m_log->info(kWarmup);
+            rclcpp::spin_some(m_node);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+    }
+    ~DiagnosticsCapture()
+    {
+        logger::disableDiagnostics(m_log);
+    }
+    DiagnosticsCapture(const DiagnosticsCapture&) = delete;
+    DiagnosticsCapture& operator=(const DiagnosticsCapture&) = delete;
+
+    bool ready() const
+    {
+        return m_warm;
+    }
+
+    // Spin until `count` arrays arrived or the timeout passes
+    bool waitFor(
+        size_t count,
+        std::chrono::milliseconds timeout = std::chrono::seconds(2))
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        while (m_received.size() < count &&
+               std::chrono::steady_clock::now() < deadline) {
+            rclcpp::spin_some(m_node);
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        return m_received.size() >= count;
+    }
+
+    // Spin for a fixed time, for checking that nothing arrives.
+    void spinFor(std::chrono::milliseconds duration)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + duration;
+        while (std::chrono::steady_clock::now() < deadline) {
+            rclcpp::spin_some(m_node);
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+    }
+
+    const std::vector<DiagnosticArray>& received() const
+    {
+        return m_received;
+    }
+
+private:
+    static constexpr const char* kWarmup = "__diagnostics_warmup__";
+    static inline std::atomic<int> s_counter{0};
+
+    std::shared_ptr<spdlog::logger> m_log;  
+    rclcpp::Node::SharedPtr m_node;
+    rclcpp::Subscription<DiagnosticArray>::SharedPtr m_sub;
+    std::vector<DiagnosticArray> m_received;
+    bool m_warm = false;
+};
+
 }  // namespace
 
-TEST(LogCallback, ForwardsInfoAndError)
+TEST(Diagnostics, PublishesLevelNameMessageAndHardwareId)
 {
-    std::vector<std::string> received;
-    logger::setLogCallback(
-        [&](const std::string&,
-            spdlog::level::level_enum,
-            const std::string& m) { received.push_back(m); });
-    testLogger()->info("hello");
-    testLogger()->warn("not forwarded");
-    testLogger()->error("oops");
-    logger::setLogCallback(nullptr);
-    EXPECT_EQ(received, (std::vector<std::string>{"hello", "oops"}));
+    DiagnosticsCapture capture("test_world");
+    ASSERT_TRUE(capture.ready());
+
+    testLogger()->error("boom");
+    ASSERT_TRUE(capture.waitFor(1));
+
+    const auto& array = capture.received()[0];
+    ASSERT_EQ(array.status.size(), 1u);
+    EXPECT_EQ(array.status[0].name, "test_diagnostics");
+    EXPECT_EQ(array.status[0].message, "boom");
+    EXPECT_EQ(array.status[0].hardware_id, "test_world");
+    EXPECT_EQ(array.status[0].level, DiagnosticStatus::ERROR);
+    EXPECT_GT(array.header.stamp.sec, 0);
 }
 
-TEST(LogCallback, ClearedCallbackIsNotCalled)
+TEST(Diagnostics, FormattedMessageIsPublished)
 {
-    // What an owner does before it is destroyed (MultiAgentSystem::shutdown).
-    int calls = 0;
-    logger::setLogCallback([&](const std::string&,
-                               spdlog::level::level_enum,
-                               const std::string&) { ++calls; });
-    logger::setLogCallback(nullptr);
-    testLogger()->info("after clearing");
-    EXPECT_EQ(calls, 0);
+    DiagnosticsCapture capture;
+    ASSERT_TRUE(capture.ready());
+
+    testLogger()->info("x={}", 3);
+    testLogger()->error("{} failed", "step");
+    ASSERT_TRUE(capture.waitFor(2));
+
+    EXPECT_EQ(capture.received()[0].status[0].message, "x=3");
+    EXPECT_EQ(capture.received()[1].status[0].message, "step failed");
 }
 
-TEST(LogCallback, SetWhileOtherThreadsLog)
+TEST(Diagnostics, MapsSpdlogLevelsToDiagnosticLevels)
 {
+    DiagnosticsCapture capture;
+    ASSERT_TRUE(capture.ready());
+
+    testLogger()->info("info");
+    testLogger()->warn("warn");
+    testLogger()->error("error");
+    testLogger()->critical("critical");
+    ASSERT_TRUE(capture.waitFor(4));
+
+    EXPECT_EQ(capture.received()[0].status[0].level, DiagnosticStatus::OK);
+    EXPECT_EQ(capture.received()[1].status[0].level, DiagnosticStatus::WARN);
+    EXPECT_EQ(capture.received()[2].status[0].level, DiagnosticStatus::ERROR);
+    EXPECT_EQ(capture.received()[3].status[0].level, DiagnosticStatus::ERROR);
+}
+
+TEST(Diagnostics, LoggerLevelFiltersBeforeTheSink)
+{
+    DiagnosticsCapture capture;
+    ASSERT_TRUE(capture.ready());
+
+    const auto previous_level = testLogger()->level();
+    testLogger()->set_level(spdlog::level::err);
+    testLogger()->info("below the logger level");
+    testLogger()->error("kept");
+    testLogger()->set_level(previous_level);
+
+    ASSERT_TRUE(capture.waitFor(1));
+    capture.spinFor(std::chrono::milliseconds(200));
+    ASSERT_EQ(capture.received().size(), 1u);
+    EXPECT_EQ(capture.received()[0].status[0].message, "kept");
+}
+
+TEST(Diagnostics, NothingIsPublishedAfterDisable)
+{
+    DiagnosticsCapture capture;
+    ASSERT_TRUE(capture.ready());
+
+    logger::disableDiagnostics(testLogger());
+    testLogger()->info("after disabling");
+    testLogger()->error("also after disabling");
+    capture.spinFor(std::chrono::milliseconds(300));
+    EXPECT_TRUE(capture.received().empty());
+}
+
+TEST(Diagnostics, LoggingWithoutEnableDoesNothing)
+{
+    logger::disableDiagnostics(testLogger());
+    EXPECT_NO_THROW(testLogger()->info("diagnostics were never enabled"));
+}
+
+TEST(Diagnostics, EnableAndDisableWhileOtherThreadsLog)
+{
+    auto node = rclcpp::Node::make_shared(
+        "logger_test_concurrent_" + std::to_string(getpid()));
     std::atomic<bool> stop{false};
-    std::atomic<int> calls{0};
     std::vector<std::thread> loggers;
     for (int i = 0; i < 4; ++i) {
         loggers.emplace_back([&] {
@@ -153,91 +302,15 @@ TEST(LogCallback, SetWhileOtherThreadsLog)
             }
         });
     }
-    for (int i = 0; i < 2000; ++i) {
-        logger::setLogCallback([&](const std::string&,
-                                   spdlog::level::level_enum,
-                                   const std::string&) { ++calls; });
-        logger::setLogCallback(nullptr);
+    for (int i = 0; i < 100; ++i) {
+        logger::enableDiagnostics(testLogger(), node, "busy_world");
+        logger::disableDiagnostics(testLogger());
     }
     stop = true;
     for (auto& t : loggers) {
         t.join();
     }
     SUCCEED();
-}
-
-TEST(LogCallback, ClearingWaitsForARunningCallback)
-{
-    // Once setLogCallback(nullptr) returns, no call into the old callback is
-    // still running, so its owner can be destroyed.
-    std::atomic<bool> entered{false};
-    std::atomic<bool> release{false};
-    std::atomic<bool> running{false};
-    logger::setLogCallback(
-        [&](const std::string&, spdlog::level::level_enum, const std::string&) {
-            running = true;
-            entered = true;
-            while (!release) {
-                std::this_thread::yield();
-            }
-            running = false;
-        });
-    std::thread logging([] { testLogger()->info("slow"); });
-    while (!entered) {
-        std::this_thread::yield();
-    }
-
-    std::atomic<bool> cleared{false};
-    std::atomic<bool> running_after_clear{true};
-    std::thread clearing([&] {
-        logger::setLogCallback(nullptr);
-        running_after_clear = running.load();
-        cleared = true;
-    });
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    EXPECT_FALSE(cleared);
-
-    release = true;
-    clearing.join();
-    logging.join();
-    EXPECT_TRUE(cleared);
-    EXPECT_FALSE(running_after_clear);
-}
-
-TEST(LogCallback, ReceivesLoggerNameLevelAndFormattedMessage)
-{
-    using Call =
-        std::tuple<std::string, spdlog::level::level_enum, std::string>;
-    std::vector<Call> received;
-    logger::setLogCallback([&](const std::string& name,
-                               spdlog::level::level_enum level,
-                               const std::string& m) {
-        received.emplace_back(name, level, m);
-    });
-    testLogger()->info("x={}", 3);
-    testLogger()->error("{} failed", "step");
-    logger::setLogCallback(nullptr);
-    EXPECT_EQ(
-        received,
-        (std::vector<Call>{
-            {"test_log_callback", spdlog::level::info, "x=3"},
-            {"test_log_callback", spdlog::level::err, "step failed"}}));
-}
-
-TEST(LogCallback, LoggerLevelFiltersBeforeTheCallback)
-{
-    std::vector<std::string> received;
-    logger::setLogCallback(
-        [&](const std::string&,
-            spdlog::level::level_enum,
-            const std::string& m) { received.push_back(m); });
-    const auto previous_level = testLogger()->level();
-    testLogger()->set_level(spdlog::level::err);
-    testLogger()->info("below the logger level");
-    testLogger()->error("kept");
-    testLogger()->set_level(previous_level);
-    logger::setLogCallback(nullptr);
-    EXPECT_EQ(received, (std::vector<std::string>{"kept"}));
 }
 
 TEST(LogLevel, ReadFromLotusimLogLevel)
@@ -272,25 +345,13 @@ TEST(LogLevel, UnsetUsesTheDefault)
 
 TEST(LoggerFactory, SameNameReturnsTheExistingLogger)
 {
-    // Logger names are process-wide: asking for a taken name returns the
-    // logger already registered under it, whichever factory made it. A basic
-    // file logger has no callback sink, so its messages are never forwarded.
-    auto basic = logger::createBasicFileLogger(
-        "test_same_name",
-        "test_same_name_basic.txt");
-    auto console = logger::createConsoleAndFileLogger(
-        "test_same_name",
-        "test_same_name_console.txt");
+    auto basic = logger::createBasicFileLogger("test_same_name", "test_same_name_basic.txt");
+    auto console = logger::createConsoleAndFileLogger("test_same_name", "test_same_name_console.txt");
     EXPECT_EQ(console, basic);
 
-    std::vector<std::string> received;
-    logger::setLogCallback(
-        [&](const std::string&,
-            spdlog::level::level_enum,
-            const std::string& m) { received.push_back(m); });
-    console->info("not forwarded");
-    logger::setLogCallback(nullptr);
-    EXPECT_TRUE(received.empty());
+    // A basic file logger has no diagnostics sink, so enabling it fails
+    auto node = rclcpp::Node::make_shared("logger_test_same_name");
+    EXPECT_FALSE(logger::enableDiagnostics(console, node, "w"));
 }
 
 TEST(LoggerFactory, ConcurrentCreationOfOneName)
@@ -441,11 +502,36 @@ TEST(LoggerPattern, MessageOnlyBelowInfo)
     EXPECT_EQ(out.str(), "hello\n");
 }
 
+TEST(Diagnostics, DisablingOneLoggerLeavesAnotherPublishing)
+{
+    auto a = logger::createConsoleAndFileLogger("test_diag_a", "test_diag_a.txt");
+    auto b = logger::createConsoleAndFileLogger("test_diag_b", "test_diag_b.txt");
+
+    DiagnosticsCapture capture_a("world_a", a);
+    DiagnosticsCapture capture_b("world_b", b);
+    ASSERT_TRUE(capture_a.ready());
+    ASSERT_TRUE(capture_b.ready());
+
+    logger::disableDiagnostics(a);
+    a->error("from a");
+    b->error("from b");
+
+    ASSERT_TRUE(capture_b.waitFor(1));
+    EXPECT_EQ(capture_b.received()[0].status[0].message, "from b");
+}
+
+TEST(Diagnostics, EnableFailsWithoutSinkOrNode)
+{
+    EXPECT_FALSE(logger::enableDiagnostics(nullptr, nullptr, "w"));
+}
+
 // gz-sim's dependency chain can crash during static teardown (see
 // test_frame_change), so exit without running it.
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
+    rclcpp::init(argc, argv);
     const int result = RUN_ALL_TESTS();
+    rclcpp::shutdown();
     std::_Exit(result);
 }

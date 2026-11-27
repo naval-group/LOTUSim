@@ -1,0 +1,3 @@
+# The xdyn binary for the dev image is over GitHub's 100 MB limit, so it lives
+# in Git LFS. .lfsconfig keeps it out of ordinary clones; CI pulls it.
+physics/xdyn-for-cs filter=lfs diff=lfs merge=lfs -text
