@@ -52,7 +52,7 @@ bool ROSInterface::configureInterface(
             "renderer_cmd", qos_profile);
 
     m_pose_pub =
-        m_ros_node->create_publisher<lotusim_msgs::msg::VesselPositionArray>(
+        m_ros_node->create_publisher<lotusim_msgs::msg::VesselPoseArray>(
             "renderer_poses", qos_profile);
     return true;
 }
@@ -61,7 +61,7 @@ bool ROSInterface::sendPosition(
     const std::chrono::steady_clock::duration& runTime,
     const std::vector<std::pair<std::string, gz::math::Pose3d>>& poses)
 {
-    lotusim_msgs::msg::VesselPositionArray array_msg;
+    lotusim_msgs::msg::VesselPoseArray array_msg;
     auto simTimeNs =
         std::chrono::duration_cast<std::chrono::nanoseconds>(runTime).count();
     array_msg.header.stamp.sec = static_cast<int32_t>(simTimeNs / 1000000000);
@@ -70,7 +70,7 @@ bool ROSInterface::sendPosition(
     array_msg.header.frame_id = "world";
 
     for (const auto& pair : poses) {
-        lotusim_msgs::msg::VesselPosition msg;
+        lotusim_msgs::msg::VesselPose msg;
         msg.vessel_name = pair.first;
 
         const gz::math::Pose3d& pose = pair.second;

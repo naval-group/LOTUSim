@@ -8,6 +8,9 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 #include "lotusim_common/common.hpp"
+
+#include <gz/sim/Util.hh>
+
 namespace lotusim::common {
 
 bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b)
@@ -19,79 +22,11 @@ bool pose3Eql(const gz::math::Pose3d& _a, const gz::math::Pose3d& _b)
            gz::math::equal(_a.Rot().W(), _b.Rot().W(), 1e-6);
 }
 
-gz::math::Quaterniond quatChangeFrame(
-    const gz::math::Quaterniond& q,
-    const gz::math::Matrix3d& worldC,
-    const gz::math::Matrix3d& bodyC)
-{
-    const gz::math::Matrix3d R(q);
-    // const gz::math::Matrix3d R_new = worldC.Inverse() * R * bodyC;  // worldC is self-inverse, so no need to call Inverse()
-    const gz::math::Matrix3d R_new = worldC * R * bodyC;
-    gz::math::Quaterniond q_new(R_new);
-    q_new.Normalize();
-    return q_new;
-}
-
-gz::math::Pose3d poseChangeFrame(
-    const gz::math::Pose3d& pose,
-    const gz::math::Matrix3d& worldC,
-    const gz::math::Matrix3d& bodyC)
-{
-    return gz::math::Pose3d(
-        // worldC.Inverse() * pose.Pos(), // worldC is self-inverse, so no need to call Inverse()
-        worldC * pose.Pos(),
-        quatChangeFrame(pose.Rot(), worldC, bodyC));
-}
-
-gz::math::Vector3d vecBodyChangeFrame(
-    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC)
-{
-    // return bodyC.Inverse() * v;  // bodyC is self-inverse, so no need to call Inverse()
-    return bodyC * v;
-}
-
-gz::math::Vector3d pseudoVecBodyChangeFrame(
-    const gz::math::Vector3d& v, const gz::math::Matrix3d& bodyC)
-{
-    // return bodyC.Determinant() * (bodyC.Inverse() * v);
-    return bodyC.Determinant() * (bodyC * v);
-}
-
-gz::math::Vector3d worldVelToTargetBody(
-    const gz::math::Vector3d& v_world,
-    const gz::math::Quaterniond& q_world_attitude,
-    const gz::math::Matrix3d& bodyC,
-    bool isPseudoVector)
-{
-    const gz::math::Vector3d v_body_source =
-        q_world_attitude.RotateVectorReverse(v_world);
-    return isPseudoVector ? pseudoVecBodyChangeFrame(v_body_source, bodyC)
-                          : vecBodyChangeFrame(v_body_source, bodyC);
-}
-
-gz::math::Vector3d targetBodyVelToWorld(
-    const gz::math::Vector3d& v_body_target,
-    const gz::math::Quaterniond& q_world_attitude,
-    const gz::math::Matrix3d& bodyC,
-    bool isPseudoVector)
-{
-    const gz::math::Vector3d v_body_source =
-        isPseudoVector ? pseudoVecBodyChangeFrame(v_body_target, bodyC)
-                       : vecBodyChangeFrame(v_body_target, bodyC);
-    return q_world_attitude.RotateVector(v_body_source);
-}
-
 std::string getWorldName(const gz::sim::EntityComponentManager& _ecm)
 {
-    std::string world_name = "";
-    _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity&,
-            const gz::sim::components::Name* _name,
-            const gz::sim::components::World*) -> bool {
-            world_name = _name->Data();
-            return true;
-        });
-    return world_name;
+    const auto* name =
+        _ecm.Component<gz::sim::components::Name>(gz::sim::worldEntity(_ecm));
+    return name ? name->Data() : std::string{};
 }
 
 std::optional<std::pair<gz::sim::Entity, std::string>> getModelName(
@@ -133,74 +68,6 @@ std_msgs::msg::Header generateHeaderMessage(
     msg.stamp.nanosec = static_cast<uint32_t>(simTimeNs % 1000000000);
     msg.frame_id = "wgs84";
     return msg;
-}
-
-std::optional<std::tuple<double, double, double>> LatLongToXY(
-    const gz::sim::EntityComponentManager& _ecm,
-    double lat,
-    double lon,
-    double alt)
-{
-    gz::sim::Entity worldEntity;
-    _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity& _entity,
-            const gz::sim::components::Name*,
-            const gz::sim::components::World*) -> bool {
-            worldEntity = _entity;
-            return true;
-        });
-    auto sphComp =
-        _ecm.Component<gz::sim::components::SphericalCoordinates>(worldEntity);
-    if (sphComp == nullptr) {
-        return std::nullopt;
-    }
-    auto xyz = sphComp->Data().PositionTransform(
-        gz::math::Vector3d(degToRad(lat), degToRad(lon), alt),
-        gz::math::SphericalCoordinates::SPHERICAL,
-        gz::math::SphericalCoordinates::LOCAL2);
-
-    return std::make_tuple(xyz.X(), xyz.Y(), xyz.Z());
-}
-
-std::optional<std::tuple<double, double, double>> XYToLatLong(
-    const gz::sim::EntityComponentManager& _ecm,
-    double x,
-    double y,
-    double z)
-{
-    gz::sim::Entity worldEntity;
-    _ecm.Each<gz::sim::components::Name, gz::sim::components::World>(
-        [&](const gz::sim::Entity& _entity,
-            const gz::sim::components::Name*,
-            const gz::sim::components::World*) -> bool {
-            worldEntity = _entity;
-            return true;
-        });
-    return XYToLatLong(_ecm, worldEntity, x, y, z);
-}
-
-std::optional<std::tuple<double, double, double>> XYToLatLong(
-    const gz::sim::EntityComponentManager& _ecm,
-    const gz::sim::Entity& worldEntity,
-    double x,
-    double y,
-    double z)
-{
-    auto sphComp =
-        _ecm.Component<gz::sim::components::SphericalCoordinates>(worldEntity);
-    if (sphComp == nullptr) {
-        return std::nullopt;
-    }
-
-    auto latlon = sphComp->Data().PositionTransform(
-        gz::math::Vector3d(x, y, z),
-        gz::math::SphericalCoordinates::LOCAL2,
-        gz::math::SphericalCoordinates::SPHERICAL);
-
-    return std::make_tuple(
-        radToDeg(latlon.X()),
-        radToDeg(latlon.Y()),
-        latlon.Z());
 }
 
 sdf::ElementPtr getElementCaseInsensitive(
